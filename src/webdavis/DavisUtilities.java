@@ -125,8 +125,8 @@ public class DavisUtilities {
     public static String getResource(Class context, String resource,
             Object[] parameters, Locale locale) {
         ResourceBundle resources = (locale == null) ?
-                ResourceBundle.getBundle("smbdav.Resources") :
-                        ResourceBundle.getBundle("smbdav.Resources", locale);
+                ResourceBundle.getBundle("webdavis.Resources") :
+                        ResourceBundle.getBundle("webdavis.Resources", locale);
         String pattern = (context != null) ? resources.getString(
                 context.getName() + "." + resource) :
                         resources.getString(resource);

@@ -20,6 +20,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.srb.SRBFile;
+import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * An abstract implementation of the <code>MethodHandler</code> interface.
@@ -170,47 +174,97 @@ public abstract class AbstractHandler implements MethodHandler {
      */
     protected String getRemoteURL(HttpServletRequest request, String httpUrl,
             String charset) throws IOException {
-        Log.log(Log.DEBUG, "Converting \"{0}\" to an SMB URL " +
+        Log.log(Log.DEBUG, "Converting \"{0}\" to path " +
                 "using charset \"{1}\".", new Object[] { httpUrl, charset });
         if (httpUrl == null) return null;
-        httpUrl = rewriteURL(request, httpUrl);
-        String base = request.getContextPath() + request.getServletPath();
-        int index;
-        if (base.startsWith("/")) {
-            index = httpUrl.indexOf(base);
-        } else {
-            String contextBase = (String)
-                    request.getAttribute(Davis.CONTEXT_BASE);
-            if (contextBase == null || !httpUrl.startsWith(contextBase)) {
-                index = httpUrl.indexOf("/", httpUrl.indexOf("://") + 3);
-            } else {
-                index = httpUrl.indexOf("/", contextBase.endsWith("/") ?
-                        contextBase.length() - 1 : contextBase.length());
-            }
-        }
-        if (index == -1) {
-            Log.log(Log.DEBUG, "Specified URL is not under this context.");
-            return null;
-        }
-        index += base.length();
-        httpUrl = (index < httpUrl.length()) ?
-                httpUrl.substring(index) : "/";
-        RemoteFile file = new RemoteFile("smb:/" + unescape(httpUrl, charset));
-        String server = file.getServer();
-        base = file.getCanonicalPath();
-        if (server != null && KNOWN_WORKGROUPS.contains(server.toUpperCase())) {
-            Log.log(Log.DEBUG, "Target \"{0}\" is a known workgroup.", server);
-            index = base.indexOf(server);
-            int end = index + server.length();
-            if (end < base.length() && base.charAt(end) == '/') end++;
-            if (end < base.length()) {
-                base = new StringBuffer(base).delete(index, end).toString();
-            }
-        }
-        Log.log(Log.DEBUG, "Converted to SMB URL \"{0}\".", base);
-        return base;
-    }
+       
+//		String result = request.getPathInfo();
+//		if (result == null) {
+//			result = request.getServletPath();
+//		}
+//		if ((result == null) || (result.equals(""))) {
+//			result = "/";
+//		}
+      httpUrl = rewriteURL(request, httpUrl);
+      String base = request.getContextPath() + request.getServletPath();
+      int index;
+      if (base.startsWith("/")) {
+          index = httpUrl.indexOf(base);
+      } else {
+          String contextBase = (String)
+                  request.getAttribute(Davis.CONTEXT_BASE);
+          if (contextBase == null || !httpUrl.startsWith(contextBase)) {
+              index = httpUrl.indexOf("/", httpUrl.indexOf("://") + 3);
+          } else {
+              index = httpUrl.indexOf("/", contextBase.endsWith("/") ?
+                      contextBase.length() - 1 : contextBase.length());
+          }
+      }
+      if (index == -1) {
+          Log.log(Log.DEBUG, "Specified URL is not under this context.");
+          return null;
+      }
+      index += base.length();
+      httpUrl = (index < httpUrl.length()) ?
+              httpUrl.substring(index) : "/";
+      String result=unescape(httpUrl, charset);
+      Log.log(Log.DEBUG, "Converted to path \"{0}\".", result);
+      return result;
+//		if (result.indexOf("~")>-1) {
+//			System.out.println(request.getContextPath());
+//			System.out.println(request.getRequestURI());
+//			System.out.println(request.getRequestURL());
+//			System.out.println(request.getPathInfo());
+//			System.out.println(request.getServletPath());
+//			String target=result.replaceAll("~",fStore.getHomeDirectory().substring(1));
+//			Log.log(Log.DEBUG,"changed path to "+target);
+//			return target;
+//		}
 
+//        RemoteFile file = new RemoteFile("smb:/" + unescape(httpUrl, charset));
+//        String server = file.getServer();
+//        base = file.getCanonicalPath();
+//        if (server != null && KNOWN_WORKGROUPS.contains(server.toUpperCase())) {
+//            Log.log(Log.DEBUG, "Target \"{0}\" is a known workgroup.", server);
+//            index = base.indexOf(server);
+//            int end = index + server.length();
+//            if (end < base.length() && base.charAt(end) == '/') end++;
+//            if (end < base.length()) {
+//                base = new StringBuffer(base).delete(index, end).toString();
+//            }
+//        }
+//        Log.log(Log.DEBUG, "Converted to path \"{0}\".", base);
+//        return base;
+    }
+    protected String getRemoteParentURL(HttpServletRequest request, String httpUrl,
+            String charset) throws IOException {
+    	String uri=getRemoteURL(request,httpUrl,charset);
+    	return uri.substring(0,uri.lastIndexOf("/"));
+    }
+    protected RemoteFile getRemoteParentFile(HttpServletRequest request,
+    		RemoteFileSystem rfs) throws IOException {
+        String url = getRequestURL(request);
+        Log.log(Log.DEBUG, "url:"+url);
+        RemoteFile file = null;
+        IOException exception = null;
+        boolean exists = false;
+        String charset = getRequestURICharset();
+        Log.log(Log.DEBUG, "charset:"+charset);
+        try {
+            String uri=getRemoteParentURL(request, url, charset);
+            if (rfs instanceof SRBFileSystem){
+            	file=new SRBFile((SRBFileSystem) rfs,uri);
+            }else if (rfs instanceof IRODSFileSystem){
+            	file=new IRODSFile((IRODSFileSystem) rfs,uri);
+            }
+            exists = file.exists();
+        } catch (IOException ex) {
+            exception = ex;
+        }
+        if (exists) return file;
+        Log.log(Log.WARNING, "Returning null getRemoteParentFile (shouldn't happen).");
+        return null;
+    }
     /**
      * Returns the <code>LockManager</code> used to maintain WebDAV locks.
      *
@@ -255,33 +309,41 @@ public abstract class AbstractHandler implements MethodHandler {
     protected RemoteFile getRemoteFile(HttpServletRequest request,
     		RemoteFileSystem rfs) throws IOException {
         String url = getRequestURL(request);
+        Log.log(Log.DEBUG, "url:"+url);
         RemoteFile file = null;
         IOException exception = null;
         boolean exists = false;
         String charset = getRequestURICharset();
+        Log.log(Log.DEBUG, "charset:"+charset);
         try {
-            file = createRemoteFile(getRemoteURL(request, url, charset), rfs);
+            String uri=getRemoteURL(request, url, charset);
+            if (rfs instanceof SRBFileSystem){
+            	file=new SRBFile((SRBFileSystem) rfs,uri);
+            }else if (rfs instanceof IRODSFileSystem){
+            	file=new IRODSFile((IRODSFileSystem) rfs,uri);
+            }
             exists = file.exists();
         } catch (IOException ex) {
             exception = ex;
         }
         if (exists) return file;
-        if (charset.equals("UTF-8")) {
-            if (exception != null) {
-                Log.log(Log.DEBUG, exception);
-                throw exception;
-            }
-            return file;
-        }
-        RemoteFile utf8 = null;
-        IOException utf8Exception = null;
-        try {
-            utf8 = createRemoteFile(getRemoteURL(request, url, "UTF-8"), rfs);
-            exists = utf8.exists();
-        } catch (IOException ex) {
-            utf8Exception = ex;
-        }
-        if (exists) return utf8;
+//        if (charset.equals("UTF-8")) {
+//            if (exception != null) {
+//                Log.log(Log.DEBUG, exception);
+//                throw exception;
+//            }
+//            return file;
+//        }
+//        RemoteFile utf8 = null;
+//        IOException utf8Exception = null;
+//        try {
+//            String uri=getRemoteURL(request, url, charset);
+//            utf8 = createRemoteFile(getRemoteURL(request, url, "UTF-8"), rfs);
+//            exists = utf8.exists();
+//        } catch (IOException ex) {
+//            utf8Exception = ex;
+//        }
+//        if (exists) return utf8;
         if (file != null) {
             if (exception != null) {
                 Log.log(Log.DEBUG, exception);
@@ -289,21 +351,36 @@ public abstract class AbstractHandler implements MethodHandler {
             }
             return file;
         }
-        if (utf8 != null) {
-            if (utf8Exception != null) {
-                Log.log(Log.DEBUG, exception);
-                throw utf8Exception;
-            }
-            return utf8;
-        }
-        if (exception != null) {
-            Log.log(Log.DEBUG, exception);
-            throw exception;
-        }
-        Log.log(Log.WARNING, "Returning null SmbFile (shouldn't happen).");
+//        if (utf8 != null) {
+//            if (utf8Exception != null) {
+//                Log.log(Log.DEBUG, exception);
+//                throw utf8Exception;
+//            }
+//            return utf8;
+//        }
+//        if (exception != null) {
+//            Log.log(Log.DEBUG, exception);
+//            throw exception;
+//        }
+        Log.log(Log.WARNING, "Returning null RemoteFile (shouldn't happen).");
         return null;
     }
-
+    protected RemoteFile getRemoteFile(String path,
+    		RemoteFileSystem rfs) throws IOException {
+        Log.log(Log.DEBUG, "path:"+path);
+        RemoteFile file = null;
+        try {
+            if (rfs instanceof SRBFileSystem){
+            	file=new SRBFile((SRBFileSystem) rfs,path);
+            }else if (rfs instanceof IRODSFileSystem){
+            	file=new IRODSFile((IRODSFileSystem) rfs,path);
+            }
+        } catch (Exception ex) {
+            Log.log(Log.DEBUG, ex);
+            throw new IOException(ex.getMessage());
+       }
+       return file;
+    }
     /**
      * Convenience method to create an <code>SmbFile</code> object
      * from a specified SMB URL and authentication information.
@@ -322,37 +399,45 @@ public abstract class AbstractHandler implements MethodHandler {
     		RemoteFileSystem rfs) throws IOException {
         try {
             Log.log(Log.DEBUG,
-                    "Creating SMB file for \"{0}\" with credentials \"{1}\".",
+                    "Creating remote file for \"{0}\" with credentials \"{1}\".",
                             new Object[] { remoteUrl, rfs });
-            RemoteFile smbFile = (rfs != null) ?
-                    new RemoteFile(rfs,remoteUrl) : new RemoteFile(remoteUrl);
-            if (!smbUrl.endsWith("/") && needsSeparator(smbFile)) {
-                smbUrl += "/";
-                smbFile = (authentication != null) ?
-                        new SmbFile(smbUrl, authentication) :
-                                new SmbFile(smbUrl);
+            RemoteFile remoteFile = null;
+            if (rfs instanceof SRBFileSystem){
+            	remoteFile=new SRBFile((SRBFileSystem) rfs,remoteUrl);
+            }else if (rfs instanceof IRODSFileSystem){
+            	remoteFile=new IRODSFile((IRODSFileSystem) rfs,remoteUrl);
             }
-            if (smbFile.getType() == SmbFile.TYPE_WORKGROUP) {
-                String server = smbFile.getServer();
-                if (server != null) {
-                    Log.log(Log.INFORMATION,
-                            "Adding \"{0}\" to the set of known workgroups.",
-                                    server);
-                    KNOWN_WORKGROUPS.add(server.toUpperCase());
-                }
-            }
-            SmbFileFilter filter = getFilter();
-            if (filter != null && !filter.accept(smbFile)) {
-                Log.log(Log.INFORMATION, "Filter blocked access to \"{0}\".",
-                        smbFile);
-                smbFile = new BlockedFile(smbFile);
-            }
-            Log.log(Log.DEBUG, "Created SMB file \"{0}\".", smbFile);
-            return smbFile;
-        } catch (SmbException ex) {
-            Log.log(Log.DEBUG, ex);
-            throw ex;
-        } catch (Exception ex) {
+            Log.log(Log.DEBUG,"remoteFile: {0}",remoteFile);
+            if (remoteFile.exists()) return remoteFile;
+    		if (!remoteFile.createNewFile())
+    			throw new IOException("cannot create file: " + remoteUrl);
+//            if (!remoteUrl.endsWith("/") && needsSeparator(smbFile)) {
+//            	remoteUrl += "/";
+//            	remoteFile = (authentication != null) ?
+//                        new SmbFile(smbUrl, authentication) :
+//                                new SmbFile(remoteUrl);
+//            }
+//            if (smbFile.getType() == SmbFile.TYPE_WORKGROUP) {
+//                String server = smbFile.getServer();
+//                if (server != null) {
+//                    Log.log(Log.INFORMATION,
+//                            "Adding \"{0}\" to the set of known workgroups.",
+//                                    server);
+//                    KNOWN_WORKGROUPS.add(server.toUpperCase());
+//                }
+//            }
+//            SmbFileFilter filter = getFilter();
+//            if (filter != null && !filter.accept(smbFile)) {
+//                Log.log(Log.INFORMATION, "Filter blocked access to \"{0}\".",
+//                        smbFile);
+//                smbFile = new BlockedFile(smbFile);
+//            }
+            Log.log(Log.DEBUG, "Created remote file \"{0}\".", remoteFile);
+            return remoteFile;
+//        } catch (SmbException ex) {
+//            Log.log(Log.DEBUG, ex);
+//            throw ex;
+        } catch (IOException ex) {
             String message = DavisUtilities.getResource(AbstractHandler.class,
                     "cantCreateSmbFile", new Object[] { ex }, null);
             Log.log(Log.DEBUG, message + "\n{0}", ex);
@@ -642,20 +727,20 @@ public abstract class AbstractHandler implements MethodHandler {
                     Log.log(Log.DEBUG, "Unmatched ETags detected.");
                     continue;
                 }
-                LockManager lockManager = getLockManager();
-                iterator = requiredLockTokens.iterator();
-                while (iterator.hasNext()) {
-                    String requiredLockToken = (String) iterator.next();
-                    if (!lockManager.isLocked(file, requiredLockToken)) {
-                        match = false;
-                        Log.log(Log.DEBUG, "Unmatched lock token: {0}",
-                                requiredLockToken);
-                        break;
-                    } else {
-                        Log.log(Log.DEBUG, "Matched lock token: {0}",
-                                requiredLockToken);
-                    }
-                }
+//                LockManager lockManager = getLockManager();
+//                iterator = requiredLockTokens.iterator();
+//                while (iterator.hasNext()) {
+//                    String requiredLockToken = (String) iterator.next();
+//                    if (!lockManager.isLocked(file, requiredLockToken)) {
+//                        match = false;
+//                        Log.log(Log.DEBUG, "Unmatched lock token: {0}",
+//                                requiredLockToken);
+//                        break;
+//                    } else {
+//                        Log.log(Log.DEBUG, "Matched lock token: {0}",
+//                                requiredLockToken);
+//                    }
+//                }
                 if (match) {
                     Log.log(Log.DEBUG,
                             "All required lock tokens matched - proceed.");
@@ -791,7 +876,11 @@ public abstract class AbstractHandler implements MethodHandler {
         boolean exists = false;
         String charset = getRequestURICharset();
         try {
-            file = new RemoteFile(base, getRemoteURL(request, httpUrl, charset));
+        	if (base.getFileSystem() instanceof SRBFileSystem){
+                file = new SRBFile((SRBFile)base, getRemoteURL(request, httpUrl, charset));
+        	}else if (base.getFileSystem() instanceof IRODSFileSystem){
+                file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, charset));
+        	}
             exists = file.exists();
         } catch (IOException ex) {
             exception = ex;
@@ -807,7 +896,11 @@ public abstract class AbstractHandler implements MethodHandler {
         RemoteFile utf8 = null;
         IOException utf8Exception = null;
         try {
-            utf8 = new RemoteFile(base, getRemoteURL(request, httpUrl, "UTF-8"));
+        	if (base.getFileSystem() instanceof SRBFileSystem){
+                file = new SRBFile((SRBFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
+        	}else if (base.getFileSystem() instanceof IRODSFileSystem){
+                file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
+        	}
             exists = utf8.exists();
         } catch (IOException ex) {
             utf8Exception = ex;

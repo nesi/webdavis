@@ -87,6 +87,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
             return;
         }
         String requestUrl = getRequestURL(request);
+        Log.log(Log.DEBUG, "requestUrl: {0}", requestUrl);
         PropertiesDirector director = new PropertiesDirector(
                 getPropertiesBuilder());
         Document properties = null;

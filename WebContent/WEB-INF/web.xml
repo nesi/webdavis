@@ -98,141 +98,11 @@
 </filter>
 <filter-mapping>
 <filter-name>Compression</filter-name>
-<servlet-name>Davenport</servlet-name>
+<servlet-name>Davis</servlet-name>
 </filter-mapping>
 <servlet>
-<servlet-name>Davenport</servlet-name>
-<servlet-class>smbdav.Davenport</servlet-class>
-<!--
-    jcifs.smb.client.domain:
-
-        Specifies the default Windows domain.
-
-        This is the default Windows (NetBIOS) domain used by jCIFS and 
-        Davenport. This setting is employed in the following scenarios:
-
-            If a username is provided without a domain specified (for example, 
-            if the user enters "myname" instead of "MYDOMAIN\myname" during 
-            HTTP Basic authentication), this domain will be used.
-
-            If anonymous browsing is enabled and the "anonymousCredentials" 
-            setting is not configured, this domain will be used in forming the 
-            credentials for anonymous access.
-
-            If anonymous browsing is disabled and the 
-            "jcifs.http.domainController" setting is not configured, jCIFS 
-            will attempt to locate a controller for this domain to 
-            authenticate requests to the "root" resource.
-
-            If SMB signing is required by the SMB server, this domain will be 
-            used in forming the credentials for establishing the signed 
-            connection.
-
-        Note that Windows 2003 servers require SMB signing by default; it may 
-        be necessary to configure this setting to enable interoperability with 
-        these servers.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.domain</param-name>
-        <param-value>DOMAIN</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.username:
-
-        Specifies the default Windows username.
-
-        This is the default Windows username used by jCIFS and Davenport. 
-        This setting is employed in the following scenarios:
-
-            If anonymous browsing is enabled and the "anonymousCredentials" 
-            setting is not configured, this username will be used in forming 
-            the credentials for anonymous access.
-
-            If SMB signing is required by the SMB server, this username will 
-            be used in forming the credentials for establishing the signed 
-            connection.
-
-        Note that Windows 2003 servers require SMB signing by default; it may 
-        be necessary to configure this setting to enable interoperability with 
-        these servers.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.username</param-name>
-        <param-value>username</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.password:
-
-        Specifies the default Windows password.
-
-        This is the default Windows password used by jCIFS and Davenport. 
-        This setting is employed in the following scenarios:
-
-            If anonymous browsing is enabled and the "anonymousCredentials" 
-            setting is not configured, this password will be used in forming 
-            the credentials for anonymous access.
-
-            If SMB signing is required by the SMB server, this password will 
-            be used in forming the credentials for establishing the signed 
-            connection.
-
-        Note that Windows 2003 servers require SMB signing by default; it may 
-        be necessary to configure this setting to enable interoperability with 
-        these servers.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.password</param-name>
-        <param-value>password</param-value>
-    </init-param>
--->
-<!--
-    jcifs.http.domainController:
-
-        Specifies the server used to authenticate requests for the "root" 
-        resource.
-
-        This setting provides the IP address of the server that will be used 
-        to authenticate requests for the "root" SMB resource (listing of all 
-        domains and workgroups). This server is also used when a controller 
-        cannot be found for a given domain or workgroup. If not specified, 
-        jCIFS will look for a controller for the domain specified in 
-        "jcifs.smb.client.domain" (if set).
-
-        Note that this server does not have to be a real domain controller; 
-        any server or workstation running SMB services can be used.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.http.domainController</param-name>
-        <param-value>10.10.2.20</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.wins:
-
-        Specifies the IP addresses of one or more WINS servers.
-
-        This setting specifies the WINS servers Davenport will use to locate 
-        resources on the network. This can be either a single IP address, or 
-        a comma-separated list of IP addresses (specifying backup WINS 
-        servers).
-
-        WINS is a service which maps NetBIOS computer names to IP addresses 
-        (roughly analogous to DNS). Without a WINS server, jCIFS and 
-        Davenport can only resolve NetBIOS names on the local subnet, which 
-        can have an adverse affect on browsing with Davenport.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.wins</param-name>
-        <param-value>10.10.2.20,10.10.2.21</param-value>
-    </init-param>
--->
+<servlet-name>Davis</servlet-name>
+<servlet-class>webdavis.Davis</servlet-class>
 <!--
     alwaysAuthenticate:
 
@@ -254,47 +124,6 @@
     <init-param>
         <param-name>alwaysAuthenticate</param-name>
         <param-value>true</param-value>
-    </init-param>
--->
-<!--
-    anonymousCredentials:
-
-        Specifies an account to use for anonymous browsing.
-
-        If "alwaysAuthenticate" is set to "false", then the account specified 
-        here will be used to access SMB resources on behalf of the client when 
-        authentication is not required by the underlying resource.
-
-        If not specified, the account specified via "jcifs.smb.client.domain", 
-        "jcifs.smb.client.username", and "jcifs.smb.client.password" will be 
-        used to access the resource. Note that jCIFS will use the credentials 
-        specified by "jcifs.smb.client.*" to establish SMB signing if required 
-        by the server, so it may be necessary to specify both accounts in 
-        certain circumstances.
--->
-<!--
-    <init-param>
-        <param-name>anonymousCredentials</param-name>
-        <param-value>DOMAIN\username:password</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.signingPreferred:
-
-        Indicates whether SMB signing is used when not required.
-
-        By default, jCIFS will negotiate SMB signing if required by the 
-        server. Setting this to "true" indicates signing should also be used 
-        when supported by the server but not required.
-
-        Default Value:
-    
-            false (signing will be used only when required)
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.signingPreferred</param-name>
-        <param-value>false</param-value>
     </init-param>
 -->
 <!--
@@ -384,96 +213,12 @@
     
             false (HTTP Basic is not enabled over insecure HTTP).
 -->
-<!--
+
     <init-param>
-        <param-name>jcifs.http.insecureBasic</param-name>
-        <param-value>false</param-value>
+        <param-name>insecureBasic</param-name>
+        <param-value>true</param-value>
     </init-param>
--->
-<!--
-    jcifs.smb.lmCompatibility:
 
-        Specifies the NTLM authentication level.
-
-        This specifies the "LM Compatibility" level used in NTLM 
-        authentication. This mirrors the Windows LMCompatibilityLevel 
-        registry setting 
-        ("HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Lsa\LmCompatibilityLevel").
-
-        The value of this setting should match the setting used in your 
-        network environment.
-
-        Valid settings include:
-
-            0 or 1
-
-
-                Use LM/NTLM authentication.
-
-            2
-
-
-                Use NTLM authentication only. This eliminates the 
-                cryptographically weak LM response, and is more secure than 
-                levels 0 and 1.
-
-            3, 4, or 5
-
-
-                Use LMv2 authentication. This offers a higher level of 
-                security, but is incompatible with pre-Windows NT Service Pack 
-                4 servers.
-
-        Default Value:
-    
-            0 (use LM/NTLM authentication).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.lmCompatibility</param-name>
-        <param-value>0</param-value>
-    </init-param>
--->
-<!--
-    jcifs.http.basicRealm:
-
-        Specifies the realm presented during HTTP Basic authentication.
-
-        HTTP Basic authentication presents a "realm" to identify the 
-        authentication server. This setting specifies the realm name that is 
-        presented to clients.
-
-        Default Value:
-    
-            Davenport
--->
-<!--
-    <init-param>
-        <param-name>jcifs.http.basicRealm</param-name>
-        <param-value>Davenport</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.logonShare:
-
-        Specifies a network share to authenticate users against.
-
-        jCIFS authenticates users against a network share on the server. 
-        Normally, "IPC$" is used; by specifying a different share here, a 
-        rudimentary access control mechanism can be employed. A user will 
-        only be able to access a server if the specified share exists on the 
-        server and is accessible to that user.
-
-        Default Value:
-    
-            IPC$
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.logonShare</param-name>
-        <param-value>DAVENPORT</param-value>
-    </init-param>
--->
 <!--
     closeOnAuthenticate:
 
@@ -495,28 +240,6 @@
     <init-param>
         <param-name>closeOnAuthenticate</param-name>
         <param-value>false</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.disablePlainTextPasswords:
-
-        Prevents plain text passwords from being sent over the SMB network.
-
-        This setting specifies whether plain text passwords can be sent to SMB 
-        servers. By default, this is "true" (plain text passwords are 
-        disabled). To connect to SMB servers which do not support encrypted 
-        passwords, this must be set to "false". This sends login information 
-        over the network unencrypted, and is a SEVERE security risk. Enabling 
-        plain text passwords is strongly discouraged.
-
-        Default Value:
-    
-            true (plain text passwords are disabled).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.disablePlainTextPasswords</param-name>
-        <param-value>true</param-value>
     </init-param>
 -->
 <!--
@@ -1009,12 +732,12 @@
     </init-param>
 -->
 <!--
-    smbdav.Log:
+    webdavis.Log:
 
         Specifies the logging implementation classname.
 
         This setting provides the classname of the logging implementation. 
-        The specified class must extend "smbdav.Log" and provide a no-argument 
+        The specified class must extend "webdavis.Log" and provide a no-argument 
         constructor.
 
         If not specified, a default logger will be used which logs to 
@@ -1022,12 +745,12 @@
 -->
 <!--
     <init-param>
-        <param-name>smbdav.Log</param-name>
+        <param-name>webdavis.Log</param-name>
         <param-value>com.foo.MyLogger</param-value>
     </init-param>
 -->
 <!--
-    smbdav.Log.threshold:
+    webdavis.Log.threshold:
 
         Specifies the logging threshold.
 
@@ -1073,7 +796,7 @@
 -->
 
     <init-param>
-        <param-name>smbdav.Log.threshold</param-name>
+        <param-name>webdavis.Log.threshold</param-name>
         <param-value>DEBUG</param-value>
     </init-param>
 
@@ -1770,9 +1493,65 @@
         <param-value>Cp1252</param-value>
     </init-param>
 -->
+		<init-param>
+			<description>
+				server port of srb
+			</description>
+			<param-name>server-port</param-name>
+			<param-value>5544</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				server name of srb
+			</description>
+			<param-name>server-name</param-name>
+			<param-value>ngspare.sapac.edu.au</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				default domain of user
+			</description>
+			<param-name>default-domain</param-name>
+			<param-value>ngspare.sapac.edu.au</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				default resource of user
+			</description>
+			<param-name>default-resource</param-name>
+			<param-value>datafabric.ngspare.sapac.edu.au</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				proxy host for slcs
+			</description>
+			<param-name>proxy-host</param-name>
+			<param-value></param-value>
+		</init-param><!-- www-proxy.sapac.edu.au -->
+		<init-param>
+			<description>
+				proxy port for slcs
+			</description>
+			<param-name>proxy-port</param-name>
+			<param-value></param-value>
+		</init-param><!-- 8080 -->
+		<init-param>
+			<description>
+				proxy username for slcs
+			</description>
+			<param-name>proxy-username</param-name>
+			<param-value></param-value>
+		</init-param>
+		<init-param>
+			<description>
+				proxy password for slcs
+			</description>
+			<param-name>proxy-password</param-name>
+			<param-value></param-value>
+		</init-param>
 </servlet>
 <servlet-mapping>
-<servlet-name>Davenport</servlet-name>
+<servlet-name>Davis</servlet-name>
 <url-pattern>/*</url-pattern>
 </servlet-mapping>
 </web-app>

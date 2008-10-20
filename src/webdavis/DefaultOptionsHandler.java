@@ -39,12 +39,13 @@ public class DefaultOptionsHandler extends AbstractHandler {
         StringBuffer allow = new StringBuffer();
         if (file.exists()) {
             allow.append("OPTIONS, HEAD, GET, DELETE, PROPFIND");
-            allow.append(", PROPPATCH, COPY, MOVE");
-            if (file.isFile()) allow.append(", PUT");
+            allow.append(", PROPPATCH, COPY, MOVE, POST");
+            if (file.isDirectory()) allow.append(", PUT");
         } else {
             allow.append("OPTIONS, MKCOL, PUT, POST");
         }
         if (lockSupport) allow.append(", LOCK, UNLOCK");
+        Log.log(Log.DEBUG, "Allow methods for {0}: {1}",new Object[]{file.getAbsolutePath(),allow.toString()});
         response.setHeader("Allow", allow.toString());
     }
 

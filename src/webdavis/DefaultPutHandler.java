@@ -62,7 +62,8 @@ public class DefaultPutHandler extends AbstractHandler {
                             "collectionTarget", null, request.getLocale()));
             return;
         }
-        RemoteFile parent = createRemoteFile(file.getParent(), rfs);
+        RemoteFile parent = getRemoteParentFile(request, rfs);
+        	//createRemoteFile(file.getParent(), rfs);
         if (!(parent.exists() && parent.isDirectory())) {
             response.sendError(HttpServletResponse.SC_CONFLICT);
             return;

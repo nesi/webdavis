@@ -7,6 +7,8 @@ import org.w3c.dom.Element;
 
 import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.RemoteFile;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
@@ -263,10 +265,20 @@ public class PropertiesDirector {
     	if (gfs instanceof SRBFileSystem){
     		gfs=(SRBFileSystem)gfs;
     		// may change to do a query
+    		String[] children=((SRBFile)file).list();
+    		RemoteFile[] files=new RemoteFile[children.length];
+    		for (int i=0;i<children.length;i++){
+        		Log.log(Log.DEBUG, "children[i] {0}",children[i]);
+    			files[i]=new SRBFile((SRBFile)file,children[i]);
+    		}
+    		return files;
+    	}else if (gfs instanceof IRODSFileSystem){
+    		gfs=(IRODSFileSystem)gfs;
+    		// may change to do a query
     		String[] children=file.list();
     		RemoteFile[] files=new RemoteFile[children.length];
     		for (int i=0;i<children.length;i++){
-    			files[i]=new SRBFile((SRBFile)file,children[i]);
+    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
     		}
     		return files;
     	}

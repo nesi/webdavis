@@ -56,7 +56,7 @@ public class DefaultMoveHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-        RemoteFile destinationFile = createRemoteFile(destination, rfs);
+        RemoteFile destinationFile = getRemoteFile(destination, rfs);
         if (destinationFile.equals(file)) return;
 //        int result = checkLockOwnership(request, file);
 //        if (result != HttpServletResponse.SC_OK) {
@@ -94,7 +94,7 @@ public class DefaultMoveHandler extends AbstractHandler {
                 return;
             }
         }
-        file.copyTo(destinationFile);
+        file.copyTo(destinationFile,overwritten);
         try {
             file.delete();
             response.setStatus(overwritten ? HttpServletResponse.SC_NO_CONTENT :
