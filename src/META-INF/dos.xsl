@@ -6,7 +6,7 @@
     <xsl:template match="/">
         <html>
             <head>
-                <title>Davenport - <xsl:value-of select="$url"/></title>
+                <title>Davis - <xsl:value-of select="$url"/></title>
                 <meta HTTP-EQUIV="Pragma" CONTENT="no-cache"/>
                 <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache"/>
                 <meta HTTP-EQUIV="Expires" CONTENT="0"/>
