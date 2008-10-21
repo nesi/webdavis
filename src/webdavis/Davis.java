@@ -248,23 +248,6 @@ public class Davis extends HttpServlet {
 				.getInitParameter("alwaysAuthenticate");
 		this.alwaysAuthenticate = (alwaysAuthenticate == null)
 				|| Boolean.valueOf(alwaysAuthenticate).booleanValue();
-		String anonymousCredentials = config
-				.getInitParameter("anonymousCredentials");
-		if (anonymousCredentials != null) {
-			int index = anonymousCredentials.indexOf(':');
-			String user = (index != -1) ? anonymousCredentials.substring(0,
-					index) : anonymousCredentials;
-			String password = (index != -1) ? anonymousCredentials
-					.substring(index + 1) : "";
-			String domain;
-			if ((index = user.indexOf('\\')) != -1
-					|| (index = user.indexOf('/')) != -1) {
-				domain = user.substring(0, index);
-				user = user.substring(index + 1);
-			} else {
-				domain = defaultDomain;
-			}
-		}
 		// initLockManager(config);
 		// initFilter(config);
 		initHandlers(config);
@@ -436,8 +419,8 @@ public class Davis extends HttpServlet {
 				serverName = user.substring(index + 1);
 				user = user.substring(0, index);
 				domain = serverName;
-				if (!hasResource)
-					defaultResource = "";
+//				if (!hasResource)
+//					defaultResource = "";
 			}
 			if ((index = user.indexOf('.')) != -1) {
 				domain = user.substring(index + 1);
@@ -569,6 +552,7 @@ public class Davis extends HttpServlet {
 				davisSession.setZone(serverName);
 
 			}
+			davisSession.setSessionID(sessionID);
 			try {
 				SRBFileSystem srbFileSystem = new SRBFileSystem(account);
 				// if (srbFileSystem.isConnected()){
@@ -577,50 +561,67 @@ public class Davis extends HttpServlet {
 				if (homeDir == null)
 					homeDir = "/" + serverName + "/home/" + user + "."
 							+ serverName;
-				davisSession.setDefaultResource(account
-						.getDefaultStorageResource());
-				if (account.getDefaultStorageResource() == null
-						|| account.getDefaultStorageResource().length() == 0) {
-					MetaDataRecordList[] resList = null;
-					try {
-						resList = srbFileSystem
-								.query(
-										new MetaDataCondition[] { MetaDataSet
-												.newCondition(
-														SRBMetaDataSet.RSRC_OWNER_ZONE,
-														MetaDataCondition.EQUAL,
-														account.getMcatZone()) },
-										new MetaDataSelect[] { MetaDataSet
-												.newSelection(SRBMetaDataSet.RESOURCE_NAME) });
-						resList = MetaDataRecordList.getAllResults(resList);
+//				davisSession.setDefaultResource(account
+//						.getDefaultStorageResource());
+//				if (account.getDefaultStorageResource() == null
+//						|| account.getDefaultStorageResource().length() == 0) {
+				MetaDataRecordList[] resList = null;
+				Log.log(Log.DEBUG, "account.getMcatZone():"+davisSession.getZone());
+				try {
+					resList = srbFileSystem
+							.query(
+									new MetaDataCondition[] { MetaDataSet
+											.newCondition(
+													SRBMetaDataSet.RSRC_OWNER_ZONE,
+													MetaDataCondition.EQUAL,
+													davisSession.getZone()) },
+									new MetaDataSelect[] { MetaDataSet
+											.newSelection(SRBMetaDataSet.RESOURCE_NAME) });
+					resList = MetaDataRecordList.getAllResults(resList);
+					Log.log(Log.DEBUG, "resList:"+resList);
+					for (MetaDataRecordList res : resList) {
+						Log.log(Log.DEBUG, "res:"+res.getValue(SRBMetaDataSet.RESOURCE_NAME));
+						if (res.getValue(SRBMetaDataSet.RESOURCE_NAME)
+								.toString().equals(defaultResource)) {
+//							account.setDefaultStorageResource(res.getValue(
+//									SRBMetaDataSet.RESOURCE_NAME)
+//									.toString());
+							davisSession.setDefaultResource(res.getValue(
+									SRBMetaDataSet.RESOURCE_NAME)
+									.toString());
+						}
+					}
+					if ((davisSession.getDefaultResource() == null || davisSession.getDefaultResource().length() == 0)
+							&& resList.length > 0) {
 						for (MetaDataRecordList res : resList) {
 							if (res.getValue(SRBMetaDataSet.RESOURCE_NAME)
-									.toString().startsWith("datafabric")) {
-								account.setDefaultStorageResource(res.getValue(
-										SRBMetaDataSet.RESOURCE_NAME)
-										.toString());
+									.toString().startsWith(defaultResource)) {
+	//							account.setDefaultStorageResource(res.getValue(
+	//									SRBMetaDataSet.RESOURCE_NAME)
+	//									.toString());
 								davisSession.setDefaultResource(res.getValue(
 										SRBMetaDataSet.RESOURCE_NAME)
 										.toString());
 							}
 						}
-						if ((account.getDefaultStorageResource() == null || account
-								.getDefaultStorageResource().length() == 0)
-								&& resList.length > 0) {
-							account.setDefaultStorageResource(resList[0]
-									.getValue(SRBMetaDataSet.RESOURCE_NAME)
-									.toString());
-							davisSession.setDefaultResource(resList[0]
-									.getValue(SRBMetaDataSet.RESOURCE_NAME)
-									.toString());
-						}
-					} catch (Exception e) {
-						// System.out.println("An Exception is
-						// SRBQueryAdaptor:fileSystemQuery()");
-						e.printStackTrace();
 					}
-
+					//account.getDefaultStorageResource() == null || 
+					if ((davisSession.getDefaultResource() == null || davisSession.getDefaultResource().length() == 0)
+							&& resList.length > 0) {
+//						account.setDefaultStorageResource(resList[0]
+//								.getValue(SRBMetaDataSet.RESOURCE_NAME)
+//								.toString());
+						davisSession.setDefaultResource(resList[0]
+								.getValue(SRBMetaDataSet.RESOURCE_NAME)
+								.toString());
+					}
+				} catch (Exception e) {
+					// System.out.println("An Exception is
+					// SRBQueryAdaptor:fileSystemQuery()");
+					e.printStackTrace();
 				}
+
+//				}
 				Log.log(Log.DEBUG, "homedir:" + homeDir);
 				davisSession.setHomeDirectory(homeDir);
 
@@ -631,13 +632,13 @@ public class Davis extends HttpServlet {
 
 				Log.log(Log.DEBUG, "Authentication succeeded. home=" + homeDir
 						+ " defaultRes=" + davisSession.getDefaultResource()
-						+ " zone=" + account.getMcatZone());
+						+ " zone=" + davisSession.getZone());
 				// System.out.println(req.getPathInfo()+"
 				// "+req.getServletPath());
 				// System.out.println(req.getContextPath()+"
 				// "+req.getRequestURL());
 				// System.out.println(req.getRequestURL().substring(0,req.getRequestURL().length()-req.getPathInfo().length()+1)+homeDir);
-				redirectURL = "/srbdav" + homeDir; // req.getRequestURL().substring(0,req.getRequestURL().length()-req.getPathInfo().length()+1)+homeDir;
+//				redirectURL = "/srbdav" + homeDir; // req.getRequestURL().substring(0,req.getRequestURL().length()-req.getPathInfo().length()+1)+homeDir;
 			} catch (Exception e) {
 				e.printStackTrace();
 				Log.log(Log.DEBUG, "Authentication failed.");
@@ -703,8 +704,7 @@ public class Davis extends HttpServlet {
 		if (handler != null) {
 			try {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
-				handler.service(request, response, davisSession
-						.getRemoteFileSystem());
+				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
 				// Log.log(Log.INFORMATION,
 				// "Error handler chain invoked for: {0}", throwable);

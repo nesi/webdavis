@@ -43,9 +43,9 @@ public class DefaultMoveHandler extends AbstractHandler {
      * @throws IOException If an IO error occurs while handling the request.
      */
     public void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, rfs);
+        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
         if (!file.exists()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
@@ -56,7 +56,7 @@ public class DefaultMoveHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-        RemoteFile destinationFile = getRemoteFile(destination, rfs);
+        RemoteFile destinationFile = getRemoteFile(destination, davisSession.getRemoteFileSystem());
         if (destinationFile.equals(file)) return;
 //        int result = checkLockOwnership(request, file);
 //        if (result != HttpServletResponse.SC_OK) {

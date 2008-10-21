@@ -1519,7 +1519,7 @@
 				default resource of user
 			</description>
 			<param-name>default-resource</param-name>
-			<param-value>datafabric.ngspare.sapac.edu.au</param-value>
+			<param-value>datafabric</param-value>
 		</init-param>
 		<init-param>
 			<description>
@@ -1554,4 +1554,7 @@
 <servlet-name>Davis</servlet-name>
 <url-pattern>/*</url-pattern>
 </servlet-mapping>
+	<listener>
+		<listener-class>webdavis.DavisListener</listener-class>
+	</listener>
 </web-app>

@@ -112,7 +112,7 @@ public interface MethodHandler {
      * normal operation.
      */
     public void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                     throws IOException, ServletException;
 
 }

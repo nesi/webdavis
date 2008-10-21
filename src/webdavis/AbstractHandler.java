@@ -964,7 +964,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
 
     public abstract void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                     throws IOException, ServletException;
 
 }

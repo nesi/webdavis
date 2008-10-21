@@ -28,7 +28,7 @@ public class DefaultProppatchHandler extends AbstractHandler {
      * @throws IOException If an IO error occurs while handling the request.
      */
     public void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException { }
 
 }

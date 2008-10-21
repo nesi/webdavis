@@ -36,9 +36,9 @@ public class DefaultMkcolHandler extends AbstractHandler {
      * @throws IOException If an IO error occurs while handling the request.
      */
     public void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                 throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, rfs);
+        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
         if (file.exists()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;

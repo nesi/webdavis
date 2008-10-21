@@ -47,14 +47,14 @@ public class DefaultPutHandler extends AbstractHandler {
      * @throws IOException If an IO error occurs while handling the request.
      */
     public void service(HttpServletRequest request,
-            HttpServletResponse response, RemoteFileSystem rfs)
+            HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
         int length = request.getContentLength();
         if (length < 0) {
             response.sendError(HttpServletResponse.SC_LENGTH_REQUIRED);
             return;
         }
-        RemoteFile file = getRemoteFile(request, rfs);
+        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
         boolean existsCurrently = file.exists();
         if (existsCurrently && !file.isFile()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED,
@@ -62,7 +62,7 @@ public class DefaultPutHandler extends AbstractHandler {
                             "collectionTarget", null, request.getLocale()));
             return;
         }
-        RemoteFile parent = getRemoteParentFile(request, rfs);
+        RemoteFile parent = getRemoteParentFile(request, davisSession.getRemoteFileSystem());
         	//createRemoteFile(file.getParent(), rfs);
         if (!(parent.exists() && parent.isDirectory())) {
             response.sendError(HttpServletResponse.SC_CONFLICT);
@@ -85,10 +85,13 @@ public class DefaultPutHandler extends AbstractHandler {
 //        }
         InputStream input = request.getInputStream();
         RemoteFileOutputStream output = null;
-        if (file.getFileSystem() instanceof SRBFileSystem) 
+        if (file.getFileSystem() instanceof SRBFileSystem) {
+        	((SRBFile)file).setResource(davisSession.getDefaultResource());
         	output = new SRBFileOutputStream((SRBFile)file);
-        else if (file.getFileSystem() instanceof IRODSFileSystem) 
+        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
         	output = new IRODSFileOutputStream((IRODSFile)file);
+        }
         byte[] buf = new byte[8192];
         int count;
         while ((count = input.read(buf)) != -1) {

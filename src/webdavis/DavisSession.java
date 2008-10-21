@@ -17,6 +17,13 @@ public class DavisSession implements Serializable{
 	private String serverName;
 	private int serverPort;
 	private String dn;
+	private String sessionID;
+	public String getSessionID() {
+		return sessionID;
+	}
+	public void setSessionID(String sessionID) {
+		this.sessionID = sessionID;
+	}
 	public String getAccount() {
 		return account;
 	}
