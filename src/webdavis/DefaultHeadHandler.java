@@ -35,7 +35,7 @@ public class DefaultHeadHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
+        RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;

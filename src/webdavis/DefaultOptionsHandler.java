@@ -35,7 +35,7 @@ public class DefaultOptionsHandler extends AbstractHandler {
         boolean lockSupport = false; //no lock at the moment  //(getLockManager() != null);
         response.setHeader("DAV", lockSupport ? "1,2" : "1,2");   // need version 2 to let MAC Finder read and write
         response.setHeader("MS-Author-Via", "DAV");
-        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
+        RemoteFile file = getRemoteFile(request, davisSession);
         StringBuffer allow = new StringBuffer();
         if (file.exists()) {
             allow.append("OPTIONS, HEAD, GET, DELETE, PROPFIND");

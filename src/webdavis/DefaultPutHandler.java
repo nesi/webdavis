@@ -54,7 +54,7 @@ public class DefaultPutHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_LENGTH_REQUIRED);
             return;
         }
-        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
+        RemoteFile file = getRemoteFile(request, davisSession);
         boolean existsCurrently = file.exists();
         if (existsCurrently && !file.isFile()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED,
@@ -62,7 +62,7 @@ public class DefaultPutHandler extends AbstractHandler {
                             "collectionTarget", null, request.getLocale()));
             return;
         }
-        RemoteFile parent = getRemoteParentFile(request, davisSession.getRemoteFileSystem());
+        RemoteFile parent = getRemoteParentFile(request, davisSession);
         	//createRemoteFile(file.getParent(), rfs);
         if (!(parent.exists() && parent.isDirectory())) {
             response.sendError(HttpServletResponse.SC_CONFLICT);

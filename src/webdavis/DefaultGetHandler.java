@@ -194,7 +194,7 @@ public class DefaultGetHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, davisSession.getRemoteFileSystem());
+        RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
         if (!file.exists()) {
             Log.log(Log.DEBUG, "File does not exist.");

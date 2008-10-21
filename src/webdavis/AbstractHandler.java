@@ -242,8 +242,9 @@ public abstract class AbstractHandler implements MethodHandler {
     	return uri.substring(0,uri.lastIndexOf("/"));
     }
     protected RemoteFile getRemoteParentFile(HttpServletRequest request,
-    		RemoteFileSystem rfs) throws IOException {
+    		DavisSession davisSession) throws IOException {
         String url = getRequestURL(request);
+        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
         Log.log(Log.DEBUG, "url:"+url);
         RemoteFile file = null;
         IOException exception = null;
@@ -252,6 +253,10 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.DEBUG, "charset:"+charset);
         try {
             String uri=getRemoteParentURL(request, url, charset);
+    		if (uri.indexOf("~")>-1) {
+    			uri=uri.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+    			Log.log(Log.DEBUG,"changed path to "+uri);
+    		}
             if (rfs instanceof SRBFileSystem){
             	file=new SRBFile((SRBFileSystem) rfs,uri);
             }else if (rfs instanceof IRODSFileSystem){
@@ -307,8 +312,9 @@ public abstract class AbstractHandler implements MethodHandler {
      * the specified request could not be created.
      */
     protected RemoteFile getRemoteFile(HttpServletRequest request,
-    		RemoteFileSystem rfs) throws IOException {
+    		DavisSession davisSession) throws IOException {
         String url = getRequestURL(request);
+        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
         Log.log(Log.DEBUG, "url:"+url);
         RemoteFile file = null;
         IOException exception = null;
@@ -317,6 +323,11 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.DEBUG, "charset:"+charset);
         try {
             String uri=getRemoteURL(request, url, charset);
+    		if (uri.indexOf("~")>-1) {
+				uri=uri.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+				Log.log(Log.DEBUG,"changed path to "+uri);
+			}
+            
             if (rfs instanceof SRBFileSystem){
             	file=new SRBFile((SRBFileSystem) rfs,uri);
             }else if (rfs instanceof IRODSFileSystem){
@@ -366,8 +377,13 @@ public abstract class AbstractHandler implements MethodHandler {
         return null;
     }
     protected RemoteFile getRemoteFile(String path,
-    		RemoteFileSystem rfs) throws IOException {
+    		DavisSession davisSession) throws IOException {
         Log.log(Log.DEBUG, "path:"+path);
+        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
+		if (path.indexOf("~")>-1) {
+			path=path.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+			Log.log(Log.DEBUG,"changed path to "+path);
+		}
         RemoteFile file = null;
         try {
             if (rfs instanceof SRBFileSystem){
