@@ -230,7 +230,7 @@ public class Davis extends HttpServlet {
 		if (jargonDebug!=null)
 			System.setProperty("jargon.debug", jargonDebug);
 		else
-			System.setProperty("jargon.debug", "1");
+			System.setProperty("jargon.debug", "0");
 
 		String requestUriCharset = config.getInitParameter(REQUEST_URI_CHARSET);
 		if (requestUriCharset == null)

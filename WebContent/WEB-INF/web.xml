@@ -810,12 +810,12 @@
 
         Default Value:
     
-            1 (only critical messages are logged).
+            0 
 -->
 <!--
     <init-param>
         <param-name>jargon.debug</param-name>
-        <param-value>1</param-value>
+        <param-value>0</param-value>
     </init-param>
 -->
 <!--
