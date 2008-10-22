@@ -43,12 +43,12 @@ public class DefaultMkcolHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
-//        int result = checkLockOwnership(request, file);
-//        if (result != HttpServletResponse.SC_OK) {
-//            response.sendError(result);
-//            return;
-//        }
-        int result = checkConditionalRequest(request, file);
+        int result = checkLockOwnership(request, file);
+        if (result != HttpServletResponse.SC_OK) {
+            response.sendError(result);
+            return;
+        }
+         result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
             return;

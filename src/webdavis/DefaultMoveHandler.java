@@ -58,17 +58,17 @@ public class DefaultMoveHandler extends AbstractHandler {
         }
         RemoteFile destinationFile = getRemoteFile(destination, davisSession);
         if (destinationFile.equals(file)) return;
-//        int result = checkLockOwnership(request, file);
-//        if (result != HttpServletResponse.SC_OK) {
-//            response.sendError(result);
-//            return;
-//        }
-//        result = checkLockOwnership(request, destinationFile);
-//        if (result != HttpServletResponse.SC_OK) {
-//            response.sendError(result);
-//            return;
-//        }
-        int result = checkConditionalRequest(request, file);
+        int result = checkLockOwnership(request, file);
+        if (result != HttpServletResponse.SC_OK) {
+            response.sendError(result);
+            return;
+        }
+        result = checkLockOwnership(request, destinationFile);
+        if (result != HttpServletResponse.SC_OK) {
+            response.sendError(result);
+            return;
+        }
+        result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
             return;
@@ -78,12 +78,12 @@ public class DefaultMoveHandler extends AbstractHandler {
             response.sendError(result);
             return;
         }
-//        LockManager lockManager = getLockManager();
-//        if (lockManager != null) {
-//            file = lockManager.getLockedResource(file, auth);
-//            destinationFile = lockManager.getLockedResource(destinationFile,
-//                    auth);
-//        }
+        LockManager lockManager = getLockManager();
+        if (lockManager != null) {
+            file = lockManager.getLockedResource(file, davisSession);
+            destinationFile = lockManager.getLockedResource(destinationFile,
+            		davisSession);
+        }
         boolean overwritten = false;
         if (destinationFile.exists()) {
             if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {

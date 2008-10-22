@@ -9,6 +9,9 @@ import org.w3c.dom.Element;
 import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.AbstractProperty;
+import webdavis.Davis;
+import webdavis.DavisUtilities;
+import webdavis.LockManager;
 
 /**
  * Provides access to the <code>lockdiscovery</code> property.
@@ -19,13 +22,13 @@ import webdavis.AbstractProperty;
 public class LockDiscoveryProperty extends AbstractProperty {
 
     public int retrieve(RemoteFile file, Element element) throws IOException {
-//        LockManager lockManager = (LockManager)
-//                getServletConfig().getServletContext().getAttribute(
-//                        Davenport.LOCK_MANAGER);
-//        if (lockManager == null) 
+        LockManager lockManager = (LockManager)
+                getServletConfig().getServletContext().getAttribute(
+                        Davis.LOCK_MANAGER);
+        if (lockManager == null) 
         	return HttpServletResponse.SC_NOT_FOUND;
-//        DavisUtilities.lockDiscovery(file, lockManager, element);
-//        return HttpServletResponse.SC_OK;
+        DavisUtilities.lockDiscovery(file, lockManager, element);
+        return HttpServletResponse.SC_OK;
     }
 
 }

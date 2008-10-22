@@ -227,11 +227,11 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         propertyMap.put("isreadonly", IsReadOnlyProperty.class);
         propertyMap.put("iscollection", IsCollectionProperty.class);
         propertyMap.put("getetag", GetETagProperty.class);
-//        if (config.getServletContext().getAttribute(Davenport.LOCK_MANAGER) !=
-//                null) {
-//            propertyMap.put("lockdiscovery", LockDiscoveryProperty.class);
-//            propertyMap.put("supportedlock", SupportedLockProperty.class);
-//        }
+        if (config.getServletContext().getAttribute(Davis.LOCK_MANAGER) !=
+                null) {
+            propertyMap.put("lockdiscovery", LockDiscoveryProperty.class);
+            propertyMap.put("supportedlock", SupportedLockProperty.class);
+        }
         propertyMap.put("resourcetype", ResourceTypeProperty.class);
         Enumeration parameters = config.getInitParameterNames();
         while (parameters.hasMoreElements()) {

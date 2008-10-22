@@ -9,6 +9,8 @@ import org.w3c.dom.Element;
 import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.AbstractProperty;
+import webdavis.Davis;
+import webdavis.LockManager;
 
 /**
  * Provides access to the <code>supportedlock</code> property.
@@ -19,24 +21,24 @@ import webdavis.AbstractProperty;
 public class SupportedLockProperty extends AbstractProperty {
 
     public int retrieve(RemoteFile file, Element element) throws IOException {
-//        LockManager lockManager = (LockManager)
-//                getServletConfig().getServletContext().getAttribute(
-//                        Davenport.LOCK_MANAGER);
-//        if (lockManager == null) 
+        LockManager lockManager = (LockManager)
+                getServletConfig().getServletContext().getAttribute(
+                        Davis.LOCK_MANAGER);
+        if (lockManager == null) 
         	return HttpServletResponse.SC_NOT_FOUND;
-//        int lockSupport = lockManager.getLockSupport(file);
-//        if (lockSupport == LockManager.NO_LOCK_SUPPORT) {
-//            return HttpServletResponse.SC_OK;
-//        }
-//        if ((lockSupport & LockManager.EXCLUSIVE_LOCK_SUPPORT) ==
-//                LockManager.EXCLUSIVE_LOCK_SUPPORT) {
-//            element.appendChild(createLockEntry(element, "exclusive"));
-//        }
-//        if ((lockSupport & LockManager.SHARED_LOCK_SUPPORT) ==
-//                LockManager.SHARED_LOCK_SUPPORT) {
-//            element.appendChild(createLockEntry(element, "shared"));
-//        }
-//        return HttpServletResponse.SC_OK;
+        int lockSupport = lockManager.getLockSupport(file);
+        if (lockSupport == LockManager.NO_LOCK_SUPPORT) {
+            return HttpServletResponse.SC_OK;
+        }
+        if ((lockSupport & LockManager.EXCLUSIVE_LOCK_SUPPORT) ==
+                LockManager.EXCLUSIVE_LOCK_SUPPORT) {
+            element.appendChild(createLockEntry(element, "exclusive"));
+        }
+        if ((lockSupport & LockManager.SHARED_LOCK_SUPPORT) ==
+                LockManager.SHARED_LOCK_SUPPORT) {
+            element.appendChild(createLockEntry(element, "shared"));
+        }
+        return HttpServletResponse.SC_OK;
     }
 
     private Element createLockEntry(Element base, String scope) {

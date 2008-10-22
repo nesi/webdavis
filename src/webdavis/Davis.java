@@ -224,8 +224,14 @@ public class Davis extends HttpServlet {
 			}
 			ByteArrayOutputStream stream = new ByteArrayOutputStream();
 			props.list(new PrintStream(stream));
-			Log.log(Log.DEBUG, "Davenport init parameters: {0}", stream);
+			Log.log(Log.DEBUG, "Davis init parameters: {0}", stream);
 		}
+		String jargonDebug= config.getInitParameter("jargon.debug");
+		if (jargonDebug!=null)
+			System.setProperty("jargon.debug", jargonDebug);
+		else
+			System.setProperty("jargon.debug", "1");
+
 		String requestUriCharset = config.getInitParameter(REQUEST_URI_CHARSET);
 		if (requestUriCharset == null)
 			requestUriCharset = "ISO-8859-1";
@@ -248,7 +254,7 @@ public class Davis extends HttpServlet {
 				.getInitParameter("alwaysAuthenticate");
 		this.alwaysAuthenticate = (alwaysAuthenticate == null)
 				|| Boolean.valueOf(alwaysAuthenticate).booleanValue();
-		// initLockManager(config);
+		initLockManager(config);
 		// initFilter(config);
 		initHandlers(config);
 		// initErrorHandlers(config);
@@ -272,7 +278,7 @@ public class Davis extends HttpServlet {
 		// filter = null;
 		// }
 		ServletContext context = getServletContext();
-		// context.removeAttribute(LOCK_MANAGER);
+		context.removeAttribute(LOCK_MANAGER);
 		// context.removeAttribute(RESOURCE_FILTER);
 		context.removeAttribute(REQUEST_URI_CHARSET);
 		Log.log(Log.DEBUG, "Davis finished destroy.");
@@ -691,10 +697,10 @@ public class Davis extends HttpServlet {
 		}
 		// System.out.println("Using credentials: " + authentication);
 
-		// if (davisSession != null) {
-		// request.setAttribute(PRINCIPAL, davisSession);
+		if (davisSession != null) {
+			request.setAttribute(PRINCIPAL, davisSession);
 		// // fStore.setFileSystem(authentication);
-		// }
+		}
 		// if (authentication == null) authentication = anonymousCredentials;
 		Log.log(Log.DEBUG, "Final davisSession: " + davisSession);
 		// if (authentication != null) {
@@ -762,6 +768,64 @@ public class Davis extends HttpServlet {
 		return (MethodHandler) handlers.get(method.toUpperCase());
 	}
 
+    private void initLockManager(ServletConfig config) throws ServletException {
+
+        String factoryClass = LockManagerFactory.class.getName();
+        String lockProvider = config.getInitParameter(factoryClass);
+        if (lockProvider != null) {
+            try {
+                System.setProperty(factoryClass, lockProvider);
+            } catch (Exception ignore) { }
+        }
+
+        try {
+            LockManager lockManager = null;
+            LockManagerFactory factory = LockManagerFactory.newInstance();
+            if (factory != null) {
+                Properties properties = new Properties();
+                String prefix = factoryClass + ".";
+                int prefixLength = prefix.length();
+                Enumeration parameters = config.getInitParameterNames();
+                while (parameters.hasMoreElements()) {
+                    String param = (String) parameters.nextElement();
+                    if (!param.startsWith(prefix)) continue;
+                    String property = param.substring(prefixLength);
+                    properties.setProperty(property,
+                            config.getInitParameter(param));
+                }
+
+                if (Log.getThreshold() < Log.INFORMATION) {
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    properties.list(new PrintStream(stream));
+                    Object[] args = new Object[] { factory.getClass(), stream };
+                    Log.log(Log.DEBUG,
+                            "Initializing lock manager factory {0}):\n{1}",
+                                    args);
+                }
+
+                factory.setProperties(properties);
+                lockManager = factory.newLockManager();
+            }
+
+            if (lockManager != null) {
+                config.getServletContext().setAttribute(LOCK_MANAGER,
+                        lockManager);
+                Log.log(Log.DEBUG, "Installed lock manager: {0}",
+                        lockManager.getClass().getName());
+            } else {
+                Log.log(Log.INFORMATION,
+                        "No lock manager available, locking support disabled.");
+            }
+
+        } catch (Exception ex) {
+            Log.log(Log.CRITICAL, "Unable to obtain lock manager: {0}", ex);
+            if (ex instanceof ServletException) throw (ServletException) ex;
+            if (ex instanceof RuntimeException) throw (RuntimeException) ex;
+            throw new ServletException(ex);
+        }
+    }
+
+
 	private void initHandlers(ServletConfig config) throws ServletException {
 		handlers.clear();
 		handlers.put("OPTIONS", new DefaultOptionsHandler());
@@ -775,10 +839,10 @@ public class Davis extends HttpServlet {
 		handlers.put("MOVE", new DefaultMoveHandler());
 		handlers.put("PUT", new DefaultPutHandler());
 		handlers.put("MKCOL", new DefaultMkcolHandler());
-		// if (config.getServletContext().getAttribute(LOCK_MANAGER) != null) {
-		// handlers.put("LOCK", new DefaultLockHandler());
-		// handlers.put("UNLOCK", new DefaultUnlockHandler());
-		// }
+		if (config.getServletContext().getAttribute(LOCK_MANAGER) != null) {
+			handlers.put("LOCK", new DefaultLockHandler());
+			handlers.put("UNLOCK", new DefaultUnlockHandler());
+		}
 		Enumeration parameters = config.getInitParameterNames();
 		while (parameters.hasMoreElements()) {
 			String name = (String) parameters.nextElement();

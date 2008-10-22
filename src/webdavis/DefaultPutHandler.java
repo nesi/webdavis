@@ -68,21 +68,21 @@ public class DefaultPutHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_CONFLICT);
             return;
         }
-//        int result = checkLockOwnership(request, file);
-//        if (result != HttpServletResponse.SC_OK) {
-//            response.sendError(result);
-//            return;
-//        }
-        int result = checkConditionalRequest(request, file);
+        int result = checkLockOwnership(request, file);
+        if (result != HttpServletResponse.SC_OK) {
+            response.sendError(result);
+            return;
+        }
+        result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.setStatus(result);
             response.flushBuffer();
             return;
         }
-//        LockManager lockManager = getLockManager();
-//        if (lockManager != null) {
-//            file = lockManager.getLockedResource(file, auth);
-//        }
+        LockManager lockManager = getLockManager();
+        if (lockManager != null) {
+            file = lockManager.getLockedResource(file, davisSession);
+        }
         InputStream input = request.getInputStream();
         RemoteFileOutputStream output = null;
         if (file.getFileSystem() instanceof SRBFileSystem) {

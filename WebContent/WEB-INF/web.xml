@@ -127,30 +127,6 @@
     </init-param>
 -->
 <!--
-    enableNtlm:
-
-        Indicates whether NTLM authentication is offered by Davenport.
-
-        This setting specifies whether Davenport should offer NTLM 
-        authentication to the client. NTLM is the default authentication 
-        mechanism; by setting this to "false", NTLM will no longer be 
-        presented as a choice to clients. This can be used in conjunction 
-        with "jcifs.http.enableBasic" to limit authentication to the HTTP 
-        Basic mechanism. This provides the widest compatibility with clients, 
-        but can significantly reduce the security of the system if appropriate 
-        measures are not employed.
-
-        Default Value:
-    
-            true (NTLM authentication is offered).
--->
-<!--
-    <init-param>
-        <param-name>enableNtlm</param-name>
-        <param-value>true</param-value>
-    </init-param>
--->
-<!--
     jcifs.http.enableBasic:
 
         Indicates whether HTTP Basic authentication is offered by Davenport.
@@ -197,7 +173,7 @@
     </init-param>
 -->
 <!--
-    jcifs.http.insecureBasic:
+    insecureBasic:
 
         Indicates whether HTTP Basic can be used over insecure (non-HTTPS) 
         connections.
@@ -243,13 +219,13 @@
     </init-param>
 -->
 <!--
-    smbdav.LockManagerFactory:
+    webdavis.LockManagerFactory:
 
         Specifies the lock manager factory implementation class.
 
         This setting provides the classname of the lock manager factory 
         implementation. The specified class must extend 
-        "smbdav.LockManagerFactory" and provide a no-argument constructor.
+        "webdavis.LockManagerFactory" and provide a no-argument constructor.
 
         If not specified, a default lock manager factory will be used which 
         supports both exclusive and shared application server locks (not 
@@ -257,10 +233,10 @@
  
         The parameters provided to the lock manager will be built from all 
         servlet initialization parameters that are prefixed with 
-        "smbdav.LockManagerFactory.". The prefix will be stripped from the 
+        "webdavis.LockManagerFactory.". The prefix will be stripped from the 
         parameter names before presentation to the lock manager factory 
         instance. For example, specifying a servlet initialization parameter 
-        "smbdav.LockManagerFactory.defaultTimeout" with a value of "300000" 
+        "webdavis.LockManagerFactory.defaultTimeout" with a value of "300000" 
         will pass the value to the lock manager factory as the 
         "defaultTimeout" property.
 
@@ -272,14 +248,14 @@
                 If unspecified, a lock manager factory will be used which 
                 manages locks at an application server level.
 
-            smbdav.NoLockManagerFactory
+            webdavis.NoLockManagerFactory
 
 
                 A lock manager factory which disables locking support. 
                 Behavior will be consistent with older versions of Davenport 
                 (which did not provide locking support).
 
-            smbdav.SmbLockManagerFactory
+            webdavis.SmbLockManagerFactory
 
 
                 A lock manager factory which maintains a physical lock on SMB 
@@ -292,12 +268,12 @@
 -->
 <!--
     <init-param>
-        <param-name>smbdav.LockManagerFactory</param-name>
+        <param-name>webdavis.LockManagerFactory</param-name>
         <param-value>com.foo.MyLockManagerFactory</param-value>
     </init-param>
 -->
 <!--
-    smbdav.LockManagerFactory.defaultTimeout:
+    webdavis.LockManagerFactory.defaultTimeout:
 
         Default lock timeout.
 
@@ -312,12 +288,12 @@
 -->
 <!--
     <init-param>
-        <param-name>smbdav.LockManagerFactory.defaultTimeout</param-name>
+        <param-name>webdavis.LockManagerFactory.defaultTimeout</param-name>
         <param-value>-1</param-value>
     </init-param>
 -->
 <!--
-    smbdav.LockManagerFactory.maximumTimeout:
+    webdavis.LockManagerFactory.maximumTimeout:
 
         Maximum lock timeout.
 
@@ -333,7 +309,7 @@
 -->
 <!--
     <init-param>
-        <param-name>smbdav.LockManagerFactory.maximumTimeout</param-name>
+        <param-name>webdavis.LockManagerFactory.maximumTimeout</param-name>
         <param-value>-1</param-value>
     </init-param>
 -->
@@ -346,7 +322,7 @@
         This setting contains a whitespace-separated list of filter names in 
         execution order. Each filter must implement 
         "jcifs.smb.SmbFileFilter"; if a filter additionally implements 
-        "smbdav.DavenportFileFilter", it will be initialized with a set of 
+        "webdavis.DavenportFileFilter", it will be initialized with a set of 
         configuration parameters. A resource must be accepted by all 
         specified filters; rejection by any of the filters will result in 
         rejection of the resource request.
@@ -377,7 +353,7 @@
         This is a filter type which rejects hidden SMB resources (the 
         parameter name would actually correspond to the filter name declared 
         in the "fileFilters" parameter). The classname for this filter is 
-        "smbdav.filters.HiddenFilter".
+        "webdavis.filters.HiddenFilter".
 -->
 <!--
     
@@ -388,7 +364,7 @@
     
     <init-param>
         <param-name>myHiddenFilter</param-name>
-        <param-value>smbdav.filters.HiddenFilter</param-value> 
+        <param-value>webdavis.filters.HiddenFilter</param-value> 
     </init-param>
 -->
 <!--
@@ -399,7 +375,7 @@
         This is a filter type which will only accept resources from a specific 
         list of servers (the parameter name would actually correspond to the 
         filter name declared in the "fileFilters" parameter). The classname 
-        for this filter is "smbdav.filters.ServerFilter".
+        for this filter is "webdavis.filters.ServerFilter".
 
         This filter accepts a "servers" property, containing a 
         whitespace-separated list of server/workgroup names (note that parent 
@@ -423,7 +399,7 @@
     
     <init-param>
         <param-name>myServerFilter</param-name>
-        <param-value>smbdav.filters.ServerFilter</param-value> 
+        <param-value>webdavis.filters.ServerFilter</param-value> 
     </init-param>
     
     <init-param>
@@ -445,7 +421,7 @@
         filters (the parameter name would actually correspond to the filter 
         name declared in the "fileFilters" parameter). A resource will be 
         accepted by this filter only if all subfilters accept the resource. 
-        The classname for this filter is "smbdav.filters.AndFilter".
+        The classname for this filter is "webdavis.filters.AndFilter".
 
         This filter accepts a "fileFilters" parameter containing a 
         whitespace-separated list of subfilter names (in the same format as 
@@ -468,7 +444,7 @@
     
     <init-param>
         <param-name>myAndFilter</param-name>
-        <param-value>smbdav.filters.AndFilter</param-value> 
+        <param-value>webdavis.filters.AndFilter</param-value> 
     </init-param>
     
     <init-param>
@@ -499,7 +475,7 @@
         filters (the parameter name would actually correspond to the filter 
         name declared in the "fileFilters" parameter). A resource will be 
         accepted by this filter if any subfilter accepts the resource. The 
-        classname for this filter is "smbdav.filters.OrFilter".
+        classname for this filter is "webdavis.filters.OrFilter".
 
         This filter accepts a "fileFilters" parameter containing a 
         whitespace-separated list of subfilter names (in the same format as 
@@ -522,7 +498,7 @@
     
     <init-param>
         <param-name>myOrFilter</param-name>
-        <param-value>smbdav.filters.OrFilter</param-value> 
+        <param-value>webdavis.filters.OrFilter</param-value> 
     </init-param>
     
     <init-param>
@@ -553,7 +529,7 @@
         (the parameter name would actually correspond to the filter name 
         declared in the "fileFilters" parameter). A resource will be accepted 
         by this filter only if the subfilter rejects the resource. The 
-        classname for this filter is "smbdav.filters.NotFilter".
+        classname for this filter is "webdavis.filters.NotFilter".
 
         This filter accepts a "filter" parameter containing the subfilter's 
         classname. Any other parameters specified for this filter will be 
@@ -568,7 +544,7 @@
     
     <init-param>
         <param-name>myNotFilter</param-name>
-        <param-value>smbdav.filters.NotFilter</param-value> 
+        <param-value>webdavis.filters.NotFilter</param-value> 
     </init-param>
     
     <init-param>
@@ -588,23 +564,23 @@
 
         This setting contains a whitespace-separated list of classnames, each 
         of which represents an error handling class (implementing the 
-        "smbdav.ErrorHandler" interface). Each handler will be invoked in the 
+        "webdavis.ErrorHandler" interface). Each handler will be invoked in the 
         order declared to process any errors thrown by Davenport method 
         handlers.
 
         If no error handlers are specified, Davenport will install 
-        "smbdav.DefaultAuthErrorHandler" and "smbdav.DefaultIOErrorHandler" 
+        "webdavis.DefaultAuthErrorHandler" and "webdavis.DefaultIOErrorHandler" 
         (in that order). If you install a custom error handler, these may 
         need to be added to the chain explicitly.
 
         Default Value:
     
-            smbdav.DefaultAuthErrorHandler smbdav.DefaultIOErrorHandler
+            webdavis.DefaultAuthErrorHandler webdavis.DefaultIOErrorHandler
 -->
 <!--
     <init-param>
         <param-name>errorHandlers</param-name>
-        <param-value>smbdav.DefaultAuthErrorHandler smbdav.DefaultIOErrorHandler</param-value>
+        <param-value>webdavis.DefaultAuthErrorHandler webdavis.DefaultIOErrorHandler</param-value>
     </init-param>
 -->
 <!--
@@ -801,41 +777,36 @@
     </init-param>
 
 <!--
-    jcifs.util.loglevel:
+    jargon.debug:
 
-        Specifies the logging threshold for the jCIFS library.
+        Specifies the logging threshold for the jargon library.
 
-        This setting specifies the threshold for messages logged by the jCIFS 
-        library. Levels are cumulative; for example, specifying "2" will log 
-        messages for level 1 as well.
+		The extent of debugging information increases with higher values.
 
-        Valid settings include:
+		0: No debuging information.
 
-            0
+		1: A number of methods in GeneralFile can actually result in IOExceptions 
+		due to failures communicating to the server. These exceptions are caught 
+		and handled within that GeneralFile method. However sometimes it can be 
+		useful to see what exceptions did occur. The stack trace of those exceptions 
+		are printed to System.err. As well as the name of each low level method call 
+		to the server.
 
+		2: Adds information about connection and authentication. Helps to insure 
+		you are connecting to the expected server as the correct user.
 
-                No log messages are printed.
+    		* Higher debugging levels get especially technical... 
 
-            1
+		3: Adds information about the query return value.
 
+		4: Adds even more information about the query result and the actual query that was sent to the server.
 
-                Only critical messages are logged.
+    		* Debugging levels beyond here are probably only useful to a developer expanding the Jargon API. 
 
-            2
+		5: Adds the actual bytes sent to the sever by a query and the bytes returned from the server after a query.
 
-
-                More verbose log messages, suitable for logging while under 
-                load.
-
-            3
-
-
-                Almost everything.
-
-            N
-
-
-                Debugging only.
+		6: Adds every byte sent on the socket connection to the server and every byte returned by the server. 
+		You'll probably want to read the section on the SRB protocol. 
 
         Default Value:
     
@@ -843,7 +814,7 @@
 -->
 <!--
     <init-param>
-        <param-name>jcifs.util.loglevel</param-name>
+        <param-name>jargon.debug</param-name>
         <param-value>1</param-value>
     </init-param>
 -->
@@ -952,7 +923,7 @@
 
 
                 A custom stylesheet can be specified. See the class 
-                documentation for "smbdav.DefaultGetHandler" for details.
+                documentation for "webdavis.DefaultGetHandler" for details.
 
         Default Value:
     
@@ -999,17 +970,17 @@
 
         This specifies the name of the class that will handle requests using 
         the COPY method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultCopyHandler
+            webdavis.DefaultCopyHandler
 -->
 <!--
     <init-param>
         <param-name>handler.COPY</param-name>
-        <param-value>smbdav.DefaultCopyHandler</param-value>
+        <param-value>webdavis.DefaultCopyHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1019,17 +990,17 @@
 
         This specifies the name of the class that will handle requests using 
         the DELETE method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultDeleteHandler
+            webdavis.DefaultDeleteHandler
 -->
 <!--
     <init-param>
         <param-name>handler.DELETE</param-name>
-        <param-value>smbdav.DefaultDeleteHandler</param-value>
+        <param-value>webdavis.DefaultDeleteHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1039,17 +1010,17 @@
 
         This specifies the name of the class that will handle requests using 
         the GET method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultGetHandler
+            webdavis.DefaultGetHandler
 -->
 <!--
     <init-param>
         <param-name>handler.GET</param-name>
-        <param-value>smbdav.DefaultGetHandler</param-value>
+        <param-value>webdavis.DefaultGetHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1059,17 +1030,17 @@
 
         This specifies the name of the class that will handle requests using 
         the HEAD method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultHeadHandler
+            webdavis.DefaultHeadHandler
 -->
 <!--
     <init-param>
         <param-name>handler.HEAD</param-name>
-        <param-value>smbdav.DefaultHeadHandler</param-value>
+        <param-value>webdavis.DefaultHeadHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1079,17 +1050,17 @@
 
         This specifies the name of the class that will handle requests using 
         the LOCK method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultLockHandler
+            webdavis.DefaultLockHandler
 -->
 <!--
     <init-param>
         <param-name>handler.LOCK</param-name>
-        <param-value>smbdav.DefaultLockHandler</param-value>
+        <param-value>webdavis.DefaultLockHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1099,17 +1070,17 @@
 
         This specifies the name of the class that will handle requests using 
         the MKCOL method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultMkcolHandler
+            webdavis.DefaultMkcolHandler
 -->
 <!--
     <init-param>
         <param-name>handler.MKCOL</param-name>
-        <param-value>smbdav.DefaultMkcolHandler</param-value>
+        <param-value>webdavis.DefaultMkcolHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1119,17 +1090,17 @@
 
         This specifies the name of the class that will handle requests using 
         the MOVE method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultMoveHandler
+            webdavis.DefaultMoveHandler
 -->
 <!--
     <init-param>
         <param-name>handler.MOVE</param-name>
-        <param-value>smbdav.DefaultMoveHandler</param-value>
+        <param-value>webdavis.DefaultMoveHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1139,17 +1110,17 @@
 
         This specifies the name of the class that will handle requests using 
         the OPTIONS method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultOptionsHandler
+            webdavis.DefaultOptionsHandler
 -->
 <!--
     <init-param>
         <param-name>handler.OPTIONS</param-name>
-        <param-value>smbdav.DefaultOptionsHandler</param-value>
+        <param-value>webdavis.DefaultOptionsHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1159,17 +1130,17 @@
 
         This specifies the name of the class that will handle requests using 
         the POST method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultPostHandler
+            webdavis.DefaultPostHandler
 -->
 <!--
     <init-param>
         <param-name>handler.POST</param-name>
-        <param-value>smbdav.DefaultPostHandler</param-value>
+        <param-value>webdavis.DefaultPostHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1179,17 +1150,17 @@
 
         This specifies the name of the class that will handle requests using 
         the PROPFIND method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultPropfindHandler
+            webdavis.DefaultPropfindHandler
 -->
 <!--
     <init-param>
         <param-name>handler.PROPFIND</param-name>
-        <param-value>smbdav.DefaultPropfindHandler</param-value>
+        <param-value>webdavis.DefaultPropfindHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1199,17 +1170,17 @@
 
         This specifies the name of the class that will handle requests using 
         the PROPPATCH method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultProppatchHandler
+            webdavis.DefaultProppatchHandler
 -->
 <!--
     <init-param>
         <param-name>handler.PROPPATCH</param-name>
-        <param-value>smbdav.DefaultProppatchHandler</param-value>
+        <param-value>webdavis.DefaultProppatchHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1219,17 +1190,17 @@
 
         This specifies the name of the class that will handle requests using 
         the PUT method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultPutHandler
+            webdavis.DefaultPutHandler
 -->
 <!--
     <init-param>
         <param-name>handler.PUT</param-name>
-        <param-value>smbdav.DefaultPutHandler</param-value>
+        <param-value>webdavis.DefaultPutHandler</param-value>
     </init-param>
 -->
 <!--
@@ -1239,260 +1210,20 @@
 
         This specifies the name of the class that will handle requests using 
         the UNLOCK method. The specified class must at a minimum implement 
-        "smbdav.MethodHandler" and provide a no-argument constructor; it is 
-        highly recommended that it also extend "smbdav.AbstractHandler".
+        "webdavis.MethodHandler" and provide a no-argument constructor; it is 
+        highly recommended that it also extend "webdavis.AbstractHandler".
 
         Default Value:
     
-            smbdav.DefaultUnlockHandler
+            webdavis.DefaultUnlockHandler
 -->
 <!--
     <init-param>
         <param-name>handler.UNLOCK</param-name>
-        <param-value>smbdav.DefaultUnlockHandler</param-value>
+        <param-value>webdavis.DefaultUnlockHandler</param-value>
     </init-param>
 -->
-<!--
-    jcifs.resolveOrder:
 
-        Specifies the order in which jCIFS will resolve network names.
-
-        jCIFS can use several methods to resolve names on the network; this 
-        setting contains a comma-separated list specifying which methods will 
-        be used, and in what order.
-
-        Valid settings include:
-
-            LMHOSTS
-
-
-                jCIFS will read the "LMHOSTS" file specified in 
-                "jcifs.netbios.lmhosts".
-
-            WINS
-
-
-                jCIFS will look up names using the WINS server(s) specified in 
-                "jcifs.netbios.wins".
-
-            BCAST
-
-
-                jCIFS will broadcast NetBIOS name queries to find names on the 
-                local subnet (the broadcast address can be configured via the 
-                "jcifs.netbios.baddr" parameter).
-
-            DNS
-
-
-                jCIFS will use DNS to resolve the name.
-
-        Default Value:
-    
-            LMHOSTS,WINS,BCAST,DNS
--->
-<!--
-    <init-param>
-        <param-name>jcifs.resolveOrder</param-name>
-        <param-value>LMHOSTS,WINS,BCAST,DNS</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.baddr:
-
-        The local network's broadcast address.
-
-        This setting specifies the network broadcast address. This would need 
-        to be set if the default of "255.255.255.255" does not work with your 
-        specific network configuration.
-
-        Default Value:
-    
-            255.255.255.255
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.baddr</param-name>
-        <param-value>255.255.255.255</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.scope:
-
-        The NetBIOS scope ID.
-
-        This specifies the NetBIOS scope ID, which partitions a group of 
-        computers on the network. This is rarely used, but will need to be 
-        set if employed in your network.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.scope</param-name>
-        <param-value>EXAMPLE.COM</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.laddr:
-
-        The local network interface used by jCIFS for SMB connections.
-
-        This setting specifies which local interface jCIFS should use when 
-        making SMB connections to remote servers. This may need to be set if 
-        the local machine has multiple network interfaces.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.laddr</param-name>
-        <param-value>10.10.2.20</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.laddr:
-
-        The local network interface used by jCIFS for name queries.
-
-        This setting specifies which local interface jCIFS should use when 
-        sending NetBIOS name queries. This may need to be set if the local 
-        machine has multiple network interfaces.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.laddr</param-name>
-        <param-value>10.10.2.20</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.lmhosts:
-
-        The location of an LMHOSTS file mapping IP addresses to NetBIOS 
-        hostnames.
-
-        This setting specifies the location of an LMHOSTS file. This file can 
-        be used to provide static mappings of IP addresses to NetBIOS 
-        hostnames.
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.lmhosts</param-name>
-        <param-value>C:\Windows\System32\Drivers\Etc\LMHOSTS</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.attrExpirationPeriod:
-
-        Specifies the caching period for SMB resource attributes.
-
-        This setting specifies how long jCIFS caches attributes for SMB 
-        resources in milliseconds. Setting this to a lower value can improve 
-        the accuracy of attribute values, but increases the SMB traffic (as 
-        the resource must be queried more frequently). Davenport sets this to 
-        "60000" by default (60 seconds).
-
-        Default Value:
-    
-            60000 (SMB attributes are cached for 60 seconds).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.attrExpirationPeriod</param-name>
-        <param-value>60000</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.responseTimeout:
-
-        Specifies how long jCIFS will wait for a reply from the server.
-
-        This setting controls how long jCIFS will wait for a response after 
-        sending a request to the server in milliseconds.
-
-        Default Value:
-    
-            10000 (10 seconds).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.responseTimeout</param-name>
-        <param-value>10000</param-value>
-    </init-param>
--->
-<!--
-    jcifs.smb.client.soTimeout:
-
-        Specifies how long jCIFS will wait before closing an inactive 
-        connection.
-
-        This specifies the number of milliseconds jCIFS will leave an inactive 
-        connection open. If no traffic is sent over the connection within the 
-        specified time, it will be closed to release server resources. 
-        Davenport sets this to "300000" by default (5 minutes).
-
-        Default Value:
-    
-            300000 (5 minutes).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.smb.client.soTimeout</param-name>
-        <param-value>300000</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.cachePolicy:
-
-        Specifies the caching period for NetBIOS name.
-
-        This setting specifies how long NetBIOS name resolution results will 
-        be cached in seconds. Subsequent name queries within the specified 
-        period will receive the cached results to reduce redundant queries 
-        over the networ.
-
-        Default Value:
-    
-            600 (10 minutes).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.cachePolicy</param-name>
-        <param-value>600</param-value>
-    </init-param>
--->
-<!--
-    jcifs.netbios.hostname:
-
-        The NetBIOS name used by jCIFS.
-
-        This specifies the NetBIOS name that jCIFS presents to servers.
-
-        Default Value:
-    
-            Random (a name will be dynamically generated by jCIFS).
--->
-<!--
-    <init-param>
-        <param-name>jcifs.netbios.hostname</param-name>
-        <param-value>MYHOST</param-value>
-    </init-param>
--->
-<!--
-    jcifs.encoding:
-
-        The character encoding used by jCIFS.
-
-        This setting specifies the character set encoding used by jCIFS to 
-        encode and decode strings. This should match the character set used 
-        by SMB servers.
-
-        Default Value:
-    
-            Cp860 (MS-DOS Latin 1)
--->
-<!--
-    <init-param>
-        <param-name>jcifs.encoding</param-name>
-        <param-value>Cp1252</param-value>
-    </init-param>
--->
 		<init-param>
 			<description>
 				server port of srb

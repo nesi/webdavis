@@ -32,8 +32,8 @@ public class DefaultOptionsHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws IOException, ServletException {
-        boolean lockSupport = false; //no lock at the moment  //(getLockManager() != null);
-        response.setHeader("DAV", lockSupport ? "1,2" : "1,2");   // need version 2 to let MAC Finder read and write
+        boolean lockSupport = (getLockManager() != null);
+        response.setHeader("DAV", lockSupport ? "1,2" : "1");  
         response.setHeader("MS-Author-Via", "DAV");
         RemoteFile file = getRemoteFile(request, davisSession);
         StringBuffer allow = new StringBuffer();

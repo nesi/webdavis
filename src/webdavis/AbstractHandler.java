@@ -276,12 +276,12 @@ public abstract class AbstractHandler implements MethodHandler {
      * @return The currently installed lock manager.  Returns
      * <code>null</code> if no lock manager is present.
      */ 
-//    protected LockManager getLockManager() {
-//        ServletConfig config = getServletConfig();
-//        return (config == null) ? null : (LockManager)
-//                config.getServletContext().getAttribute(
-//                        Davis.LOCK_MANAGER);
-//    }
+    protected LockManager getLockManager() {
+        ServletConfig config = getServletConfig();
+        return (config == null) ? null : (LockManager)
+                config.getServletContext().getAttribute(
+                        Davis.LOCK_MANAGER);
+    }
 
     /**
      * Returns the <code>SmbFileFilter</code> used to filter resource
@@ -571,9 +571,9 @@ public abstract class AbstractHandler implements MethodHandler {
                 }
             }
         }
-//        if (getLockManager() == null) 
-        return HttpServletResponse.SC_OK;
-//        return checkLockCondition(request, file);
+        if (getLockManager() == null) 
+        	return HttpServletResponse.SC_OK;
+        return checkLockCondition(request, file);
     }
 
     /**
@@ -583,9 +583,9 @@ public abstract class AbstractHandler implements MethodHandler {
      * @return A <code>Principal</code> object containing the authenticated
      * requesting principal.
      */
-    protected Principal getPrincipal(HttpServletRequest request)
+    protected DavisSession getPrincipal(HttpServletRequest request)
             throws IOException {
-        return (Principal) request.getAttribute(Davis.PRINCIPAL);
+        return (DavisSession) request.getAttribute(Davis.PRINCIPAL);
     }
 
     /**
@@ -598,80 +598,80 @@ public abstract class AbstractHandler implements MethodHandler {
      * @return An <code>int</code> containing the return HTTP status code.
      * @throws IOException If an IO error occurs.
      */ 
-//    protected int checkLockOwnership(HttpServletRequest request, SmbFile file)
-//            throws IOException {
-//        LockManager lockManager = getLockManager();
-//        if (lockManager == null) return HttpServletResponse.SC_OK;
-//        Lock[] locks = lockManager.getActiveLocks(file);
-//        if (locks == null || locks.length == 0) {
-//            Log.log(Log.DEBUG, "No outstanding locks on resource - proceed.");
-//            return HttpServletResponse.SC_OK;
-//        }
-//        Principal requestor = getPrincipal(request);
-//        if (requestor == null) {
-//            Log.log(Log.DEBUG,
-//                    "Outstanding locks, but unidentified requestor.");
-//            return SC_LOCKED;
-//        }
-//        if (Log.getThreshold() < Log.INFORMATION) {
-//            StringBuffer outstanding = new StringBuffer();
-//            for (int i = 0; i < locks.length; i++) {
-//                outstanding.append("    ").append(locks[i]);
-//                if (i + 1 < locks.length) outstanding.append("\n");
-//            }
-//            Log.log(Log.DEBUG, "Outstanding locks:\n{0}", outstanding);
-//        }
-//        String name = requestor.getName();
-//        for (int i = locks.length - 1; i >= 0; i--) {
-//            Principal owner = locks[i].getPrincipal();
-//            if (owner == null) continue;
-//            if (name.equals(owner.getName())) {
-//                Log.log(Log.DEBUG, "Found lock - proceed: {0}", locks[i]);
-//                return HttpServletResponse.SC_OK;
-//            }
-//        }
-//        Log.log(Log.DEBUG, "Outstanding locks, but none held by requestor.");
-//        return SC_LOCKED;
-//    }
+    protected int checkLockOwnership(HttpServletRequest request, RemoteFile file)
+            throws IOException {
+        LockManager lockManager = getLockManager();
+        if (lockManager == null) return HttpServletResponse.SC_OK;
+        Lock[] locks = lockManager.getActiveLocks(file);
+        if (locks == null || locks.length == 0) {
+            Log.log(Log.DEBUG, "No outstanding locks on resource - proceed.");
+            return HttpServletResponse.SC_OK;
+        }
+        DavisSession requestor = getPrincipal(request);
+        if (requestor == null) {
+            Log.log(Log.DEBUG,
+                    "Outstanding locks, but unidentified requestor.");
+            return SC_LOCKED;
+        }
+        if (Log.getThreshold() < Log.INFORMATION) {
+            StringBuffer outstanding = new StringBuffer();
+            for (int i = 0; i < locks.length; i++) {
+                outstanding.append("    ").append(locks[i]);
+                if (i + 1 < locks.length) outstanding.append("\n");
+            }
+            Log.log(Log.DEBUG, "Outstanding locks:\n{0}", outstanding);
+        }
+        String name = requestor.getSessionID();
+        for (int i = locks.length - 1; i >= 0; i--) {
+        	DavisSession owner = locks[i].getDavisSession();
+            if (owner == null) continue;
+            if (name.equals(owner.getSessionID())) {
+                Log.log(Log.DEBUG, "Found lock - proceed: {0}", locks[i]);
+                return HttpServletResponse.SC_OK;
+            }
+        }
+        Log.log(Log.DEBUG, "Outstanding locks, but none held by requestor.");
+        return SC_LOCKED;
+    }
 
-//    private int checkLockCondition(HttpServletRequest request, SmbFile file)
-//            throws IOException {
-//        Enumeration values = request.getHeaders("If");
-//        if (!values.hasMoreElements()) return HttpServletResponse.SC_OK;
-//        try {
-//            while (values.hasMoreElements()) {
-//                String header = (String) values.nextElement();
-//                Log.log(Log.DEBUG, "Checking If: {0}", header);
-//                int index = header.indexOf('<');
-//                int result;
-//                if (index == -1 || index > header.indexOf('(')) {
-//                    index = header.indexOf('(');
-//                    String noTagList = header.substring(index,
-//                            header.lastIndexOf(')') + 1);
-//                    result = processNoTagList(noTagList, request, file);
-//                } else {
-//                    String taggedList = header.substring(index,
-//                            header.lastIndexOf(')') + 1);
-//                    result = processTaggedList(taggedList, request, file);
-//                }
-//                if (result == HttpServletResponse.SC_OK) {
-//                    Log.log(Log.DEBUG, "If condition met - proceed.");
-//                    return HttpServletResponse.SC_OK;
-//                } else if (result !=
-//                        HttpServletResponse.SC_PRECONDITION_FAILED) {
-//                    Log.log(Log.DEBUG, "Unexpected status: {0}",
-//                            new Integer(result));
-//                    return result;
-//                }
-//            }
-//            Log.log(Log.DEBUG, "If condition not satisfied.");
-//            return HttpServletResponse.SC_PRECONDITION_FAILED;
-//        } catch (IllegalStateException ex) {
-//            Log.log(Log.INFORMATION,
-//                    "Error parsing the client's \"If\" header: {0}", ex);
-//            return HttpServletResponse.SC_BAD_REQUEST;
-//        }
-//    }
+    private int checkLockCondition(HttpServletRequest request, RemoteFile file)
+            throws IOException {
+        Enumeration values = request.getHeaders("If");
+        if (!values.hasMoreElements()) return HttpServletResponse.SC_OK;
+        try {
+            while (values.hasMoreElements()) {
+                String header = (String) values.nextElement();
+                Log.log(Log.DEBUG, "Checking If: {0}", header);
+                int index = header.indexOf('<');
+                int result;
+                if (index == -1 || index > header.indexOf('(')) {
+                    index = header.indexOf('(');
+                    String noTagList = header.substring(index,
+                            header.lastIndexOf(')') + 1);
+                    result = processNoTagList(noTagList, request, file);
+                } else {
+                    String taggedList = header.substring(index,
+                            header.lastIndexOf(')') + 1);
+                    result = processTaggedList(taggedList, request, file);
+                }
+                if (result == HttpServletResponse.SC_OK) {
+                    Log.log(Log.DEBUG, "If condition met - proceed.");
+                    return HttpServletResponse.SC_OK;
+                } else if (result !=
+                        HttpServletResponse.SC_PRECONDITION_FAILED) {
+                    Log.log(Log.DEBUG, "Unexpected status: {0}",
+                            new Integer(result));
+                    return result;
+                }
+            }
+            Log.log(Log.DEBUG, "If condition not satisfied.");
+            return HttpServletResponse.SC_PRECONDITION_FAILED;
+        } catch (IllegalStateException ex) {
+            Log.log(Log.INFORMATION,
+                    "Error parsing the client's \"If\" header: {0}", ex);
+            return HttpServletResponse.SC_BAD_REQUEST;
+        }
+    }
 
     private int processNoTagList(String noTagList, HttpServletRequest request,
             RemoteFile file) throws IOException {
@@ -743,20 +743,20 @@ public abstract class AbstractHandler implements MethodHandler {
                     Log.log(Log.DEBUG, "Unmatched ETags detected.");
                     continue;
                 }
-//                LockManager lockManager = getLockManager();
-//                iterator = requiredLockTokens.iterator();
-//                while (iterator.hasNext()) {
-//                    String requiredLockToken = (String) iterator.next();
-//                    if (!lockManager.isLocked(file, requiredLockToken)) {
-//                        match = false;
-//                        Log.log(Log.DEBUG, "Unmatched lock token: {0}",
-//                                requiredLockToken);
-//                        break;
-//                    } else {
-//                        Log.log(Log.DEBUG, "Matched lock token: {0}",
-//                                requiredLockToken);
-//                    }
-//                }
+                LockManager lockManager = getLockManager();
+                iterator = requiredLockTokens.iterator();
+                while (iterator.hasNext()) {
+                    String requiredLockToken = (String) iterator.next();
+                    if (!lockManager.isLocked(file, requiredLockToken)) {
+                        match = false;
+                        Log.log(Log.DEBUG, "Unmatched lock token: {0}",
+                                requiredLockToken);
+                        break;
+                    } else {
+                        Log.log(Log.DEBUG, "Matched lock token: {0}",
+                                requiredLockToken);
+                    }
+                }
                 if (match) {
                     Log.log(Log.DEBUG,
                             "All required lock tokens matched - proceed.");

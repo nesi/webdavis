@@ -267,51 +267,51 @@ public class DavisUtilities {
      * @param destination The element under which the active locks will be
      * enumerated.  This would typically be a "lockdiscovery" element.
      */ 
-//    public static void lockDiscovery(SmbFile file, LockManager lockManager,
-//            Element destination) throws IOException {
-//        if (file == null || lockManager == null || destination == null) return;
-//        Lock[] activeLocks = lockManager.getActiveLocks(file);
-//        if (activeLocks == null || activeLocks.length == 0) return;
-//        for (int i = activeLocks.length - 1; i >= 0; i--) {
-//            Lock lock = activeLocks[i];
-//            Element activeLock = createElement(destination, "activelock"); 
-//            Element lockType = createElement(activeLock, "locktype");
-//            lockType.appendChild(createElement(lockType, "write"));
-//            activeLock.appendChild(lockType);
-//            Element lockScope = createElement(activeLock, "lockscope");
-//            lockScope.appendChild(createElement(lockScope,
-//                    lock.isExclusive() ? "exclusive" : "shared"));
-//            activeLock.appendChild(lockScope);
-//            Element depth = createElement(activeLock, "depth");
-//            depth.appendChild(depth.getOwnerDocument().createTextNode(
-//                    (lock.getDepth() == RESOURCE_ONLY_DEPTH) ? "0" :
-//                            "infinity"));
-//            activeLock.appendChild(depth);
-//            DocumentFragment ownerValue = lock.getOwner();
-//            if (ownerValue != null) {
-//                Element owner = createElement(activeLock, "owner");
-//                owner.appendChild(owner.getOwnerDocument().importNode(
-//                        ownerValue, true));
-//                activeLock.appendChild(owner);
-//            }
-//            long timeoutValue = lock.getTimeout();
-//            if (timeoutValue != UNSPECIFIED_TIMEOUT) {
-//                Element timeout = createElement(activeLock, "timeout");
-//                timeout.appendChild(timeout.getOwnerDocument().createTextNode(
-//                        formatTimeout(timeoutValue)));
-//                activeLock.appendChild(timeout);
-//            }
-//            String token = lock.getToken();
-//            if (token != null) {
-//                Element locktoken = createElement(activeLock, "locktoken");
-//                Element href = createElement(locktoken, "href");
-//                href.appendChild(href.getOwnerDocument().createTextNode(token));
-//                locktoken.appendChild(href);
-//                activeLock.appendChild(locktoken);
-//            }
-//            destination.appendChild(activeLock);
-//        }
-//    }
+    public static void lockDiscovery(RemoteFile file, LockManager lockManager,
+            Element destination) throws IOException {
+        if (file == null || lockManager == null || destination == null) return;
+        Lock[] activeLocks = lockManager.getActiveLocks(file);
+        if (activeLocks == null || activeLocks.length == 0) return;
+        for (int i = activeLocks.length - 1; i >= 0; i--) {
+            Lock lock = activeLocks[i];
+            Element activeLock = createElement(destination, "activelock"); 
+            Element lockType = createElement(activeLock, "locktype");
+            lockType.appendChild(createElement(lockType, "write"));
+            activeLock.appendChild(lockType);
+            Element lockScope = createElement(activeLock, "lockscope");
+            lockScope.appendChild(createElement(lockScope,
+                    lock.isExclusive() ? "exclusive" : "shared"));
+            activeLock.appendChild(lockScope);
+            Element depth = createElement(activeLock, "depth");
+            depth.appendChild(depth.getOwnerDocument().createTextNode(
+                    (lock.getDepth() == RESOURCE_ONLY_DEPTH) ? "0" :
+                            "infinity"));
+            activeLock.appendChild(depth);
+            DocumentFragment ownerValue = lock.getOwner();
+            if (ownerValue != null) {
+                Element owner = createElement(activeLock, "owner");
+                owner.appendChild(owner.getOwnerDocument().importNode(
+                        ownerValue, true));
+                activeLock.appendChild(owner);
+            }
+            long timeoutValue = lock.getTimeout();
+            if (timeoutValue != UNSPECIFIED_TIMEOUT) {
+                Element timeout = createElement(activeLock, "timeout");
+                timeout.appendChild(timeout.getOwnerDocument().createTextNode(
+                        formatTimeout(timeoutValue)));
+                activeLock.appendChild(timeout);
+            }
+            String token = lock.getToken();
+            if (token != null) {
+                Element locktoken = createElement(activeLock, "locktoken");
+                Element href = createElement(locktoken, "href");
+                href.appendChild(href.getOwnerDocument().createTextNode(token));
+                locktoken.appendChild(href);
+                activeLock.appendChild(locktoken);
+            }
+            destination.appendChild(activeLock);
+        }
+    }
 
     /**
      * Generates a UUID, as described in ISO-11578.

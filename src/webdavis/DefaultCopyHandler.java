@@ -64,21 +64,21 @@ public class DefaultCopyHandler extends AbstractHandler {
                             "sameResource", null, request.getLocale()));
             return;
         }
-//        int result = checkLockOwnership(request, destinationFile);
-//        if (result != HttpServletResponse.SC_OK) {
-//            response.sendError(result);
-//            return;
-//        }
-        int result = checkConditionalRequest(request, destinationFile);
+        int result = checkLockOwnership(request, destinationFile);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
             return;
         }
-//        LockManager lockManager = getLockManager();
-//        if (lockManager != null) {
-//            destinationFile =lockManager.getLockedResource(destinationFile,
-//                    auth);
-//        }
+        result = checkConditionalRequest(request, destinationFile);
+        if (result != HttpServletResponse.SC_OK) {
+            response.sendError(result);
+            return;
+        }
+        LockManager lockManager = getLockManager();
+        if (lockManager != null) {
+            destinationFile =lockManager.getLockedResource(destinationFile,
+            		davisSession);
+        }
         boolean overwritten = false;
         if (destinationFile.exists()) {
             if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {
