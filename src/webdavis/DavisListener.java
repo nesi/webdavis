@@ -21,8 +21,9 @@ public class DavisListener implements HttpSessionListener {
 
 	public void sessionDestroyed(HttpSessionEvent event) {
 		HttpSession session = event.getSession();
-		System.out.println("session destroyed: "+session.getId());
+		Log.log(Log.DEBUG,"session destroyed: "+session.getId());
 		Map sessMap = (Map)session.getAttribute(Davis.CREDENTIALS);
+		if (sessMap==null) return;
 		List creds= new ArrayList(sessMap.values());
 		DavisSession davisSession=null;
 		Map contMap;
@@ -33,24 +34,7 @@ public class DavisListener implements HttpSessionListener {
 				// System.out.println("Dumping credential cache:"+credentials);
 				davisSession = (DavisSession) contMap.remove(davisSession.getSessionID());
 			}
-			if (davisSession.getRemoteFileSystem().isConnected()){
-				if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
-					try {
-						((SRBFileSystem)davisSession.getRemoteFileSystem()).close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} else if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem){
-					try {
-						((IRODSFileSystem)davisSession.getRemoteFileSystem()).close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-
-			}
+			davisSession.disconnect();
 		}
 		
 		

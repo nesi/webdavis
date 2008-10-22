@@ -9,6 +9,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.srb.SRBFile;
+import edu.sdsc.grid.io.srb.SRBFileOutputStream;
+import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * Default implementation of a handler for requests using the WebDAV
@@ -57,7 +63,8 @@ public class DefaultMoveHandler extends AbstractHandler {
             return;
         }
         RemoteFile destinationFile = getRemoteFile(destination, davisSession);
-        if (destinationFile.equals(file)) return;
+        Log.log(Log.DEBUG, "file:"+file.getAbsolutePath()+" destinationFile:"+destinationFile.getAbsolutePath());
+        if (destinationFile.getAbsolutePath().equals(file.getAbsolutePath())) return;
         int result = checkLockOwnership(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
@@ -94,9 +101,16 @@ public class DefaultMoveHandler extends AbstractHandler {
                 return;
             }
         }
-        file.copyTo(destinationFile,overwritten);
+        if (file.getFileSystem() instanceof SRBFileSystem) {
+        	((SRBFile)file).setResource(davisSession.getDefaultResource());
+        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
+         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
+        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+        }
         try {
-            file.delete();
+            file.renameTo(destinationFile);
+//            file.delete();
             response.setStatus(overwritten ? HttpServletResponse.SC_NO_CONTENT :
                     HttpServletResponse.SC_CREATED);
             response.flushBuffer();

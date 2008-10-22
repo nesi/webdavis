@@ -281,6 +281,13 @@ public class Davis extends HttpServlet {
 		context.removeAttribute(LOCK_MANAGER);
 		// context.removeAttribute(RESOURCE_FILTER);
 		context.removeAttribute(REQUEST_URI_CHARSET);
+		Map contMap = (Map) context.getAttribute(Davis.CREDENTIALS);
+		if (contMap!=null){
+			iterator=contMap.keySet().iterator();
+			while (iterator.hasNext()) {
+				((DavisSession)iterator.next()).disconnect();
+			}
+		}
 		Log.log(Log.DEBUG, "Davis finished destroy.");
 	}
 
@@ -408,7 +415,8 @@ public class Davis extends HttpServlet {
 			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
 			password = (index != -1) ? authInfo.substring(index + 1) : "";
 			basicUsername = user;
-			sessionID = basicUsername + "%" + request.getServerName();
+			sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
+			Log.log(Log.DEBUG, "sessionID:"+sessionID);
 
 			if ((index = user.indexOf('\\')) != -1
 					|| (index = user.indexOf('/')) != -1) {

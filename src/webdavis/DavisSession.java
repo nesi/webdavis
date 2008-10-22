@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import edu.sdsc.grid.io.RemoteFileSystem;
@@ -18,6 +19,27 @@ public class DavisSession implements Serializable{
 	private int serverPort;
 	private String dn;
 	private String sessionID;
+	public void disconnect(){
+		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
+			if (remoteFileSystem instanceof SRBFileSystem){
+				try {
+					((SRBFileSystem)remoteFileSystem).close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} else if (remoteFileSystem instanceof IRODSFileSystem){
+				try {
+					((IRODSFileSystem)remoteFileSystem).close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+	}
 	public String getSessionID() {
 		return sessionID;
 	}

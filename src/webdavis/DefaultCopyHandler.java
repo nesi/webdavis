@@ -7,8 +7,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.sdsc.grid.io.FileFactory;
+import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.srb.SRBFile;
+import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 
 /**
@@ -89,10 +95,47 @@ public class DefaultCopyHandler extends AbstractHandler {
                 return;
             }
         }
-        file.copyTo(destinationFile,overwritten);
+        if (file.getFileSystem() instanceof SRBFileSystem) {
+        	((SRBFile)file).setResource(davisSession.getDefaultResource());
+        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
+         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
+        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+        }
+        copyTo(file,destinationFile,davisSession);
         response.setStatus(overwritten ? HttpServletResponse.SC_NO_CONTENT :
                 HttpServletResponse.SC_CREATED);
         response.flushBuffer();
     }
+
+	private void copyTo(RemoteFile sourceFile, RemoteFile destinationFile, DavisSession davisSession) throws IOException {
+		if (sourceFile.isFile()){
+	        if (destinationFile.getFileSystem() instanceof SRBFileSystem) {
+	        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
+	         }else if (destinationFile.getFileSystem() instanceof IRODSFileSystem) {
+	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+	        }
+			sourceFile.copyTo(destinationFile);
+		}else if (sourceFile.isDirectory()){
+			  //recursive copy
+			String fileList[] = sourceFile.list();
+			
+			destinationFile.mkdir();
+			if (fileList != null) {
+				for (int i=0;i<fileList.length;i++) {
+					if (sourceFile.getFileSystem() instanceof SRBFileSystem){
+						copyTo(new SRBFile( (SRBFile)sourceFile,fileList[i]), 
+								new SRBFile( (SRBFile)destinationFile,  fileList[i]),davisSession);
+					}else if (sourceFile.getFileSystem() instanceof IRODSFileSystem){
+						copyTo(new IRODSFile( (IRODSFile)sourceFile,fileList[i]), 
+								new IRODSFile( (IRODSFile)destinationFile,  fileList[i]),davisSession);
+						
+					}
+			    }
+			}
+
+		}
+		
+	}
 
 }

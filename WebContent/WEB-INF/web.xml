@@ -812,12 +812,12 @@
     
             0 
 -->
-<!--
+<!-- 
     <init-param>
         <param-name>jargon.debug</param-name>
-        <param-value>0</param-value>
+        <param-value>5</param-value>
     </init-param>
--->
+ -->
 <!--
     request-uri.charset:
 
