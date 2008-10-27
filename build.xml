@@ -3,12 +3,9 @@
   <property name="app.name"      value="davis"/>
   <property name="app.version"   value="0.0.5"/>
   <property name="build.home"    value="${basedir}/build"/>
-  <property name="catalina.home" value="/home/users/shundezh/jakarta-tomcat-4.1.30"/> <!-- UPDATE THIS! -->
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
   <property name="web.home"      value="${basedir}/WebContent"/>
-  <property name="mapserver.home"      value="${basedir}/mapserver"/>
-  <property name="db.home"      value="${basedir}/db_scripts"/>
 
   <property name="compile.debug"       value="true"/>
   <property name="compile.deprecation" value="false"/>
@@ -26,7 +23,7 @@
 
     <!-- Include all elements that Tomcat exposes to applications -->
     <pathelement location="${catalina.home}/common/classes"/>
-    <fileset dir="lib/build">
+    <fileset dir="lib">
       <include name="*.jar"/>
     </fileset>
     <!-- <fileset dir="${catalina.home}/common/endorsed">
@@ -125,11 +122,9 @@
 
 -->
 
-  <target name="dist" depends="compile"
+  <target name="war" depends="compile"
    description="Create binary distribution">
 
-    <delete file="${build.home}/WEB-INF/lib/mail.jar"/>
-    <delete file="${build.home}/WEB-INF/lib/activation.jar"/>
     <mkdir   dir="${dist.home}"/>
 
     <!-- Create application JAR file -->
@@ -138,6 +133,46 @@
 
     <!-- Copy additional files to ${dist.home} as necessary -->
 
+  </target>
+	
+  <target name="dist" depends="clean,compile"
+	description="Create tar ball distribution">
+    <mkdir   dir="${dist.home}"/>
+    <copy todir="${build.home}/bin">
+      <fileset dir="${basedir}/bin"/>
+    </copy>
+    <copy todir="${build.home}/conf">
+      <fileset dir="${basedir}/conf"/>
+    </copy>
+    <copy todir="${build.home}/etc">
+      <fileset dir="${basedir}/etc"/>
+    </copy>
+    <copy todir="${build.home}/ext">
+      <fileset dir="${basedir}/ext"/>
+    </copy>
+    <copy todir="${build.home}/lib">
+      <fileset dir="${basedir}/lib"/>
+    </copy>
+    <copy todir="${build.home}/ext">
+      <fileset dir="${basedir}/ext"/>
+    </copy>
+    <copy todir="${build.home}/webapps/root">
+      <fileset dir="${web.home}"/>
+    </copy>
+    <copy file="${basedir}/start.jar" todir="${build.home}"/>
+    <copy file="${basedir}/stop.jar" todir="${build.home}"/>
+  	<mkdir dir="${build.home}/logs"/>
+    <jar jarfile="${build.home}/webapps/root/WEB-INF/lib/${app.name}.jar">
+  	  <fileset dir="${build.home}/WEB-INF/classes/webdavis"/>
+      <fileset dir="${build.home}/WEB-INF/classes/META-INF"/>
+    </jar>
+  	<delete dir="${build.home}/META-INF"/>
+  	<delete dir="${build.home}/WEB-INF"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
+	  <tarfileset dir="${build.home}" />
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
   </target>
 
   <target name="prepare">
