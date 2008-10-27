@@ -1257,14 +1257,14 @@
 				proxy host for slcs
 			</description>
 			<param-name>proxy-host</param-name>
-			<param-value></param-value>
+			<param-value>www-proxy.sapac.edu.au</param-value>
 		</init-param><!-- www-proxy.sapac.edu.au -->
 		<init-param>
 			<description>
 				proxy port for slcs
 			</description>
 			<param-name>proxy-port</param-name>
-			<param-value></param-value>
+			<param-value>8080</param-value>
 		</init-param><!-- 8080 -->
 		<init-param>
 			<description>
