@@ -31,7 +31,7 @@ public class DavisListener implements HttpSessionListener {
 			davisSession=(DavisSession)sessMap.get(i);
 			contMap = (Map) session.getServletContext().getAttribute(Davis.CREDENTIALS);
 			if (contMap != null) {
-				// System.out.println("Dumping credential cache:"+credentials);
+				Log.log(Log.DEBUG,"Dumping credential cache:"+davisSession.getSessionID());
 				davisSession = (DavisSession) contMap.remove(davisSession.getSessionID());
 			}
 			davisSession.disconnect();
