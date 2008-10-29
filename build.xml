@@ -162,8 +162,10 @@
     <copy file="${basedir}/start.jar" todir="${build.home}"/>
     <copy file="${basedir}/stop.jar" todir="${build.home}"/>
   	<mkdir dir="${build.home}/logs"/>
-  	<delete dir="${build.home}/WEB-INF/classes/idp"/>
-  	<delete dir="${build.home}/WEB-INF/classes/*.properties"/>
+  	<mkdir dir="${build.home}/webapps/root/WEB-INF/classes"/>
+  	<copy todir="${build.home}/webapps/root/WEB-INF/classes/">
+  	  <fileset dir="${basedir}/resources"/>
+  	</copy>
     <jar jarfile="${build.home}/webapps/root/WEB-INF/lib/${app.name}.jar">
   	  <fileset dir="${build.home}/WEB-INF/classes/"/>
     </jar>
