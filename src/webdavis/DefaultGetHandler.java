@@ -194,6 +194,11 @@ public class DefaultGetHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
+    	String url=getRemoteURL(request,getRequestURL(request),getRequestURICharset());
+    	if (url.startsWith("/dojoroot")){
+    		writeFile(url,request,response);
+    		return;
+    	}
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
         if (!file.exists()) {
@@ -352,7 +357,26 @@ public class DefaultGetHandler extends AbstractHandler {
         input.close();
     }
 
-    /**
+    private void writeFile(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
+//    	URL u=request.getSession().getServletContext().getResource(url);
+//    	u.get?
+		InputStream in=request.getSession().getServletContext().getResourceAsStream(url);
+//		response.setContentType ("application/pdf");
+		ServletOutputStream op = response.getOutputStream ();
+		int length;
+		byte[] buf=new byte[2048];
+		while ((in != null) && ((length = in.read(buf)) != -1)) 
+		{
+		  // the data has already been read into buf
+		  System.out.println("Bytes read in: " +        Integer.toString(length));
+		  op.write(buf,0,length);
+		}
+		op.flush();
+		in.close();
+		op.close();
+	}
+
+	/**
      * Returns the <code>PropertiesBuilder</code> that will be used
      * to build the PROPFIND result XML document for directory listings.
      *
