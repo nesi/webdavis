@@ -10,6 +10,12 @@
                 <meta HTTP-EQUIV="Pragma" CONTENT="no-cache"/>
                 <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache"/>
                 <meta HTTP-EQUIV="Expires" CONTENT="0"/>
+    			<style type="text/css">
+    @import "dojoroot/dijit/themes/tundra/tundra.css";
+    @import "dojoroot/dojox/grid/resources/Grid.css";
+    @import "dojoroot/dojox/grid/resources/tundraGrid.css";
+    @import "dojoroot/dojo/resources/dojo.css"
+    			</style>
                 <style>
     body {
         font-family: Verdana, Tahoma, Helvetica, Arial, sans-serif;
@@ -76,9 +82,193 @@
     a.unc:hover {
         color: green;
     }
+    
+    .dojoxGrid-row-odd td {
+        background:#e8f2ff;
+	}
+    #metadataGrid {
+        border: 1px solid #333;
+        width: 400px;
+        height: 300px;
+    }
+	#permissionGrid {
+        border: 1px solid #333;
+        width: 500px;
+        height: 200px;
+    }
+    table { 
+    	border: none; 
+    }
+    
                 </style>
+    			<script type="text/javascript" src="dojoroot/dojo/dojo.js" djConfig="isDebug:true, parseOnLoad: true"></script>
+    			<script type="text/javascript">
+    // Load Dojo's code relating to the Button widget
+    dojo.require("dojox.grid.compat.Grid");
+    dojo.require("dojox.grid.DataGrid");
+	dojo.require("dojox.grid.compat._grid.edit");
+    dojo.require("dojo.data.ItemFileWriteStore");
+    dojo.require("dojo.data.ItemFileReadStore");
+    dojo.require("dijit.form.Button");
+    dojo.require("dijit.Dialog");
+	dojo.require("dijit.form.TextBox");
+	dojo.require("dojo.parser");
+    var layout1= [
+        { field: "name", width: "200px", name: "Name"},
+        { field: "value", width: "200px", name: "Value"}
+    ];
+
+    var layout2= [
+        { field: "username", width: "200px", name: "Username"},
+        { field: "domain", width: "200px", name: "Domain"},
+        { field: "permission", width: "100px", name: "Permission"}
+    ];
+	var model2 = new dojox.grid.data.Table(null, []);
+	var store2=new dojo.data.ItemFileWriteStore({data: []});
+	var handle = dojo.connect(store2, "onSet", onPackageEditChange); 
+	function onPackageEditChange(item, attribute, oldValue, newValue)
+	{
+   // If the 2 values are the same then they really did not change.
+   if (oldValue == newValue)
+   {
+      console.log("Attribute: " + attribute + " on package: " + item.name + "
+did not change.");
+   }
+   else
+   {  
+      // TODO: Save the updated data.
+      console.log("Attribute: " + attribute + " on package: " + item.name + "
+was changed from: " + oldValue + " to: " + newValue);  
+   
+      console.dir({"The updated data store":testdata});
+   }
+	} 
+
+	function getPermission(urlString){
+	  	dojo.xhrPost({
+    		url: urlString+"?method=permission",
+    		load: function(responseObject, ioArgs){
+      
+      			var textBuffer = ["The data returned is:"];
+				console.dir(responseObject);  // Dump it to the console
+          		console.dir(responseObject.items[0].username);  // Prints username     			
+       			populatePermission(responseObject);
+      			
+//       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading permissions.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	
+	}
+	function populatePermission(perms){
+		console.dir(perms);
+//		model2 = new dojox.grid.data.Table(null, perms);
+		store2=new dojo.data.ItemFileWriteStore({data: perms});
+		console.dir(store2);
+//		model = new dojox.grid.data.DojoData();
+//		alert("after new model");
+//		model.jsId="permGrid";
+//		model.store=perms;
+//		model.query="{ name : '*' }";
+//		alert("model:"+model);
+/*		var grid = new dojox.grid.DataGrid({
+					"id": "permGrid",
+					"model": model,
+					"structure": layout2
+		});*/
+		permissionGrid.setStore(store2);
+//		dojo.byId("permissionGrid").appendChild(grid.domNode);
+//		alert("b4 start grid.");
+//		grid.startup();
+//		grid.render();	
+//		permissionGrid.refresh();		
+//		dijit.byId('dialog2').show();
+	}
+	function getMetadata(url){
+		dijit.byId('dialog1').show();
+	}
+	function getFilePermission(url){
+		dojo.byId("recursive").disabled=true;
+		dijit.byId('dialog2').show();
+		getPermission(url);
+	}
+	function getDirPermission(url){
+		dojo.byId("recursive").disabled=false;
+		dijit.byId('dialog2').show();
+	}
+
+    			</script>		
             </head>
-            <body>
+            <body class="tundra">
+            <!-- Dialogs begin-->
+            	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata" execute="checkPw(arguments[0]);">
+				<table>
+					<tr>
+						<td>
+        					<button onclick="dijit.byId('metadataGrid').refresh()">Refresh</button>
+        					<button onclick="addRow()">Add Metadata</button>
+        					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
+        					<button onclick="dijit.byId('metadataGrid').edit.apply()">Save</button>
+        					<button onclick="dijit.byId('metadataGrid').edit.cancel()">Cancel</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div id="metadataGrid" dojoType="dojox.grid.DataGrid" structure="layout1"></div>
+						</td>
+					</tr>
+				</table>
+				</div>
+				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions" execute="checkPw(arguments[0]);">
+				<table>
+					<tr>
+						<td width="500px">   <!-- dojoType="" structure="layout2" dojox.Grid store="store2"-->
+							<div id="permissionGrid"  structure="layout2" dojoType="dojox.grid.DataGrid" jsId="permissionGrid"></div>
+						</td>
+						<td valign="top">
+							<table>
+								<tr>
+									<td>Username</td>
+									<td><input type="text" name="username" value="" dojoType="dijit.form.TextBox"/></td>
+								</tr>
+								<tr>
+									<td>Domain</td>
+									<td><input type="text" name="domain" value="" dojoType="dijit.form.TextBox"/></td>
+								</tr>
+								<tr>
+									<td>Permission</td>
+									<td>
+										<select typdojoType="dijit.form.Select" name="permission">
+											<option value="a">all</option>
+											<option value="w">write</option>
+											<option value="r">read</option>
+											<option value="c">curate</option>
+											<option value="n">null</option>
+											<option value="t">annotate</option>
+											<option value="o">owner</option>
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td>Recursive</td>
+									<td><input type="checkbox" name="recursive" id="recursive" dojoType="dijit.form.CheckBox"/></td>
+								</tr>
+								<tr>
+									<td rowspan="2" align="center">
+										<button onclick="dijit.byId('gridNode').edit.apply()">Apply</button>
+										<button onclick="dijit.byId('gridNode').edit.cancel()">Cancel</button>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+				</div>
+            <!-- Dialogs end -->
                 <xsl:apply-templates select="D:multistatus"/>
             </body>
         </html>
@@ -186,6 +376,13 @@
                     <xsl:attribute name="bgcolor">#ddeecc</xsl:attribute>
                 </xsl:if>
                 <xsl:apply-templates select="D:propstat/D:prop" mode="properties"/>
+            </td>
+            <td nowrap="nowrap">
+                <xsl:if test="position() mod 2 = 1">
+                    <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>
+                </xsl:if>
+                <button onclick="getMetadata('{D:href}')">M</button>
+                <button onclick="getFilePermission('{D:href}')">P</button>
             </td>
         </tr>
     </xsl:template>
