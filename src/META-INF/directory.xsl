@@ -76,9 +76,113 @@
     a.unc:hover {
         color: green;
     }
+    
+    .dojoxGrid-row-odd td {
+        background:#e8f2ff;
+	}
+    #metadataGrid {
+        border: 1px solid #333;
+        width: 800px;
+        height: 300px;
+    }
+	#permissionGrid {
+        border: 1px solid #333;
+        width: 400px;
+        height: 200px;
+    }
+    table { 
+    	border: none; 
+    }
+    
                 </style>
+    			<style type="text/css">
+    @import "dojoroot/dijit/themes/tundra/tundra.css";
+    @import "dojoroot/dojox/grid/resources/Grid.css";
+    @import "dojoroot/dojox/grid/resources/tundraGrid.css";
+    @import "dojoroot/dojo/resources/dojo.css"
+    			</style>
+    			<script type="text/javascript" src="dojoroot/dojo/dojo.js" djConfig="isDebug:false, parseOnLoad: true"></script>
+    			<script type="text/javascript">
+    // Load Dojo's code relating to the Button widget
+    dojo.require("dojox.grid.DataGrid");
+	dojo.require("dojox.grid.compat._grid.edit");
+    dojo.require("dojo.data.ItemFileWriteStore");
+    dojo.require("dijit.form.Button");
+    dojo.require("dijit.Dialog");
+	dojo.require("dojo.parser");
+	dojo.require("dijit.form.TextBox");
+
+	function getMetadata(url){
+		dijit.byId('dialog1').show();
+	}
+	function getPermission(url){
+		dijit.byId('dialog2').show();
+	}
+
+    			</script>		
             </head>
-            <body>
+            <body class="tundra">
+            <!-- Dialogs begin-->
+            	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata" execute="checkPw(arguments[0]);">
+				<table>
+					<tr>
+						<td>
+        					<button onclick="dijit.byId('metadataGrid').refresh()">Refresh</button>
+        					<button onclick="addRow()">Add Metadata</button>
+        					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Permission</button>
+        					<button onclick="dijit.byId('metadataGrid').edit.apply()">Apply</button>
+        					<button onclick="dijit.byId('metadataGrid').edit.cancel()">Cancel</button>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div id="metadataGrid" dojoType="dojox.grid.DataGrid" store="jsonStore" structure="layout"></div>
+						</td>
+					</tr>
+				</table>
+				</div>
+				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions" execute="checkPw(arguments[0]);">
+				<table>
+					<tr>
+						<td width="400px">
+							<div id="permissionGrid" dojoType="dojox.grid.DataGrid" store="jsonStore" structure="layout"></div>
+						</td>
+						<td>
+							<table>
+								<tr>
+									<td>Username</td>
+									<td><input type="text" name="username" value="" dojoType="dijit.form.TextBox"/></td>
+								</tr>
+								<tr>
+									<td>Domain</td>
+									<td><input type="text" name="domain" value="" dojoType="dijit.form.TextBox"/></td>
+								</tr>
+								<tr>
+									<td>Permission</td>
+									<td>
+										<select typdojoType="dijit.form.Select" name="permission">
+											<option value="a">all</option>
+											<option value="w">write</option>
+											<option value="r">read</option>
+											<option value="c">curate</option>
+											<option value="n">null</option>
+											<option value="t">annotate</option>
+											<option value="o">owner</option>
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td rowspan="2" align="center">
+										<button onclick="dijit.byId('gridNode').edit.apply()">Apply</button>
+										<button onclick="dijit.byId('gridNode').edit.cancel()">Cancel</button>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+				</div>
+            <!-- Dialogs end -->
                 <xsl:apply-templates select="D:multistatus"/>
             </body>
         </html>
@@ -186,6 +290,18 @@
                     <xsl:attribute name="bgcolor">#ddeecc</xsl:attribute>
                 </xsl:if>
                 <xsl:apply-templates select="D:propstat/D:prop" mode="properties"/>
+            </td>
+            <td nowrap="nowrap">
+                <xsl:if test="position() mod 2 = 1">
+                    <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>
+                </xsl:if>
+                <a href="javascript:getMetadata({D:href})">
+                    <xsl:text>M</xsl:text>
+                </a>
+                <xsl:text>&amp;nbsp;&amp;nbsp;</xsl:text>
+                <a href="javascript:getPermission({D:href})">
+                    <xsl:text>P</xsl:text>
+                </a>
             </td>
         </tr>
     </xsl:template>
