@@ -8,7 +8,11 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
+import edu.sdsc.grid.io.MetaDataSelect;
+import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.MetaDataTable;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFile;
@@ -17,6 +21,7 @@ import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileInputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
+import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 import edu.sdsc.grid.io.MetaDataField;
 
 /**
@@ -53,30 +58,100 @@ public class DefaultPostHandler extends AbstractHandler {
         }
         String requestUrl = getRequestURL(request);
         Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
-        MetaDataRecordList[] permissions=null;
-        if (file.getFileSystem() instanceof SRBFileSystem) {
-        	permissions=((SRBFile)file).getPermissions(true);
-        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-//        	permissions=((IRODSFile)file).getPermissions(true);
-        }
 		StringBuffer str=new StringBuffer();
-		str.append("{\nitems:[");
-		if (permissions!=null){
-			for (int i=0;i<permissions.length;i++){
-//				for (MetaDataField f:p.getFields()){
-//					Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
-//				}
-				if (i>0) 
-					str.append(",\n");
-				else
-					str.append("\n");
-				str.append("{username:'").append(permissions[i].getValue("user name")).append("', ");
-				str.append("domain:'").append(permissions[i].getValue("user domain")).append("', ");
-				str.append("permission:'").append(permissions[i].getValue("file access constraint")).append("'}");
-			}
-		}
-		str.append("\n");
-		str.append("]}");
+        if (method.equalsIgnoreCase("permission")){
+        	String username=request.getParameter("username");
+        	if (username!=null){
+        		String domain=request.getParameter("domain");
+        		String permission=request.getParameter("permission");
+        		boolean recursive=false;
+        		try {
+        			recursive=Boolean.getBoolean(request.getParameter("recursive"));
+        		}catch (Exception _e){}
+                if (file.getFileSystem() instanceof SRBFileSystem) {
+                	((SRBFile)file).changePermissions(permission, username, domain, recursive);
+                }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+//                	permissions=((IRODSFile)file).getPermissions(true);
+                }
+        		
+        	}
+        	
+            MetaDataRecordList[] permissions=null;
+            if (file.getFileSystem() instanceof SRBFileSystem) {
+            	permissions=((SRBFile)file).getPermissions(true);
+            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+//            	permissions=((IRODSFile)file).getPermissions(true);
+            }
+    		str.append("{\nitems:[");
+    		if (permissions!=null){
+    			for (int i=0;i<permissions.length;i++){
+//    				for (MetaDataField f:p.getFields()){
+//    					Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
+//    				}
+    				if (i>0) 
+    					str.append(",\n");
+    				else
+    					str.append("\n");
+    				str.append("{username:'").append(permissions[i].getValue("user name")).append("', ");
+    				str.append("domain:'").append(permissions[i].getValue("user domain")).append("', ");
+    				str.append("permission:'").append(permissions[i].getValue("file access constraint")).append("'}");
+    			}
+    		}
+    		str.append("\n");
+    		str.append("]}");
+        	
+        }else if (method.equalsIgnoreCase("metadata")){
+        	
+        	MetaDataCondition[] conditions;
+        	MetaDataTable metaDataTable = null;
+        	MetaDataSelect[] selects;
+        	MetaDataRecordList[] rl=null;
+            if (file.getFileSystem() instanceof SRBFileSystem) {
+//            	conditions = new MetaDataCondition[0];
+//                conditions[0] = MetaDataSet.newCondition(
+//                  SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES, metaDataTable );
+
+                selects = new MetaDataSelect[1];
+                selects[0] = MetaDataSet.newSelection(
+                  SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES );
+
+                rl = file.query( selects );
+
+
+              }
+    		str.append("{\nitems:[");
+    		if (rl != null) { //Nothing in the database matched the query
+				for (int i=0;i<rl.length;i++) {
+    				if (i>0) 
+    					str.append(",\n");
+    				else
+    					str.append("\n");
+    				String[] lines=rl[i].getValue("definable metadata for files").toString().split("\n");
+    				boolean b=false;
+    				for (int j=0;j<lines.length;j++){
+    					if (b)
+    						str.append(",\n");
+        				else
+        					str.append("\n");
+    					if (lines[j].length()>0){
+    						str.append("{name:'");
+    						str.append(lines[j].replaceAll(" = ", "', value:'").trim());
+    						str.append("'}");
+    						b=true;
+    					}
+    				}
+//    				str.append("{name:'").append(rl[i].).append("', ");
+//    				str.append("value:'").append(permissions[i].getValue("file access constraint")).append("'}");
+//    				for (int j=0;j<rl[i].getFieldCount();j++){
+//    					System.out.println("field name: "+rl[i].getFieldName(j));
+//    					System.out.println("value: "+rl[i].getValue(j));
+//    				}
+    			}
+    		}
+    		str.append("\n");
+    		str.append("]}");
+
+        }
         
 		ServletOutputStream op = response.getOutputStream ();
 		byte[] buf=str.toString().getBytes();
