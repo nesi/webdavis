@@ -18,20 +18,22 @@
 # These settings can be modified to fit the needs of your application
 # Optimized for use with version 3.3.1 of the Wrapper.
 
+DAVIS_HOME="/opt/davis"
+
 # Application
 APP_NAME="Davis"
 APP_LONG_NAME="Davis"
 
 # Wrapper
 WRAPPER_CMD="/opt/wrapper/bin/wrapper"
-WRAPPER_CONF="/home/shundezh/davis/conf/wrapper.conf"
+WRAPPER_CONF="$DAVIS_HOME/conf/wrapper.conf"
 
 # Priority at which to run the wrapper.  See "man nice" for valid priorities.
 #  nice is only used if a priority is specified.
 PRIORITY=
 
 # Location of the pid file.
-PIDDIR="/home/shundezh/davis"
+PIDDIR="$DAVIS_HOME"
 
 # If uncommented, causes the Wrapper to be shutdown using an anchor file.
 #  When launched with the 'start' command, it will also ignore all INT and
@@ -59,7 +61,7 @@ WAIT_AFTER_STARTUP=0
 # NOTE - This will set the user which is used to run the Wrapper as well as
 #  the JVM and is not useful in situations where a privileged resource or
 #  port needs to be allocated prior to the user being changed.
-RUN_AS_USER=shundezh
+#RUN_AS_USER=
 
 # The following two lines are used by the chkconfig command. Change as is
 #  appropriate for your application.  They should remain commented.
