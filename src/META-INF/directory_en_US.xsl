@@ -93,7 +93,7 @@
     }
 	#permissionGrid {
         border: 1px solid #333;
-        width: 500px;
+        width: 600px;
         height: 200px;
     }
     table { 
@@ -114,44 +114,44 @@
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");
     var layout1= [
-        { field: "name", width: "200px", name: "Name"},
-        { field: "value", width: "200px", name: "Value"}
+        { field: "name", width: "200px", name: "Name", editable: true},
+        { field: "value", width: "auto", name: "Value", editable: true}
     ];
 
     var layout2= [
         { field: "username", width: "200px", name: "Username"},
         { field: "domain", width: "200px", name: "Domain"},
-        { field: "permission", width: "100px", name: "Permission"}
+        { field: "permission", width: "auto", name: "Permission"}
     ];
 	var model2 = new dojox.grid.data.Table(null, []);
+	var store1=new dojo.data.ItemFileWriteStore({data: []});
 	var store2=new dojo.data.ItemFileWriteStore({data: []});
+	var server_url;
+	
 	var handle = dojo.connect(store2, "onSet", onPackageEditChange); 
 	function onPackageEditChange(item, attribute, oldValue, newValue)
 	{
    // If the 2 values are the same then they really did not change.
    if (oldValue == newValue)
    {
-      console.log("Attribute: " + attribute + " on package: " + item.name + "
-did not change.");
+      console.log("Attribute: " + attribute + " on package: " + item.name + "did not change.");
    }
    else
    {  
       // TODO: Save the updated data.
-      console.log("Attribute: " + attribute + " on package: " + item.name + "
-was changed from: " + oldValue + " to: " + newValue);  
+      console.log("Attribute: " + attribute + " on package: " + item.name + "was changed from: " + oldValue + " to: " + newValue);  
    
-      console.dir({"The updated data store":testdata});
+      console.dir({"The updated data store":store2});
    }
 	} 
 
 	function getPermission(urlString){
 	  	dojo.xhrPost({
-    		url: urlString+"?method=permission",
+    		url: urlString,
     		load: function(responseObject, ioArgs){
       
-      			var textBuffer = ["The data returned is:"];
-				console.dir(responseObject);  // Dump it to the console
-          		console.dir(responseObject.items[0].username);  // Prints username     			
+//				console.dir(responseObject);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
        			populatePermission(responseObject);
       			
 //       			return responseObject;
@@ -164,43 +164,107 @@ was changed from: " + oldValue + " to: " + newValue);
   		});
 	
 	}
+	function loadMetadataFromServer(urlString){
+	  	dojo.xhrPost({
+    		url: urlString,
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(responseObject);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store1=new dojo.data.ItemFileWriteStore({data: responseObject});
+				metadataGrid.setStore(store1);
+      			
+//       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading metadata.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
 	function populatePermission(perms){
-		console.dir(perms);
-//		model2 = new dojox.grid.data.Table(null, perms);
 		store2=new dojo.data.ItemFileWriteStore({data: perms});
-		console.dir(store2);
-//		model = new dojox.grid.data.DojoData();
-//		alert("after new model");
-//		model.jsId="permGrid";
-//		model.store=perms;
-//		model.query="{ name : '*' }";
-//		alert("model:"+model);
-/*		var grid = new dojox.grid.DataGrid({
-					"id": "permGrid",
-					"model": model,
-					"structure": layout2
-		});*/
 		permissionGrid.setStore(store2);
-//		dojo.byId("permissionGrid").appendChild(grid.domNode);
-//		alert("b4 start grid.");
-//		grid.startup();
-//		grid.render();	
-//		permissionGrid.refresh();		
-//		dijit.byId('dialog2').show();
 	}
 	function getMetadata(url){
+		server_url=url+"?method=metadata";
+		loadMetadataFromServer(server_url);
 		dijit.byId('dialog1').show();
+	}
+	function refreshMetadata(){
+		loadMetadataFromServer(server_url);
 	}
 	function getFilePermission(url){
 		dojo.byId("recursive").disabled=true;
+		server_url=url+"?method=permission";
+		getPermission(server_url);
 		dijit.byId('dialog2').show();
-		getPermission(url);
 	}
 	function getDirPermission(url){
 		dojo.byId("recursive").disabled=false;
 		dijit.byId('dialog2').show();
 	}
-
+	function savePermission(){
+		var form_url=server_url+"&amp;username="+dojo.byId("formUsername").value+"&amp;domain="+dojo.byId("formDomain").value+"&amp;permission="+dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+		getPermission(form_url);
+	}
+	function getSelectedPermission(e){
+		//console.dir(e.rowIndex);
+		//console.dir(permissionGrid.getItem(e.rowIndex).username);
+		//console.dir(store2.items[e.rowIndex]);
+		//console.dir(dojo.byId("formUsername").value);
+		dojo.byId("formUsername").value=permissionGrid.getItem(e.rowIndex).username;
+		dojo.byId("formDomain").value=permissionGrid.getItem(e.rowIndex).domain;
+		for (var i=0;i&lt;dojo.byId("formPerm").options.length;i++){
+			if (dojo.byId("formPerm").options[i].text==permissionGrid.getItem(e.rowIndex).permission) 
+				dojo.byId("formPerm").options[i].selected=true;
+			else
+				dojo.byId("formPerm").options[i].selected=false;
+		}
+	}
+	function addMetadata(){
+        // set the properties for the new item:
+        var myNewItem = {name: " ", value: " "};
+        // Insert the new item into the store:
+        // (we use store3 from the example above in this example)
+        store1.newItem(myNewItem);
+	}
+	function delMetadata(){
+        // Get all selected items from the Grid:
+        var items = metadataGrid.selection.getSelected();
+        if(items.length){
+            // Iterate through the list of selected items.
+            // The current item is available in the variable
+            // "selectedItem" within the following function:
+            dojo.forEach(items, function(selectedItem) {
+                if(selectedItem !== null) {
+                    // Delete the item from the data store:
+                    store1.deleteItem(selectedItem);
+                } // end if
+            }); // end forEach
+        } // end if
+	}
+	function saveMetadata(){
+	  	dojo.rawXhrPost({
+    		url: server_url,
+    		postData: dojo.toJson(store1),
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(responseObject);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store1=new dojo.data.ItemFileWriteStore({data: responseObject});
+				metadataGrid.setStore(store1);
+      			
+//       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading metadata.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
     			</script>		
             </head>
             <body class="tundra">
@@ -209,16 +273,16 @@ was changed from: " + oldValue + " to: " + newValue);
 				<table>
 					<tr>
 						<td>
-        					<button onclick="dijit.byId('metadataGrid').refresh()">Refresh</button>
-        					<button onclick="addRow()">Add Metadata</button>
+        					<button onclick="refreshMetadata()">Refresh</button>
+        					<button onclick="addMetadata()">Add Metadata</button>
         					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
-        					<button onclick="dijit.byId('metadataGrid').edit.apply()">Save</button>
-        					<button onclick="dijit.byId('metadataGrid').edit.cancel()">Cancel</button>
+        					<button onclick="saveMetadata()">Save</button>
+        					<button onclick="dijit.byId('dialog1').hide()">Cancel</button>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div id="metadataGrid" dojoType="dojox.grid.DataGrid" structure="layout1"></div>
+							<div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="layout1"></div>
 						</td>
 					</tr>
 				</table>
@@ -226,30 +290,30 @@ was changed from: " + oldValue + " to: " + newValue);
 				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions" execute="checkPw(arguments[0]);">
 				<table>
 					<tr>
-						<td width="500px">   <!-- dojoType="" structure="layout2" dojox.Grid store="store2"-->
-							<div id="permissionGrid"  structure="layout2" dojoType="dojox.grid.DataGrid" jsId="permissionGrid"></div>
+						<td width="600px">   <!-- dojoType="" structure="layout2" dojox.Grid store="store2"-->
+							<div id="permissionGrid"  structure="layout2" dojoType="dojox.grid.DataGrid" jsId="permissionGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
 						</td>
 						<td valign="top">
 							<table>
 								<tr>
 									<td>Username</td>
-									<td><input type="text" name="username" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input type="text" name="username" id="formUsername" value="" dojoType="dijit.form.TextBox"/></td>
 								</tr>
 								<tr>
 									<td>Domain</td>
-									<td><input type="text" name="domain" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input type="text" name="domain" id="formDomain" value="" dojoType="dijit.form.TextBox"/></td>
 								</tr>
 								<tr>
 									<td>Permission</td>
 									<td>
-										<select typdojoType="dijit.form.Select" name="permission">
-											<option value="a">all</option>
+										<select id="formPerm" typdojoType="dijit.form.Select" name="permission">
+											<option value="all">all</option>
 											<option value="w">write</option>
 											<option value="r">read</option>
 											<option value="c">curate</option>
 											<option value="n">null</option>
 											<option value="t">annotate</option>
-											<option value="o">owner</option>
+										<!-- 	<option value="o">owner</option> -->
 										</select>
 									</td>
 								</tr>
@@ -259,8 +323,8 @@ was changed from: " + oldValue + " to: " + newValue);
 								</tr>
 								<tr>
 									<td rowspan="2" align="center">
-										<button onclick="dijit.byId('gridNode').edit.apply()">Apply</button>
-										<button onclick="dijit.byId('gridNode').edit.cancel()">Cancel</button>
+										<button onclick="savePermission()">Apply</button>
+										<button onclick="dijit.byId('dialog2').hide();">Cancel</button>
 									</td>
 								</tr>
 							</table>
