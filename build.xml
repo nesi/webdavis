@@ -1,7 +1,7 @@
 <project name="DAVIS" default="dist" basedir=".">
 
   <property name="app.name"      value="davis"/>
-  <property name="app.version"   value="0.0.5"/>
+  <property name="app.version"   value="pre-0.5.0"/>
   <property name="build.home"    value="${basedir}/build"/>
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
@@ -171,6 +171,7 @@
     </jar>
   	<delete dir="${build.home}/META-INF"/>
   	<delete dir="${build.home}/WEB-INF"/>
+  	<delete dir="${build.home}/dojoroot"/>
 	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
 	  <tarfileset dir="${build.home}" />
 	</tar>
