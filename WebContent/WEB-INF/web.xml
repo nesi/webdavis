@@ -1280,6 +1280,13 @@
 			<param-name>proxy-password</param-name>
 			<param-value></param-value>
 		</init-param>
+		<init-param>
+			<description>
+				dojoroot, if it is deployed at root, put a "/" here, otherwise, leave it blank
+			</description>
+			<param-name>dojoroot</param-name>
+			<param-value></param-value>
+		</init-param>
 </servlet>
 <servlet-mapping>
 <servlet-name>Davis</servlet-name>
