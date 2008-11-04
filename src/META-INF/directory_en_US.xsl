@@ -1,5 +1,6 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:D="DAV:">
     <xsl:output method="html"/>
+    <xsl:param name="dojoroot"/>
     <xsl:param name="href"/>
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
@@ -11,10 +12,10 @@
                 <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache"/>
                 <meta HTTP-EQUIV="Expires" CONTENT="0"/>
     			<style type="text/css">
-    @import "dojoroot/dijit/themes/tundra/tundra.css";
-    @import "dojoroot/dojox/grid/resources/Grid.css";
-    @import "dojoroot/dojox/grid/resources/tundraGrid.css";
-    @import "dojoroot/dojo/resources/dojo.css"
+    @import "<xsl:value-of select="$dojoroot"/>dojoroot/dijit/themes/tundra/tundra.css";
+    @import "<xsl:value-of select="$dojoroot"/>dojoroot/dojox/grid/resources/Grid.css";
+    @import "<xsl:value-of select="$dojoroot"/>dojoroot/dojox/grid/resources/tundraGrid.css";
+    @import "<xsl:value-of select="$dojoroot"/>dojoroot/dojo/resources/dojo.css"
     			</style>
                 <style>
     body {
@@ -101,7 +102,7 @@
     }
     
                 </style>
-    			<script type="text/javascript" src="dojoroot/dojo/dojo.js" djConfig="isDebug:true, parseOnLoad: true"></script>
+    			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug:false, parseOnLoad: true">&lt;/script></xsl:text>
     			<script type="text/javascript">
     // Load Dojo's code relating to the Button widget
     dojo.require("dojox.grid.compat.Grid");

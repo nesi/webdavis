@@ -279,6 +279,7 @@ public class DefaultGetHandler extends AbstractHandler {
             properties = director.getAllProperties(file, requestUrl, 1);
             try {
                 Transformer transformer = templates.newTransformer();
+                transformer.setParameter("dojoroot", this.getServletConfig().getInitParameter("dojoroot"));
                 transformer.setParameter("href", requestUrl);
                 transformer.setParameter("url", file.toString());
 //                transformer.setParameter("unc", file.getUncPath());
