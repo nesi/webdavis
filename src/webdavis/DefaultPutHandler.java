@@ -50,6 +50,11 @@ public class DefaultPutHandler extends AbstractHandler {
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
         int length = request.getContentLength();
+        Log.log(Log.DEBUG, "request.getContentLength(): "+length);
+        if (length==-1){
+        	length=Integer.parseInt(request.getHeader("x-expected-entity-length"));
+            Log.log(Log.DEBUG, "request.getHeader(\"x-expected-entity-length\"): "+length);
+        }
         if (length < 0) {
             response.sendError(HttpServletResponse.SC_LENGTH_REQUIRED);
             return;
@@ -94,7 +99,9 @@ public class DefaultPutHandler extends AbstractHandler {
         }
         byte[] buf = new byte[8192];
         int count;
+        Log.log(Log.DEBUG, "PUT method: "+output);
         while ((count = input.read(buf)) != -1) {
+        	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
             output.write(buf, 0, count);
         }
         output.flush();
