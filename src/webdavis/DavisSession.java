@@ -19,6 +19,8 @@ public class DavisSession implements Serializable{
 	private int serverPort;
 	private String dn;
 	private String sessionID;
+	private String currentRoot;
+	private String currentResource;
 	public void disconnect(){
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
@@ -88,8 +90,14 @@ public class DavisSession implements Serializable{
 	public void setHomeDirectory(String homeDirectory) {
 		this.homeDirectory = homeDirectory;
 	}
-	public DavisSession(){}
+	public DavisSession(){
+		currentRoot=null;
+	}
 	public RemoteFileSystem getRemoteFileSystem() {
+		if (!remoteFileSystem.isConnected()){
+			Log.log(Log.DEBUG, "DavisSession: connection disconnected.");
+			return null;
+		}
 		return remoteFileSystem;
 	}
 	public void setRemoteFileSystem(RemoteFileSystem remoteFileSystem) {
@@ -117,6 +125,19 @@ public class DavisSession implements Serializable{
 		buffer.append("://").append(account).append(".").append(domain).append("@").append(serverName).append(":").append(serverPort);
 		buffer.append("{").append(defaultResource).append("}");
 		buffer.append("[").append(homeDirectory).append("]");
+		buffer.append("<").append(currentRoot).append(":").append(currentResource).append(">");
 		return buffer.toString();
+	}
+	public String getCurrentRoot() {
+		return currentRoot;
+	}
+	public void setCurrentRoot(String currentRoot) {
+		this.currentRoot = currentRoot;
+	}
+	public String getCurrentResource() {
+		return currentResource;
+	}
+	public void setCurrentResource(String currentResource) {
+		this.currentResource = currentResource;
 	}
 }

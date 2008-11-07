@@ -28,8 +28,14 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import edu.sdsc.grid.io.MetaDataCondition;
+import edu.sdsc.grid.io.MetaDataRecordList;
+import edu.sdsc.grid.io.MetaDataSelect;
+import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.srb.SRBFileSystem;
+import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 /**
  * Default implementation of a handler for requests using the WebDAV
@@ -83,8 +89,47 @@ public class DefaultPropfindHandler extends AbstractHandler {
         int depth = DavisUtilities.parseDepth(request.getHeader("Depth"));
         RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
+        	Log.log(Log.DEBUG, file.getAbsolutePath()+" not exists!");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
+        }
+        Log.log(Log.DEBUG, "file.getAbsolutePath():"+file.getAbsolutePath());
+        if (file.getAbsolutePath().equals("/")){
+        	davisSession.setCurrentRoot("/");
+        	davisSession.setCurrentResource(davisSession.getDefaultResource());
+        }else{
+            String root=file.getAbsolutePath().substring(0,file.getAbsolutePath().indexOf("/",1)>-1?file.getAbsolutePath().indexOf("/",1):file.getAbsolutePath().length());
+            if (davisSession.getCurrentResource()==null||(davisSession.getCurrentRoot()!=null&&!davisSession.getCurrentRoot().equals(root))){
+            	davisSession.setCurrentRoot(root);
+            	Log.log(Log.DEBUG, "root changed to:"+root);
+    			String[] resList=FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem(), root.substring(1));
+				if (resList==null||resList.length==0){
+		        	davisSession.setCurrentResource(davisSession.getDefaultResource());
+				}else{
+					String defaultResource=getServletConfig().getInitParameter("default-resource");
+					String currentRes=null;
+					for (String res : resList) {
+						Log.log(Log.DEBUG, "res:"+res);
+						if (res.equals(defaultResource)) {
+							currentRes=res;
+						}
+					}
+					if ((currentRes == null || currentRes.length() == 0)
+							&& resList.length > 0) {
+						for (String res : resList) {
+							if (res.startsWith(defaultResource)) {
+								currentRes=res;
+							}
+						}
+					}
+					if ((currentRes == null || currentRes.length() == 0)
+							&& resList.length > 0) {
+						currentRes=resList[0];
+					}
+					davisSession.setCurrentResource(currentRes);
+				}
+	        	Log.log(Log.DEBUG, "resource changed to:"+davisSession.getCurrentResource());
+            }
         }
         String requestUrl = getRequestURL(request);
         Log.log(Log.DEBUG, "requestUrl: {0}", requestUrl);

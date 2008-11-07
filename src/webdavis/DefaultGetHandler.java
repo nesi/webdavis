@@ -342,10 +342,10 @@ public class DefaultGetHandler extends AbstractHandler {
         response.setContentLength((int) file.length());
         RemoteFileInputStream input = null;
         if (file.getFileSystem() instanceof SRBFileSystem) {
-        	((SRBFile)file).setResource(davisSession.getDefaultResource());
+//        	((SRBFile)file).setResource(davisSession.getDefaultResource());
         	input = new SRBFileInputStream((SRBFile)file);
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
+//        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
         	input = new IRODSFileInputStream((IRODSFile)file);
         }
         ServletOutputStream output = response.getOutputStream();
