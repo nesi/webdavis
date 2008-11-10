@@ -135,7 +135,7 @@
 
   </target>
 	
-  <target name="dist" depends="clean,compile"
+  <target name="jetty5" depends="clean,compile"
 	description="Create tar ball distribution">
     <mkdir   dir="${dist.home}"/>
     <copy todir="${build.home}/bin">
@@ -178,6 +178,36 @@
 	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
 	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
   </target>
+	
+  <target name="dist" depends="clean,compile" description="Create tar ball distribution">
+	<mkdir   dir="${dist.home}"/>
+	<mkdir   dir="${dist.home}/${app.name}-${app.version}"/>
+    <mkdir   dir="${dist.home}/${app.name}-${app.version}/logs"/>
+    <mkdir   dir="${dist.home}/${app.name}-${app.version}/webapps"/>
+	<copy todir="${build.home}/${app.name}-${app.version}">
+	  <fileset dir="${basedir}/jetty6"/>
+	</copy>
+	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root">
+	  <fileset dir="${web.home}"/>
+	</copy>
+  	<move file="${build.home}/${app.name}-${app.version}/webapps/root/dojoroot" todir="${build.home}/${app.name}-${app.version}/webapps"/>
+  	<mkdir dir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes"/>
+ 	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes/">
+  	  <fileset dir="${basedir}/resources"/>
+  	</copy>
+    <jar jarfile="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/lib/${app.name}.jar">
+  	  <fileset dir="${build.home}/WEB-INF/classes/"/>
+    </jar>
+  	<delete dir="${build.home}/META-INF"/>
+  	<delete dir="${build.home}/WEB-INF"/>
+  	<delete dir="${build.home}/dojoroot"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
+	  <tarfileset dir="${build.home}" />
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
+  </target>
+
 
   <target name="prepare">
 
