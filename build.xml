@@ -181,9 +181,9 @@
 	
   <target name="dist" depends="clean,compile" description="Create tar ball distribution">
 	<mkdir   dir="${dist.home}"/>
-	<mkdir   dir="${dist.home}/${app.name}-${app.version}"/>
-    <mkdir   dir="${dist.home}/${app.name}-${app.version}/logs"/>
-    <mkdir   dir="${dist.home}/${app.name}-${app.version}/webapps"/>
+	<mkdir   dir="${build.home}/${app.name}-${app.version}"/>
+    <mkdir   dir="${build.home}/${app.name}-${app.version}/logs"/>
+    <mkdir   dir="${build.home}/${app.name}-${app.version}/webapps"/>
 	<copy todir="${build.home}/${app.name}-${app.version}">
 	  <fileset dir="${basedir}/jetty6"/>
 	</copy>
