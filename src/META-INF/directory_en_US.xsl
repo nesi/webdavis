@@ -114,9 +114,12 @@
     dojo.require("dijit.Dialog");
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");
-    var layout1= [
+    var layout1= [{
+			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
+			rows: [
         { field: "name", width: "200px", name: "Name", editable: true},
         { field: "value", width: "auto", name: "Value", editable: true}
+        ]}
     ];
 
     var layout2= [
@@ -226,7 +229,7 @@
 	}
 	function addMetadata(){
         // set the properties for the new item:
-        var myNewItem = {name: " ", value: " "};
+        var myNewItem = {name: "name", value: "value"};
         // Insert the new item into the store:
         // (we use store3 from the example above in this example)
         store1.newItem(myNewItem);
@@ -247,9 +250,22 @@
         } // end if
 	}
 	function saveMetadata(){
+		var rowCount=dijit.byId('metadataGrid').rowCount;
+		var data="[";
+		for (var i=0;i&lt;rowCount;i++){
+			if (i>0) data+=",";
+			data+="{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\"}";
+		}
+		data+="]";
+//		alert(dijit.byId('metadataGrid').getItem(0).name);
+//		alert("data:"+data);
 	  	dojo.rawXhrPost({
     		url: server_url,
-    		postData: dojo.toJson(store1),
+		    headers: {
+		        "content-length": data.length,
+		        "content-type": "text/x-json"
+		    },
+		    postData: data,
     		load: function(responseObject, ioArgs){
       
 //				console.dir(responseObject);  // Dump it to the console
@@ -270,7 +286,7 @@
             </head>
             <body class="tundra">
             <!-- Dialogs begin-->
-            	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata" execute="checkPw(arguments[0]);">
+            	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
 					<tr>
 						<td>
@@ -288,7 +304,7 @@
 					</tr>
 				</table>
 				</div>
-				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions" execute="checkPw(arguments[0]);">
+				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions">
 				<table>
 					<tr>
 						<td width="600px">   <!-- dojoType="" structure="layout2" dojox.Grid store="store2"-->
@@ -297,12 +313,12 @@
 						<td valign="top">
 							<table>
 								<tr>
-									<td>Username</td>
-									<td><input type="text" name="username" id="formUsername" value="" dojoType="dijit.form.TextBox"/></td>
-								</tr>
-								<tr>
 									<td>Domain</td>
 									<td><input type="text" name="domain" id="formDomain" value="" dojoType="dijit.form.TextBox"/></td>
+								</tr>
+								<tr>
+									<td>Username</td>
+									<td><input type="text" name="username" id="formUsername" value="" dojoType="dijit.form.TextBox"/></td>
 								</tr>
 								<tr>
 									<td>Permission</td>
