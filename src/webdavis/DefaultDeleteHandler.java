@@ -9,6 +9,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.srb.SRBFile;
+import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * Default implementation of a handler for requests using the HTTP DELETE
@@ -53,9 +57,38 @@ public class DefaultDeleteHandler extends AbstractHandler {
         if (lockManager != null) {
             file = lockManager.getLockedResource(file, davisSession);
         }
-        file.delete();
+        del(file);
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         response.flushBuffer();
+    }
+    
+    private void del(RemoteFile file){
+    	if (file.isDirectory()){
+    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
+    		String[] fileList=file.list();
+    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
+    		if (fileList.length>0){
+        		for (int i=0;i<fileList.length;i++){
+        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
+    				if (file.getFileSystem() instanceof SRBFileSystem){
+    					del(new SRBFile( (SRBFile)file,fileList[i]));
+    				}else if (file.getFileSystem() instanceof IRODSFileSystem){
+    					del(new IRODSFile( (IRODSFile)file,fileList[i]));
+    					
+    				}
+        		}
+    		}
+    		file.delete();
+    	}else{
+    		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
+			if (file.getFileSystem() instanceof SRBFileSystem){
+				((SRBFile)file).delete(true);
+			}else if (file.getFileSystem() instanceof IRODSFileSystem){
+				((IRODSFile)file).delete();
+			}
+
+    	}
+    		
     }
 
 }
