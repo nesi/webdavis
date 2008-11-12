@@ -25,10 +25,11 @@ public class DavisListener implements HttpSessionListener {
 		Map sessMap = (Map)session.getAttribute(Davis.CREDENTIALS);
 		if (sessMap==null) return;
 		List creds= new ArrayList(sessMap.values());
+		Log.log(Log.DEBUG,"Going to dump credentials:"+creds);
 		DavisSession davisSession=null;
 		Map contMap;
 		for (int i=0;i<creds.size();i++){
-			davisSession=(DavisSession)sessMap.get(i);
+			davisSession=(DavisSession)creds.get(i);
 			contMap = (Map) session.getServletContext().getAttribute(Davis.CREDENTIALS);
 			if (contMap != null) {
 				Log.log(Log.DEBUG,"Dumping credential cache:"+davisSession.getSessionID());

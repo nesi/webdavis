@@ -43,11 +43,11 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 /**
- * This servlet provides a WebDAV gateway to CIFS/SMB shared resources.
+ * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
  * <p>
  * You can specify jCIFS configuration settings in the servlet's initialization
  * parameters which will be applied to the environment. Settings of particular
- * interest to the Davenport servlet include:
+ * interest to the Davis servlet include:
  * <p>
  * <table border="1">
  * <tr>
@@ -138,13 +138,13 @@ public class Davis extends HttpServlet {
 	 * The name of the servlet context attribute containing the
 	 * <code>SmbFileFilter</code> applied to resource requests.
 	 */
-	public static final String RESOURCE_FILTER = "davenport.resourceFilter";
+	public static final String RESOURCE_FILTER = "davis.resourceFilter";
 
 	/**
 	 * The name of the servlet context attribute containing the
 	 * <code>LockManager</code> which maintains WebDAV locks.
 	 */
-	public static final String LOCK_MANAGER = "davenport.lockManager";
+	public static final String LOCK_MANAGER = "davis.lockManager";
 
 	/**
 	 * The name of the servlet context attribute containing the charset used to
@@ -156,7 +156,7 @@ public class Davis extends HttpServlet {
 	 * The name of the request attribute containing the context base for URL
 	 * rewriting.
 	 */
-	public static final String CONTEXT_BASE = "davenport.contextBase";
+	public static final String CONTEXT_BASE = "davis.contextBase";
 
 	/**
 	 * The name of the request attribute containing the authenticated principal.
@@ -463,6 +463,7 @@ public class Davis extends HttpServlet {
 				// System.out.println(
 				// "No cached credentials found for "+serverName);
 				// }
+				Log.log(Log.DEBUG, "Got davisSession from session. sessionId="+sessionID);
 			}
 		}
 		if (davisSession == null) {
@@ -471,6 +472,16 @@ public class Davis extends HttpServlet {
 			if (credentials != null) {
 				// System.out.println("Dumping credential cache:"+credentials);
 				davisSession = (DavisSession) credentials.get(sessionID);
+				Log.log(Log.DEBUG, "Got davisSession from servletContext. sessionId="+sessionID);
+			}
+		}
+		if (davisSession!=null){
+			if (davisSession.getRemoteFileSystem()==null){
+				Log.log(Log.DEBUG,"no file system in davisSesion");
+				davisSession=null;
+			}else if (davisSession.getRemoteFileSystem()!=null&&!davisSession.getRemoteFileSystem().isConnected()){
+				Log.log(Log.DEBUG,"file system in davisSesion expired, need to reconnect.");
+				davisSession=null;
 			}
 		}
 
@@ -535,7 +546,7 @@ public class Davis extends HttpServlet {
 					}
 					GSSCredential gssCredential = client.slcsLogin(idp, user,
 							password);
-					// System.out.println("login using idp "+idp);
+					Log.log(Log.DEBUG,"login with idp "+idp);
 					account = new SRBAccount(serverName, serverPort,
 							gssCredential);
 					davisSession = new DavisSession();
@@ -554,7 +565,7 @@ public class Davis extends HttpServlet {
 				}
 
 			} else {
-				// System.out.println("login using username/password");
+				Log.log(Log.DEBUG,"login with username/password");
 				account = new SRBAccount(serverName, serverPort, user,
 						password, "/" + serverName + "/home/" + user + "."
 								+ domain, domain, defaultResource);
@@ -672,6 +683,7 @@ public class Davis extends HttpServlet {
 					session.setAttribute(CREDENTIALS, credentials);
 				}
 				credentials.put(sessionID, davisSession);
+				Log.log(Log.DEBUG, "Put davisSession to session. sessionID="+sessionID);
 				// System.out.println("Cached Credentials for "+serverName+":
 				// "+authentication);
 
@@ -686,6 +698,7 @@ public class Davis extends HttpServlet {
 						CREDENTIALS, credentials);
 			}
 			credentials.put(sessionID, davisSession);
+			Log.log(Log.DEBUG, "Put davisSession to ServletContext. sessionID="+sessionID);
 
 			// System.out.println("redirecting to "+redirectURL);
 			// if (!redirectURL.endsWith(getRelativePath(req, authentication)))

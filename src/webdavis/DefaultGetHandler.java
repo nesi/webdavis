@@ -279,10 +279,20 @@ public class DefaultGetHandler extends AbstractHandler {
             properties = director.getAllProperties(file, requestUrl, 1);
             try {
                 Transformer transformer = templates.newTransformer();
-                transformer.setParameter("dojoroot", this.getServletConfig().getInitParameter("dojoroot"));
+                String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
+        		if (dojoroot.indexOf("/")<0){
+//        			System.out.println(request.getPathInfo());
+//        			System.out.println(request.getRequestURI());
+//        			System.out.println(request.getContextPath());
+        			dojoroot=request.getContextPath()+"/"+dojoroot;
+        		}
+        		Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
+                transformer.setParameter("dojoroot", dojoroot);
                 transformer.setParameter("href", requestUrl);
-                transformer.setParameter("url", file.toString());
-//                transformer.setParameter("unc", file.getUncPath());
+                transformer.setParameter("url", file.getAbsolutePath());
+                transformer.setParameter("unc", file.toString());
+                transformer.setParameter("parent", request.getContextPath()+file.getParent());
+
 //                String type;
 //                switch (file.getType()) {
 //                case SmbFile.TYPE_WORKGROUP:

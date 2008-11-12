@@ -4,6 +4,7 @@
     <xsl:param name="href"/>
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
+    <xsl:param name="parent"/>
     <xsl:template match="/">
         <html>
             <head>
@@ -207,6 +208,8 @@
 	}
 	function getDirPermission(url){
 		dojo.byId("recursive").disabled=false;
+		server_url=url+"?method=permission";
+		getPermission(server_url);
 		dijit.byId('dialog2').show();
 	}
 	function savePermission(){
@@ -285,6 +288,7 @@
     			</script>		
             </head>
             <body class="tundra">
+                <xsl:apply-templates select="D:multistatus"/>
             <!-- Dialogs begin-->
             	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
@@ -350,7 +354,6 @@
 				</table>
 				</div>
             <!-- Dialogs end -->
-                <xsl:apply-templates select="D:multistatus"/>
             </body>
         </html>
     </xsl:template>
@@ -372,30 +375,22 @@
                     <xsl:text> files):</xsl:text>
                 </p>
                 <table border="0" cellpadding="0" cellspacing="0">
-                    <tr valign="top">
-                        <xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
-                            <td>
-                                <table border="0" cellpadding="6" cellspacing="0">
-                                    <tr valign="top">
-                                        <td nowrap="nowrap">
-                                            <xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
-                                                <xsl:sort select="D:propstat/D:prop/D:displayname"/>
-                                            </xsl:apply-templates>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </xsl:if>
-                        <xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
-                            <td>
-                                <table border="0" cellpadding="6" cellspacing="0">
+                   	<tr valign="top">
+                       <td>
+                           <table border="0" cellpadding="6" cellspacing="0">
+                    			<xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
+                                    <xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
+                                        <xsl:sort select="D:propstat/D:prop/D:displayname"/>
+                                    </xsl:apply-templates>
+                    			</xsl:if>
+                    			<xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
                                     <xsl:apply-templates select="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]" mode="file">
                                         <xsl:sort select="D:propstat/D:prop/D:displayname"/>
                                     </xsl:apply-templates>
-                                </table>
-                            </td>
-                        </xsl:if>
-                    </tr>
+                    			</xsl:if>
+                            </table>
+                        </td>
+                	</tr>
                 </table>
             </xsl:when>
             <xsl:otherwise>
@@ -412,19 +407,32 @@
             <xsl:text>Last modified on </xsl:text>
             <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
             <xsl:text>.</xsl:text>
-            <xsl:if test="$url != 'smb://'">
-                <br/><a href="." class="parent">Parent</a>
+            <xsl:if test="$url != '/'">
+                <br/><a href="{$parent}" class="parent">Parent</a>
             </xsl:if>
         </p>
     </xsl:template>
     <xsl:template match="D:response" mode="directory">
-        <xsl:if test="position() != 1"><br/></xsl:if>
-        <a href="{D:href}" class="directory">
-            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
-                <xsl:attribute name="class">hiddendirectory</xsl:attribute>
-            </xsl:if>
-            <xsl:value-of select="D:propstat/D:prop/D:displayname"/>
-        </a>
+        <tr valign="top">
+            <td nowrap="nowrap">
+		        <a href="{D:href}" class="directory">
+		            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
+		                <xsl:attribute name="class">hiddendirectory</xsl:attribute>
+		            </xsl:if>
+		            <xsl:value-of select="D:propstat/D:prop/D:displayname"/>
+		        </a>
+            </td>
+            <td align="right">
+            	<xsl:text>directory</xsl:text>
+            </td>
+            <td class="properties">
+                <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
+            </td>
+            <td nowrap="nowrap">
+                <button onclick="getMetadata('{D:href}')">M</button>
+                <button onclick="getDirPermission('{D:href}')">P</button>
+            </td>
+        </tr>
     </xsl:template>
     <xsl:template match="D:response" mode="file">
         <tr valign="top">

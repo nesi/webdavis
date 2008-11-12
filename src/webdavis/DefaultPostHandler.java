@@ -171,20 +171,20 @@ public class DefaultPostHandler extends AbstractHandler {
 
 					if (file.getFileSystem() instanceof SRBFileSystem) {
 						MetaDataRecordList rl;
-						rl = new SRBMetaDataRecordList(
-								SRBMetaDataSet
-										.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES),
-								(MetaDataTable) null);
-						file.modifyMetaData(rl);
-						metaDataTable = new MetaDataTable(operators,
-								definableMetaDataValues);
-
-						rl = new SRBMetaDataRecordList(
-								SRBMetaDataSet
-										.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES),
-								metaDataTable);
-
-						file.modifyMetaData(rl);
+						MetaDataField mdf=null;
+						if (!file.isDirectory()){
+							mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+						}else{
+							mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+						}
+						if (mdf!=null){
+							rl = new SRBMetaDataRecordList(mdf,(MetaDataTable) null);
+							file.modifyMetaData(rl);
+							metaDataTable = new MetaDataTable(operators,
+									definableMetaDataValues);
+							rl = new SRBMetaDataRecordList(mdf,metaDataTable);
+							file.modifyMetaData(rl);
+						}
 
 					}
 
@@ -193,30 +193,38 @@ public class DefaultPostHandler extends AbstractHandler {
 
 			MetaDataCondition[] conditions;
 			MetaDataTable metaDataTable = null;
-			MetaDataSelect[] selects;
+			MetaDataSelect[] selects=null;
 			MetaDataRecordList[] rl = null;
 			if (file.getFileSystem() instanceof SRBFileSystem) {
 				// conditions = new MetaDataCondition[0];
 				// conditions[0] = MetaDataSet.newCondition(
 				// SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES, metaDataTable );
 
-				selects = new MetaDataSelect[1];
-				// "definable metadata for files"
-				selects[0] = MetaDataSet
-						.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
-
-				rl = file.query(selects);
+				if (!file.isDirectory()){
+					selects = new MetaDataSelect[1];
+					// "definable metadata for files"
+					selects[0] = MetaDataSet
+							.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+				}else{
+					selects = new MetaDataSelect[1];
+					// "definable metadata for files"
+					selects[0] = MetaDataSet
+							.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+				}
+				if (selects!=null){
+					rl = file.query(selects);
+				}
 
 			}
 			str.append("{\nitems:[");
+			boolean b = false;
 			if (rl != null) { // Nothing in the database matched the query
 				for (int i = 0; i < rl.length; i++) {
-					if (i > 0)
-						str.append(",\n");
-					else
-						str.append("\n");
+//					if (i > 0)
+//						str.append(",\n");
+//					else
+//						str.append("\n");
 
-					boolean b = false;
 					int metaDataIndex;
 					if (file.isDirectory())
 						metaDataIndex = rl[i]
