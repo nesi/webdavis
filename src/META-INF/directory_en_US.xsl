@@ -213,7 +213,12 @@
 		dijit.byId('dialog2').show();
 	}
 	function savePermission(){
-		var form_url=server_url+"&amp;username="+dojo.byId("formUsername").value+"&amp;domain="+dojo.byId("formDomain").value+"&amp;permission="+dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+		var recursiveValue="";
+		if (dojo.byId("recursive").disabled==false){
+			recursiveValue="&amp;recursive="+(dojo.byId("recursive").checked);
+		}
+		var form_url=server_url+"&amp;username="+dojo.byId("formUsername").value+"&amp;domain="+dojo.byId("formDomain").value+"&amp;permission="+dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value+recursiveValue;
+//		alert(form_url);
 		getPermission(form_url);
 	}
 	function getSelectedPermission(e){
