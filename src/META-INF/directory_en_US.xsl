@@ -191,6 +191,16 @@
 	function populatePermission(perms){
 		store2=new dojo.data.ItemFileWriteStore({data: perms});
 		permissionGrid.setStore(store2);
+//		alert(perms.sticky);
+		if (perms.sticky!=null){
+			if (perms.sticky=="true"){
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky()\">Unset&lt;/button>";
+			}else{
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky()\">Set&lt;/button>";
+			}
+		}else{
+			document.getElementById("stickyControl").innerHTML="";
+		}
 	}
 	function getMetadata(url){
 		server_url=url+"?method=metadata";
@@ -214,11 +224,30 @@
 	}
 	function savePermission(){
 		var recursiveValue="";
+		var usernameValue=dojo.byId("formUsername").value;
+		var domainValue=dojo.byId("formDomain").value;
+		var permValue=dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+		if (usernameValue==""){
+			alert("Please input a username.");
+			return;
+		}
+		if (domainValue==""){
+			alert("Please input a domain.");
+			return;
+		}
 		if (dojo.byId("recursive").disabled==false){
 			recursiveValue="&amp;recursive="+(dojo.byId("recursive").checked);
 		}
-		var form_url=server_url+"&amp;username="+dojo.byId("formUsername").value+"&amp;domain="+dojo.byId("formDomain").value+"&amp;permission="+dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value+recursiveValue;
+		var form_url=server_url+"&amp;username="+usernameValue+"&amp;domain="+domainValue+"&amp;permission="+permValue+recursiveValue;
 //		alert(form_url);
+		getPermission(form_url);
+	}
+	function setSticky(){
+		var form_url=server_url+"&amp;sticky=true";
+		getPermission(form_url);
+	}
+	function unsetSticky(){
+		var form_url=server_url+"&amp;sticky=false";
 		getPermission(form_url);
 	}
 	function getSelectedPermission(e){
@@ -321,6 +350,9 @@
 						</td>
 						<td valign="top">
 							<table>
+								<tr>
+									<td colspan="2"><span id="stickyControl"></span></td>
+								</tr>
 								<tr>
 									<td>Domain</td>
 									<td><input type="text" name="domain" id="formDomain" value="" dojoType="dijit.form.TextBox"/></td>
