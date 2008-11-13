@@ -95,6 +95,16 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 
 			}
+			String sticky = request.getParameter("sticky");
+			if (sticky!=null){
+				Log.log(Log.DEBUG, "set "+file.getAbsolutePath()+" -- sticky:"+sticky);
+				boolean flag=false;
+				try {
+					flag = Boolean.parseBoolean(sticky);
+				} catch (Exception _e) {
+				}
+				this.setSticky(file, flag);
+			}
 
 			MetaDataRecordList[] permissions = null;
 			if (file.getFileSystem() instanceof SRBFileSystem) {
@@ -102,7 +112,11 @@ public class DefaultPostHandler extends AbstractHandler {
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
 				// permissions=((IRODSFile)file).getPermissions(true);
 			}
-			str.append("{\nitems:[");
+			str.append("{\n");
+			if (file.isDirectory()){
+				str.append("sticky:'").append(this.isPermInherited(file)).append("',\n");
+			}
+			str.append("items:[");
 			if (permissions != null) {
 				for (int i = 0; i < permissions.length; i++) {
 					// for (MetaDataField f:p.getFields()){
@@ -299,5 +313,29 @@ public class DefaultPostHandler extends AbstractHandler {
 		op.close();
 
 	}
+	private boolean isPermInherited(RemoteFile file) throws IOException 
+    {
 
+            String[] selectFieldNames = {
+                    SRBMetaDataSet.DIRECTORY_LINK_NUMBER,
+            };
+
+            MetaDataSelect inheritanceQuery[] = MetaDataSet.newSelection( selectFieldNames );
+            MetaDataRecordList[] list = file.query(inheritanceQuery);
+
+            if(list != null)
+            {
+                MetaDataRecordList r = list[0];
+                String result  = r.getValue(r.getFieldIndex(SRBMetaDataSet.DIRECTORY_LINK_NUMBER)).toString();
+                return result.equals("1");
+            }
+
+            return false;
+    }
+	private void setSticky(RemoteFile file, boolean flag) throws IOException{
+		MetaDataField mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DIRECTORY_LINK_NUMBER);
+		MetaDataRecordList rl = new SRBMetaDataRecordList(mdf,String.valueOf(flag));
+		file.modifyMetaData(rl);
+		
+	}
 }
