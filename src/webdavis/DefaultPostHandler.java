@@ -82,11 +82,12 @@ public class DefaultPostHandler extends AbstractHandler {
 				String permission = request.getParameter("permission");
 				boolean recursive = false;
 				try {
-					recursive = Boolean.getBoolean(request
+					recursive = Boolean.parseBoolean(request
 							.getParameter("recursive"));
 				} catch (Exception _e) {
 				}
 				if (file.getFileSystem() instanceof SRBFileSystem) {
+					Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
 					((SRBFile) file).changePermissions(permission, username,
 							domain, recursive);
 				} else if (file.getFileSystem() instanceof IRODSFileSystem) {
@@ -122,13 +123,26 @@ public class DefaultPostHandler extends AbstractHandler {
 									permissions[i]
 											.getValue(SRBMetaDataSet.USER_DOMAIN))
 							.append("', ");
-					// "file access constraint"
-					str
-							.append("permission:'")
-							.append(
-									permissions[i]
-											.getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))
-							.append("'}");
+                    if(file.isDirectory())
+                    {
+    					// "directory access constraint"
+    					str
+    							.append("permission:'")
+    							.append(
+    									permissions[i]
+    											.getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
+    							.append("'}");
+                    }
+                    else
+                    {
+    					// "file access constraint"
+    					str
+    							.append("permission:'")
+    							.append(
+    									permissions[i]
+    											.getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))
+    							.append("'}");
+                    }
 				}
 			}
 			str.append("\n");
