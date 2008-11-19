@@ -4,6 +4,7 @@
     <xsl:param name="href"/>
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
+    <xsl:param name="parent"/>
     <xsl:template match="/">
         <html>
             <head>
@@ -102,7 +103,7 @@
     }
     
                 </style>
-    			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug:false, parseOnLoad: true">&lt;/script></xsl:text>
+    			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true">&lt;/script></xsl:text>
     			<script type="text/javascript">
     // Load Dojo's code relating to the Button widget
     dojo.require("dojox.grid.compat.Grid");
@@ -114,6 +115,7 @@
     dojo.require("dijit.Dialog");
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");
+	dojo.require("dijit.form.FilteringSelect");
     var layout1= [{
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
@@ -130,25 +132,57 @@
 	var model2 = new dojox.grid.data.Table(null, []);
 	var store1=new dojo.data.ItemFileWriteStore({data: []});
 	var store2=new dojo.data.ItemFileWriteStore({data: []});
+	var store3=new dojo.data.ItemFileWriteStore({data: []});
+	var store4=new dojo.data.ItemFileWriteStore({data: []});
 	var server_url;
+	var ori_url;
 	
-	var handle = dojo.connect(store2, "onSet", onPackageEditChange); 
-	function onPackageEditChange(item, attribute, oldValue, newValue)
-	{
-   // If the 2 values are the same then they really did not change.
-   if (oldValue == newValue)
-   {
-      console.log("Attribute: " + attribute + " on package: " + item.name + "did not change.");
-   }
-   else
-   {  
-      // TODO: Save the updated data.
-      console.log("Attribute: " + attribute + " on package: " + item.name + "was changed from: " + oldValue + " to: " + newValue);  
-   
-      console.dir({"The updated data store":store2});
-   }
-	} 
-
+	function getDomains(urlString){
+	  	dojo.xhrPost({
+    		url: urlString,
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(formDomain);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store3=new dojo.data.ItemFileWriteStore({data: responseObject});
+				var formDomainObj = dijit.byId('formDomain');
+				formDomainObj.store=store3;
+				formDomainObj.onChange=function(val){
+//					alert(server_url);
+					dijit.byId('formUsername').textbox.value = "";
+					dijit.byId('formUsername').valueNode.value = "";
+					getUsers(ori_url+"?method=userlist&amp;domain="+formDomainObj.item.name);
+//					console.dir(formDomainObj.item);
+				}
+//				alert("xx");
+//      			formDomain.setStore(store3);
+//       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading domain list.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
+	function getUsers(urlString){
+	  	dojo.xhrPost({
+    		url: urlString,
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(formDomain);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store4=new dojo.data.ItemFileWriteStore({data: responseObject});
+				var formUsernameObj = dijit.byId('formUsername');
+				formUsernameObj.store=store4;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading domain list.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
 	function getPermission(urlString){
 	  	dojo.xhrPost({
     		url: urlString,
@@ -190,8 +224,19 @@
 	function populatePermission(perms){
 		store2=new dojo.data.ItemFileWriteStore({data: perms});
 		permissionGrid.setStore(store2);
+//		alert(perms.sticky);
+		if (perms.sticky!=null){
+			if (perms.sticky=="true"){
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky()\">Unset&lt;/button>";
+			}else{
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky()\">Set&lt;/button>";
+			}
+		}else{
+			document.getElementById("stickyControl").innerHTML="";
+		}
 	}
 	function getMetadata(url){
+		ori_url=url;
 		server_url=url+"?method=metadata";
 		loadMetadataFromServer(server_url);
 		dijit.byId('dialog1').show();
@@ -200,17 +245,47 @@
 		loadMetadataFromServer(server_url);
 	}
 	function getFilePermission(url){
+		ori_url=url;
 		dojo.byId("recursive").disabled=true;
+		server_url=url+"?method=domains";
+		getDomains(server_url);
 		server_url=url+"?method=permission";
 		getPermission(server_url);
 		dijit.byId('dialog2').show();
 	}
 	function getDirPermission(url){
+		ori_url=url;
 		dojo.byId("recursive").disabled=false;
+		server_url=url+"?method=permission";
+		getPermission(server_url);
 		dijit.byId('dialog2').show();
 	}
 	function savePermission(){
-		var form_url=server_url+"&amp;username="+dojo.byId("formUsername").value+"&amp;domain="+dojo.byId("formDomain").value+"&amp;permission="+dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+		var recursiveValue="";
+		var usernameValue=dojo.byId("formUsername").value;
+		var domainValue=dojo.byId("formDomain").value;
+		var permValue=dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+		if (!dijit.byId("formDomain").isValid()||domainValue==""){
+			alert("Please enter a valid domain.");
+			return;
+		}
+		if (!dijit.byId("formUsername").isValid()||usernameValue==""){
+			alert("Please enter a valid username.");
+			return;
+		}
+		if (dojo.byId("recursive").disabled==false){
+			recursiveValue="&amp;recursive="+(dojo.byId("recursive").checked);
+		}
+		var form_url=server_url+"&amp;username="+usernameValue+"&amp;domain="+domainValue+"&amp;permission="+permValue+recursiveValue;
+//		alert(form_url);
+		getPermission(form_url);
+	}
+	function setSticky(){
+		var form_url=server_url+"&amp;sticky=true";
+		getPermission(form_url);
+	}
+	function unsetSticky(){
+		var form_url=server_url+"&amp;sticky=false";
 		getPermission(form_url);
 	}
 	function getSelectedPermission(e){
@@ -285,6 +360,7 @@
     			</script>		
             </head>
             <body class="tundra">
+                <xsl:apply-templates select="D:multistatus"/>
             <!-- Dialogs begin-->
             	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
@@ -313,12 +389,15 @@
 						<td valign="top">
 							<table>
 								<tr>
+									<td colspan="2"><span id="stickyControl"></span></td>
+								</tr>
+								<tr>
 									<td>Domain</td>
-									<td><input type="text" name="domain" id="formDomain" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store3"/></td>
 								</tr>
 								<tr>
 									<td>Username</td>
-									<td><input type="text" name="username" id="formUsername" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store4"/></td>
 								</tr>
 								<tr>
 									<td>Permission</td>
@@ -350,7 +429,6 @@
 				</table>
 				</div>
             <!-- Dialogs end -->
-                <xsl:apply-templates select="D:multistatus"/>
             </body>
         </html>
     </xsl:template>
@@ -372,30 +450,22 @@
                     <xsl:text> files):</xsl:text>
                 </p>
                 <table border="0" cellpadding="0" cellspacing="0">
-                    <tr valign="top">
-                        <xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
-                            <td>
-                                <table border="0" cellpadding="6" cellspacing="0">
-                                    <tr valign="top">
-                                        <td nowrap="nowrap">
-                                            <xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
-                                                <xsl:sort select="D:propstat/D:prop/D:displayname"/>
-                                            </xsl:apply-templates>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </xsl:if>
-                        <xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
-                            <td>
-                                <table border="0" cellpadding="6" cellspacing="0">
+                   	<tr valign="top">
+                       <td>
+                           <table border="0" cellpadding="6" cellspacing="0">
+                    			<xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
+                                    <xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
+                                        <xsl:sort select="D:propstat/D:prop/D:displayname"/>
+                                    </xsl:apply-templates>
+                    			</xsl:if>
+                    			<xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
                                     <xsl:apply-templates select="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]" mode="file">
                                         <xsl:sort select="D:propstat/D:prop/D:displayname"/>
                                     </xsl:apply-templates>
-                                </table>
-                            </td>
-                        </xsl:if>
-                    </tr>
+                    			</xsl:if>
+                            </table>
+                        </td>
+                	</tr>
                 </table>
             </xsl:when>
             <xsl:otherwise>
@@ -412,19 +482,32 @@
             <xsl:text>Last modified on </xsl:text>
             <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
             <xsl:text>.</xsl:text>
-            <xsl:if test="$url != 'smb://'">
-                <br/><a href="." class="parent">Parent</a>
+            <xsl:if test="$url != '/'">
+                <br/><a href="{$parent}" class="parent">Parent</a>
             </xsl:if>
         </p>
     </xsl:template>
     <xsl:template match="D:response" mode="directory">
-        <xsl:if test="position() != 1"><br/></xsl:if>
-        <a href="{D:href}" class="directory">
-            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
-                <xsl:attribute name="class">hiddendirectory</xsl:attribute>
-            </xsl:if>
-            <xsl:value-of select="D:propstat/D:prop/D:displayname"/>
-        </a>
+        <tr valign="top">
+            <td nowrap="nowrap">
+		        <a href="{D:href}" class="directory">
+		            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
+		                <xsl:attribute name="class">hiddendirectory</xsl:attribute>
+		            </xsl:if>
+		            <xsl:value-of select="D:propstat/D:prop/D:displayname"/>
+		        </a>
+            </td>
+            <td align="right">
+            	<xsl:text>directory</xsl:text>
+            </td>
+            <td class="properties">
+                <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
+            </td>
+            <td nowrap="nowrap">
+                <button onclick="getMetadata('{D:href}')">M</button>
+                <button onclick="getDirPermission('{D:href}')">P</button>
+            </td>
+        </tr>
     </xsl:template>
     <xsl:template match="D:response" mode="file">
         <tr valign="top">

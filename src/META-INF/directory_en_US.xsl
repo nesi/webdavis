@@ -103,7 +103,7 @@
     }
     
                 </style>
-    			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug:false, parseOnLoad: true">&lt;/script></xsl:text>
+    			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true">&lt;/script></xsl:text>
     			<script type="text/javascript">
     // Load Dojo's code relating to the Button widget
     dojo.require("dojox.grid.compat.Grid");
@@ -115,6 +115,7 @@
     dojo.require("dijit.Dialog");
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");
+	dojo.require("dijit.form.FilteringSelect");
     var layout1= [{
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
@@ -131,25 +132,57 @@
 	var model2 = new dojox.grid.data.Table(null, []);
 	var store1=new dojo.data.ItemFileWriteStore({data: []});
 	var store2=new dojo.data.ItemFileWriteStore({data: []});
+	var store3=new dojo.data.ItemFileWriteStore({data: []});
+	var store4=new dojo.data.ItemFileWriteStore({data: []});
 	var server_url;
+	var ori_url;
 	
-	var handle = dojo.connect(store2, "onSet", onPackageEditChange); 
-	function onPackageEditChange(item, attribute, oldValue, newValue)
-	{
-   // If the 2 values are the same then they really did not change.
-   if (oldValue == newValue)
-   {
-      console.log("Attribute: " + attribute + " on package: " + item.name + "did not change.");
-   }
-   else
-   {  
-      // TODO: Save the updated data.
-      console.log("Attribute: " + attribute + " on package: " + item.name + "was changed from: " + oldValue + " to: " + newValue);  
-   
-      console.dir({"The updated data store":store2});
-   }
-	} 
-
+	function getDomains(urlString){
+	  	dojo.xhrPost({
+    		url: urlString,
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(formDomain);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store3=new dojo.data.ItemFileWriteStore({data: responseObject});
+				var formDomainObj = dijit.byId('formDomain');
+				formDomainObj.store=store3;
+				formDomainObj.onChange=function(val){
+//					alert(server_url);
+					dijit.byId('formUsername').textbox.value = "";
+					dijit.byId('formUsername').valueNode.value = "";
+					getUsers(ori_url+"?method=userlist&amp;domain="+formDomainObj.item.name);
+//					console.dir(formDomainObj.item);
+				}
+//				alert("xx");
+//      			formDomain.setStore(store3);
+//       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading domain list.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
+	function getUsers(urlString){
+	  	dojo.xhrPost({
+    		url: urlString,
+    		load: function(responseObject, ioArgs){
+      
+//				console.dir(formDomain);  // Dump it to the console
+//         		console.dir(responseObject.items[0].username);  // Prints username     			
+				store4=new dojo.data.ItemFileWriteStore({data: responseObject});
+				var formUsernameObj = dijit.byId('formUsername');
+				formUsernameObj.store=store4;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error when loading domain list.");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
 	function getPermission(urlString){
 	  	dojo.xhrPost({
     		url: urlString,
@@ -203,6 +236,7 @@
 		}
 	}
 	function getMetadata(url){
+		ori_url=url;
 		server_url=url+"?method=metadata";
 		loadMetadataFromServer(server_url);
 		dijit.byId('dialog1').show();
@@ -211,12 +245,16 @@
 		loadMetadataFromServer(server_url);
 	}
 	function getFilePermission(url){
+		ori_url=url;
 		dojo.byId("recursive").disabled=true;
+		server_url=url+"?method=domains";
+		getDomains(server_url);
 		server_url=url+"?method=permission";
 		getPermission(server_url);
 		dijit.byId('dialog2').show();
 	}
 	function getDirPermission(url){
+		ori_url=url;
 		dojo.byId("recursive").disabled=false;
 		server_url=url+"?method=permission";
 		getPermission(server_url);
@@ -227,12 +265,12 @@
 		var usernameValue=dojo.byId("formUsername").value;
 		var domainValue=dojo.byId("formDomain").value;
 		var permValue=dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
-		if (usernameValue==""){
-			alert("Please input a username.");
+		if (!dijit.byId("formDomain").isValid()||domainValue==""){
+			alert("Please enter a valid domain.");
 			return;
 		}
-		if (domainValue==""){
-			alert("Please input a domain.");
+		if (!dijit.byId("formUsername").isValid()||usernameValue==""){
+			alert("Please enter a valid username.");
 			return;
 		}
 		if (dojo.byId("recursive").disabled==false){
@@ -355,11 +393,11 @@
 								</tr>
 								<tr>
 									<td>Domain</td>
-									<td><input type="text" name="domain" id="formDomain" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store3"/></td>
 								</tr>
 								<tr>
 									<td>Username</td>
-									<td><input type="text" name="username" id="formUsername" value="" dojoType="dijit.form.TextBox"/></td>
+									<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store4"/></td>
 								</tr>
 								<tr>
 									<td>Permission</td>

@@ -303,6 +303,24 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 
+		} else if (method.equalsIgnoreCase("domains")) {
+			str.append("{\nitems:[\n");
+			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
+			for (int i = 0; i < domains.length; i++) {
+				if (i>0) str.append(",\n");
+				str.append("{name:'").append(domains[i]).append("'}");
+			}
+			str.append("\n");
+			str.append("]}");
+		} else if (method.equalsIgnoreCase("userlist")) {
+			str.append("{\nitems:[\n");
+			String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
+			for (int i = 0; i < users.length; i++) {
+				if (i>0) str.append(",\n");
+				str.append("{name:'").append(users[i]).append("'}");
+			}
+			str.append("\n");
+			str.append("]}");
 		}
 
 		ServletOutputStream op = response.getOutputStream();
