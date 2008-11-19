@@ -256,6 +256,8 @@
 	function getDirPermission(url){
 		ori_url=url;
 		dojo.byId("recursive").disabled=false;
+		server_url=url+"?method=domains";
+		getDomains(server_url);
 		server_url=url+"?method=permission";
 		getPermission(server_url);
 		dijit.byId('dialog2').show();

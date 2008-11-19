@@ -118,6 +118,7 @@ public class FSUtilities {
     
     public static String[] getDomains(SRBFileSystem fs){
     	List<String> domains=new ArrayList<String>();
+    	domains.add("groups");
 		MetaDataCondition conditions[] = {
 				MetaDataSet.newCondition(
 						UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "staff" ),
