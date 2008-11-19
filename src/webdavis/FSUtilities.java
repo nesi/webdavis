@@ -1,11 +1,15 @@
 package webdavis;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
@@ -110,5 +114,106 @@ public class FSUtilities {
         }
 
         return names;
+    }
+    
+    public static String[] getDomains(SRBFileSystem fs){
+    	List<String> domains=new ArrayList<String>();
+		MetaDataCondition conditions[] = {
+				MetaDataSet.newCondition(
+						UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "staff" ),
+		//						MetaDataSet.newCondition(
+		//								UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "public" ),
+		//								MetaDataSet.newCondition(
+		//										UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "sysadmin" ),
+		};
+		MetaDataSelect[] selects ={ MetaDataSet.newSelection( SRBMetaDataSet.USER_DOMAIN) };
+		MetaDataRecordList[] rl;
+		try {
+			rl = fs.query(conditions,selects);
+			if (rl != null) { 
+				for (int i=0;i<rl.length;i++) {
+					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		MetaDataCondition conditions1[] = {
+								MetaDataSet.newCondition(
+										UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "public" ),
+		};
+		try {
+			rl = fs.query(conditions1,selects);
+			if (rl != null) { 
+				for (int i=0;i<rl.length;i++) {
+					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		MetaDataCondition conditions2[] = {
+				MetaDataSet.newCondition(
+						UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "sysadmin" ),
+		};
+		try {
+			rl = fs.query(conditions1,selects);
+			if (rl != null) { 
+				for (int i=0;i<rl.length;i++) {
+					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		String[] rt=new String[domains.size()];
+		int i=0;
+		for (String s:domains) {
+			rt[i]=s;
+			i++;
+		}
+		
+    	return rt;
+    }
+    
+    public static String[] getUsernamesByDomainName(SRBFileSystem fs, String domainName){
+    	List<String> usernames=new ArrayList<String>();
+		MetaDataCondition[] conditions = {
+				MetaDataSet.newCondition(
+						SRBMetaDataSet.USER_DOMAIN, MetaDataCondition.LIKE, domainName ),
+//						MetaDataSet.newCondition(
+//								UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "public" ),
+//								MetaDataSet.newCondition(
+//										UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "sysadmin" ),
+		};
+		MetaDataSelect[] selects ={
+		MetaDataSet.newSelection( SRBMetaDataSet.USER_NAME ),
+		//MetaDataSet.newSelection( SRBMetaDataSet.USER_DOMAIN)
+		};
+		MetaDataRecordList[] rl;
+		try {
+			rl = fs.query(conditions,selects);
+			if (rl != null) {
+				for (int i=0;i<rl.length;i++) {
+					usernames.add((String) rl[i].getValue(SRBMetaDataSet.USER_NAME));
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		String[] rt=new String[usernames.size()];
+		int i=0;
+		for (String s:usernames) {
+			rt[i]=s;
+			i++;
+		}
+		
+    	return rt;
+    	
     }
 }
