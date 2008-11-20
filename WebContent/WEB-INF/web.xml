@@ -1254,28 +1254,28 @@
 		</init-param>
 		<init-param>
 			<description>
-				proxy host for slcs
+				proxy host for slcs, set to empty if no proxy is needed
 			</description>
 			<param-name>proxy-host</param-name>
 			<param-value>www-proxy.sapac.edu.au</param-value>
 		</init-param><!-- www-proxy.sapac.edu.au -->
 		<init-param>
 			<description>
-				proxy port for slcs
+				proxy port for slcs, set to empty if no proxy is needed
 			</description>
 			<param-name>proxy-port</param-name>
 			<param-value>8080</param-value>
 		</init-param><!-- 8080 -->
 		<init-param>
 			<description>
-				proxy username for slcs
+				proxy username for slcs, set to empty if no proxy is needed
 			</description>
 			<param-name>proxy-username</param-name>
 			<param-value></param-value>
 		</init-param>
 		<init-param>
 			<description>
-				proxy password for slcs
+				proxy password for slcs, set to empty if no proxy is needed
 			</description>
 			<param-name>proxy-password</param-name>
 			<param-value></param-value>
