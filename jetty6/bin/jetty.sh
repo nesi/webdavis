@@ -76,6 +76,8 @@
 # JETTY_USER
 #   if set, then used as a username to run the server as
 #
+# chkconfig: 35 99 01
+# description: Starts/Stops Jetty
 
 usage()
 {
