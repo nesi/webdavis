@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +17,62 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 
 public class FSUtilities {
+	
+	 public static String[] getAvailableResource( SRBFileSystem fs ) throws IOException{
+		 return getAvailableResource(fs,fs.getMcatZone());
+	 }
+	 public static String[] getAvailableResource( SRBFileSystem fs, String zone )
+	    throws IOException
+	  {
+	    MetaDataRecordList[] rl = null;
+	    if (fs.getVersionNumber() >= 3)
+	    {
+	      String userName = fs.getUserName();
+	      String mdasDomain = fs.getDomainName();
+//	      String zone = fs.getMcatZone();
+
+
+	      //Query file system to determine this SRBFile's storage resource,
+	      //find what resources the user can access, pick one at random
+	      //then use that for the default resource of its fileSystem object
+	      MetaDataCondition[] conditions = {
+	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCESS_PRIVILEGE,
+	          MetaDataCondition.LIKE, "%write%" ),
+	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_NAME,
+	          MetaDataCondition.EQUAL, userName),
+	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_DOMAIN,
+	          MetaDataCondition.EQUAL, mdasDomain ),
+	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
+	          MetaDataCondition.EQUAL, zone ),
+	      };
+	      MetaDataSelect[] selects = {
+	        MetaDataSet.newSelection( SRBMetaDataSet.RESOURCE_NAME ) };
+	      rl = fs.query( conditions, selects );
+
+	      if (rl == null) {
+	        //Same as above, just no zone
+	        //Metadata to determine available resources was added only after SRB3
+	        rl = fs.query( SRBMetaDataSet.RESOURCE_NAME );
+	        if ((rl == null) && (!userName.equals("public"))) {
+	          //if null then file does not exist (or is dir?)
+	          //public user never has resources, so can't commit files, so it doesn't matter.
+	          throw new FileNotFoundException( "No resources available" );
+	        }
+	      }
+	    }
+	    if (rl != null) {
+	      String[] resArray=new String[rl.length];
+	      for (int i=0;i<rl.length;i++){
+	    	  resArray[i]=rl[i].getValue( SRBMetaDataSet.RESOURCE_NAME ).toString();
+	      }
+	      return resArray;
+	    }
+	    return new String[0];
+	  }
+	
+	    public static String[] getSRBResources(SRBFileSystem fs) throws IOException {
+	     return getSRBResources(fs,fs.getMcatZone());
+	    }
     public static String[] getSRBResources(SRBFileSystem fs, String currentZone) throws IOException {
 
         //we want to get all of the zones
@@ -88,11 +145,22 @@ public class FSUtilities {
 		try {
 			recordList = fs
 						.query(
-								new MetaDataCondition[] { MetaDataSet
+								new MetaDataCondition[] {
+								        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCESS_PRIVILEGE,
+								  	          MetaDataCondition.LIKE, "%write%" ),
+								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_NAME,
+								  	          MetaDataCondition.EQUAL, fs.getUserName()),
+								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_DOMAIN,
+								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
+//								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
+//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
+										
+										MetaDataSet
 										.newCondition(
 												SRBMetaDataSet.RSRC_OWNER_ZONE,
 												MetaDataCondition.EQUAL,
-												zoneName) },
+												zoneName) 
+												},
 								new MetaDataSelect[] { MetaDataSet
 										.newSelection(SRBMetaDataSet.RESOURCE_NAME) });
 			recordList = MetaDataRecordList.getAllResults(recordList);

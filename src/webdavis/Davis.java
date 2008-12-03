@@ -384,12 +384,15 @@ public class Davis extends HttpServlet {
 		String serverName;
 		int serverPort;
 		String defaultResource;
+		String zoneName;
 
 		defaultDomain = getServletConfig().getInitParameter("default-domain");
 		serverPort = 5544;
 		serverName = getServletConfig().getInitParameter("server-name");
 		defaultResource = getServletConfig().getInitParameter(
 				"default-resource");
+		zoneName = getServletConfig().getInitParameter(
+				"zone-name");
 		String proxyHost = getServletConfig().getInitParameter("proxy-host");
 		String proxyPort = getServletConfig().getInitParameter("proxy-port");
 		String proxyUsername = getServletConfig().getInitParameter(
@@ -553,7 +556,7 @@ public class Davis extends HttpServlet {
 					davisSession.setServerName(serverName);
 					davisSession.setServerPort(serverPort);
 					davisSession.setDomain(account.getDomainName());
-					davisSession.setZone(serverName);
+					davisSession.setZone(zoneName);
 					davisSession.setAccount(account.getUserName());
 					davisSession.setDn(gssCredential.getName().toString());
 				} catch (GeneralSecurityException e) {
@@ -567,14 +570,14 @@ public class Davis extends HttpServlet {
 			} else {
 				Log.log(Log.DEBUG,"login with username/password");
 				account = new SRBAccount(serverName, serverPort, user,
-						password, "/" + serverName + "/home/" + user + "."
+						password, "/" + zoneName + "/home/" + user + "."
 								+ domain, domain, defaultResource);
 				davisSession = new DavisSession();
 				davisSession.setServerName(serverName);
 				davisSession.setDomain(domain);
 				davisSession.setServerPort(serverPort);
 				davisSession.setAccount(user);
-				davisSession.setZone(serverName);
+				davisSession.setZone(zoneName);
 
 			}
 			davisSession.setSessionID(sessionID);
@@ -584,61 +587,28 @@ public class Davis extends HttpServlet {
 				davisSession.setRemoteFileSystem(srbFileSystem);
 				homeDir = srbFileSystem.getHomeDirectory();
 				if (homeDir == null)
-					homeDir = "/" + serverName + "/home/" + user + "."
-							+ serverName;
-//				davisSession.setDefaultResource(account
-//						.getDefaultStorageResource());
-//				if (account.getDefaultStorageResource() == null
-//						|| account.getDefaultStorageResource().length() == 0) {
-				MetaDataRecordList[] resList = null;
+					homeDir = "/" + zoneName + "/home/" + user + "."
+							+ domain;
+				String[] resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
 				Log.log(Log.DEBUG, "account.getMcatZone():"+davisSession.getZone());
 				try {
-					resList = srbFileSystem
-							.query(
-									new MetaDataCondition[] { MetaDataSet
-											.newCondition(
-													SRBMetaDataSet.RSRC_OWNER_ZONE,
-													MetaDataCondition.EQUAL,
-													davisSession.getZone()) },
-									new MetaDataSelect[] { MetaDataSet
-											.newSelection(SRBMetaDataSet.RESOURCE_NAME) });
-					resList = MetaDataRecordList.getAllResults(resList);
-					Log.log(Log.DEBUG, "resList:"+resList);
-					for (MetaDataRecordList res : resList) {
-						Log.log(Log.DEBUG, "res:"+res.getValue(SRBMetaDataSet.RESOURCE_NAME));
-						if (res.getValue(SRBMetaDataSet.RESOURCE_NAME)
-								.toString().equals(defaultResource)) {
-//							account.setDefaultStorageResource(res.getValue(
-//									SRBMetaDataSet.RESOURCE_NAME)
-//									.toString());
-							davisSession.setDefaultResource(res.getValue(
-									SRBMetaDataSet.RESOURCE_NAME)
-									.toString());
+					for (String res : resList) {
+						Log.log(Log.DEBUG, "res:"+res);
+						if (res.equals(defaultResource)) {
+							davisSession.setDefaultResource(res);
 						}
 					}
 					if ((davisSession.getDefaultResource() == null || davisSession.getDefaultResource().length() == 0)
 							&& resList.length > 0) {
-						for (MetaDataRecordList res : resList) {
-							if (res.getValue(SRBMetaDataSet.RESOURCE_NAME)
-									.toString().startsWith(defaultResource)) {
-	//							account.setDefaultStorageResource(res.getValue(
-	//									SRBMetaDataSet.RESOURCE_NAME)
-	//									.toString());
-								davisSession.setDefaultResource(res.getValue(
-										SRBMetaDataSet.RESOURCE_NAME)
-										.toString());
+						for (String res : resList) {
+							if (res.startsWith(defaultResource)) {
+								davisSession.setDefaultResource(res);
 							}
 						}
 					}
-					//account.getDefaultStorageResource() == null || 
 					if ((davisSession.getDefaultResource() == null || davisSession.getDefaultResource().length() == 0)
 							&& resList.length > 0) {
-//						account.setDefaultStorageResource(resList[0]
-//								.getValue(SRBMetaDataSet.RESOURCE_NAME)
-//								.toString());
-						davisSession.setDefaultResource(resList[0]
-								.getValue(SRBMetaDataSet.RESOURCE_NAME)
-								.toString());
+						davisSession.setDefaultResource(resList[0]);
 					}
 				} catch (Exception e) {
 					// System.out.println("An Exception is
