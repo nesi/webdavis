@@ -102,7 +102,7 @@ public class DefaultPutHandler extends AbstractHandler {
         int count;
         Log.log(Log.DEBUG, "PUT method: "+output);
         while ((count = input.read(buf)) != -1) {
-        	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
+//        	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
             output.write(buf, 0, count);
         }
         output.flush();
