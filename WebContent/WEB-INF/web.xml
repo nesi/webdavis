@@ -1226,16 +1226,30 @@
 
 		<init-param>
 			<description>
-				server port of srb
+				server type, srb or irods
+			</description>
+			<param-name>server-type</param-name>
+			<param-value>srb</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				server port of srb/irods
 			</description>
 			<param-name>server-port</param-name>
 			<param-value>5544</param-value>
 		</init-param>
 		<init-param>
 			<description>
-				server name of srb
+				server name of srb/irods
 			</description>
 			<param-name>server-name</param-name>
+			<param-value>ngspare.sapac.edu.au</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				zone name of srb/irods
+			</description>
+			<param-name>zone-name</param-name>
 			<param-value>ngspare.sapac.edu.au</param-value>
 		</init-param>
 		<init-param>
