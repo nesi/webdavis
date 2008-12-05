@@ -39,14 +39,17 @@ import org.w3c.dom.Document;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileInputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.RemoteRandomAccessFile;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.irods.IRODSRandomAccessFile;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileInputStream;
 import edu.sdsc.grid.io.srb.SRBFileOutputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
+import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
 
 /**
  * Default implementation of a handler for requests using the HTTP GET
@@ -347,16 +350,30 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         String contentType = getServletConfig().getServletContext().getMimeType(
                 file.getName());
+        response.setHeader("Content-Length", String.valueOf(file.length()));
+        response.setHeader("Accept-Ranges","bytes"); 
         response.setContentType((contentType != null) ? contentType :
                 "application/octet-stream");
         response.setContentLength((int) file.length());
-        RemoteFileInputStream input = null;
+//        RemoteFileInputStream input = null;
+        RemoteRandomAccessFile input = null;
         if (file.getFileSystem() instanceof SRBFileSystem) {
-//        	((SRBFile)file).setResource(davisSession.getDefaultResource());
-        	input = new SRBFileInputStream((SRBFile)file);
+//        	input = new SRBFileInputStream((SRBFile)file);
+        	input = new SRBRandomAccessFile((SRBFile)file,"r");
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-//        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
-        	input = new IRODSFileInputStream((IRODSFile)file);
+        	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
+        }
+        String startingPoint=request.getHeader("Content-Range");
+        if (startingPoint!=null){
+        	try{
+        		String offsetString=startingPoint.substring(startingPoint.indexOf(" ")+1,startingPoint.indexOf("-"));
+        		Log.log(Log.DEBUG, "offset:"+offsetString);
+        		int offset=Integer.parseInt(offsetString);
+        		input.seek(offset);
+        		response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+        	}catch(Exception _e){
+        		
+        	}
         }
         ServletOutputStream output = response.getOutputStream();
         byte[] buf = new byte[8192];

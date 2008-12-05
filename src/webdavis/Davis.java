@@ -38,6 +38,7 @@ import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.RemoteAccount;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
@@ -385,6 +386,7 @@ public class Davis extends HttpServlet {
 		int serverPort;
 		String defaultResource;
 		String zoneName;
+		String serverType=getServletConfig().getInitParameter("server-type");
 
 		defaultDomain = getServletConfig().getInitParameter("default-domain");
 		serverPort = 5544;
@@ -492,7 +494,7 @@ public class Davis extends HttpServlet {
 		String redirectURL;
 
 		if (davisSession == null) {
-			SRBAccount account = null;
+			RemoteAccount account = null;
 			if (idpName != null) {
 				// auth with idp
 				IDP idp = null;
@@ -550,15 +552,20 @@ public class Davis extends HttpServlet {
 					GSSCredential gssCredential = client.slcsLogin(idp, user,
 							password);
 					Log.log(Log.DEBUG,"login with idp "+idp);
-					account = new SRBAccount(serverName, serverPort,
-							gssCredential);
-					davisSession = new DavisSession();
-					davisSession.setServerName(serverName);
-					davisSession.setServerPort(serverPort);
-					davisSession.setDomain(account.getDomainName());
-					davisSession.setZone(zoneName);
-					davisSession.setAccount(account.getUserName());
-					davisSession.setDn(gssCredential.getName().toString());
+					if (serverType.equalsIgnoreCase("irods")){
+						//(java.lang.String host, int port, java.lang.String userName, java.lang.String password, java.lang.String homeDirectory, java.lang.String zone, java.lang.String defaultStorageResource) 
+						//account = new IRODSAccount(serverName, );
+					}else{
+						account = new SRBAccount(serverName, serverPort,
+								gssCredential);
+						davisSession = new DavisSession();
+						davisSession.setServerName(serverName);
+						davisSession.setServerPort(serverPort);
+						davisSession.setDomain(((SRBAccount)account).getDomainName());
+						davisSession.setZone(zoneName);
+						davisSession.setAccount(account.getUserName());
+						davisSession.setDn(gssCredential.getName().toString());
+					}
 				} catch (GeneralSecurityException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -569,29 +576,36 @@ public class Davis extends HttpServlet {
 
 			} else {
 				Log.log(Log.DEBUG,"login with username/password");
-				account = new SRBAccount(serverName, serverPort, user,
-						password, "/" + zoneName + "/home/" + user + "."
-								+ domain, domain, defaultResource);
-				davisSession = new DavisSession();
-				davisSession.setServerName(serverName);
-				davisSession.setDomain(domain);
-				davisSession.setServerPort(serverPort);
-				davisSession.setAccount(user);
-				davisSession.setZone(zoneName);
+				if (serverType.equalsIgnoreCase("irods")){
+				}else{
+					account = new SRBAccount(serverName, serverPort, user,
+							password, "/" + zoneName + "/home/" + user + "."
+									+ domain, domain, defaultResource);
+					davisSession = new DavisSession();
+					davisSession.setServerName(serverName);
+					davisSession.setDomain(domain);
+					davisSession.setServerPort(serverPort);
+					davisSession.setAccount(user);
+					davisSession.setZone(zoneName);
+				}
 
 			}
 			davisSession.setSessionID(sessionID);
 			try {
-				SRBFileSystem srbFileSystem = new SRBFileSystem(account);
-				// if (srbFileSystem.isConnected()){
-				davisSession.setRemoteFileSystem(srbFileSystem);
-				homeDir = srbFileSystem.getHomeDirectory();
+				String[] resList = null;
+				if (serverType.equalsIgnoreCase("irods")){
+				}else{
+					SRBFileSystem srbFileSystem = new SRBFileSystem((SRBAccount)account);
+					// if (srbFileSystem.isConnected()){
+					davisSession.setRemoteFileSystem(srbFileSystem);
+					homeDir = srbFileSystem.getHomeDirectory();
+					resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
+				}
 				if (homeDir == null)
 					homeDir = "/" + zoneName + "/home/" + user + "."
 							+ domain;
-				String[] resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
-				Log.log(Log.DEBUG, "account.getMcatZone():"+davisSession.getZone());
-				try {
+				Log.log(Log.DEBUG, "zone:"+davisSession.getZone());
+				if (resList!=null) {
 					for (String res : resList) {
 						Log.log(Log.DEBUG, "res:"+res);
 						if (res.equals(defaultResource)) {
@@ -610,10 +624,6 @@ public class Davis extends HttpServlet {
 							&& resList.length > 0) {
 						davisSession.setDefaultResource(resList[0]);
 					}
-				} catch (Exception e) {
-					// System.out.println("An Exception is
-					// SRBQueryAdaptor:fileSystemQuery()");
-					e.printStackTrace();
 				}
 
 //				}

@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
 
 /**
  * Default implementation of a handler for requests using the HTTP HEAD method.
@@ -61,6 +60,7 @@ public class DefaultHeadHandler extends AbstractHandler {
             response.flushBuffer();
             return;
         }
+        response.setHeader("Content-Length", String.valueOf(file.length()));
         String contentType = getServletConfig().getServletContext().getMimeType(
                 file.getName());
         response.setContentType((contentType != null) ? contentType :
