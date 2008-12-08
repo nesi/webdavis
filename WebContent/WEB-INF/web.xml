@@ -1229,7 +1229,7 @@
 				server type, srb or irods
 			</description>
 			<param-name>server-type</param-name>
-			<param-value>irods</param-value>
+			<param-value>srb</param-value>
 		</init-param>
 		<init-param>
 			<description>
@@ -1243,21 +1243,21 @@
 				server name of srb/irods
 			</description>
 			<param-name>server-name</param-name>
-			<param-value>ngspare.sapac.edu.au</param-value>
+			<param-value>srb.sapac.edu.au</param-value>
 		</init-param>
 		<init-param>
 			<description>
 				zone name of srb/irods
 			</description>
 			<param-name>zone-name</param-name>
-			<param-value>ngspare.sapac.edu.au</param-value>
+			<param-value>srb.sapac.edu.au</param-value>
 		</init-param>
 		<init-param>
 			<description>
 				default domain of user
 			</description>
 			<param-name>default-domain</param-name>
-			<param-value>ngspare.sapac.edu.au</param-value>
+			<param-value>srb.sapac.edu.au</param-value>
 		</init-param>
 		<!-- 
 		default resource of user in this order: 
