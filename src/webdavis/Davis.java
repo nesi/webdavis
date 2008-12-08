@@ -197,8 +197,8 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		String logProviderName = Log.class.getName();
 		String logProvider = config.getInitParameter(logProviderName);
-		System.out.println(logProviderName);
-		System.out.println(logProvider);
+		Log.log(Log.DEBUG,logProviderName);
+		Log.log(Log.DEBUG,logProvider);
 		if (logProvider != null) {
 			try {
 				System.setProperty(logProviderName, logProvider);
@@ -664,7 +664,7 @@ public class Davis extends HttpServlet {
 			}
 			session = request.getSession();
 			if (session != null) {
-				System.out.println("Obtained handle to session "
+				Log.log(Log.DEBUG,"Obtained handle to session "
 						+ session.getId());
 				Map credentials = (Map) session.getAttribute(CREDENTIALS);
 				if (credentials == null) {
