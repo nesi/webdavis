@@ -351,7 +351,6 @@ public class DefaultGetHandler extends AbstractHandler {
         String contentType = getServletConfig().getServletContext().getMimeType(
                 file.getName());
         response.setHeader("Content-Length", String.valueOf(file.length()));
-        response.setHeader("Accept-Ranges","bytes"); 
         response.setContentType((contentType != null) ? contentType :
                 "application/octet-stream");
         response.setContentLength((int) file.length());
@@ -364,24 +363,34 @@ public class DefaultGetHandler extends AbstractHandler {
         	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
         }
         String startingPoint=request.getHeader("Content-Range");
+        if (startingPoint==null) startingPoint=request.getHeader("Range");
         if (startingPoint!=null){
         	try{
-        		String offsetString=startingPoint.substring(startingPoint.indexOf(" ")+1,startingPoint.indexOf("-"));
+        		String offsetString=startingPoint.substring(startingPoint.indexOf("bytes")+6,startingPoint.indexOf("-"));
         		Log.log(Log.DEBUG, "offset:"+offsetString);
-        		int offset=Integer.parseInt(offsetString);
+        		long offset=Long.parseLong(offsetString);
         		input.seek(offset);
         		response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+        		response.setHeader("Content-Range",startingPoint.substring(0,6)+offset+"-"+file.length()+"/"+file.length());
+                response.setContentLength((int) (file.length()-offset));
         	}catch(Exception _e){
         		
         	}
+        }else{
+            response.setHeader("Accept-Ranges","bytes"); 
         }
         ServletOutputStream output = response.getOutputStream();
         byte[] buf = new byte[8192];
         int count;
-        while ((count = input.read(buf)) != -1) {
-            output.write(buf, 0, count);
+        try{
+            while ((count = input.read(buf)) >0) {
+//            	Log.log(Log.DEBUG, "read "+count);
+                output.write(buf, 0, count);
+            }
+            output.flush();
+        }catch (Exception _e){
+        	Log.log(Log.DEBUG, "remote peer is closed");
         }
-        output.flush();
         input.close();
     }
 
