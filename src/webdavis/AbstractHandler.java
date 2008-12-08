@@ -253,8 +253,9 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.DEBUG, "charset:"+charset);
         try {
             String uri=getRemoteParentURL(request, url, charset);
-    		if (uri.indexOf("~")>-1) {
-    			uri=uri.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+            Log.log(Log.DEBUG,"uri(b4 changing home dir,~):"+uri);
+    		if (uri.startsWith("/~")) {
+    			uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
     			Log.log(Log.DEBUG,"changed path to "+uri);
     		}
             if (rfs instanceof SRBFileSystem){
@@ -323,8 +324,9 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.DEBUG, "charset:"+charset);
         try {
             String uri=getRemoteURL(request, url, charset);
-    		if (uri.indexOf("~")>-1) {
-				uri=uri.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+    		if (uri.startsWith("/~")) {
+                Log.log(Log.DEBUG,"uri(b4 changing home dir,~):"+uri);
+				uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
 				Log.log(Log.DEBUG,"changed path to "+uri);
 			}
             
@@ -380,8 +382,9 @@ public abstract class AbstractHandler implements MethodHandler {
     		DavisSession davisSession) throws IOException {
         Log.log(Log.DEBUG, "path:"+path);
         RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
-		if (path.indexOf("~")>-1) {
-			path=path.replaceAll("~",davisSession.getHomeDirectory().substring(1));
+		if (path.startsWith("/~")) {
+            Log.log(Log.DEBUG,"path(b4 changing home dir,~):"+path);
+			path=path.replaceAll("/~",davisSession.getHomeDirectory());
 			Log.log(Log.DEBUG,"changed path to "+path);
 		}
         RemoteFile file = null;

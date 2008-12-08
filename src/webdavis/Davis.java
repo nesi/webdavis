@@ -39,6 +39,8 @@ import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.RemoteAccount;
+import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
@@ -577,6 +579,12 @@ public class Davis extends HttpServlet {
 			} else {
 				Log.log(Log.DEBUG,"login with username/password");
 				if (serverType.equalsIgnoreCase("irods")){
+					account = new IRODSAccount(serverName, serverPort, user, password, "/" + zoneName + "/home/" + user, zoneName, defaultResource);
+					davisSession = new DavisSession();
+					davisSession.setServerName(serverName);
+					davisSession.setServerPort(serverPort);
+					davisSession.setAccount(user);
+					davisSession.setZone(zoneName);
 				}else{
 					account = new SRBAccount(serverName, serverPort, user,
 							password, "/" + zoneName + "/home/" + user + "."
@@ -594,6 +602,10 @@ public class Davis extends HttpServlet {
 			try {
 				String[] resList = null;
 				if (serverType.equalsIgnoreCase("irods")){
+					IRODSFileSystem irodsFileSystem = new IRODSFileSystem((IRODSAccount)account);
+					davisSession.setRemoteFileSystem(irodsFileSystem);
+					homeDir = irodsFileSystem.getHomeDirectory();
+					resList = FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
 				}else{
 					SRBFileSystem srbFileSystem = new SRBFileSystem((SRBAccount)account);
 					// if (srbFileSystem.isConnected()){

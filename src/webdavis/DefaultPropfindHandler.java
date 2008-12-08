@@ -34,6 +34,7 @@ import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
@@ -102,7 +103,12 @@ public class DefaultPropfindHandler extends AbstractHandler {
             if (davisSession.getCurrentResource()==null||(davisSession.getCurrentRoot()!=null&&!davisSession.getCurrentRoot().equals(root))){
             	davisSession.setCurrentRoot(root);
             	Log.log(Log.DEBUG, "root changed to:"+root);
-    			String[] resList=FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem(), root.substring(1));
+    			String[] resList=null;
+    			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
+    				resList=FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem(), root.substring(1));
+    			}else if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
+    				resList=FSUtilities.getIRODSResources((IRODSFileSystem)file.getFileSystem(), root.substring(1));
+    			}
 				if (resList==null||resList.length==0){
 		        	davisSession.setCurrentResource(davisSession.getDefaultResource());
 				}else{
