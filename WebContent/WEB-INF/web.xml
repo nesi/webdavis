@@ -1229,7 +1229,7 @@
 				server type, srb or irods
 			</description>
 			<param-name>server-type</param-name>
-			<param-value>srb</param-value>
+			<param-value>irods</param-value>
 		</init-param>
 		<init-param>
 			<description>
@@ -1270,7 +1270,7 @@
 				default resource of user
 			</description>
 			<param-name>default-resource</param-name>
-			<param-value>datafabric</param-value>
+			<param-value>data</param-value>
 		</init-param>
 		<init-param>
 			<description>
