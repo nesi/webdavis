@@ -4,6 +4,8 @@ import java.io.IOException;
 import webdavis.FSUtilities;
 
 import edu.sdsc.grid.io.FileFactory;
+import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
@@ -17,18 +19,25 @@ public class MetadataTest {
 	 */
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		// TODO Auto-generated method stub
-		SRBFileSystem fileSystem = (SRBFileSystem) FileFactory.newFileSystem( new SRBAccount( ) );
-		System.out.println(fileSystem);
+//		SRBFileSystem fileSystem = (SRBFileSystem) FileFactory.newFileSystem( new SRBAccount( ) );
+//		System.out.println(fileSystem);
+//		
+////		Object[] domains=FSUtilities.getDomains(fileSystem);
+////		for (Object s:domains) System.out.println("domain:"+s);
+////		System.out.println("================");
+////		Object[] usernames=FSUtilities.getUsernamesByDomainName(fileSystem, (String) domains[domains.length-1]);
+////		for (Object s:usernames) System.out.println("user:"+s);
+////		fileSystem.close();
+//		System.out.println("fileSystem zone:"+fileSystem.getMcatZone());
+////		String[] res=FSUtilities.getSRBResources(fileSystem, "srb.sapac.edu.au");
+//		String[] res=FSUtilities.getAvailableResource(fileSystem);
+//		for (String s:res) System.out.println("res:"+s);
 		
-//		Object[] domains=FSUtilities.getDomains(fileSystem);
-//		for (Object s:domains) System.out.println("domain:"+s);
-//		System.out.println("================");
-//		Object[] usernames=FSUtilities.getUsernamesByDomainName(fileSystem, (String) domains[domains.length-1]);
-//		for (Object s:usernames) System.out.println("user:"+s);
-//		fileSystem.close();
-		System.out.println("fileSystem zone:"+fileSystem.getMcatZone());
-//		String[] res=FSUtilities.getSRBResources(fileSystem, "srb.sapac.edu.au");
-		String[] res=FSUtilities.getAvailableResource(fileSystem);
+		
+		IRODSFileSystem fileSystem = (IRODSFileSystem) FileFactory.newFileSystem( new IRODSAccount("ngspare.sapac.edu.au", 5544, "shunde", "shunde", "/ngspare.sapac.edu.au/home/shunde", "ngspare.sapac.edu.au", "datares" ) );
+		System.out.println(fileSystem);
+		System.out.println("fileSystem zone:"+((IRODSAccount)fileSystem.getAccount()).getZone());
+		String[] res=FSUtilities.getIRODSResources(fileSystem, "dhpc01.cs.adelaide.edu.au");
 		for (String s:res) System.out.println("res:"+s);
 
 	}
