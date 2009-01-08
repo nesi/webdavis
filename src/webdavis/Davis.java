@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.net.UnknownHostException;
 
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -193,12 +194,15 @@ public class Davis extends HttpServlet {
 
 	private boolean insecureBasic;
 
+	protected long nonceSecret=this.hashCode() ^ System.currentTimeMillis();
+
+	
 	public void init() throws ServletException {
 		ServletConfig config = getServletConfig();
 		String logProviderName = Log.class.getName();
 		String logProvider = config.getInitParameter(logProviderName);
-		Log.log(Log.DEBUG,logProviderName);
-		Log.log(Log.DEBUG,logProvider);
+		System.out.println(logProviderName);
+		System.out.println(logProvider);
 		if (logProvider != null) {
 			try {
 				System.setProperty(logProviderName, logProvider);
@@ -450,6 +454,74 @@ public class Davis extends HttpServlet {
 
 			// System.out.println("login: "+idpName+" "+user+" "+domain+"
 			// "+serverName+" "+defaultResource);
+		}else if (authorization != null
+				&& authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
+//            QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials,
+//                    "=, ",
+//                    true,
+//                    false);
+//            boolean stale=false;
+//            Digest digest=new Digest(request.getMethod());
+//String last=null;
+//String name=null;
+//
+//loop:
+//while (tokenizer.hasMoreTokens())
+//{
+//String tok = tokenizer.nextToken();
+//char c=(tok.length()==1)?tok.charAt(0):'\0';
+//
+//switch (c)
+//{
+//case '=':
+//name=last;
+//last=tok;
+//break;
+//case ',':
+//name=null;
+//case ' ':
+//break;
+//
+//default:
+//last=tok;
+//if (name!=null)
+//{
+//if ("username".equalsIgnoreCase(name))
+//digest.username=tok;
+//else if ("realm".equalsIgnoreCase(name))
+//digest.realm=tok;
+//else if ("nonce".equalsIgnoreCase(name))
+//digest.nonce=tok;
+//else if ("nc".equalsIgnoreCase(name))
+//digest.nc=tok;
+//else if ("cnonce".equalsIgnoreCase(name))
+//digest.cnonce=tok;
+//else if ("qop".equalsIgnoreCase(name))
+//digest.qop=tok;
+//else if ("uri".equalsIgnoreCase(name))
+//digest.uri=tok;
+//else if ("response".equalsIgnoreCase(name))
+//digest.response=tok;
+//break;
+//}
+//}
+//}
+//
+//int n=checkNonce(digest.nonce,request);
+//if (n>0)
+//user = realm.authenticate(digest.username,digest,request);
+//else if (n==0)
+//stale = true;
+//if (user==null)
+//    Log.warn("AUTH FAILURE: user "+StringUtil.printable(digest.username));
+//else   
+//{
+//    request.setAuthType(Constraint.__DIGEST_AUTH);
+//    request.setUserPrincipal(user);
+//}
+			
+			
+			
 		} else {
 			fail(serverName, request, response);
 			return;
@@ -551,12 +623,22 @@ public class Davis extends HttpServlet {
 						fail(serverName, request, response);
 						return;
 					}
+					Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());
 					GSSCredential gssCredential = client.slcsLogin(idp, user,
 							password);
-					Log.log(Log.DEBUG,"login with idp "+idp);
 					if (serverType.equalsIgnoreCase("irods")){
 						//(java.lang.String host, int port, java.lang.String userName, java.lang.String password, java.lang.String homeDirectory, java.lang.String zone, java.lang.String defaultStorageResource) 
-						//account = new IRODSAccount(serverName, );
+						davisSession = new DavisSession();
+						account = new IRODSAccount(serverName,serverPort,"","","",zoneName,"");
+//						((IRODSAccount)account).setPort(serverPort);
+//						((IRODSAccount)account).setHost(serverName);
+//						((IRODSAccount)account).setAuthenticationScheme( IRODSAccount.GSI_PASSWORD );
+						((IRODSAccount)account).setGSSCredential(gssCredential);
+						davisSession.setZone(zoneName);
+						davisSession.setServerName(serverName);
+						davisSession.setServerPort(serverPort);
+//						davisSession.setAccount(account.getUserName());
+						davisSession.setDn(gssCredential.getName().toString());
 					}else{
 						account = new SRBAccount(serverName, serverPort,
 								gssCredential);
@@ -598,24 +680,35 @@ public class Davis extends HttpServlet {
 				}
 
 			}
+			if (davisSession==null){
+				fail(serverName, request, response);
+				return;
+			}
 			davisSession.setSessionID(sessionID);
 			try {
 				String[] resList = null;
 				if (serverType.equalsIgnoreCase("irods")){
 					IRODSFileSystem irodsFileSystem = new IRODSFileSystem((IRODSAccount)account);
-					davisSession.setRemoteFileSystem(irodsFileSystem);
+					Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
 					homeDir = irodsFileSystem.getHomeDirectory();
+					if (davisSession.getAccount()==null||davisSession.getAccount().equals("")){
+						davisSession.setAccount(FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn()));
+						homeDir = "/" + zoneName + "/home/" + davisSession.getAccount();
+					}
+					davisSession.setRemoteFileSystem(irodsFileSystem);
 					resList = FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
+					if (homeDir == null)
+						homeDir = "/" + zoneName + "/home/" + user;
 				}else{
 					SRBFileSystem srbFileSystem = new SRBFileSystem((SRBAccount)account);
 					// if (srbFileSystem.isConnected()){
 					davisSession.setRemoteFileSystem(srbFileSystem);
 					homeDir = srbFileSystem.getHomeDirectory();
 					resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
+					if (homeDir == null)
+						homeDir = "/" + zoneName + "/home/" + user + "."
+								+ domain;
 				}
-				if (homeDir == null)
-					homeDir = "/" + zoneName + "/home/" + user + "."
-							+ domain;
 				Log.log(Log.DEBUG, "zone:"+davisSession.getZone());
 				if (resList!=null) {
 					for (String res : resList) {
@@ -991,6 +1084,7 @@ public class Davis extends HttpServlet {
 		// if (usingBasic && enableBasic) {
 		Log.log(Log.DEBUG, "Requesting Basic Authentication.");
 		response.addHeader("WWW-Authenticate", "Basic realm=\"" + realm + "\"");
+//		response.addHeader("WWW-Authenticate", "Digest realm=\"" + realm + "\", algorithm=MD5, domain=\""+ "eResearchSA" +"\", nonce=\""+newNonce(request)+"\",qop=\"auth\"");
 		// }
 		// if (closeOnAuthenticate) {
 		// Log.log(Log.DEBUG, "Closing HTTP connection.");
@@ -999,5 +1093,42 @@ public class Davis extends HttpServlet {
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		response.flushBuffer();
 	}
+
+    public String newNonce(HttpServletRequest request)
+    {
+         long ts=request.getSession().getCreationTime();
+        long sk=nonceSecret;
+         
+        byte[] nounce = new byte[24];
+         for (int i=0;i<8;i++)
+         {
+             nounce[i]=(byte)(ts&0xff);
+             ts=ts>>8;
+             nounce[8+i]=(byte)(sk&0xff);
+            sk=sk>>8;
+         }
+        
+         byte[] hash=null;
+        try
+         {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+             md.reset();
+             md.update(nounce,0,16);
+             hash = md.digest();
+        }
+       catch(Exception e)
+         {
+            Log.log(Log.WARNING,e);
+         }
+        
+         for (int i=0;i<hash.length;i++)
+         {
+            nounce[8+i]=hash[i];
+             if (i==23)
+                break;
+       }
+        
+        return Base64.toString(nounce);
+    }
 
 }

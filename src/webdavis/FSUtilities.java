@@ -21,6 +21,49 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 public class FSUtilities {
 	
+	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){
+		MetaDataRecordList[] recordList = null;
+		Log.log(Log.DEBUG, "getiRODSUsernameByDN '"+dn+"' from "+fs);
+		try {
+			recordList = fs
+						.query(
+								new MetaDataCondition[] {
+//								        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCESS_PRIVILEGE,
+//								  	          MetaDataCondition.LIKE, "%write%" ),
+//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_NAME,
+//								  	          MetaDataCondition.EQUAL, fs.getUserName()),
+//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN,
+//								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
+//								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
+//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
+										
+										MetaDataSet
+										.newCondition(
+												IRODSMetaDataSet.USER_DN,
+												MetaDataCondition.EQUAL,
+												dn) 
+												},
+								new MetaDataSelect[] { MetaDataSet
+										.newSelection(IRODSMetaDataSet.USER_NAME) });
+//			recordList = fs.query(MetaDataSet
+//					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
+
+//			recordList = MetaDataRecordList.getAllResults(recordList);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	
+        if(recordList != null&&recordList.length>0) {
+
+            return (String)recordList[0].getValue(IRODSMetaDataSet.USER_NAME);
+        }
+
+        return null;
+		
+	}
+	
 	 public static String[] getAvailableResource( SRBFileSystem fs ) throws IOException{
 		 return getAvailableResource(fs,fs.getMcatZone());
 	 }
@@ -79,6 +122,7 @@ public class FSUtilities {
 	 }
 	 public static String[] getIRODSResources(IRODSFileSystem fs, String currentZone) throws IOException {
 			MetaDataRecordList[] recordList = null;
+			Log.log(Log.DEBUG, "getting res for "+currentZone+" from "+fs);
 			try {
 				recordList = fs
 							.query(
