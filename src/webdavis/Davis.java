@@ -692,7 +692,12 @@ public class Davis extends HttpServlet {
 					Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
 					homeDir = irodsFileSystem.getHomeDirectory();
 					if (davisSession.getAccount()==null||davisSession.getAccount().equals("")){
-						davisSession.setAccount(FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn()));
+						user = FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
+						if (user==null){
+							fail(serverName, request, response);
+							return;
+						}
+						davisSession.setAccount(user);
 						homeDir = "/" + zoneName + "/home/" + davisSession.getAccount();
 					}
 					davisSession.setRemoteFileSystem(irodsFileSystem);

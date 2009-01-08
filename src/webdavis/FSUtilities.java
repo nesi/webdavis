@@ -28,15 +28,6 @@ public class FSUtilities {
 			recordList = fs
 						.query(
 								new MetaDataCondition[] {
-//								        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCESS_PRIVILEGE,
-//								  	          MetaDataCondition.LIKE, "%write%" ),
-//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_NAME,
-//								  	          MetaDataCondition.EQUAL, fs.getUserName()),
-//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN,
-//								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
-//								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
-//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
-										
 										MetaDataSet
 										.newCondition(
 												IRODSMetaDataSet.USER_DN,
@@ -45,18 +36,12 @@ public class FSUtilities {
 												},
 								new MetaDataSelect[] { MetaDataSet
 										.newSelection(IRODSMetaDataSet.USER_NAME) });
-//			recordList = fs.query(MetaDataSet
-//					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
-
-//			recordList = MetaDataRecordList.getAllResults(recordList);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
     	
         if(recordList != null&&recordList.length>0) {
-
             return (String)recordList[0].getValue(IRODSMetaDataSet.USER_NAME);
         }
 
