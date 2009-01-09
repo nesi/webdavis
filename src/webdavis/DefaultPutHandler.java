@@ -88,6 +88,7 @@ public class DefaultPutHandler extends AbstractHandler {
         if (lockManager != null) {
             file = lockManager.getLockedResource(file, davisSession);
         }
+		if (davisSession.getCurrentResource()==null) davisSession.setCurrentResource(davisSession.getDefaultResource());
         InputStream input = request.getInputStream();
         RemoteFileOutputStream output = null;
     	Log.log(Log.DEBUG, "putting file into res:"+davisSession.getCurrentResource());
