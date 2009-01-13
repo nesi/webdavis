@@ -12,6 +12,7 @@ import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBAccount;
@@ -370,4 +371,86 @@ public class FSUtilities {
     	return rt;
     	
     }
+
+	public static String[] getUsernames(IRODSFileSystem fs) {
+		MetaDataRecordList[] recordList = null;
+		Log.log(Log.DEBUG, "getUsernames  from "+fs);
+		try {
+			recordList = fs
+						.query(
+								new MetaDataSelect[] { MetaDataSet
+										.newSelection(IRODSMetaDataSet.USER_NAME) });
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	String[] names;
+        if(recordList != null) {
+            names = new String[recordList.length];
+
+            for(int i=0; i<recordList.length; i++) {
+                names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.USER_NAME);
+            }
+        } else {
+            names = new String[]{};
+        }
+        Arrays.sort(names);
+
+        return names;
+
+	}
+	
+	public static String[] getFilePermissions(IRODSFile file){
+		MetaDataRecordList[] recordList = null;
+		IRODSFileSystem fs=(IRODSFileSystem) file.getFileSystem();
+		Log.log(Log.DEBUG, "getFilePermissions for "+file+" from "+fs);
+		try {
+			recordList = fs
+						.query(
+								new MetaDataCondition[] {
+//								        MetaDataSet.newCondition( IRODSMetaDataSet.FILE_NAME,
+//								  	          MetaDataCondition.LIKE, file.getName() ),
+//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.,
+//								  	          MetaDataCondition.EQUAL, fs.getUserName()),
+//								  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN,
+//								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
+//								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
+//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
+										
+										MetaDataSet
+										.newCondition(
+												IRODSMetaDataSet.FILE_NAME,
+												MetaDataCondition.LIKE,
+												file.getName()) 
+												},
+								new MetaDataSelect[] { MetaDataSet
+										.newSelection(IRODSMetaDataSet.USER_NAME),
+										MetaDataSet
+										.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)
+										});
+//			recordList = fs.query(MetaDataSet
+//					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
+
+//			recordList = MetaDataRecordList.getAllResults(recordList);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	
+    	String[] names;
+        if(recordList != null) {
+            names = new String[recordList.length];
+
+            for(int i=0; i<recordList.length; i++) {
+                names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.RESOURCE_NAME);
+            }
+        } else {
+            names = new String[]{};
+        }
+
+        return names;
+		
+	}
 }

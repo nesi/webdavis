@@ -91,7 +91,9 @@ public class DefaultPostHandler extends AbstractHandler {
 					((SRBFile) file).changePermissions(permission, username,
 							domain, recursive);
 				} else if (file.getFileSystem() instanceof IRODSFileSystem) {
-					// permissions=((IRODSFile)file).getPermissions(true);
+					Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
+					((IRODSFile) file).changePermissions(permission, username,
+							recursive);
 				}
 
 			}
@@ -314,10 +316,18 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("]}");
 		} else if (method.equalsIgnoreCase("userlist")) {
 			str.append("{\nitems:[\n");
-			String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
-			for (int i = 0; i < users.length; i++) {
-				if (i>0) str.append(",\n");
-				str.append("{name:'").append(users[i]).append("'}");
+			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
+				String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
+				for (int i = 0; i < users.length; i++) {
+					if (i>0) str.append(",\n");
+					str.append("{name:'").append(users[i]).append("'}");
+				}
+			}else if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem){
+				String[] users=FSUtilities.getUsernames((IRODSFileSystem)davisSession.getRemoteFileSystem());
+				for (int i = 0; i < users.length; i++) {
+					if (i>0) str.append(",\n");
+					str.append("{name:'").append(users[i]).append("'}");
+				}
 			}
 			str.append("\n");
 			str.append("]}");

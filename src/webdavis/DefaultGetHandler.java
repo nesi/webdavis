@@ -291,6 +291,7 @@ public class DefaultGetHandler extends AbstractHandler {
         		}
         		Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
                 transformer.setParameter("dojoroot", dojoroot);
+                transformer.setParameter("servertype", getServerType());
                 transformer.setParameter("href", requestUrl);
                 transformer.setParameter("url", file.getAbsolutePath());
                 transformer.setParameter("unc", file.toString());
@@ -405,7 +406,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		while ((in != null) && ((length = in.read(buf)) != -1)) 
 		{
 		  // the data has already been read into buf
-		  System.out.println("Bytes read in: " +        Integer.toString(length));
+//		  System.out.println("Bytes read in: " +        Integer.toString(length));
 		  op.write(buf,0,length);
 		}
 		op.flush();

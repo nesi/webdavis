@@ -981,6 +981,10 @@ public abstract class AbstractHandler implements MethodHandler {
         }
         return buffer.toString();
     }
+    
+    public String getServerType(){
+    	return config.getInitParameter("server-type");
+    }
 
     public abstract void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)

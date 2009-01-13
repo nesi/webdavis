@@ -122,7 +122,9 @@ public class DavisSession implements Serializable{
 //		buffer.append("^");
 		if (remoteFileSystem instanceof SRBFileSystem) buffer.append("srb");
 		if (remoteFileSystem instanceof IRODSFileSystem) buffer.append("irods");
-		buffer.append("://").append(account).append(".").append(domain).append("@").append(serverName).append(":").append(serverPort);
+		buffer.append("://").append(account);
+		if (domain!=null) buffer.append(".").append(domain);
+		buffer.append("@").append(serverName).append(":").append(serverPort);
 		buffer.append("{").append(defaultResource).append("}");
 		buffer.append("[").append(homeDirectory).append("]");
 		buffer.append("<").append(currentRoot).append(":").append(currentResource).append(">");

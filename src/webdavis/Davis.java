@@ -392,6 +392,7 @@ public class Davis extends HttpServlet {
 		int serverPort;
 		String defaultResource;
 		String zoneName;
+		String defaultIdp=getServletConfig().getInitParameter("default-idp");
 		String serverType=getServletConfig().getInitParameter("server-type");
 
 		defaultDomain = getServletConfig().getInitParameter("default-domain");
@@ -431,7 +432,10 @@ public class Davis extends HttpServlet {
 
 			if ((index = user.indexOf('\\')) != -1
 					|| (index = user.indexOf('/')) != -1) {
-				idpName = user.substring(0, index);
+				if (index==0){
+					idpName=defaultIdp;
+				}else
+					idpName = user.substring(0, index);
 				user = user.substring(index + 1);
 			}
 			boolean hasResource = false;

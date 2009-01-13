@@ -1,6 +1,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:D="DAV:">
     <xsl:output method="html"/>
     <xsl:param name="dojoroot"/>
+    <xsl:param name="servertype"/>
     <xsl:param name="href"/>
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
@@ -126,7 +127,9 @@
 
     var layout2= [
         { field: "username", width: "200px", name: "Username"},
+        <xsl:if test="$servertype='srb'">
         { field: "domain", width: "200px", name: "Domain"},
+        </xsl:if>
         { field: "permission", width: "auto", name: "Permission"}
     ];
 	var model2 = new dojox.grid.data.Table(null, []);
@@ -247,8 +250,13 @@
 	function getFilePermission(url){
 		ori_url=url;
 		dojo.byId("recursive").disabled=true;
-		server_url=url+"?method=domains";
-		getDomains(server_url);
+		if (document.getElementById("servertype").value=="srb"){
+			server_url=url+"?method=domains";
+			getDomains(server_url);
+		}else{
+			server_url=url+"?method=userlist";
+			getUsers(server_url);
+		}
 		server_url=url+"?method=permission";
 		getPermission(server_url);
 		dijit.byId('dialog2').show();
@@ -256,8 +264,13 @@
 	function getDirPermission(url){
 		ori_url=url;
 		dojo.byId("recursive").disabled=false;
-		server_url=url+"?method=domains";
-		getDomains(server_url);
+		if (document.getElementById("servertype").value=="srb"){
+			server_url=url+"?method=domains";
+			getDomains(server_url);
+		}else{
+			server_url=url+"?method=userlist";
+			getUsers(server_url);
+		}
 		server_url=url+"?method=permission";
 		getPermission(server_url);
 		dijit.byId('dialog2').show();
@@ -265,11 +278,14 @@
 	function savePermission(){
 		var recursiveValue="";
 		var usernameValue=dojo.byId("formUsername").value;
-		var domainValue=dojo.byId("formDomain").value;
+		var domainValue;
 		var permValue=dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
-		if (!dijit.byId("formDomain").isValid()||domainValue==""){
-			alert("Please enter a valid domain.");
-			return;
+		if (document.getElementById("servertype").value=="srb"){
+			domainValue=dojo.byId("formDomain").value;
+			if (!dijit.byId("formDomain").isValid()||domainValue==""){
+				alert("Please enter a valid domain.");
+				return;
+			}
 		}
 		if (!dijit.byId("formUsername").isValid()||usernameValue==""){
 			alert("Please enter a valid username.");
@@ -278,7 +294,12 @@
 		if (dojo.byId("recursive").disabled==false){
 			recursiveValue="&amp;recursive="+(dojo.byId("recursive").checked);
 		}
-		var form_url=server_url+"&amp;username="+usernameValue+"&amp;domain="+domainValue+"&amp;permission="+permValue+recursiveValue;
+		var form_url;
+		if (document.getElementById("servertype").value=="srb"){
+			form_url=server_url+"&amp;username="+usernameValue+"&amp;domain="+domainValue+"&amp;permission="+permValue+recursiveValue;
+		}else{
+			form_url=server_url+"&amp;username="+usernameValue+"&amp;permission="+permValue+recursiveValue;
+		}
 //		alert(form_url);
 		getPermission(form_url);
 	}
@@ -363,6 +384,11 @@
             </head>
             <body class="tundra">
                 <xsl:apply-templates select="D:multistatus"/>
+                <input type="hidden" name="servertype" id="servertype">
+	                <xsl:attribute name="value">
+	                	<xsl:value-of select="$servertype"/>
+	                </xsl:attribute>
+                </input>
             <!-- Dialogs begin-->
             	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
@@ -393,10 +419,12 @@
 								<tr>
 									<td colspan="2"><span id="stickyControl"></span></td>
 								</tr>
+								<xsl:if test="$servertype='srb'">
 								<tr>
 									<td>Domain</td>
 									<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store3"/></td>
 								</tr>
+								</xsl:if>
 								<tr>
 									<td>Username</td>
 									<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store4"/></td>
@@ -408,9 +436,11 @@
 											<option value="all">all</option>
 											<option value="w">write</option>
 											<option value="r">read</option>
-											<option value="c">curate</option>
 											<option value="n">null</option>
-											<option value="t">annotate</option>
+											<xsl:if test="$servertype='srb'">
+												<option value="c">curate</option>
+												<option value="t">annotate</option>
+											</xsl:if>
 										<!-- 	<option value="o">owner</option> -->
 										</select>
 									</td>
