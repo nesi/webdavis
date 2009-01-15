@@ -129,12 +129,12 @@
 <!--
     jcifs.http.enableBasic:
 
-        Indicates whether HTTP Basic authentication is offered by Davenport.
+        Indicates whether HTTP Basic authentication is offered by Davis.
 
-        This setting specifies whether Davenport should offer HTTP Basic 
+        This setting specifies whether Davis should offer HTTP Basic 
         authentication to the client. Basic authentication can be used by 
         clients which are not NTLM-capable, but is a much less secure 
-        authentication scheme. By default, Davenport will only use HTTP Basic 
+        authentication scheme. By default, Davis will only use HTTP Basic 
         over HTTPS.
 
         Default Value:
@@ -150,10 +150,10 @@
 <!--
     acceptBasic:
 
-        Indicates whether HTTP Basic authentication is accepted by Davenport 
+        Indicates whether HTTP Basic authentication is accepted by Davis 
         if sent proactively by the client.
 
-        Specifies whether HTTP Basic credentials are accepted by Davenport 
+        Specifies whether HTTP Basic credentials are accepted by Davis 
         when presented by clients. This differs from "jcifs.http.enableBasic" 
         in that HTTP Basic authentication will not be offered as a choice by 
         the server; it will just accept such credentials if sent proactively 
@@ -178,8 +178,8 @@
         Indicates whether HTTP Basic can be used over insecure (non-HTTPS) 
         connections.
 
-        Specifies whether Davenport is allowed to use HTTP Basic 
-        authentication over non-HTTPS connections. Normally, Davenport will 
+        Specifies whether Davis is allowed to use HTTP Basic 
+        authentication over non-HTTPS connections. Normally, Davis will 
         only use Basic authentication if the connection is secure; setting 
         this to "true" will offer HTTP Basic over insecure connections as 
         well. This sends login information over the network unencrypted, and 
@@ -198,10 +198,10 @@
 <!--
     closeOnAuthenticate:
 
-        Specifies whether Davenport should close the HTTP connection when 
+        Specifies whether Davis should close the HTTP connection when 
         starting authentication.
 
-        This setting specifies if Davenport should send the "Connection: 
+        This setting specifies if Davis should send the "Connection: 
         close" HTTP header when initially responding to requests for 
         authentication. This is not necessary, but more closely mirrors the 
         behavior of IIS. Note that setting this to "true" will have an 
@@ -252,7 +252,7 @@
 
 
                 A lock manager factory which disables locking support. 
-                Behavior will be consistent with older versions of Davenport 
+                Behavior will be consistent with older versions of Davis 
                 (which did not provide locking support).
 
             webdavis.SmbLockManagerFactory
@@ -322,7 +322,7 @@
         This setting contains a whitespace-separated list of filter names in 
         execution order. Each filter must implement 
         "jcifs.smb.SmbFileFilter"; if a filter additionally implements 
-        "webdavis.DavenportFileFilter", it will be initialized with a set of 
+        "webdavis.DavisFileFilter", it will be initialized with a set of 
         configuration parameters. A resource must be accepted by all 
         specified filters; rejection by any of the filters will result in 
         rejection of the resource request.
@@ -565,10 +565,10 @@
         This setting contains a whitespace-separated list of classnames, each 
         of which represents an error handling class (implementing the 
         "webdavis.ErrorHandler" interface). Each handler will be invoked in the 
-        order declared to process any errors thrown by Davenport method 
+        order declared to process any errors thrown by Davis method 
         handlers.
 
-        If no error handlers are specified, Davenport will install 
+        If no error handlers are specified, Davis will install 
         "webdavis.DefaultAuthErrorHandler" and "webdavis.DefaultIOErrorHandler" 
         (in that order). If you install a custom error handler, these may 
         need to be added to the chain explicitly.
@@ -586,7 +586,7 @@
 <!--
     errorHandler.authenticationFailureBehavior:
 
-        Specifies how Davenport's default error handler should behave when 
+        Specifies how Davis's default error handler should behave when 
         authentication to an underlying resource fails.
 
         This setting controls the behavior presented to the client when an 
@@ -637,7 +637,7 @@
 <!--
     errorHandler.ioFailureBehavior:
 
-        Specifies how Davenport's default error handler should behave when an 
+        Specifies how Davis's default error handler should behave when an 
         IO exception is encountered.
 
         This setting controls the behavior presented to the client when an IO 
@@ -681,12 +681,12 @@
 <!--
     errorHandler.sendError:
 
-        Indicates how Davenport's default error handlers should relay an error 
+        Indicates how Davis's default error handlers should relay an error 
         status.
 
-        This setting controls the approach Davenport uses to relay error 
+        This setting controls the approach Davis uses to relay error 
         statuses to the container. Setting this to "true" indicates that 
-        Davenport should use the HttpServletResponse.sendError method to 
+        Davis should use the HttpServletResponse.sendError method to 
         signal the error to the container. "false" indicates 
         HttpServletResponse.setStatus/flushBuffer should be used instead.
 
@@ -824,10 +824,10 @@
         Specifies the character set used to interpret request URIs.
 
         When a request contains characters outside the 7-bit ASCII set, 
-        Davenport must interpret them according to a selected character set. 
+        Davis must interpret them according to a selected character set. 
         Most clients will use UTF-8 to request such resources; some versions 
         of Windows' Web Folders client notably vary from this. If the request 
-        does not match a resource with this character set, Davenport will 
+        does not match a resource with this character set, Davis will 
         re-attempt using UTF-8.
 
         Default Value:
@@ -848,7 +848,7 @@
 
         This specifies the maximum size of an XML request document in bytes. 
         When processing XML-based requests (such as LOCK or PROPFIND), 
-        Davenport uses this parameter to control the amount of data that will 
+        Davis uses this parameter to control the amount of data that will 
         be accepted from the client. This protects against certain XML-based 
         denial of service attacks, in which the client sends a very large 
         request in an attempt to consume all available server resources.
@@ -866,10 +866,10 @@
 <!--
     contextBase:
 
-        Specifies a base HTTP context to apply to URIs within Davenport.
+        Specifies a base HTTP context to apply to URIs within Davis.
 
         This setting specifies a base context for URL rewriting, used to 
-        deploy Davenport in a reverse proxying scenario. Davenport will 
+        deploy Davis in a reverse proxying scenario. Davis will 
         rewrite URLs relative to the supplied URL context.
  -->
 <!--
@@ -882,9 +882,9 @@
     contextBaseHeader:
 
         Indicates the name of an HTTP header containing a context base to 
-        apply to URIs within Davenport.
+        apply to URIs within Davis.
 
-        This specifies an HTTP header that will provide Davenport with a 
+        This specifies an HTTP header that will provide Davis with a 
         context base for URL rewriting. If the request carries this header, 
         the value will be used as the rewriting context, overriding any value 
         specified in the "contextBase" parameter. If the header is not 
@@ -894,7 +894,7 @@
 <!--
     <init-param>
         <param-name>contextBaseHeader</param-name>
-        <param-value>Davenport-Base</param-value>
+        <param-value>Davis-Base</param-value>
     </init-param>
 -->
 <!--
@@ -912,7 +912,7 @@
             /META-INF/directory.xsl
 
 
-                The "standard" Davenport look and feel.
+                The "standard" Davis look and feel.
 
             /META-INF/dos.xsl
 
@@ -928,7 +928,7 @@
         Default Value:
     
             /META-INF/directory.xsl (loads a default stylesheet from the 
-            Davenport jarfile).
+            Davis jarfile).
 -->
 <!--
     <init-param>
@@ -943,11 +943,11 @@
 
         This setting specifies the location of the configuration page for the 
         directory view. Users can configure preferred stylesheets by pointing 
-        their browsers at any Davenport collection resource (such as a server, 
+        their browsers at any Davis collection resource (such as a server, 
         workgroup, or even the root) and passing "configure" as a URL 
         parameter:
 
-        http://server/davenport/any/?configure
+        http://server/Davis/any/?configure
 
         The location of the configuration page that is loaded can be specified 
         here.
@@ -955,7 +955,7 @@
         Default Value:
     
             /META-INF/configuration.html (loads a default configuration page 
-            from the Davenport jarfile).
+            from the Davis jarfile).
 -->
 <!--
     <init-param>
