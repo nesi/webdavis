@@ -48,92 +48,8 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 /**
  * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
- * <p>
- * You can specify jCIFS configuration settings in the servlet's initialization
- * parameters which will be applied to the environment. Settings of particular
- * interest to the Davis servlet include:
- * <p>
- * <table border="1">
- * <tr>
- * <th>Parameter</th>
- * <th>Description</th>
- * </tr>
- * <tr>
- * <td><code>jcifs.smb.client.domain</code></td>
- * <td>Provides the default domain if not specified during HTTP Basic
- * authentication. If the user enters "username" rather than
- * "DOMAIN&#92;username", this specifies the default domain against which the
- * user should be authenticated.</td>
- * </tr>
- * <tr>
- * <td><code>jcifs.http.domainController</code></td>
- * <td>Provides the IP address or name of the server used to authenticate
- * clients. This is only used for browsing the root ("<code>smb://</code>")
- * and workgroups (if a server cannot be found). For servers, shares,
- * directories and files, the corresponding server is used. If not specified,
- * the system will attempt to locate a controller for the domain specified in
- * <code>jcifs.smb.client.domain</code> (if present). <b>If neither
- * <code>jcifs.http.domainController</code> nor
- * <code>jcifs.smb.client.domain</code> are specified, authentication will not
- * be required for browsing the SMB root (or workgroups for which a server
- * cannot be found).</b> This may pose a security risk.
- * <p>
- * It is not necessary for this to specify a real domain controller; any machine
- * offering SMB services can be used.</td>
- * </tr>
- * <tr>
- * <td><code>jcifs.netbios.wins</code></td>
- * <td>Specifies the IP address of a WINS server to be used in resolving server
- * and domain/workgroup names. This is needed to locate machines in other
- * subnets.</td>
- * </tr>
- * <tr>
- * <td><code>jcifs.http.enableBasic</code></td>
- * <td>Enables/disables HTTP Basic authentication support. This allows
- * non-NTLM-capable browsers to successfully authenticate. NTLM-capable clients
- * will authenticate using NTLM. This defaults to <code>true</code>. Setting
- * this to <code>false</code> will disable HTTP Basic authentication entirely,
- * allowing only NTLM-capable browsers to connect.</td>
- * </tr>
- * <tr>
- * <td><code>jcifs.http.insecureBasic</code></td>
- * <td>Enables/disables HTTP Basic authentication over an insecure channel.
- * Normally, HTTP Basic authentication will only be available over HTTPS.
- * Setting this to <code>true</code> will offer HTTP Basic authentication over
- * insecure HTTP, sending login information over the network unencrypted.
- * <b>This is a severe security risk, and is strongly advised against.</b> This
- * defaults to <code>false</code>.</td>
- * </tr>
- * <tr>
- * <td><code>jcifs.http.basicRealm</code></td>
- * <td>Specifies the HTTP Basic realm that will be presented during
- * authentication. Defaults to "Davenport".</td>
- * </tr>
- * </table>
- * <p>
- * Further details regarding configuration of the jCIFS environment can be found
- * in the jCIFS documentation (available from <a
- * href="http://jcifs.samba.org">http://jcifs.samba.org</a>).
- * </p>
- * <p>
- * Additionally, you can specify your own custom handlers for HTTP methods. By
- * implementing {@link smbdav.MethodHandler}, you can provide your own behavior
- * for GET, PUT, etc. requests. To enable your handler, add an initialization
- * parameter with the handler's classname. For example:
- * </p>
  * 
- * <pre>
- * &lt;init-param&gt;
- *     &lt;param-name&gt;handler.GET&lt;/param-name&gt;
- *     &lt;param-value&gt;com.foo.MyGetHandler&lt;/param-value&gt;
- * &lt;/init-param&gt;
- * </pre>
- * 
- * <p>
- * This will install a <code>com.foo.MyGetHandler</code> instance as the
- * handler for GET requests.
- * </p>
- * 
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class Davis extends HttpServlet {
@@ -397,6 +313,11 @@ public class Davis extends HttpServlet {
 
 		defaultDomain = getServletConfig().getInitParameter("default-domain");
 		serverPort = 5544;
+		try {
+			serverPort = Integer.parseInt(getServletConfig().getInitParameter("server-port"));
+		}catch (Exception _e){
+			
+		}
 		serverName = getServletConfig().getInitParameter("server-name");
 		defaultResource = getServletConfig().getInitParameter(
 				"default-resource");
