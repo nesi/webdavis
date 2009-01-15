@@ -19,7 +19,12 @@ import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
-
+/**
+ * Utilities for SRB/iRODS
+ * 
+ * @author Shunde Zhang
+ *
+ */
 public class FSUtilities {
 	
 	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){

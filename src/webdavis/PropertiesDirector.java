@@ -16,6 +16,7 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  * This class directs a <code>PropertiesBuilder</code> in the creation
  * and retrieval of a PROPFIND result XML document.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class PropertiesDirector {

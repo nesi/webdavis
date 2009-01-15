@@ -7,6 +7,10 @@ import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
+/**
+ * A wrapper class of session information
+ * @author Shunde Zhang
+ */
 public class DavisSession implements Serializable{
 	private RemoteFileSystem remoteFileSystem;
 	private String username;

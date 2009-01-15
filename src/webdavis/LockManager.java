@@ -8,11 +8,12 @@ import edu.sdsc.grid.io.RemoteFile;
 
 /**
  * This is the interface that must be implemented by lock management providers.
- * This provides the core operations used by Davenport to coordinate
+ * This provides the core operations used by Davis to coordinate
  * locking of resources.  A provider would implement this interface and
  * install a subclass of <code>LockManagerFactory</code> to create instances
  * of the implementation.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public interface LockManager {

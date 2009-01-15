@@ -42,6 +42,7 @@ import webdavis.properties.SupportedLockProperty;
  * Default builder for the PROPFIND result XML document.  This builder
  * supports retrieval for most of the basic WebDAV properties.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultPropertiesBuilder implements PropertiesBuilder {

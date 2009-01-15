@@ -38,6 +38,7 @@ import edu.sdsc.grid.io.MetaDataField;
 /**
  * Default implementation of a handler for requests using the HTTP POST method.
  * 
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultPostHandler extends AbstractHandler {

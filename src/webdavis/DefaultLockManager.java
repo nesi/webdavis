@@ -16,6 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
 
+/**
+ * Lock manager for webdav
+ * @author Shunde Zhang
+ *
+ */
 public class DefaultLockManager implements LockManager {
 
     protected static final Timer TIMER = new Timer(true);

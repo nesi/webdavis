@@ -14,6 +14,7 @@ import edu.sdsc.grid.io.RemoteFile;
  * Default implementation of a handler for requests using the WebDAV UNLOCK
  * method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultUnlockHandler extends AbstractHandler {
