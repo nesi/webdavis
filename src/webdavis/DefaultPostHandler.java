@@ -16,6 +16,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 
+import edu.sdsc.grid.io.DirectoryMetaData;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
@@ -28,6 +29,8 @@ import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.irods.IRODSMetaDataRecordList;
+import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileInputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
@@ -110,56 +113,105 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 
 			MetaDataRecordList[] permissions = null;
+			str.append("{\n");
 			if (file.getFileSystem() instanceof SRBFileSystem) {
 				permissions = ((SRBFile) file).getPermissions(true);
+				if (file.isDirectory()){
+					str.append("sticky:'").append(this.isPermInherited(file)).append("',\n");
+				}
+				str.append("items:[");
+				if (permissions != null) {
+					for (int i = 0; i < permissions.length; i++) {
+						// for (MetaDataField f:p.getFields()){
+						// Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
+						// }
+						if (i > 0)
+							str.append(",\n");
+						else
+							str.append("\n");
+						// "user name"
+						str.append("{username:'").append(
+								permissions[i].getValue(SRBMetaDataSet.USER_NAME))
+								.append("', ");
+						// "user domain"
+						str
+								.append("domain:'")
+								.append(
+										permissions[i]
+												.getValue(SRBMetaDataSet.USER_DOMAIN))
+								.append("', ");
+	                    if(file.isDirectory())
+	                    {
+	    					// "directory access constraint"
+	    					str
+	    							.append("permission:'")
+	    							.append(
+	    									permissions[i]
+	    											.getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
+	    							.append("'}");
+	                    }
+	                    else
+	                    {
+	    					// "file access constraint"
+	    					str
+	    							.append("permission:'")
+	    							.append(
+	    									permissions[i]
+	    											.getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))
+	    							.append("'}");
+	                    }
+					}
+				}
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
-				// permissions=((IRODSFile)file).getPermissions(true);
-			}
-			str.append("{\n");
-			if (file.isDirectory()){
-				str.append("sticky:'").append(this.isPermInherited(file)).append("',\n");
-			}
-			str.append("items:[");
-			if (permissions != null) {
-				for (int i = 0; i < permissions.length; i++) {
-					// for (MetaDataField f:p.getFields()){
-					// Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
-					// }
-					if (i > 0)
-						str.append(",\n");
-					else
-						str.append("\n");
-					// "user name"
-					str.append("{username:'").append(
-							permissions[i].getValue(SRBMetaDataSet.USER_NAME))
-							.append("', ");
-					// "user domain"
-					str
-							.append("domain:'")
-							.append(
-									permissions[i]
-											.getValue(SRBMetaDataSet.USER_DOMAIN))
-							.append("', ");
-                    if(file.isDirectory())
-                    {
-    					// "directory access constraint"
-    					str
-    							.append("permission:'")
-    							.append(
-    									permissions[i]
-    											.getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
-    							.append("'}");
-                    }
-                    else
-                    {
-    					// "file access constraint"
-    					str
-    							.append("permission:'")
-    							.append(
-    									permissions[i]
-    											.getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))
-    							.append("'}");
-                    }
+				if (file.isDirectory()){
+					permissions = ((IRODSFile) file).query(new String[]{DirectoryMetaData.DIRECTORY_INHERITANCE});
+					boolean stickyBit=false;
+					if (permissions != null && permissions.length>0){
+						String stickBitStr=(String)permissions[0].getValue(DirectoryMetaData.DIRECTORY_INHERITANCE);
+						Log.log(Log.DEBUG, "stickBitStr: "+stickBitStr);
+						stickyBit=stickBitStr!=null&&stickBitStr.equals("1");
+					}
+					str.append("sticky:'").append(stickyBit).append("',\n");
+				}
+				permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
+						GeneralMetaData.ACCESS_CONSTRAINT});
+				Log.log(Log.DEBUG, "permissions: "+permissions);
+				str.append("items:[");
+				if (permissions != null) {
+					for (int i = 0; i < permissions.length; i++) {
+//						for (MetaDataField f:permissions[i].getFields()){
+//						Log.log(Log.DEBUG, f.getName()+" "+permissions[i].getValue(f));
+//						}
+						if (i > 0)
+							str.append(",\n");
+						else
+							str.append("\n");
+						// "user name"
+						str.append("{username:'").append(
+								permissions[i].getValue(UserMetaData.USER_NAME))
+								.append("', ");
+						// "user domain"
+//	                    if(file.isDirectory())
+//	                    {
+//	    					// "directory access constraint"
+//	    					str
+//	    							.append("permission:'")
+//	    							.append(
+//	    									permissions[i]
+//	    											.getValue(GeneralMetaData.DIRECTORY_ACCESS_CONSTRAINT))
+//	    							.append("'}");
+//	                    }
+//	                    else
+	                    {
+	    					// "file access constraint"
+	    					str
+	    							.append("permission:'")
+	    							.append(
+	    									permissions[i]
+	    											.getValue(GeneralMetaData.ACCESS_CONSTRAINT))
+	    							.append("'}");
+	                    }
+					}
 				}
 			}
 			str.append("\n");
@@ -186,21 +238,21 @@ public class DefaultPostHandler extends AbstractHandler {
 				JSONArray array=(JSONArray)obj;
 
 				if (array != null) {
-					String[][] definableMetaDataValues = new String[array
-							.size()][2];
-
-					for (int i = 0; i < array.size(); i++) {
-						definableMetaDataValues[i][0] = (String) ((JSONObject) array
-								.get(i)).get("name");
-						definableMetaDataValues[i][1] = (String) ((JSONObject) array
-								.get(i)).get("value");
-
-					}
-
-					int[] operators = new int[definableMetaDataValues.length];
 					MetaDataTable metaDataTable = null;
 
 					if (file.getFileSystem() instanceof SRBFileSystem) {
+						String[][] definableMetaDataValues = new String[array
+						                    							.size()][2];
+
+    					for (int i = 0; i < array.size(); i++) {
+    						definableMetaDataValues[i][0] = (String) ((JSONObject) array
+    								.get(i)).get("name");
+    						definableMetaDataValues[i][1] = (String) ((JSONObject) array
+    								.get(i)).get("value");
+
+    					}
+
+    					int[] operators = new int[definableMetaDataValues.length];
 						MetaDataRecordList rl;
 						MetaDataField mdf=null;
 						if (!file.isDirectory()){
@@ -217,6 +269,22 @@ public class DefaultPostHandler extends AbstractHandler {
 							file.modifyMetaData(rl);
 						}
 
+					}else if (file.getFileSystem() instanceof IRODSFileSystem) {
+						String[][] definableMetaDataValues = new String[array
+						                    							.size()][3];
+
+    					for (int i = 0; i < array.size(); i++) {
+    						definableMetaDataValues[i][0] = (String) ((JSONObject) array
+    								.get(i)).get("name");
+    						definableMetaDataValues[i][1] = (String) ((JSONObject) array
+    								.get(i)).get("value");
+    						definableMetaDataValues[i][2] = (String) ((JSONObject) array
+    								.get(i)).get("unit");
+
+    					}
+    					for (String[] metadata:definableMetaDataValues)
+    						((IRODSFile)file).modifyMetaData(metadata);
+						
 					}
 
 				}
@@ -226,6 +294,8 @@ public class DefaultPostHandler extends AbstractHandler {
 			MetaDataTable metaDataTable = null;
 			MetaDataSelect[] selects=null;
 			MetaDataRecordList[] rl = null;
+			str.append("{\nitems:[");
+			boolean b = false;
 			if (file.getFileSystem() instanceof SRBFileSystem) {
 				// conditions = new MetaDataCondition[0];
 				// conditions[0] = MetaDataSet.newCondition(
@@ -245,62 +315,90 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (selects!=null){
 					rl = file.query(selects);
 				}
+				if (rl != null) { // Nothing in the database matched the query
+					for (int i = 0; i < rl.length; i++) {
+//						if (i > 0)
+//							str.append(",\n");
+//						else
+//							str.append("\n");
 
-			}
-			str.append("{\nitems:[");
-			boolean b = false;
-			if (rl != null) { // Nothing in the database matched the query
-				for (int i = 0; i < rl.length; i++) {
-//					if (i > 0)
-//						str.append(",\n");
-//					else
-//						str.append("\n");
-
-					int metaDataIndex;
-					if (file.isDirectory())
-						metaDataIndex = rl[i]
-								.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
-					else
-						metaDataIndex = rl[i]
-								.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
-					if (metaDataIndex > -1) {
-						MetaDataTable t = rl[i].getTableValue(metaDataIndex);
-						for (int j = 0; j < t.getRowCount(); j++) {
-							if (b)
-								str.append(",\n");
-							else
-								str.append("\n");
-							str.append("{name:'");
-							str.append(t.getStringValue(j, 0)).append("', ");
-							str.append("value:'")
-									.append(t.getStringValue(j, 1)).append("'}");
-							b = true;
+						int metaDataIndex;
+						if (file.isDirectory())
+							metaDataIndex = rl[i]
+									.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+						else
+							metaDataIndex = rl[i]
+									.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+						if (metaDataIndex > -1) {
+							MetaDataTable t = rl[i].getTableValue(metaDataIndex);
+							for (int j = 0; j < t.getRowCount(); j++) {
+								if (b)
+									str.append(",\n");
+								else
+									str.append("\n");
+								str.append("{name:'");
+								str.append(t.getStringValue(j, 0)).append("', ");
+								str.append("value:'")
+										.append(t.getStringValue(j, 1)).append("'}");
+								b = true;
+							}
 						}
-					}
 
-					// "definable metadata for files"
-					// String[]
-					// lines=rl[i].getValue(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES).toString().split("\n");
-					// boolean b=false;
-					// for (int j=0;j<lines.length;j++){
-					// if (b)
-					// str.append(",\n");
-					// else
-					// str.append("\n");
-					// if (lines[j].length()>0){
-					// str.append("{name:'");
-					// str.append(lines[j].replaceAll(" = ",
-					// "', value:'").trim());
-					// str.append("'}");
-					// b=true;
-					// }
-					// }
-					// str.append("{name:'").append(rl[i].).append("', ");
-					// str.append("value:'").append(permissions[i].getValue("file access constraint")).append("'}");
-					// for (int j=0;j<rl[i].getFieldCount();j++){
-					// System.out.println("field name: "+rl[i].getFieldName(j));
-					// System.out.println("value: "+rl[i].getValue(j));
-					// }
+						// "definable metadata for files"
+						// String[]
+						// lines=rl[i].getValue(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES).toString().split("\n");
+						// boolean b=false;
+						// for (int j=0;j<lines.length;j++){
+						// if (b)
+						// str.append(",\n");
+						// else
+						// str.append("\n");
+						// if (lines[j].length()>0){
+						// str.append("{name:'");
+						// str.append(lines[j].replaceAll(" = ",
+						// "', value:'").trim());
+						// str.append("'}");
+						// b=true;
+						// }
+						// }
+						// str.append("{name:'").append(rl[i].).append("', ");
+						// str.append("value:'").append(permissions[i].getValue("file access constraint")).append("'}");
+						// for (int j=0;j<rl[i].getFieldCount();j++){
+						// System.out.println("field name: "+rl[i].getFieldName(j));
+						// System.out.println("value: "+rl[i].getValue(j));
+						// }
+					}
+				}
+
+			}else if (file.getFileSystem() instanceof IRODSFileSystem) {
+				selects=new MetaDataSelect[3];
+			    selects[0] = 
+		            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_NAME );
+				selects[1] = 
+				    MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_VALUE );
+				selects[2] = 
+		            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
+				rl = file.query( selects );
+//				selects = new MetaDataSelect[1];
+//				// "definable metadata for files"
+//				selects[0] = MetaDataSet
+//						.newSelection(IRODSMetaDataSet.GROUP_DEFINABLE_METADATA);
+//				rl = file.query( selects );
+				if (rl != null) { // Nothing in the database matched the query
+					for (int i = 0; i < rl.length; i++) {
+//						if (i > 0)
+//							str.append(",\n");
+//						else
+//							str.append("\n");
+						if (i>0) str.append(",\n");
+						str.append("{name:'");
+						str.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME)).append("', ");
+						str.append("value:'")
+							.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE)).append("', ");
+						str.append("unit:'")
+								.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_UNITS)).append("'}");
+						b = true;
+					}
 				}
 			}
 			str.append("\n");
@@ -362,9 +460,15 @@ public class DefaultPostHandler extends AbstractHandler {
             return false;
     }
 	private void setSticky(RemoteFile file, boolean flag) throws IOException{
-		MetaDataField mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DIRECTORY_LINK_NUMBER);
-		MetaDataRecordList rl = new SRBMetaDataRecordList(mdf,String.valueOf(flag));
-		file.modifyMetaData(rl);
+		if (file.getFileSystem() instanceof SRBFileSystem) {
+			MetaDataField mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DIRECTORY_LINK_NUMBER);
+			MetaDataRecordList rl = new SRBMetaDataRecordList(mdf,String.valueOf(flag));
+			file.modifyMetaData(rl);
+		} else if (file.getFileSystem() instanceof IRODSFileSystem) {
+			MetaDataField mdf=IRODSMetaDataSet.getField(DirectoryMetaData.DIRECTORY_INHERITANCE);
+			MetaDataRecordList rl = new IRODSMetaDataRecordList(mdf,flag?"1":"");
+			((IRODSFile)file).modifyMetaData(rl);
+		}
 		
 	}
 }

@@ -622,6 +622,7 @@ public class Davis extends HttpServlet {
 							fail(serverName, request, response);
 							return;
 						}
+						Log.log(Log.DEBUG, "Found user '"+user+"' for GSI");
 						davisSession.setAccount(user);
 						homeDir = "/" + zoneName + "/home/" + davisSession.getAccount();
 					}

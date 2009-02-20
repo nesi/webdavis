@@ -120,8 +120,11 @@
     var layout1= [{
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
-        { field: "name", width: "200px", name: "Name", editable: true},
-        { field: "value", width: "auto", name: "Value", editable: true}
+        { field: "name", width: "150px", name: "Name", editable: true},
+        { field: "value", width: "auto", name: "Value", editable: true},
+        <xsl:if test="$servertype='irods'">
+        { field: "unit", width: "50px", name: "Unit", editable: true}
+        </xsl:if>
         ]}
     ];
 
@@ -327,7 +330,12 @@
 	}
 	function addMetadata(){
         // set the properties for the new item:
+        <xsl:if test="$servertype='srb'">
         var myNewItem = {name: "name", value: "value"};
+        </xsl:if>
+        <xsl:if test="$servertype='irods'">
+        var myNewItem = {name: "name", value: "value", unit: "unit"};
+        </xsl:if>
         // Insert the new item into the store:
         // (we use store3 from the example above in this example)
         store1.newItem(myNewItem);
@@ -352,7 +360,12 @@
 		var data="[";
 		for (var i=0;i&lt;rowCount;i++){
 			if (i>0) data+=",";
+	        <xsl:if test="$servertype='srb'">
 			data+="{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\"}";
+	        </xsl:if>
+	        <xsl:if test="$servertype='irods'">
+			data+="{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\", \"unit\":\""+dijit.byId('metadataGrid').getItem(i).unit+"\"}";
+	        </xsl:if>
 		}
 		data+="]";
 //		alert(dijit.byId('metadataGrid').getItem(0).name);
