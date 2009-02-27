@@ -96,7 +96,7 @@ import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
  * a URL parameter:
  * </p>
  * <p>
- * <code>http://server/davenport/any/?configure</code>
+ * <code>http://server/davis/any/?configure</code>
  * </p>
  * <p>
  * The configuration page can be specified in the deployment descriptor
@@ -128,6 +128,7 @@ import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
  * <p>
  * The client's locale will be tried first, followed by the server's locale. 
  * 
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultGetHandler extends AbstractHandler {

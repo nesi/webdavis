@@ -14,6 +14,7 @@ import edu.sdsc.grid.io.RemoteFileSystem;
  * Default implementation of a handler for requests using the WebDAV
  * MKCOL method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultMkcolHandler extends AbstractHandler {

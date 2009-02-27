@@ -41,6 +41,7 @@ import edu.sdsc.grid.io.RemoteFile;
  * Default implementation of a handler for requests using the WebDAV LOCK
  * method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultLockHandler extends AbstractHandler {

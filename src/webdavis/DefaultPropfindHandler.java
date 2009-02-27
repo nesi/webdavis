@@ -42,6 +42,7 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  * Default implementation of a handler for requests using the WebDAV
  * PROPFIND method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultPropfindHandler extends AbstractHandler {

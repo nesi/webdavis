@@ -31,6 +31,7 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  * In addition to providing basic <code>init</code> and <code>destroy</code>
  * methods, several useful utility methods are supplied.
  * 
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public abstract class AbstractHandler implements MethodHandler {

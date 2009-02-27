@@ -15,6 +15,7 @@ import edu.sdsc.grid.io.RemoteFile;
  * This interface provides operations for constructing and retrieving a
  * PROPFIND result XML document.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public interface PropertiesBuilder {

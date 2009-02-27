@@ -18,6 +18,7 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  * Default implementation of a handler for requests using the HTTP DELETE
  * method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultDeleteHandler extends AbstractHandler {

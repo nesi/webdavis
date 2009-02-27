@@ -13,6 +13,7 @@ import edu.sdsc.grid.io.RemoteFileSystem;
  * Default implementation of a handler for requests using the WebDAV
  * PROPPATCH method.
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public class DefaultProppatchHandler extends AbstractHandler {

@@ -13,9 +13,10 @@ import java.util.Properties;
 
 /**
  * Provides logging utility functionality.  A provider can extend this
- * class and is specified by the "smbdav.Log" system property, or via
- * a Jar service provider ("/META-INF/services/smbdav.Log").
+ * class and is specified by the "webdaivs.Log" system property, or via
+ * a Jar service provider ("/META-INF/services/webdaivs.Log").
  *
+ * @author Shunde Zhang
  * @author Eric Glass
  */
 public abstract class Log {
