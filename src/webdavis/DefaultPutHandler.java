@@ -97,7 +97,7 @@ public class DefaultPutHandler extends AbstractHandler {
         	((SRBFile)file).setResource(davisSession.getCurrentResource());
         	output = new SRBFileOutputStream((SRBFile)file);
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-        	((IRODSFile)file).setResource(davisSession.getCurrentResource());
+//        	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
         	output = new IRODSFileOutputStream((IRODSFile)file);
         }
         byte[] buf = new byte[8192];

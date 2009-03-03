@@ -157,7 +157,8 @@ public class Davis extends HttpServlet {
 
 		String requestUriCharset = config.getInitParameter(REQUEST_URI_CHARSET);
 		if (requestUriCharset == null)
-			requestUriCharset = "ISO-8859-1";
+			requestUriCharset = "UTF-8";
+//		requestUriCharset = "ISO-8859-1";
 		contextBase = config.getInitParameter("contextBase");
 		contextBaseHeader = config.getInitParameter("contextBaseHeader");
 		config.getServletContext().setAttribute(REQUEST_URI_CHARSET,
@@ -554,7 +555,7 @@ public class Davis extends HttpServlet {
 					if (serverType.equalsIgnoreCase("irods")){
 						//(java.lang.String host, int port, java.lang.String userName, java.lang.String password, java.lang.String homeDirectory, java.lang.String zone, java.lang.String defaultStorageResource) 
 						davisSession = new DavisSession();
-						account = new IRODSAccount(serverName,serverPort,"","","",zoneName,"");
+						account = new IRODSAccount(serverName,serverPort,"","","",zoneName,defaultResource);
 //						((IRODSAccount)account).setPort(serverPort);
 //						((IRODSAccount)account).setHost(serverName);
 //						((IRODSAccount)account).setAuthenticationScheme( IRODSAccount.GSI_PASSWORD );
@@ -627,7 +628,7 @@ public class Davis extends HttpServlet {
 						homeDir = "/" + zoneName + "/home/" + davisSession.getAccount();
 					}
 					davisSession.setRemoteFileSystem(irodsFileSystem);
-					resList = FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
+					resList = null; //FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
 					if (homeDir == null)
 						homeDir = "/" + zoneName + "/home/" + user;
 				}else{

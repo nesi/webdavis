@@ -2,6 +2,7 @@ package webdavis;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+//import java.net.URLDecoder;
 
 import java.security.Principal;
 
@@ -73,7 +74,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
 
     /**
-     * Returns the charset used to interpret request URIs.  Davenport will
+     * Returns the charset used to interpret request URIs.  Davis will
      * attempt to use this charset before resorting to UTF-8.
      *
      * @return A <code>String</code> containing the charset name.
@@ -83,7 +84,8 @@ public abstract class AbstractHandler implements MethodHandler {
         String charset = (config == null) ? null : (String)
                 config.getServletContext().getAttribute(
                         Davis.REQUEST_URI_CHARSET);
-        return (charset != null) ? charset : "ISO-8859-1";
+        return (charset != null) ? charset : "UTF-8";
+//        return (charset != null) ? charset : "ISO-8859-1";
     }
 
     /**
@@ -186,6 +188,8 @@ public abstract class AbstractHandler implements MethodHandler {
 //		if ((result == null) || (result.equals(""))) {
 //			result = "/";
 //		}
+//        httpUrl = URLDecoder.decode( httpUrl, charset );
+//        Log.log(Log.DEBUG, "URLDecoder, httpUrl = \"{0}\".", httpUrl);
       httpUrl = rewriteURL(request, httpUrl);
       String base = request.getContextPath() + request.getServletPath();
       int index;
@@ -209,6 +213,8 @@ public abstract class AbstractHandler implements MethodHandler {
       httpUrl = (index < httpUrl.length()) ?
               httpUrl.substring(index) : "/";
       String result=unescape(httpUrl, charset);
+//      Log.log(Log.DEBUG, "before Conversion, httpUrl = \"{0}\".", httpUrl);
+//      String result = URLDecoder.decode( httpUrl, charset );
       Log.log(Log.DEBUG, "Converted to path \"{0}\".", result);
       return result;
 //		if (result.indexOf("~")>-1) {
@@ -254,10 +260,10 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.DEBUG, "charset:"+charset);
         try {
             String uri=getRemoteParentURL(request, url, charset);
-            Log.log(Log.DEBUG,"uri(b4 changing home dir,~):"+uri);
+            Log.log(Log.DEBUG,"uri(b4 changing home dir,~):'"+uri+"'");
     		if (uri.startsWith("/~")) {
     			uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
-    			Log.log(Log.DEBUG,"changed path to "+uri);
+    			Log.log(Log.DEBUG,"changed path to '"+uri+"'");
     		}
             if (rfs instanceof SRBFileSystem){
             	file=new SRBFile((SRBFileSystem) rfs,uri);
@@ -266,6 +272,7 @@ public abstract class AbstractHandler implements MethodHandler {
             }
             exists = file.exists();
         } catch (IOException ex) {
+        	ex.printStackTrace();
             exception = ex;
         }
         if (exists) return file;
