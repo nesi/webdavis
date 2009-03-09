@@ -81,10 +81,10 @@ public class DefaultPostHandler extends AbstractHandler {
 		StringBuffer str = new StringBuffer();
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
+			boolean recursive = false;
 			if (username != null) {
 				String domain = request.getParameter("domain");
 				String permission = request.getParameter("permission");
-				boolean recursive = false;
 				try {
 					recursive = Boolean.parseBoolean(request
 							.getParameter("recursive"));
@@ -109,7 +109,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					flag = Boolean.parseBoolean(sticky);
 				} catch (Exception _e) {
 				}
-				this.setSticky(file, flag);
+				this.setSticky(file, flag, recursive);
 			}
 
 			MetaDataRecordList[] permissions = null;
@@ -172,9 +172,11 @@ public class DefaultPostHandler extends AbstractHandler {
 						stickyBit=stickBitStr!=null&&stickBitStr.equals("1");
 					}
 					str.append("sticky:'").append(stickyBit).append("',\n");
-				}
-				permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
-						GeneralMetaData.ACCESS_CONSTRAINT});
+					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
+							IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT});
+				}else
+					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
+							GeneralMetaData.ACCESS_CONSTRAINT});
 				Log.log(Log.DEBUG, "permissions: "+permissions);
 				str.append("items:[");
 				if (permissions != null) {
@@ -191,17 +193,17 @@ public class DefaultPostHandler extends AbstractHandler {
 								permissions[i].getValue(UserMetaData.USER_NAME))
 								.append("', ");
 						// "user domain"
-//	                    if(file.isDirectory())
-//	                    {
-//	    					// "directory access constraint"
-//	    					str
-//	    							.append("permission:'")
-//	    							.append(
-//	    									permissions[i]
-//	    											.getValue(GeneralMetaData.DIRECTORY_ACCESS_CONSTRAINT))
-//	    							.append("'}");
-//	                    }
-//	                    else
+	                    if(file.isDirectory())
+	                    {
+	    					// "directory access constraint"
+	    					str
+	    							.append("permission:'")
+	    							.append(
+	    									permissions[i]
+	    											.getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
+	    							.append("'}");
+	                    }
+	                    else
 	                    {
 	    					// "file access constraint"
 	    					str
@@ -459,15 +461,13 @@ public class DefaultPostHandler extends AbstractHandler {
 
             return false;
     }
-	private void setSticky(RemoteFile file, boolean flag) throws IOException{
+	private void setSticky(RemoteFile file, boolean flag, boolean recursive) throws IOException{
 		if (file.getFileSystem() instanceof SRBFileSystem) {
 			MetaDataField mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DIRECTORY_LINK_NUMBER);
 			MetaDataRecordList rl = new SRBMetaDataRecordList(mdf,String.valueOf(flag));
 			file.modifyMetaData(rl);
 		} else if (file.getFileSystem() instanceof IRODSFileSystem) {
-			MetaDataField mdf=IRODSMetaDataSet.getField(DirectoryMetaData.DIRECTORY_INHERITANCE);
-			MetaDataRecordList rl = new IRODSMetaDataRecordList(mdf,flag?"1":"");
-			((IRODSFile)file).modifyMetaData(rl);
+			((IRODSFile)file).changePermissions(flag?"inherit":"noinherit", "", recursive);
 		}
 		
 	}
