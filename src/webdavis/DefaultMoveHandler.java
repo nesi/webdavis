@@ -108,7 +108,7 @@ public class DefaultMoveHandler extends AbstractHandler {
          }else if (file.getFileSystem() instanceof IRODSFileSystem) {
 //        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
 //        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
-        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
+//        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
         }
         try {
             file.renameTo(destinationFile);
