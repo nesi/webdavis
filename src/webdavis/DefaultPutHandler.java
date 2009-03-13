@@ -92,12 +92,13 @@ public class DefaultPutHandler extends AbstractHandler {
 		if (davisSession.getCurrentResource()==null) davisSession.setCurrentResource(davisSession.getDefaultResource());
         InputStream input = request.getInputStream();
         RemoteFileOutputStream output = null;
-    	Log.log(Log.DEBUG, "putting file into res:"+davisSession.getCurrentResource());
+    	Log.log(Log.DEBUG, "davisSession.getCurrentResource():"+davisSession.getCurrentResource());
         if (file.getFileSystem() instanceof SRBFileSystem) {
         	((SRBFile)file).setResource(davisSession.getCurrentResource());
         	output = new SRBFileOutputStream((SRBFile)file);
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
 //        	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
+        	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
         	output = new IRODSFileOutputStream((IRODSFile)file);
         }
         byte[] buf = new byte[8192];
