@@ -406,6 +406,28 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 
+		} else if (method.equalsIgnoreCase("createDirectory")) {
+	        if (request.getContentLength() > 0) {
+		        InputStream input = request.getInputStream();
+		        byte[] buf = new byte[request.getContentLength()];
+		        int count=input.read(buf);
+		        Log.log(Log.DEBUG, "read:"+count);
+		        Log.log(Log.DEBUG, "received directory name: " + new String(buf));
+
+				Object obj=JSONValue.parse(new String(buf));
+				JSONArray array=(JSONArray)obj;
+				if (array != null && array.size() == 1) {		
+					String name = (String)((JSONObject)array.get(0)).get("name");
+					RemoteFile dir = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
+					Log.log(Log.DEBUG, "creating: "+dir);
+					if (!dir.mkdir()) {
+						String s = "Failed to create directory '"+dir.getAbsolutePath()+"'";
+						Log.log(Log.WARNING, s);
+						throw new IOException(s);
+					}
+				} else
+					throw new ServletException("Internal error creating directory: error parsing JSON");
+			}
 		} else if (method.equalsIgnoreCase("domains")) {
 			str.append("{\nitems:[\n");
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
@@ -440,7 +462,6 @@ public class DefaultPostHandler extends AbstractHandler {
 		op.write(buf);
 		op.flush();
 		op.close();
-
 	}
 	private boolean isPermInherited(RemoteFile file) throws IOException 
     {

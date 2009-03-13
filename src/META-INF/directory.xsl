@@ -117,6 +117,9 @@
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");
 	dojo.require("dijit.form.FilteringSelect");
+	dojo.require("dojo.io.iframe");
+	dojo.require("dijit.ProgressBar");
+	
     var layout1= [{
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
@@ -393,6 +396,60 @@
     		handleAs: "json"
   		});
 	}
+	function createDirectory(url){
+		ori_url=url;
+		server_url=url+"?method=createDirectory";
+		
+		dijit.byId('dialogCreateDir').hide();
+		var dirName = dojo.byId('formDirectory').value;
+		var data="[{\"name\":\""+dirName+"\"}]";
+//		alert("value:"+dojo.byId('formDirectory').value);
+//		alert("data:"+data);
+	  	dojo.rawXhrPost({
+    		url: server_url,
+		    headers: {
+		        "content-length": data.length,
+		        "content-type": "text/x-json"
+		    },
+		    postData: data,
+		    load: function(responseObject, ioArgs){
+		      	window.location.reload();
+//		      	return responseObject;
+		    },
+    		error: function(response, ioArgs){
+      			alert("Failed to create directory "+dirName+".");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
+ 	function upload(url){
+		ori_url=url;
+		server_url=url+"?method=upload";
+		
+		dijit.byId('dialogUpload').hide();
+		var dirName = dojo.byId('formUpload').value;
+		var data="[{\"name\":\""+dirName+"\"}]";
+//		alert("value:"+dojo.byId('formUpload').value);
+//		alert("data:"+data);
+	  	dojo.rawXhrPost({
+    		url: server_url,
+		    headers: {
+		        "content-length": data.length,
+		        "content-type": "text/x-json"
+		    },
+		    postData: data,
+		    load: function(responseObject, ioArgs){
+		      	window.location.reload();
+//		      	return responseObject;
+		    },
+    		error: function(response, ioArgs){
+      			alert("Failed to upload "+dirName+".");
+      			return response;
+    		},
+    		handleAs: "json"
+  		});
+	}
     			</script>		
             </head>
             <body class="tundra">
@@ -403,6 +460,21 @@
 	                </xsl:attribute>
                 </input>
             <!-- Dialogs begin-->
+            	<div dojoType="dijit.Dialog" id="dialogCreateDir" title="Create Directory">
+            		New directory name:
+ 					<input name="directory" id="formDirectory" dojoType="dijit.form.TextBox" trim="true" value=""/>
+					<br/><br/>
+					<button onclick="createDirectory('{D:href}')">Create</button>
+					<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
+				</div>					
+            	<div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
+            		File to upload:
+            		<input type="file" name="uploadFileName"/>
+ 		<!-- 			<input name="upload" id="formUpload" dojoType="dijit.form.TextBox" trim="true" value=""/>
+					<br/><br/>
+					<button onclick="upload('{D:href}')">Create</button>  -->
+					<button onclick="dijit.byId('dialogUpload').hide()">Cancel</button>
+				</div>					
             	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
 					<tr>
@@ -527,9 +599,19 @@
             <xsl:text>Last modified on </xsl:text>
             <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
             <xsl:text>.</xsl:text>
-            <xsl:if test="$url != '/'">
-                <br/><a href="{$parent}" class="parent">Parent</a>
-            </xsl:if>
+            <!--<br/>
+            <table>
+            	<tr>-->
+             		<br/>
+             		<!--<td>--><button onclick="dijit.byId('dialogCreateDir').show()">Create Directory</button><!--</td>-->
+            		<!-- <td><button onclick="dijit.byId('dialogUpload').show();">Upload</button></td>-->
+            		<br/>
+            		<xsl:if test="$url != '/'">
+                		<!--<td style="width:200"><a href="{$parent}" class="parent">Parent</a></td>-->
+                		<br/><a href="{$parent}" class="parent">Parent</a>
+            		</xsl:if>
+            	<!--</tr>
+            </table>-->
         </p>
     </xsl:template>
     <xsl:template match="D:response" mode="directory">
@@ -549,8 +631,8 @@
                 <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
             </td>
             <td nowrap="nowrap">
-                <button onclick="getMetadata('{D:href}')">M</button>
-                <button onclick="getDirPermission('{D:href}')">P</button>
+                <button onclick="getMetadata('{D:href}')">Metadata</button>
+                <button onclick="getDirPermission('{D:href}')">Access Control</button>
             </td>
         </tr>
     </xsl:template>
@@ -590,8 +672,8 @@
                 <xsl:if test="position() mod 2 = 1">
                     <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>
                 </xsl:if>
-                <button onclick="getMetadata('{D:href}')">M</button>
-                <button onclick="getFilePermission('{D:href}')">P</button>
+                <button onclick="getMetadata('{D:href}')">Metadata</button>
+                <button onclick="getFilePermission('{D:href}')">Access Control</button>
             </td>
         </tr>
     </xsl:template>
