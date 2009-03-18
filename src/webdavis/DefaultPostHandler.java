@@ -273,9 +273,9 @@ public class DefaultPostHandler extends AbstractHandler {
 
 					}else if (file.getFileSystem() instanceof IRODSFileSystem) {
 						//delete all metadata, uses wildcards
-						try{
+//						try{
 						((IRODSFile)file).deleteMetaData(new String[]{"%","%","%"});
-						}catch (Exception _e){}
+//						}catch (Exception _e){}
 						
 						String[][] definableMetaDataValues = new String[array
 						                    							.size()][3];
