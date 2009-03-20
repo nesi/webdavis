@@ -28,6 +28,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.globus.myproxy.GetParams;
+import org.globus.myproxy.MyProxy;
 import org.ietf.jgss.GSSCredential;
 
 import au.edu.archer.desktopshibboleth.idp.IDP;
@@ -311,6 +313,7 @@ public class Davis extends HttpServlet {
 		String zoneName;
 		String defaultIdp=getServletConfig().getInitParameter("default-idp");
 		String serverType=getServletConfig().getInitParameter("server-type");
+		String myproxyServer=getServletConfig().getInitParameter("myproxy-server");
 
 		defaultDomain = getServletConfig().getInitParameter("default-domain");
 		serverPort = 5544;
@@ -497,61 +500,82 @@ public class Davis extends HttpServlet {
 			RemoteAccount account = null;
 			if (idpName != null) {
 				// auth with idp
-				IDP idp = null;
-				SLCSClient client;
+				GSSCredential gssCredential = null;
 				try {
-					if (proxyHost != null && proxyHost.toString().length() > 0) {
-						SLCSConfig config = SLCSConfig.getInstance();
-						config.setProxyHost(proxyHost.toString());
-						if (proxyPort != null
-								&& proxyPort.toString().length() > 0)
-							config.setProxyPort(Integer.parseInt(proxyPort
-									.toString()));
-						if (proxyUsername != null
-								&& proxyUsername.toString().length() > 0)
-							config.setProxyUsername(proxyUsername.toString());
-						if (proxyPassword != null
-								&& proxyPassword.toString().length() > 0)
-							config.setProxyPassword(proxyPassword.toString());
-					}
-					client = new SLCSClient();
-					List<IDP> idps = client.getAvailableIDPs();
-					for (IDP idptmp : idps) {
-						// System.out.println("idp: "+idptmp.getName()+"
-						// "+idptmp.getProviderId());
-						if (idptmp.getName().equalsIgnoreCase(idpName)) {
-							idp = idptmp;
-							break;
+					if (idpName.equalsIgnoreCase("myproxy")){
+						Log.log(Log.DEBUG,"logging in with myproxy: "+myproxyServer);
+						if (myproxyServer==null||myproxyServer.equals("")){
+							fail(serverName, request, response);
+							return;
 						}
-					}
-					if (idp == null) {
+						MyProxy mp = new MyProxy(myproxyServer, 7512);
+						GetParams getRequest = new GetParams();
+						getRequest.setCredentialName(null);
+						getRequest.setLifetime(3600);
+						getRequest.setPassphrase(password);
+						getRequest.setUserName(user);
+						gssCredential = mp.get(null,getRequest);
+						
+					}else{
+						IDP idp = null;
+						SLCSClient client;
+						if (proxyHost != null && proxyHost.toString().length() > 0) {
+							SLCSConfig config = SLCSConfig.getInstance();
+							config.setProxyHost(proxyHost.toString());
+							if (proxyPort != null
+									&& proxyPort.toString().length() > 0)
+								config.setProxyPort(Integer.parseInt(proxyPort
+										.toString()));
+							if (proxyUsername != null
+									&& proxyUsername.toString().length() > 0)
+								config.setProxyUsername(proxyUsername.toString());
+							if (proxyPassword != null
+									&& proxyPassword.toString().length() > 0)
+								config.setProxyPassword(proxyPassword.toString());
+						}
+						client = new SLCSClient();
+						List<IDP> idps = client.getAvailableIDPs();
 						for (IDP idptmp : idps) {
 							// System.out.println("idp: "+idptmp.getName()+"
 							// "+idptmp.getProviderId());
-							if (idptmp.getName().startsWith(idpName)) {
+							if (idptmp.getName().equalsIgnoreCase(idpName)) {
 								idp = idptmp;
 								break;
 							}
 						}
-					}
-					if (idp == null) {
-						for (IDP idptmp : idps) {
-							// System.out.println("idp: "+idptmp.getName()+"
-							// "+idptmp.getProviderId());
-							if (idptmp.getName().indexOf(idpName) > -1) {
-								idp = idptmp;
-								break;
+						if (idp == null) {
+							for (IDP idptmp : idps) {
+								// System.out.println("idp: "+idptmp.getName()+"
+								// "+idptmp.getProviderId());
+								if (idptmp.getName().startsWith(idpName)) {
+									idp = idptmp;
+									break;
+								}
 							}
 						}
+						if (idp == null) {
+							for (IDP idptmp : idps) {
+								// System.out.println("idp: "+idptmp.getName()+"
+								// "+idptmp.getProviderId());
+								if (idptmp.getName().indexOf(idpName) > -1) {
+									idp = idptmp;
+									break;
+								}
+							}
 
+						}
+						if (idp == null) {
+							fail(serverName, request, response);
+							return;
+						}
+						Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());
+						gssCredential = client.slcsLogin(idp, user,
+								password);
 					}
-					if (idp == null) {
+					if (gssCredential == null) {
 						fail(serverName, request, response);
 						return;
 					}
-					Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());
-					GSSCredential gssCredential = client.slcsLogin(idp, user,
-							password);
 					if (serverType.equalsIgnoreCase("irods")){
 						//(java.lang.String host, int port, java.lang.String userName, java.lang.String password, java.lang.String homeDirectory, java.lang.String zone, java.lang.String defaultStorageResource) 
 						davisSession = new DavisSession();

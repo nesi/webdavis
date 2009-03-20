@@ -1226,6 +1226,13 @@
 
 		<init-param>
 			<description>
+				myproxy server where certs are stored
+			</description>
+			<param-name>myproxy-server</param-name>
+			<param-value>myproxy.arcs.org.au</param-value>
+		</init-param>
+		<init-param>
+			<description>
 				server type, srb or irods
 			</description>
 			<param-name>server-type</param-name>
