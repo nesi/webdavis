@@ -6,6 +6,7 @@
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
     <xsl:param name="parent"/>
+ 
     <xsl:template match="/">
         <html>
             <head>
@@ -124,9 +125,9 @@
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
         { field: "name", width: "150px", name: "Name", editable: true},
-        { field: "value", width: "auto", name: "Value", editable: true},
+        { field: "value", width: "auto", name: "Value", editable: true}
         <xsl:if test="$servertype='irods'">
-        { field: "unit", width: "50px", name: "Unit", editable: true}
+        ,{ field: "unit", width: "50px", name: "Unit", editable: true}
         </xsl:if>
         ]}
     ];
@@ -139,12 +140,13 @@
         { field: "permission", width: "auto", name: "Permission"}
     ];
 	var model2 = new dojox.grid.data.Table(null, []);
-	var store1=new dojo.data.ItemFileWriteStore({data: []});
-	var store2=new dojo.data.ItemFileWriteStore({data: []});
-	var store3=new dojo.data.ItemFileWriteStore({data: []});
-	var store4=new dojo.data.ItemFileWriteStore({data: []});
+	var store1=new dojo.data.ItemFileWriteStore("{data: []}");
+	var store2=new dojo.data.ItemFileWriteStore("{data: []}");
+	var store3=new dojo.data.ItemFileWriteStore("{data: []}");
+	var store4=new dojo.data.ItemFileWriteStore("{data: []}");
 	var server_url;
 	var ori_url;
+	var uploadInProgress = false;
 	
 	function getDomains(urlString){
 	  	dojo.xhrPost({
@@ -247,6 +249,7 @@
 	function getMetadata(url){
 		ori_url=url;
 		server_url=url+"?method=metadata";
+
 		loadMetadataFromServer(server_url);
 		dijit.byId('dialog1').show();
 	}
@@ -396,17 +399,17 @@
     		handleAs: "json"
   		});
 	}
-	function createDirectory(url){
-		ori_url=url;
-		server_url=url+"?method=createDirectory";
-		
+	
+	
+	function createDirectory(){
+		server_url="?method=createDirectory";
 		dijit.byId('dialogCreateDir').hide();
 		var dirName = dojo.byId('formDirectory').value;
 		var data="[{\"name\":\""+dirName+"\"}]";
-//		alert("value:"+dojo.byId('formDirectory').value);
-//		alert("data:"+data);
+		
 	  	dojo.rawXhrPost({
     		url: server_url,
+    		handleAs: "json",
 		    headers: {
 		        "content-length": data.length,
 		        "content-type": "text/x-json"
@@ -414,41 +417,52 @@
 		    postData: data,
 		    load: function(responseObject, ioArgs){
 		      	window.location.reload();
-//		      	return responseObject;
+		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
       			alert("Failed to create directory "+dirName+".");
       			return response;
-    		},
-    		handleAs: "json"
+    		}
   		});
 	}
- 	function upload(url){
-		ori_url=url;
-		server_url=url+"?method=upload";
+	
+ 	function uploadFile(url){ 		
+		server_url="?method=upload";
+		dojo.byId('statusField').innerHTML = "Uploading...";
+		uploadInProgress = true;
 		
-		dijit.byId('dialogUpload').hide();
-		var dirName = dojo.byId('formUpload').value;
-		var data="[{\"name\":\""+dirName+"\"}]";
-//		alert("value:"+dojo.byId('formUpload').value);
-//		alert("data:"+data);
-	  	dojo.rawXhrPost({
-    		url: server_url,
-		    headers: {
-		        "content-length": data.length,
-		        "content-type": "text/x-json"
-		    },
-		    postData: data,
-		    load: function(responseObject, ioArgs){
-		      	window.location.reload();
-//		      	return responseObject;
-		    },
-    		error: function(response, ioArgs){
-      			alert("Failed to upload "+dirName+".");
-      			return response;
-    		},
-    		handleAs: "json"
-  		});
+		dojo.io.iframe.send({
+			url: server_url,
+			method: "POST",
+			form: "uploadForm",
+			handleAs: "json",
+			handle: function(response, ioArgs){
+						dijit.byId('dialogUpload').hide();
+						if (response.status == "success") {
+							alert("Successfully transferred "+response.message+" bytes");
+							window.location.reload();						
+						}else 
+							alert("Failed to upload file: "+response.message);
+						uploadInProgress = false;
+						return response;
+					},
+			error: function(response, ioArgs) {
+						dijit.byId('dialogUpload').hide();
+						alert("Failed to upload file: "+response);
+						uploadInProgress = false;
+						return response;
+					}
+		});
+	}
+	
+	function uploadCancel() {
+		if (!uploadInProgress)  
+			dijit.byId('dialogUpload').hide();
+		else {
+			uploadInProgress = false;
+			dojo.byId('statusField').innerHTML = "Canceling...";
+			window.location.reload();
+		}
 	}
     			</script>		
             </head>
@@ -464,16 +478,22 @@
             		New directory name:
  					<input name="directory" id="formDirectory" dojoType="dijit.form.TextBox" trim="true" value=""/>
 					<br/><br/>
-					<button onclick="createDirectory('{D:href}')">Create</button>
-					<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
+					<div style="text-align: right;">
+						<button onclick="createDirectory()">Create</button>
+						<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
+					</div>
 				</div>					
             	<div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
+            		<form id="uploadForm" enctype="multipart/form-data" name="uploadTest" method="post">
             		File to upload:
-            		<input type="file" name="uploadFileName"/>
- 		<!-- 			<input name="upload" id="formUpload" dojoType="dijit.form.TextBox" trim="true" value=""/>
-					<br/><br/>
-					<button onclick="upload('{D:href}')">Create</button>  -->
-					<button onclick="dijit.byId('dialogUpload').hide()">Cancel</button>
+            		<input type="file" name="uploadFileName" id="formUpload"/>
+            		</form>
+					<div id="statusField"></div>
+					<br/>
+					<div style="text-align: right;">
+						<button id="uploadStartButton" onclick="uploadStartButton.disabled=true; uploadFile();">Upload</button> 
+						<button id="uploadCancelButton" onclick="uploadCancelButton.disabled=true; uploadCancel();">Cancel</button>
+					</div>
 				</div>					
             	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
 				<table>
@@ -603,11 +623,10 @@
             <table>
             	<tr>-->
              		<br/>
-             		<!--<td>--><button onclick="dijit.byId('dialogCreateDir').show()">Create Directory</button><!--</td>-->
-            		<!-- <td><button onclick="dijit.byId('dialogUpload').show();">Upload</button></td>-->
+             		<button onclick="dijit.byId('dialogCreateDir').show()">Create Directory</button>
+            		<button onclick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show();">Upload</button>
             		<br/>
             		<xsl:if test="$url != '/'">
-                		<!--<td style="width:200"><a href="{$parent}" class="parent">Parent</a></td>-->
                 		<br/><a href="{$parent}" class="parent">Parent</a>
             		</xsl:if>
             	<!--</tr>

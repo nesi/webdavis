@@ -1,9 +1,16 @@
 package webdavis;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -24,19 +31,26 @@ import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.MetaDataTable;
 import edu.sdsc.grid.io.RemoteFile;
+import edu.sdsc.grid.io.RemoteFileOutputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
+import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSMetaDataRecordList;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileInputStream;
+import edu.sdsc.grid.io.srb.SRBFileOutputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataRecordList;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 import edu.sdsc.grid.io.MetaDataField;
+
+import org.apache.commons.fileupload.*;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.*;
 
 /**
  * Default implementation of a handler for requests using the HTTP POST method.
@@ -45,6 +59,8 @@ import edu.sdsc.grid.io.MetaDataField;
  * @author Eric Glass
  */
 public class DefaultPostHandler extends AbstractHandler {
+
+	final static char[] SEPARATORS = {'\\', '/'}; 
 
 	/**
 	 * Services requests which use the HTTP POST method. This may, at some
@@ -66,6 +82,8 @@ public class DefaultPostHandler extends AbstractHandler {
 			HttpServletResponse response, DavisSession davisSession)
 			throws ServletException, IOException {
 		String method = request.getParameter("method");
+		if (method == null)
+			return;
 		String url = getRemoteURL(request, getRequestURL(request),
 				getRequestURICharset());
 		Log.log(Log.DEBUG, "url:" + url + " method:" + method);
@@ -433,6 +451,83 @@ public class DefaultPostHandler extends AbstractHandler {
 				} else
 					throw new ServletException("Internal error creating directory: error parsing JSON");
 			}
+		} else if (method.equalsIgnoreCase("upload")) {
+            response.setContentType("text/html");
+			if (!ServletFileUpload.isMultipartContent(request)) 
+	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Invalid request (not multipart)\"}</textarea></body></html>");
+	        else {
+                long contentLength = request.getContentLength();
+                if (contentLength==-1)
+                	contentLength=Long.parseLong(request.getHeader("x-expected-entity-length"));
+		        
+		        Tracker tracker = createTracker(contentLength);
+		      	
+		        String encoding = request.getCharacterEncoding();
+		        if (encoding == null) 
+		            encoding = "UTF-8";
+		        
+		        ServletFileUpload uploadProcessor = new ServletFileUpload();
+		        uploadProcessor.setHeaderEncoding(encoding);
+//	      		upload.setSizeMax(getSizeLimit(request));	// Set maximum file size allowed for transfer
+
+		        try {
+		        	boolean result = false;
+		            FileItemIterator iter = uploadProcessor.getItemIterator(request);
+		            if (iter.hasNext()) {
+		                FileItemStream fileItemStream = iter.next();
+		                if (!fileItemStream.isFormField()) {
+		                	InputStream inputStream = fileItemStream.openStream();
+		                	String fileName = fileItemStream.getName();
+		                	for (int i = 0; i < SEPARATORS.length; i++) {  // Make sure we remove any absolute portion of path for all platforms
+		                		int j = fileName.lastIndexOf(SEPARATORS[i]); 
+		                		if (j >= 0)
+		                			fileName = fileName.substring(j+1);
+		                	}
+	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+	                        boolean existsCurrently = file.exists();
+	                        if (existsCurrently && !file.isFile()) {
+	                        	Log.log(Log.DEBUG, file.getAbsolutePath()+" already exists on server");
+	            	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"File already exists\"}</textarea></body></html>");
+	                        } else {	                        
+		                		if (davisSession.getCurrentResource()==null) davisSession.setCurrentResource(davisSession.getDefaultResource());
+		                        RemoteFileOutputStream stream = null;
+		                    	Log.log(Log.DEBUG, "putting file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
+		                        if (file.getFileSystem() instanceof SRBFileSystem) {
+		                        	((SRBFile)file).setResource(davisSession.getCurrentResource());
+		                        	stream = new SRBFileOutputStream((SRBFile)file);
+		                        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+		                        	stream = new IRODSFileOutputStream((IRODSFile)file);
+		                        }
+		                        BufferedOutputStream outputStream = new BufferedOutputStream(stream, 1024*256);  //Buffersize of 256k seems to give max speed
+		                        try {
+		                        	copy(tracker, inputStream, outputStream);
+		                        } catch (IOException e) {
+		                        	try {
+				                        outputStream.flush();
+				                        outputStream.close();
+		                        	} catch (IOException ee) {}
+		                        	throw e;
+		                        }
+		                        outputStream.flush();
+		                        outputStream.close();
+			                    if (tracker.getBytesReceived() >= 0) {
+			                        tracker.setComplete();
+			                        str.append("<html><body><textarea>{\"status\":\"success\",\"message\":\""+tracker.getBytesReceived()+"\"}</textarea></body></html>");
+			                        result = true;
+			                    } 
+	                        }
+		                }
+		            }
+		            if (!result) 
+		            	str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"No file to upload\"}</textarea></body></html>");
+		        } catch (EOFException e) {
+                    str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Unexpected end of file\"}</textarea></body></html>");
+		        } catch (IOException e) {
+                    str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\""+e.getMessage()+"\"}</textarea></body></html>");
+		        } catch (FileUploadException e) {
+	                str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\""+e.getMessage()+"\"}</textarea></body></html>");
+		        }
+	        }
 		} else if (method.equalsIgnoreCase("domains")) {
 			str.append("{\nitems:[\n");
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
@@ -460,14 +555,20 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 		}
-
-		ServletOutputStream op = response.getOutputStream();
+		ServletOutputStream op = null;
+		try {
+			 op = response.getOutputStream();
+		} catch (EOFException e) {
+			Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
+			return;
+		}
 		byte[] buf = str.toString().getBytes();
 		Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + str);
 		op.write(buf);
 		op.flush();
 		op.close();
 	}
+	
 	private boolean isPermInherited(RemoteFile file) throws IOException 
     {
 
@@ -494,7 +595,126 @@ public class DefaultPostHandler extends AbstractHandler {
 			file.modifyMetaData(rl);
 		} else if (file.getFileSystem() instanceof IRODSFileSystem) {
 			((IRODSFile)file).changePermissions(flag?"inherit":"noinherit", "", recursive);
-		}
-		
+		}	
 	}
+	
+	
+    private static final Map trackers = new HashMap();	// Set of trackers currently transferring
+    
+    private static void copy(Tracker tracker, InputStream input, OutputStream output) throws IOException {
+        byte[] buffer = new byte[4096];
+        int n = 0;
+        while (-1 != (n = input.read(buffer))) {
+            output.write(buffer, 0, n);
+            tracker.incrementBytesReceived(n);
+//   Log.log(Log.DEBUG, "sent "+n);
+//            try { 			// Simulate slow connection.
+//                 Thread.sleep(3);
+//            } catch (InterruptedException ex) {
+//                throw new RuntimeException(ex);
+//            }
+        }
+    }
+    
+    private static Tracker createTracker(long size) {
+    	Tracker tracker = new Tracker(size);
+    	trackers.put(tracker.getId(), tracker);
+    	return tracker;
+    }
+    
+    private static Tracker getTracker(long id, boolean verifyComplete) {
+        synchronized(trackers) {
+            Tracker tracker = (Tracker) trackers.get(id);
+            if (verifyComplete) {
+                if (tracker == null) {
+                    throw new IllegalArgumentException("No file found with id: \"" + id + "\".");
+                }
+                if (!tracker.isComplete()) {
+                    throw new IllegalArgumentException("Cannot store file with id: \"" + id 
+                            + "\" because it has not yet completed uploading.");
+                }
+            }
+            return tracker;
+        }
+    }
+    
+    public static class Tracker {
+        
+        public static final int OK = 0;
+        public static final int ERROR_FILE_NO_FILE = 1;
+        public static final int ERROR_FILE_INVALID = 2;
+        public static final int ERROR_FILE_OVERSIZE = 3;
+        private static long autoId = -1;
+        
+        private long bytesReceived;
+        private long size;
+        private boolean complete;
+        private long id;
+        private FileItem fileItem;
+        private int error = OK;
+        
+        Tracker(long size) {
+        	super();
+        	this.id = getAutoId();
+        	this.size = size;
+        }
+        
+        synchronized private long getAutoId() {
+        	
+        	return ++autoId;
+        }
+        
+        public long getBytesReceived() {
+            return bytesReceived;
+        }
+        
+        public int getComplete() {
+            return (int) (bytesReceived * 100 / size);
+        }
+        
+        public int getError() {
+            return error;
+        }
+        
+        public long getId() {
+            return id;
+        }
+        
+        public String getName() {
+            return fileItem.getName();
+        }
+        
+        public InputStream getInputStream() 
+        throws IOException {
+            return fileItem.getInputStream();
+        }
+        
+        public long getSize() {
+            return size;
+        }
+        
+        public boolean isComplete() {
+            return complete;
+        }
+        
+        public void incrementBytesReceived(long increment) {
+            this.bytesReceived += increment;
+        }
+        
+        public void setBytesReceived(long bytesReceived) {
+            this.bytesReceived = bytesReceived;
+        }
+        
+        private void setFileItem(FileItem fileItem) {
+            this.fileItem = fileItem;
+        }
+        
+        public void setError(int error) {
+            this.error = error; 
+        }
+        
+        public void setComplete() {
+            complete = true;
+        }
+    }
 }

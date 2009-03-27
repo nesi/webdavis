@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -104,12 +105,13 @@ public class DefaultPutHandler extends AbstractHandler {
         byte[] buf = new byte[8192];
         int count;
         Log.log(Log.DEBUG, "PUT method: "+output);
+        BufferedOutputStream outputStream = new BufferedOutputStream(output, 1024*256); //Buffersize of 256k seems to give max speed
         while ((count = input.read(buf)) != -1) {
 //        	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
-            output.write(buf, 0, count);
+            outputStream.write(buf, 0, count);
         }
-        output.flush();
-        output.close();
+        outputStream.flush();
+        outputStream.close();
         response.setStatus(HttpServletResponse.SC_CREATED);
         response.setHeader("Location", getRequestURL(request));
         response.setHeader("Allow", "OPTIONS, HEAD, GET, DELETE, PROPFIND, " +
