@@ -61,6 +61,9 @@ public class DefaultPutHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_LENGTH_REQUIRED);
             return;
         }
+        if (length == 0){
+        	Log.log(Log.DEBUG, "request.getInputStream().available(): "+request.getInputStream().available());
+        }
         RemoteFile file = getRemoteFile(request, davisSession);
         boolean existsCurrently = file.exists();
         if (existsCurrently && !file.isFile()) {
@@ -92,26 +95,26 @@ public class DefaultPutHandler extends AbstractHandler {
         }
 		if (davisSession.getCurrentResource()==null) davisSession.setCurrentResource(davisSession.getDefaultResource());
         InputStream input = request.getInputStream();
-        RemoteFileOutputStream output = null;
+        RemoteFileOutputStream outputStream = null;
     	Log.log(Log.DEBUG, "davisSession.getCurrentResource():"+davisSession.getCurrentResource());
         if (file.getFileSystem() instanceof SRBFileSystem) {
         	((SRBFile)file).setResource(davisSession.getCurrentResource());
-        	output = new SRBFileOutputStream((SRBFile)file);
+        	outputStream = new SRBFileOutputStream((SRBFile)file);
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
 //        	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
         	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
-        	output = new IRODSFileOutputStream((IRODSFile)file);
+        	outputStream = new IRODSFileOutputStream((IRODSFile)file);
         }
         byte[] buf = new byte[8192];
         int count;
-        Log.log(Log.DEBUG, "PUT method: "+output);
-        BufferedOutputStream outputStream = new BufferedOutputStream(output, 1024*256); //Buffersize of 256k seems to give max speed
+//        Log.log(Log.DEBUG, "PUT method: "+outputStream);
+        BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
         while ((count = input.read(buf)) != -1) {
 //        	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
-            outputStream.write(buf, 0, count);
+            output.write(buf, 0, count);
         }
-        outputStream.flush();
-        outputStream.close();
+        output.flush();
+        output.close();
         response.setStatus(HttpServletResponse.SC_CREATED);
         response.setHeader("Location", getRequestURL(request));
         response.setHeader("Allow", "OPTIONS, HEAD, GET, DELETE, PROPFIND, " +
