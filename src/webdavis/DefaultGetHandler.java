@@ -204,11 +204,15 @@ public class DefaultGetHandler extends AbstractHandler {
     		return;
     	}
         RemoteFile file = getRemoteFile(request, davisSession);
-        Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
+        Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         if (!file.exists()) {
             Log.log(Log.DEBUG, "File does not exist.");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
+        }
+        if (!file.canRead()){
+    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
+    		return;
         }
         String requestUrl = getRequestURL(request);
         Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
@@ -362,6 +366,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //        	input = new SRBFileInputStream((SRBFile)file);
         	input = new SRBRandomAccessFile((SRBFile)file,"r");
         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+        	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
         	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
         }
         String startingPoint=request.getHeader("Content-Range");

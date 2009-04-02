@@ -39,7 +39,7 @@ public class DavisListener implements HttpSessionListener {
 				Log.log(Log.DEBUG,"Dumping credential cache:"+davisSession.getSessionID());
 				davisSession = (DavisSession) contMap.remove(davisSession.getSessionID());
 			}
-			davisSession.disconnect();
+			if (davisSession!=null) davisSession.disconnect();
 		}
 		
 		

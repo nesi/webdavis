@@ -337,6 +337,7 @@ public abstract class AbstractHandler implements MethodHandler {
 				uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
 				Log.log(Log.DEBUG,"changed path to "+uri);
 			}
+    		Log.log(Log.DEBUG,"uri: "+uri);
             
             if (rfs instanceof SRBFileSystem){
             	file=new SRBFile((SRBFileSystem) rfs,uri);
@@ -344,6 +345,7 @@ public abstract class AbstractHandler implements MethodHandler {
             	file=new IRODSFile((IRODSFileSystem) rfs,uri);
             }
             exists = file.exists();
+            Log.log(Log.DEBUG,"uri exists: "+exists);
         } catch (IOException ex) {
             exception = ex;
         }
@@ -379,10 +381,10 @@ public abstract class AbstractHandler implements MethodHandler {
 //            }
 //            return utf8;
 //        }
-//        if (exception != null) {
-//            Log.log(Log.DEBUG, exception);
-//            throw exception;
-//        }
+        if (exception != null) {
+            Log.log(Log.DEBUG, exception);
+            throw exception;
+        }
         Log.log(Log.WARNING, "Returning null RemoteFile (shouldn't happen).");
         return null;
     }

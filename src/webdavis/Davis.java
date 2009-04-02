@@ -23,6 +23,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +32,7 @@ import javax.servlet.http.HttpSession;
 import org.globus.myproxy.GetParams;
 import org.globus.myproxy.MyProxy;
 import org.ietf.jgss.GSSCredential;
+import org.ietf.jgss.GSSException;
 
 import au.edu.archer.desktopshibboleth.idp.IDP;
 import au.org.mams.slcs.client.SLCSClient;
@@ -110,7 +112,19 @@ public class Davis extends HttpServlet {
 
 	private boolean closeOnAuthenticate;
 
-	private boolean insecureBasic;
+	private String insecureConnection;
+	
+	private String serverName;
+	private int serverPort;
+	private String defaultResource;
+	private String zoneName;
+	private String defaultIdp;
+	private String serverType;
+	private String myproxyServer;
+	private String proxyHost;
+	private String proxyPort;
+	private String proxyUsername;
+	private String proxyPassword;
 
 	protected long nonceSecret=this.hashCode() ^ System.currentTimeMillis();
 
@@ -165,7 +179,6 @@ public class Davis extends HttpServlet {
 		contextBaseHeader = config.getInitParameter("contextBaseHeader");
 		config.getServletContext().setAttribute(REQUEST_URI_CHARSET,
 				requestUriCharset);
-		String defaultServer = defaultDomain;
 		String acceptBasic = config.getInitParameter("acceptBasic");
 		this.acceptBasic = Boolean.valueOf(acceptBasic).booleanValue();
 		String enableBasic = "true";
@@ -180,6 +193,30 @@ public class Davis extends HttpServlet {
 				.getInitParameter("alwaysAuthenticate");
 		this.alwaysAuthenticate = (alwaysAuthenticate == null)
 				|| Boolean.valueOf(alwaysAuthenticate).booleanValue();
+		this.insecureConnection = config.getInitParameter("insecureConnection");
+		if (insecureConnection == null)
+			insecureConnection = "block";
+		
+		defaultIdp=getServletConfig().getInitParameter("default-idp");
+		serverType=getServletConfig().getInitParameter("server-type");
+		myproxyServer=getServletConfig().getInitParameter("myproxy-server");
+		defaultDomain = getServletConfig().getInitParameter("default-domain");
+		serverPort = 1247;
+		try {
+			serverPort = Integer.parseInt(getServletConfig().getInitParameter("server-port"));
+		}catch (Exception _e){}
+		serverName = getServletConfig().getInitParameter("server-name");
+		defaultResource = getServletConfig().getInitParameter(
+				"default-resource");
+		zoneName = getServletConfig().getInitParameter(
+				"zone-name");
+		proxyHost = getServletConfig().getInitParameter("proxy-host");
+		proxyPort = getServletConfig().getInitParameter("proxy-port");
+		proxyUsername = getServletConfig().getInitParameter(
+				"proxy-username");
+		proxyPassword = getServletConfig().getInitParameter(
+				"proxy-password");
+
 		initLockManager(config);
 		// initFilter(config);
 		initHandlers(config);
@@ -232,6 +269,10 @@ public class Davis extends HttpServlet {
 	 */
 	protected void service(HttpServletRequest request,
 			HttpServletResponse response) throws IOException, ServletException {
+		String pathInfo = request.getPathInfo();
+		if (pathInfo == null || "".equals(pathInfo))
+			pathInfo = "/";
+		
 		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".",
 				new Object[] { request.getMethod(), request.getRequestURL() });
 		if (Log.getThreshold() < Log.INFORMATION) {
@@ -250,6 +291,7 @@ public class Davis extends HttpServlet {
 					headers.append("\n");
 			}
 			Log.log(Log.DEBUG, "Headers:\n{0}", headers);
+			Log.log(Log.DEBUG, "isSecure:{0}", request.isSecure());
 			HttpSession session = request.getSession(false);
 			if (session != null) {
 				Log.log(Log.DEBUG, "Active session: {0}", session.getId());
@@ -269,70 +311,21 @@ public class Davis extends HttpServlet {
 			request.setAttribute(CONTEXT_BASE, contextBase);
 			Log.log(Log.DEBUG, "Using context base: " + contextBase);
 		}
-		// boolean usingBasic = (acceptBasic || enableBasic) &&
-		// (insecureBasic || request.isSecure());
-		// if (Log.getThreshold() < Log.INFORMATION) {
-		// Log.log(Log.DEBUG, enableBasic ? "Basic auth offered to client." :
-		// "Basic auth NOT offered to client.");
-		// if (acceptBasic) {
-		// Log.log(Log.DEBUG,
-		// "Basic auth accepted if supplied by client.");
-		// }
-		// Log.log(Log.DEBUG, insecureBasic ?
-		// "Basic auth enabled over insecure requests." :
-		// "Basic auth disabled over insecure requests.");
-		// Log.log(Log.DEBUG, request.isSecure() ?
-		// "This request is secure." : "This request is NOT secure.");
-		// Log.log(Log.DEBUG, usingBasic ?
-		// "Basic auth ENABLED for this request." :
-		// "Basic auth DISABLED for this request.");
-		// }
-		String pathInfo = request.getPathInfo();
-		if (pathInfo == null || "".equals(pathInfo))
-			pathInfo = "/";
-		// String target = "smb:/" + pathInfo;
-		// UniAddress server = null;
-		// int port = DEFAULT_SMB_PORT;
-		// try {
-		// server = getServer(target);
-		// port = getPort(target);
-		// Log.log(Log.DEBUG, "Target is \"{0}:{1}\".",
-		// new Object[] { server, new Integer(port) });
-		// } catch (UnknownHostException ex) {
-		// Log.log(Log.DEBUG, "Unknown server: {0}", ex);
-		// response.sendError(HttpServletResponse.SC_NOT_FOUND,
-		// DavisUtilities.getResource(Davis.class,
-		// "unknownServer", new Object[] { target },
-		// request.getLocale()));
-		// return;
-		// }
-		String defaultDomain;
-		String serverName;
-		int serverPort;
-		String defaultResource;
-		String zoneName;
-		String defaultIdp=getServletConfig().getInitParameter("default-idp");
-		String serverType=getServletConfig().getInitParameter("server-type");
-		String myproxyServer=getServletConfig().getInitParameter("myproxy-server");
-
-		defaultDomain = getServletConfig().getInitParameter("default-domain");
-		serverPort = 5544;
-		try {
-			serverPort = Integer.parseInt(getServletConfig().getInitParameter("server-port"));
-		}catch (Exception _e){
-			
+		
+		// check if non-secure connection is allowed
+		if (this.insecureConnection.equalsIgnoreCase("block")&&!request.isSecure()){
+			Log.log(Log.DEBUG, "Davis is configured to not allow insecure connections.");
+			try {
+				response.reset();
+			} catch (IllegalStateException ex) {
+				Log.log(Log.DEBUG, "Unable to reset response (already committed).");
+			}
+			response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			response.flushBuffer();
+			return;
 		}
-		serverName = getServletConfig().getInitParameter("server-name");
-		defaultResource = getServletConfig().getInitParameter(
-				"default-resource");
-		zoneName = getServletConfig().getInitParameter(
-				"zone-name");
-		String proxyHost = getServletConfig().getInitParameter("proxy-host");
-		String proxyPort = getServletConfig().getInitParameter("proxy-port");
-		String proxyUsername = getServletConfig().getInitParameter(
-				"proxy-username");
-		String proxyPassword = getServletConfig().getInitParameter(
-				"proxy-password");
+		
+
 		String idpName = null;
 		String user = null;
 		String basicUsername = null;
@@ -340,272 +333,259 @@ public class Davis extends HttpServlet {
 		String domain = defaultDomain;
 		DavisSession davisSession = null;
 		String sessionID = null;
+		sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
+		Log.log(Log.DEBUG, "first attempt: sessionID:"+sessionID);
+		davisSession=getDavisSession(sessionID,request);
+
+		GSSCredential gssCredential = null;
+		RemoteAccount account = null;
 		String authorization = request.getHeader("Authorization");
-		// System.out.println("Authorization: " + authorization);
-		if (authorization != null
-				&& authorization.regionMatches(true, 0, "Basic ", 0, 6)) {
+		if (davisSession == null && authorization == null){
+			//before login, check if there is shib session
+			Cookie[] cookies=request.getCookies();
+			int shibCookieNum=0;
+			ShibUtil shibUtil=new ShibUtil();
+			if (cookies!=null){
+				for (Cookie cookie:cookies){
+					if (cookie.getName().startsWith("_shibstate")||cookie.getName().startsWith("_shibsession")||cookie.getName().startsWith("_saml_idp")) shibCookieNum++;
+				}
+				if (shibCookieNum==3&&(gssCredential = shibUtil.getSLCSCertificate(request))!=null){  //found shib session, get SLCS
+					
+				}else{  // no shib session, ask for username/password
+					fail(serverName, request, response);
+					return;
+				}
+				sessionID = "shib id" + "%" + request.getServerName() + "#" + request.getRemoteAddr();  // need to change shib id to something else
+				Log.log(Log.DEBUG, "second attempt: sessionID:"+sessionID);
+				davisSession=getDavisSession(sessionID,request);
+			}
+		}else if (davisSession == null && authorization != null){
+			if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) {
 
-			String authInfo = new String(Base64.fromString(authorization
-					.substring(6)), "ISO-8859-1");
-			// System.out.println("authInfo:"+authInfo);
-			int index = authInfo.indexOf(':');
-			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
-			password = (index != -1) ? authInfo.substring(index + 1) : "";
-			basicUsername = user;
-			sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
-			Log.log(Log.DEBUG, "sessionID:"+sessionID);
+				String authInfo = new String(Base64.fromString(authorization
+						.substring(6)), "ISO-8859-1");
+				// System.out.println("authInfo:"+authInfo);
+				int index = authInfo.indexOf(':');
+				user = (index != -1) ? authInfo.substring(0, index) : authInfo;
+				password = (index != -1) ? authInfo.substring(index + 1) : "";
+				basicUsername = user;
 
-			if ((index = user.indexOf('\\')) != -1
-					|| (index = user.indexOf('/')) != -1) {
-				if (index==0){
-					idpName=defaultIdp;
-				}else
-					idpName = user.substring(0, index);
-				user = user.substring(index + 1);
-			}
-			boolean hasResource = false;
-			if ((index = user.indexOf('#')) != -1) {
-				defaultResource = user.substring(index + 1);
-				user = user.substring(0, index);
-				hasResource = true;
-			}
-			if ((index = user.indexOf('@')) != -1) {
-				serverName = user.substring(index + 1);
-				user = user.substring(0, index);
-				domain = serverName;
-//				if (!hasResource)
-//					defaultResource = "";
-			}
-			if ((index = user.indexOf('.')) != -1) {
-				domain = user.substring(index + 1);
-				user = user.substring(0, index);
-			}
+				if ((index = user.indexOf('\\')) != -1
+						|| (index = user.indexOf('/')) != -1) {
+					if (index==0){
+						idpName=defaultIdp;
+					}else
+						idpName = user.substring(0, index);
+					user = user.substring(index + 1);
+				}
+				boolean hasResource = false;
+				if ((index = user.indexOf('#')) != -1) {
+					defaultResource = user.substring(index + 1);
+					user = user.substring(0, index);
+					hasResource = true;
+				}
+				if ((index = user.indexOf('@')) != -1) {
+					serverName = user.substring(index + 1);
+					user = user.substring(0, index);
+					domain = serverName;
+//					if (!hasResource)
+//						defaultResource = "";
+				}
+				if ((index = user.indexOf('%')) != -1) {
+					domain = user.substring(index + 1);
+					user = user.substring(0, index);
+				}
+				
+				sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
+				Log.log(Log.DEBUG, "third attempt: sessionID:"+sessionID);
+				davisSession=getDavisSession(sessionID,request);
 
-			// System.out.println("login: "+idpName+" "+user+" "+domain+"
-			// "+serverName+" "+defaultResource);
-		}else if (authorization != null
-				&& authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
-//            QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials,
-//                    "=, ",
-//                    true,
-//                    false);
-//            boolean stale=false;
-//            Digest digest=new Digest(request.getMethod());
-//String last=null;
-//String name=null;
-//
-//loop:
-//while (tokenizer.hasMoreTokens())
-//{
-//String tok = tokenizer.nextToken();
-//char c=(tok.length()==1)?tok.charAt(0):'\0';
-//
-//switch (c)
-//{
-//case '=':
-//name=last;
-//last=tok;
-//break;
-//case ',':
-//name=null;
-//case ' ':
-//break;
-//
-//default:
-//last=tok;
-//if (name!=null)
-//{
-//if ("username".equalsIgnoreCase(name))
-//digest.username=tok;
-//else if ("realm".equalsIgnoreCase(name))
-//digest.realm=tok;
-//else if ("nonce".equalsIgnoreCase(name))
-//digest.nonce=tok;
-//else if ("nc".equalsIgnoreCase(name))
-//digest.nc=tok;
-//else if ("cnonce".equalsIgnoreCase(name))
-//digest.cnonce=tok;
-//else if ("qop".equalsIgnoreCase(name))
-//digest.qop=tok;
-//else if ("uri".equalsIgnoreCase(name))
-//digest.uri=tok;
-//else if ("response".equalsIgnoreCase(name))
-//digest.response=tok;
-//break;
-//}
-//}
-//}
-//
-//int n=checkNonce(digest.nonce,request);
-//if (n>0)
-//user = realm.authenticate(digest.username,digest,request);
-//else if (n==0)
-//stale = true;
-//if (user==null)
-//    Log.warn("AUTH FAILURE: user "+StringUtil.printable(digest.username));
-//else   
-//{
-//    request.setAuthType(Constraint.__DIGEST_AUTH);
-//    request.setUserPrincipal(user);
-//}
+				if (davisSession==null && idpName != null) {
+					// auth with idp
+					try {
+						if (idpName.equalsIgnoreCase("myproxy")){
+							Log.log(Log.DEBUG,"logging in with myproxy: "+myproxyServer);
+							if (myproxyServer==null||myproxyServer.equals("")){
+								fail(serverName, request, response);
+								return;
+							}
+							MyProxy mp = new MyProxy(myproxyServer, 7512);
+							GetParams getRequest = new GetParams();
+							getRequest.setCredentialName(null);
+							getRequest.setLifetime(3600);
+							getRequest.setPassphrase(password);
+							getRequest.setUserName(user);
+							gssCredential = mp.get(null,getRequest);
+							
+						}else{
+							IDP idp = null;
+							SLCSClient client;
+							if (proxyHost != null && proxyHost.toString().length() > 0) {
+								SLCSConfig config = SLCSConfig.getInstance();
+								config.setProxyHost(proxyHost.toString());
+								if (proxyPort != null
+										&& proxyPort.toString().length() > 0)
+									config.setProxyPort(Integer.parseInt(proxyPort
+											.toString()));
+								if (proxyUsername != null
+										&& proxyUsername.toString().length() > 0)
+									config.setProxyUsername(proxyUsername.toString());
+								if (proxyPassword != null
+										&& proxyPassword.toString().length() > 0)
+									config.setProxyPassword(proxyPassword.toString());
+							}
+							client = new SLCSClient();
+							List<IDP> idps = client.getAvailableIDPs();
+							for (IDP idptmp : idps) {
+								// System.out.println("idp: "+idptmp.getName()+"
+								// "+idptmp.getProviderId());
+								if (idptmp.getName().equalsIgnoreCase(idpName)) {
+									idp = idptmp;
+									break;
+								}
+							}
+							if (idp == null) {
+								for (IDP idptmp : idps) {
+									// System.out.println("idp: "+idptmp.getName()+"
+									// "+idptmp.getProviderId());
+									if (idptmp.getName().startsWith(idpName)) {
+										idp = idptmp;
+										break;
+									}
+								}
+							}
+							if (idp == null) {
+								for (IDP idptmp : idps) {
+									// System.out.println("idp: "+idptmp.getName()+"
+									// "+idptmp.getProviderId());
+									if (idptmp.getName().indexOf(idpName) > -1) {
+										idp = idptmp;
+										break;
+									}
+								}
+
+							}
+							if (idp == null) {
+								fail(serverName, request, response);
+								return;
+							}
+							Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());  //+" "+user+" "+password
+							gssCredential = client.slcsLogin(idp, user,
+									password.toCharArray());
+						}
+						if (gssCredential == null) {
+							fail(serverName, request, response);
+							return;
+						}
+					} catch (GeneralSecurityException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}else if (authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
+//	            QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials,
+//	                    "=, ",
+//	                    true,
+//	                    false);
+//	            boolean stale=false;
+//	            Digest digest=new Digest(request.getMethod());
+	//String last=null;
+	//String name=null;
+	//
+	//loop:
+	//while (tokenizer.hasMoreTokens())
+	//{
+	//String tok = tokenizer.nextToken();
+	//char c=(tok.length()==1)?tok.charAt(0):'\0';
+	//
+	//switch (c)
+	//{
+	//case '=':
+	//name=last;
+	//last=tok;
+	//break;
+	//case ',':
+	//name=null;
+	//case ' ':
+	//break;
+	//
+	//default:
+	//last=tok;
+	//if (name!=null)
+	//{
+	//if ("username".equalsIgnoreCase(name))
+	//digest.username=tok;
+	//else if ("realm".equalsIgnoreCase(name))
+	//digest.realm=tok;
+	//else if ("nonce".equalsIgnoreCase(name))
+	//digest.nonce=tok;
+	//else if ("nc".equalsIgnoreCase(name))
+	//digest.nc=tok;
+	//else if ("cnonce".equalsIgnoreCase(name))
+	//digest.cnonce=tok;
+	//else if ("qop".equalsIgnoreCase(name))
+	//digest.qop=tok;
+	//else if ("uri".equalsIgnoreCase(name))
+	//digest.uri=tok;
+	//else if ("response".equalsIgnoreCase(name))
+	//digest.response=tok;
+	//break;
+	//}
+	//}
+	//}
+	//
+	//int n=checkNonce(digest.nonce,request);
+	//if (n>0)
+	//user = realm.authenticate(digest.username,digest,request);
+	//else if (n==0)
+	//stale = true;
+	//if (user==null)
+//	    Log.warn("AUTH FAILURE: user "+StringUtil.printable(digest.username));
+	//else   
+	//{
+//	    request.setAuthType(Constraint.__DIGEST_AUTH);
+//	    request.setUserPrincipal(user);
+	//}
+			}
 			
-			
-			
-		} else {
-			fail(serverName, request, response);
-			return;
-		}
-
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			// System.out.println("Obtained handle to session
-			// "+session.getId());
-			Map credentials = (Map) session.getAttribute(CREDENTIALS);
-			if (credentials != null) {
-				// System.out.println("Dumping credential cache:"+credentials);
-				davisSession = (DavisSession) credentials.get(sessionID);
-				// if (authentication != null) {
-				// System.out.println(
-				// "Found cached credentials for "+serverName);
-				// } else {
-				// System.out.println(
-				// "No cached credentials found for "+serverName);
-				// }
-				Log.log(Log.DEBUG, "Got davisSession from session. sessionId="+sessionID);
-			}
-		}
-		if (davisSession == null) {
-			Map credentials = (Map) request.getSession().getServletContext()
-					.getAttribute(CREDENTIALS);
-			if (credentials != null) {
-				// System.out.println("Dumping credential cache:"+credentials);
-				davisSession = (DavisSession) credentials.get(sessionID);
-				Log.log(Log.DEBUG, "Got davisSession from servletContext. sessionId="+sessionID);
-			}
-		}
-		if (davisSession!=null){
-			if (davisSession.getRemoteFileSystem()==null){
-				Log.log(Log.DEBUG,"no file system in davisSesion");
-				davisSession=null;
-			}else if (davisSession.getRemoteFileSystem()!=null&&!davisSession.getRemoteFileSystem().isConnected()){
-				Log.log(Log.DEBUG,"file system in davisSesion expired, need to reconnect.");
-				davisSession=null;
-			}
 		}
 
 		String homeDir = null;
-		String redirectURL;
 
+		// log in iRODS/SRB
 		if (davisSession == null) {
-			RemoteAccount account = null;
-			if (idpName != null) {
-				// auth with idp
-				GSSCredential gssCredential = null;
-				try {
-					if (idpName.equalsIgnoreCase("myproxy")){
-						Log.log(Log.DEBUG,"logging in with myproxy: "+myproxyServer);
-						if (myproxyServer==null||myproxyServer.equals("")){
-							fail(serverName, request, response);
-							return;
-						}
-						MyProxy mp = new MyProxy(myproxyServer, 7512);
-						GetParams getRequest = new GetParams();
-						getRequest.setCredentialName(null);
-						getRequest.setLifetime(3600);
-						getRequest.setPassphrase(password);
-						getRequest.setUserName(user);
-						gssCredential = mp.get(null,getRequest);
-						
-					}else{
-						IDP idp = null;
-						SLCSClient client;
-						if (proxyHost != null && proxyHost.toString().length() > 0) {
-							SLCSConfig config = SLCSConfig.getInstance();
-							config.setProxyHost(proxyHost.toString());
-							if (proxyPort != null
-									&& proxyPort.toString().length() > 0)
-								config.setProxyPort(Integer.parseInt(proxyPort
-										.toString()));
-							if (proxyUsername != null
-									&& proxyUsername.toString().length() > 0)
-								config.setProxyUsername(proxyUsername.toString());
-							if (proxyPassword != null
-									&& proxyPassword.toString().length() > 0)
-								config.setProxyPassword(proxyPassword.toString());
-						}
-						client = new SLCSClient();
-						List<IDP> idps = client.getAvailableIDPs();
-						for (IDP idptmp : idps) {
-							// System.out.println("idp: "+idptmp.getName()+"
-							// "+idptmp.getProviderId());
-							if (idptmp.getName().equalsIgnoreCase(idpName)) {
-								idp = idptmp;
-								break;
-							}
-						}
-						if (idp == null) {
-							for (IDP idptmp : idps) {
-								// System.out.println("idp: "+idptmp.getName()+"
-								// "+idptmp.getProviderId());
-								if (idptmp.getName().startsWith(idpName)) {
-									idp = idptmp;
-									break;
-								}
-							}
-						}
-						if (idp == null) {
-							for (IDP idptmp : idps) {
-								// System.out.println("idp: "+idptmp.getName()+"
-								// "+idptmp.getProviderId());
-								if (idptmp.getName().indexOf(idpName) > -1) {
-									idp = idptmp;
-									break;
-								}
-							}
-
-						}
-						if (idp == null) {
-							fail(serverName, request, response);
-							return;
-						}
-						Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());
-						gssCredential = client.slcsLogin(idp, user,
-								password);
-					}
-					if (gssCredential == null) {
-						fail(serverName, request, response);
-						return;
-					}
-					if (serverType.equalsIgnoreCase("irods")){
-						//(java.lang.String host, int port, java.lang.String userName, java.lang.String password, java.lang.String homeDirectory, java.lang.String zone, java.lang.String defaultStorageResource) 
-						davisSession = new DavisSession();
-						account = new IRODSAccount(serverName,serverPort,"","","",zoneName,defaultResource);
-//						((IRODSAccount)account).setPort(serverPort);
-//						((IRODSAccount)account).setHost(serverName);
-//						((IRODSAccount)account).setAuthenticationScheme( IRODSAccount.GSI_PASSWORD );
-						((IRODSAccount)account).setGSSCredential(gssCredential);
-						davisSession.setZone(zoneName);
-						davisSession.setServerName(serverName);
-						davisSession.setServerPort(serverPort);
-//						davisSession.setAccount(account.getUserName());
+			if (gssCredential != null) {
+				if (serverType.equalsIgnoreCase("irods")){
+					davisSession = new DavisSession();
+					account = new IRODSAccount(serverName,serverPort,"","","",zoneName,defaultResource);
+					((IRODSAccount)account).setGSSCredential(gssCredential);
+					davisSession.setZone(zoneName);
+					davisSession.setServerName(serverName);
+					davisSession.setServerPort(serverPort);
+					try {
 						davisSession.setDn(gssCredential.getName().toString());
-					}else{
-						account = new SRBAccount(serverName, serverPort,
-								gssCredential);
-						davisSession = new DavisSession();
-						davisSession.setServerName(serverName);
-						davisSession.setServerPort(serverPort);
-						davisSession.setDomain(((SRBAccount)account).getDomainName());
-						davisSession.setZone(zoneName);
-						davisSession.setAccount(account.getUserName());
-						davisSession.setDn(gssCredential.getName().toString());
+					} catch (GSSException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-				} catch (GeneralSecurityException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				}else{
+					account = new SRBAccount(serverName, serverPort,
+							gssCredential);
+					davisSession = new DavisSession();
+					davisSession.setServerName(serverName);
+					davisSession.setServerPort(serverPort);
+					davisSession.setDomain(((SRBAccount)account).getDomainName());
+					davisSession.setZone(zoneName);
+					davisSession.setAccount(account.getUserName());
+					try {
+						davisSession.setDn(gssCredential.getName().toString());
+					} catch (GSSException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 
 			} else {
@@ -691,26 +671,16 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "homedir:" + homeDir);
 				davisSession.setHomeDirectory(homeDir);
 
-				// srbFileSystem.set
-				// change resource
-				// srbFileSystem.close();
-				// srbFileSystem=new SRBFileSystem(account);
-
 				Log.log(Log.DEBUG, "Authentication succeeded. home=" + homeDir
 						+ " defaultRes=" + davisSession.getDefaultResource()
 						+ " zone=" + davisSession.getZone());
-				// System.out.println(req.getPathInfo()+"
-				// "+req.getServletPath());
-				// System.out.println(req.getContextPath()+"
-				// "+req.getRequestURL());
-				// System.out.println(req.getRequestURL().substring(0,req.getRequestURL().length()-req.getPathInfo().length()+1)+homeDir);
-//				redirectURL = "/srbdav" + homeDir; // req.getRequestURL().substring(0,req.getRequestURL().length()-req.getPathInfo().length()+1)+homeDir;
 			} catch (Exception e) {
 				e.printStackTrace();
 				Log.log(Log.DEBUG, "Authentication failed.");
 				fail(serverName, request, response);
 				return;
 			}
+			HttpSession session = request.getSession(false);
 			session = request.getSession();
 			if (session != null) {
 				Log.log(Log.DEBUG,"Obtained handle to session "
@@ -774,28 +744,6 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
-				// Log.log(Log.INFORMATION,
-				// "Error handler chain invoked for: {0}", throwable);
-				// for (int i = 0; i < errorHandlers.length; i++) {
-				// try {
-				// Log.log(Log.DEBUG, "Error handler is {0}",
-				// errorHandlers[i].getClass());
-				// errorHandlers[i].handle(throwable, request, response);
-				// Log.log(Log.DEBUG, "Error handler consumed throwable.");
-				// return;
-				// } catch (Throwable t) {
-				// throwable = t;
-				// if (throwable instanceof ErrorHandlerException) {
-				// throwable = ((ErrorHandlerException)
-				// throwable).getThrowable();
-				// Log.log(Log.DEBUG,
-				// "Error chain circumvented with: {0}",
-				// throwable);
-				// break;
-				// }
-				// Log.log(Log.DEBUG, "Handler output: {0}", throwable);
-				// }
-				// }
 				Log.log(Log.INFORMATION, "Unhandled error: {0}", throwable);
 				if (throwable instanceof ServletException) {
 					throw (ServletException) throwable;
@@ -930,90 +878,6 @@ public class Davis extends HttpServlet {
 		}
 	}
 
-	// private void initErrorHandlers(ServletConfig config)
-	// throws ServletException {
-	// List errorHandlers = new ArrayList();
-	// String errorHandlerClasses = config.getInitParameter("errorHandlers");
-	// if (errorHandlerClasses == null) {
-	// errorHandlerClasses =
-	// "smbdav.DefaultAuthErrorHandler smbdav.DefaultIOErrorHandler";
-	// }
-	// StringTokenizer tokenizer = new StringTokenizer(errorHandlerClasses);
-	// while (tokenizer.hasMoreTokens()) {
-	// String errorHandler = tokenizer.nextToken();
-	// try {
-	// errorHandlers.add(Class.forName(errorHandler).newInstance());
-	// Log.log(Log.DEBUG, "Created error handler: " + errorHandler);
-	// } catch (Exception ex) {
-	// String message = DavisUtilities.getResource(Davis.class,
-	// "cantCreateErrorHandler",
-	// new Object[] { errorHandler, ex }, null);
-	// Log.log(Log.CRITICAL, message + "\n{0}", ex);
-	// throw new UnavailableException(message);
-	// }
-	// }
-	// Iterator iterator = errorHandlers.iterator();
-	// while (iterator.hasNext()) {
-	// ((ErrorHandler) iterator.next()).init(config);
-	// }
-	// this.errorHandlers = (ErrorHandler[])
-	// errorHandlers.toArray(new ErrorHandler[0]);
-	// }
-
-	// private void initFilter(ServletConfig config) throws ServletException {
-	// String fileFilters = config.getInitParameter("fileFilters");
-	// if (fileFilters == null) return;
-	// List filters = new ArrayList();
-	// StringTokenizer tokenizer = new StringTokenizer(fileFilters);
-	// while (tokenizer.hasMoreTokens()) {
-	// String filter = tokenizer.nextToken();
-	// try {
-	// SmbFileFilter fileFilter = (SmbFileFilter) Class.forName(
-	// config.getInitParameter(filter)).newInstance();
-	// Log.log(Log.DEBUG, "Created filter {0}: {1}",
-	// new Object[] { filter, fileFilter.getClass() });
-	// if (fileFilter instanceof DavenportFileFilter) {
-	// Properties properties = new Properties();
-	// Enumeration parameters = config.getInitParameterNames();
-	// String prefix = filter + ".";
-	// int prefixLength = prefix.length();
-	// while (parameters.hasMoreElements()) {
-	// String parameter = (String) parameters.nextElement();
-	// if (parameter.startsWith(prefix)) {
-	// properties.setProperty(
-	// parameter.substring(prefixLength),
-	// config.getInitParameter(parameter));
-	// }
-	// }
-	// if (Log.getThreshold() < Log.INFORMATION) {
-	// ByteArrayOutputStream stream =
-	// new ByteArrayOutputStream();
-	// properties.list(new PrintStream(stream));
-	// Object[] args = new Object[] { filter,
-	// fileFilter.getClass(), stream };
-	// Log.log(Log.DEBUG,
-	// "Initializing filter \"{0}\" ({1}):\n{2}",
-	// args);
-	// }
-	// ((DavenportFileFilter) fileFilter).init(properties);
-	// }
-	// filters.add(fileFilter);
-	// } catch (Exception ex) {
-	// String message = DavisUtilities.getResource(Davis.class,
-	// "cantCreateFilter", new Object[] { filter, ex }, null);
-	// Log.log(Log.CRITICAL, message + "\n{0}", ex);
-	// throw new UnavailableException(message);
-	// }
-	// }
-	// if (!filters.isEmpty()) {
-	// this.filter = new ResourceFilter((SmbFileFilter[])
-	// filters.toArray(new SmbFileFilter[0]));
-	// config.getServletContext().setAttribute(RESOURCE_FILTER,
-	// this.filter);
-	// Log.log(Log.DEBUG, "Filter installed.");
-	// }
-	// }
-
 	private void fail(String server, HttpServletRequest request,
 			HttpServletResponse response) throws ServletException, IOException {
 		if (server != null) {
@@ -1048,6 +912,47 @@ public class Davis extends HttpServlet {
 		// }
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		response.flushBuffer();
+	}
+	
+	private DavisSession getDavisSession(String sessionID, HttpServletRequest request){
+		DavisSession davisSession=null;
+		HttpSession session = request.getSession(false);
+		if (session != null) {
+			// System.out.println("Obtained handle to session
+			// "+session.getId());
+			Map credentials = (Map) session.getAttribute(CREDENTIALS);
+			if (credentials != null) {
+				// System.out.println("Dumping credential cache:"+credentials);
+				davisSession = (DavisSession) credentials.get(sessionID);
+				// if (authentication != null) {
+				// System.out.println(
+				// "Found cached credentials for "+serverName);
+				// } else {
+				// System.out.println(
+				// "No cached credentials found for "+serverName);
+				// }
+				Log.log(Log.DEBUG, "Got davisSession from session. sessionId="+sessionID);
+			}
+		}
+		if (davisSession == null) {
+			Map credentials = (Map) request.getSession().getServletContext()
+					.getAttribute(CREDENTIALS);
+			if (credentials != null) {
+				// System.out.println("Dumping credential cache:"+credentials);
+				davisSession = (DavisSession) credentials.get(sessionID);
+				Log.log(Log.DEBUG, "Got davisSession from servletContext. sessionId="+sessionID);
+			}
+		}
+		if (davisSession!=null){
+			if (davisSession.getRemoteFileSystem()==null){
+				Log.log(Log.DEBUG,"no file system in davisSesion");
+				davisSession=null;
+			}else if (davisSession.getRemoteFileSystem()!=null&&!davisSession.getRemoteFileSystem().isConnected()){
+				Log.log(Log.DEBUG,"file system in davisSesion expired, need to reconnect.");
+				davisSession=null;
+			}
+		}
+		return davisSession;
 	}
 
     public String newNonce(HttpServletRequest request)
