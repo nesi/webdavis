@@ -173,29 +173,6 @@
     </init-param>
 -->
 <!--
-    insecureBasic:
-
-        Indicates whether HTTP Basic can be used over insecure (non-HTTPS) 
-        connections.
-
-        Specifies whether Davis is allowed to use HTTP Basic 
-        authentication over non-HTTPS connections. Normally, Davis will 
-        only use Basic authentication if the connection is secure; setting 
-        this to "true" will offer HTTP Basic over insecure connections as 
-        well. This sends login information over the network unencrypted, and 
-        is a SEVERE security risk. Enabling this is strongly discouraged.
-
-        Default Value:
-    
-            false (HTTP Basic is not enabled over insecure HTTP).
--->
-
-    <init-param>
-        <param-name>insecureBasic</param-name>
-        <param-value>true</param-value>
-    </init-param>
-
-<!--
     closeOnAuthenticate:
 
         Specifies whether Davis should close the HTTP connection when 
@@ -1223,6 +1200,27 @@
         <param-value>webdavis.DefaultUnlockHandler</param-value>
     </init-param>
 -->
+<!--
+    insecureConnection:
+
+        Indicates which authentication method will be used if users establish
+        an insecure connection (HTTP). The supported values are:
+
+        shib (shibboleth authentication)
+        basic (basic authentication, really not secure, use it if you know what you are doing!)
+        block (doesn't allow insecure connections)
+		digest (will be supported in the future)
+
+        Default Value:
+    
+            block
+-->
+
+    <init-param>
+        <param-name>insecureConnection</param-name>
+        <param-value>shib</param-value>
+    </init-param>
+
 
 		<init-param>
 			<description>
@@ -1250,21 +1248,21 @@
 				server port of srb/irods
 			</description>
 			<param-name>server-port</param-name>
-			<param-value>5544</param-value>
+			<param-value>1247</param-value>
 		</init-param>
 		<init-param>
 			<description>
 				server name of srb/irods
 			</description>
 			<param-name>server-name</param-name>
-			<param-value>ngspare.sapac.edu.au</param-value>
+			<param-value>arcs-df.eresearchsa.edu.au</param-value>
 		</init-param>
 		<init-param>
 			<description>
 				zone name of srb/irods
 			</description>
 			<param-name>zone-name</param-name>
-			<param-value>ngspare.sapac.edu.au</param-value>
+			<param-value>ARCS</param-value>
 		</init-param>
 		<init-param>
 			<description>
@@ -1284,7 +1282,7 @@
 				default resource of user
 			</description>
 			<param-name>default-resource</param-name>
-			<param-value></param-value>
+			<param-value>arcs-df.eresearchsa.edu.au</param-value>
 		</init-param>
 		<init-param>
 			<description>
