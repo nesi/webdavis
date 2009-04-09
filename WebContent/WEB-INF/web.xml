@@ -1224,6 +1224,13 @@
 
 		<init-param>
 			<description>
+				authentication realm - default is Davis
+			</description>
+			<param-name>authentication-realm</param-name>
+			<param-value>ARCS Data Fabric</param-value>
+		</init-param>
+		<init-param>
+			<description>
 				myproxy server where certs are stored
 			</description>
 			<param-name>myproxy-server</param-name>

@@ -188,7 +188,9 @@ public class Davis extends HttpServlet {
 				.getInitParameter("closeOnAuthenticate");
 		this.closeOnAuthenticate = Boolean.valueOf(closeOnAuthenticate)
 				.booleanValue();
-		realm = "Davis";
+		realm = getServletConfig().getInitParameter("authentication-realm");
+		if (realm == null || realm.length() == 0)
+			realm = "Davis";
 		String alwaysAuthenticate = config
 				.getInitParameter("alwaysAuthenticate");
 		this.alwaysAuthenticate = (alwaysAuthenticate == null)
