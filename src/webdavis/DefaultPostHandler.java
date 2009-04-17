@@ -397,12 +397,21 @@ public class DefaultPostHandler extends AbstractHandler {
 
 			}else if (file.getFileSystem() instanceof IRODSFileSystem) {
 				selects=new MetaDataSelect[3];
-			    selects[0] = 
-		            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_NAME );
-				selects[1] = 
-				    MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_VALUE );
-				selects[2] = 
-		            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
+				if (file.isDirectory()){
+				    selects[0] = 
+			            MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_NAME );
+					selects[1] = 
+					    MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_VALUE );
+					selects[2] = 
+			            MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_UNITS );    
+				}else{
+				    selects[0] = 
+			            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_NAME );
+					selects[1] = 
+					    MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_VALUE );
+					selects[2] = 
+			            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
+				}
 				rl = file.query( selects );
 //				selects = new MetaDataSelect[1];
 //				// "definable metadata for files"
@@ -416,12 +425,21 @@ public class DefaultPostHandler extends AbstractHandler {
 //						else
 //							str.append("\n");
 						if (i>0) str.append(",\n");
-						str.append("{name:'");
-						str.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME)).append("', ");
-						str.append("value:'")
-							.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE)).append("', ");
-						str.append("unit:'")
-								.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_UNITS)).append("'}");
+						if (file.isDirectory()){
+							str.append("{name:'");
+							str.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME)).append("', ");
+							str.append("value:'")
+								.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE)).append("', ");
+							str.append("unit:'")
+									.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_UNITS)).append("'}");
+						}else{
+							str.append("{name:'");
+							str.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME)).append("', ");
+							str.append("value:'")
+								.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE)).append("', ");
+							str.append("unit:'")
+									.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_UNITS)).append("'}");
+						}
 						b = true;
 					}
 				}
