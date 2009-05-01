@@ -6,10 +6,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.Namespace;
+import edu.sdsc.grid.io.RemoteFile;
+import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFile;
@@ -27,6 +31,8 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  */
 public class FSUtilities {
 	
+	private static final int MAX_QUERY_NUM = 100000;
+
 	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){
 		MetaDataRecordList[] recordList = null;
 		Log.log(Log.DEBUG, "getiRODSUsernameByDN '"+dn+"' from "+fs);
@@ -457,5 +463,81 @@ public class FSUtilities {
 
         return names;
 		
+	}
+	
+	public static RemoteFile[] getIRODSCollectionDetails(RemoteFile file){
+		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
+		String[] selectFieldNames = {
+				IRODSMetaDataSet.FILE_NAME,
+				IRODSMetaDataSet.DIRECTORY_NAME,
+				IRODSMetaDataSet.CREATION_DATE,
+				IRODSMetaDataSet.MODIFICATION_DATE,
+				IRODSMetaDataSet.SIZE,
+				IRODSMetaDataSet.FILE_ACCESS_TYPE 
+			};
+		MetaDataCondition conditions[] = {
+							MetaDataSet.newCondition(
+									GeneralMetaData.DIRECTORY_NAME,	MetaDataCondition.EQUAL, file.getAbsolutePath() ),
+//							MetaDataSet.newCondition(
+//									IRODSMetaDataSet.USER_NAME,	MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName() ),
+						};
+		MetaDataSelect selects[] =
+				MetaDataSet.newSelection( selectFieldNames );
+		MetaDataRecordList[] fileDetails;
+		MetaDataCondition conditions1[] = {
+				MetaDataSet.newCondition(
+						IRODSMetaDataSet.PARENT_DIRECTORY_NAME,	MetaDataCondition.EQUAL, file.getAbsolutePath() ),
+//				MetaDataSet.newCondition(
+//						IRODSMetaDataSet.DIRECTORY_USER_NAME,	MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName() ),
+			};
+		MetaDataSelect selects1[] =
+			MetaDataSet.newSelection( new String[]{
+					IRODSMetaDataSet.DIRECTORY_NAME,
+					IRODSMetaDataSet.DIRECTORY_TYPE,
+					IRODSMetaDataSet.DIRECTORY_CREATE_DATE,
+					IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
+					IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
+					} );
+		try {
+			fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions,selects,MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions1,selects1,MAX_QUERY_NUM,Namespace.DIRECTORY);
+    		if (fileDetails==null) fileDetails=new MetaDataRecordList[0];
+    		if (dirDetails==null) dirDetails=new MetaDataRecordList[0];
+    		CachedFile[] files=new CachedFile[fileDetails.length+dirDetails.length];
+    		int i=0;
+    		for (MetaDataRecordList p:fileDetails) {
+    			files[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME),(String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
+    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
+    			files[i].setDirFlag(false);
+//    			int permission=Integer.parseInt((String)p.getValue(IRODSMetaDataSet.FILE_ACCESS_TYPE));
+//    			if (permission>=1120)
+    				files[i].setCanWriteFlag(true);
+//    			else
+//    				files[i].setCanWriteFlag(false);
+    			i++;
+    		}
+    		for (MetaDataRecordList p:dirDetails) {
+    			files[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),file.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+    			files[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+    			files[i].setDirFlag(true);
+//    			int permission=Integer.parseInt((String)p.getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE));
+//    			if (permission>=1120)
+    				files[i].setCanWriteFlag(true);
+//    			else
+//    				files[i].setCanWriteFlag(false);
+    			i++;
+    		}
+    		
+    		
+    		return files;
+		} catch (NullPointerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

@@ -6,9 +6,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import edu.sdsc.grid.io.GeneralFileSystem;
+import edu.sdsc.grid.io.GeneralMetaData;
+import edu.sdsc.grid.io.MetaDataCondition;
+import edu.sdsc.grid.io.MetaDataRecordList;
+import edu.sdsc.grid.io.MetaDataSelect;
+import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.Namespace;
 import edu.sdsc.grid.io.RemoteFile;
+import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
@@ -20,7 +28,7 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  * @author Eric Glass
  */
 public class PropertiesDirector {
-
+	
     private static final int INFINITY = 3;
 
     private static final boolean[] ESCAPED;
@@ -276,12 +284,15 @@ public class PropertiesDirector {
     	}else if (gfs instanceof IRODSFileSystem){
     		gfs=(IRODSFileSystem)gfs;
     		// may change to do a query
-    		String[] children=file.list();
-    		RemoteFile[] files=new RemoteFile[children.length];
-    		for (int i=0;i<children.length;i++){
-    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
-    		}
-    		return files;
+//    		String[] children=file.list();
+//    		RemoteFile[] files=new RemoteFile[children.length];
+//    		for (int i=0;i<children.length;i++){
+//    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
+//    		}
+    		Log.log(Log.DEBUG, "getChildren '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
+    		return FSUtilities.getIRODSCollectionDetails(file);
+    		
+    		
     	}
     	return null;
     }
