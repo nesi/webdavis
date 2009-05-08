@@ -572,6 +572,7 @@
 		    },
     		error: function(response, ioArgs){
       			alert("Failed to delete one or more items");//"+ioArgs.args.filename);
+      			window.location.reload(); // Reload on error in case some files were deleted
       			return response;
     		}
   		});

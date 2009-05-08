@@ -514,7 +514,8 @@ public class DefaultPostHandler extends AbstractHandler {
 						if (!deleteHandler.del(condemnedFile, true)) {
 							String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
 							Log.log(Log.WARNING, s);
-							throw new IOException(s);
+							response.sendError(HttpServletResponse.SC_BAD_REQUEST, s);
+							return;
 						}
 					}
 				} else
@@ -603,7 +604,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
 			for (int i = 0; i < domains.length; i++) {
 				if (i>0) str.append(",\n");
-				str.append("{name:'").append(domains[i]).append("'}");
+					str.append("{name:'").append(domains[i]).append("'}");
 			}
 			str.append("\n");
 			str.append("]}");
@@ -613,13 +614,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
 				for (int i = 0; i < users.length; i++) {
 					if (i>0) str.append(",\n");
-					str.append("{name:'").append(users[i]).append("'}");
+						str.append("{name:'").append(users[i]).append("'}");
 				}
 			}else if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem){
 				String[] users=FSUtilities.getUsernames((IRODSFileSystem)davisSession.getRemoteFileSystem());
 				for (int i = 0; i < users.length; i++) {
 					if (i>0) str.append(",\n");
-					str.append("{name:'").append(users[i]).append("'}");
+						str.append("{name:'").append(users[i]).append("'}");
 				}
 			}
 			str.append("\n");

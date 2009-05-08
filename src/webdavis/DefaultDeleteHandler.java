@@ -63,10 +63,12 @@ public class DefaultDeleteHandler extends AbstractHandler {
         response.flushBuffer();
     }
     
-    public void del(RemoteFile file){
-    	del(file, false);
+    public boolean del(RemoteFile file){
+    	return del(file, false);
     }
     	
+    private boolean error = false;
+    
     public boolean del(RemoteFile file, boolean abortOnFail) {
     	if (file.isDirectory()){
     		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
@@ -76,22 +78,22 @@ public class DefaultDeleteHandler extends AbstractHandler {
         		for (int i=0;i<fileList.length;i++){
         			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
     				if (file.getFileSystem() instanceof SRBFileSystem){
-    					del(new SRBFile( (SRBFile)file,fileList[i]));
+    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]), abortOnFail);
     				}else if (file.getFileSystem() instanceof IRODSFileSystem){
-    					del(new IRODSFile( (IRODSFile)file,fileList[i]));
+    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]), abortOnFail);
     				}
         		}
     		}
-    		if (!file.delete() && abortOnFail)
-    			return false;
+    		if ((!file.delete() || error) && abortOnFail)
+    			return !error;
     	}else{
     		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
 			if (file.getFileSystem() instanceof SRBFileSystem){
-				((SRBFile)file).delete(true);
+				error = error || !((SRBFile)file).delete(true);
 			}else if (file.getFileSystem() instanceof IRODSFileSystem){
-				((IRODSFile)file).delete();
+				error = error || !((IRODSFile)file).delete();
 			}
     	}
-    	return true;
+    	return !error;
     }
 }
