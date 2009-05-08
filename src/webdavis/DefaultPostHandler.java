@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -24,6 +25,7 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 
 import edu.sdsc.grid.io.DirectoryMetaData;
+import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
@@ -34,6 +36,7 @@ import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileOutputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.UserMetaData;
+import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
@@ -81,6 +84,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	public void service(HttpServletRequest request,
 			HttpServletResponse response, DavisSession davisSession)
 			throws ServletException, IOException {
+
 		String method = request.getParameter("method");
 		if (method == null)
 			return;
@@ -100,36 +104,55 @@ public class DefaultPostHandler extends AbstractHandler {
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
 			boolean recursive = false;
-			if (username != null) {
-				String domain = request.getParameter("domain");
-				String permission = request.getParameter("permission");
-				try {
-					recursive = Boolean.parseBoolean(request
-							.getParameter("recursive"));
-				} catch (Exception _e) {
+			InputStream input = request.getInputStream();
+			byte[] buf = new byte[request.getContentLength()];
+			int count=input.read(buf);
+			Log.log(Log.DEBUG, "read:"+count);
+			Log.log(Log.DEBUG, "received data: " + new String(buf));
+			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			if (jsonArray != null) {	
+				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+				JSONArray filesArray = (JSONArray)jsonObject.get("files");
+				GeneralFileSystem fileSystem = file.getFileSystem();
+				String domain = null;
+				String permission = null;
+				if (username != null) {		// Set permissions
+					domain = request.getParameter("domain");
+					permission = request.getParameter("permission");
+					try {
+						recursive = Boolean.parseBoolean(request.getParameter("recursive"));
+					} catch (Exception _e) {}
 				}
-				if (file.getFileSystem() instanceof SRBFileSystem) {
-					Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
-					((SRBFile) file).changePermissions(permission, username,
-							domain, recursive);
-				} else if (file.getFileSystem() instanceof IRODSFileSystem) {
-					Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
-					((IRODSFile) file).changePermissions(permission, username,
-							recursive);
+				String sticky = request.getParameter("sticky");
+				for (int j = 0; j < filesArray.size(); j++) {
+					String fileName = (String)filesArray.get(j);
+					RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+						file = selectedFile;
+				
+					if (username != null) {
+						if (/*file.getFileSystem()*/fileSystem instanceof SRBFileSystem) {
+							Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
+							((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
+						} else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
+							Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
+							((IRODSFile) selectedFile).changePermissions(permission, username, recursive);
+//				System.err.println("permissions="+((IRODSFile) selectedFile).query(new String[]{UserMetaData.USER_NAME, IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT}));
+						}
+					}
+					if (sticky!=null) {
+						Log.log(Log.DEBUG, "set "+selectedFile.getAbsolutePath()+" -- sticky:"+sticky);
+						boolean flag=false;
+						try {
+							flag = Boolean.parseBoolean(sticky);
+						} catch (Exception _e) {
+						}
+						this.setSticky(selectedFile, flag, recursive);
+					}
 				}
-
 			}
-			String sticky = request.getParameter("sticky");
-			if (sticky!=null){
-				Log.log(Log.DEBUG, "set "+file.getAbsolutePath()+" -- sticky:"+sticky);
-				boolean flag=false;
-				try {
-					flag = Boolean.parseBoolean(sticky);
-				} catch (Exception _e) {
-				}
-				this.setSticky(file, flag, recursive);
-			}
 
+			// Fetch permissions for item
 			MetaDataRecordList[] permissions = null;
 			str.append("{\n");
 			if (file.getFileSystem() instanceof SRBFileSystem) {
@@ -239,7 +262,7 @@ public class DefaultPostHandler extends AbstractHandler {
 
 		} else if (method.equalsIgnoreCase("metadata")) {
 
-			if (request.getContentLength() > 0) {
+			if (request.getContentLength() > 0) {	// write metadata if given in request
 		        InputStream input = request.getInputStream();
 		        byte[] buf = new byte[request.getContentLength()];
 		        int count=input.read(buf);
@@ -254,67 +277,67 @@ public class DefaultPostHandler extends AbstractHandler {
 //				}
 //				Log.log(Log.DEBUG, "received metadata: " + buffer);
 
-				Object obj=JSONValue.parse(new String(buf));
-				JSONArray array=(JSONArray)obj;
+				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+				if (jsonArray != null) {	
+					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+					JSONArray filesArray = (JSONArray)jsonObject.get("files");
+					JSONArray metadataArray = (JSONArray)jsonObject.get("metadata");
+					GeneralFileSystem fileSystem = file.getFileSystem();
+					
+					for (int j = 0; j < filesArray.size(); j++) {
+						String fileName = (String)filesArray.get(j);
+						RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+						Log.log(Log.DEBUG, "changing metadata for: "+selectedFile);
+						if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+							file = selectedFile;
 
-				if (array != null) {
-					MetaDataTable metaDataTable = null;
-
-					if (file.getFileSystem() instanceof SRBFileSystem) {
-						String[][] definableMetaDataValues = new String[array
-						                    							.size()][2];
-
-    					for (int i = 0; i < array.size(); i++) {
-    						definableMetaDataValues[i][0] = (String) ((JSONObject) array
-    								.get(i)).get("name");
-    						definableMetaDataValues[i][1] = (String) ((JSONObject) array
-    								.get(i)).get("value");
-
-    					}
-
-    					int[] operators = new int[definableMetaDataValues.length];
-						MetaDataRecordList rl;
-						MetaDataField mdf=null;
-						if (!file.isDirectory()){
-							mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
-						}else{
-							mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+						MetaDataTable metaDataTable = null;
+	
+						if (/*file.getFileSystem()*/fileSystem instanceof SRBFileSystem) {
+							String[][] definableMetaDataValues = new String[metadataArray.size()][2];
+	
+	    					for (int i = 0; i < metadataArray.size(); i++) {
+	    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
+	    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
+	    					}
+	
+	    					int[] operators = new int[definableMetaDataValues.length];
+							MetaDataRecordList rl;
+							MetaDataField mdf=null;
+							if (!selectedFile.isDirectory()){
+								mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+							}else{
+								mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+							}
+							if (mdf!=null){
+								rl = new SRBMetaDataRecordList(mdf,(MetaDataTable) null);
+								selectedFile.modifyMetaData(rl);
+								metaDataTable = new MetaDataTable(operators, definableMetaDataValues);
+								rl = new SRBMetaDataRecordList(mdf,metaDataTable);
+								selectedFile.modifyMetaData(rl);
+							}
+	
+						}else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
+							//delete all metadata, uses wildcards
+	//						try{
+							((IRODSFile)selectedFile).deleteMetaData(new String[]{"%","%","%"});
+	//						}catch (Exception _e){}
+							
+							String[][] definableMetaDataValues = new String[metadataArray.size()][3];
+	
+	    					for (int i = 0; i < metadataArray.size(); i++) {
+	    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
+	    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
+	    						definableMetaDataValues[i][2] = (String) ((JSONObject) metadataArray.get(i)).get("unit");
+	    					}
+	    					for (String[] metadata:definableMetaDataValues)
+	    						((IRODSFile)selectedFile).modifyMetaData(metadata);
 						}
-						if (mdf!=null){
-							rl = new SRBMetaDataRecordList(mdf,(MetaDataTable) null);
-							file.modifyMetaData(rl);
-							metaDataTable = new MetaDataTable(operators,
-									definableMetaDataValues);
-							rl = new SRBMetaDataRecordList(mdf,metaDataTable);
-							file.modifyMetaData(rl);
-						}
-
-					}else if (file.getFileSystem() instanceof IRODSFileSystem) {
-						//delete all metadata, uses wildcards
-//						try{
-						((IRODSFile)file).deleteMetaData(new String[]{"%","%","%"});
-//						}catch (Exception _e){}
-						
-						String[][] definableMetaDataValues = new String[array
-						                    							.size()][3];
-
-    					for (int i = 0; i < array.size(); i++) {
-    						definableMetaDataValues[i][0] = (String) ((JSONObject) array
-    								.get(i)).get("name");
-    						definableMetaDataValues[i][1] = (String) ((JSONObject) array
-    								.get(i)).get("value");
-    						definableMetaDataValues[i][2] = (String) ((JSONObject) array
-    								.get(i)).get("unit");
-
-    					}
-    					for (String[] metadata:definableMetaDataValues)
-    						((IRODSFile)file).modifyMetaData(metadata);
-						
 					}
-
 				}
 			}
 
+			// Get and return metadata 
 			MetaDataCondition[] conditions;
 			MetaDataTable metaDataTable = null;
 			MetaDataSelect[] selects=null;
@@ -447,27 +470,55 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 
-		} else if (method.equalsIgnoreCase("createDirectory")) {
+//		} else if (method.equalsIgnoreCase("createDirectory")) {
+//	        if (request.getContentLength() > 0) {
+//		        InputStream input = request.getInputStream();
+//		        byte[] buf = new byte[request.getContentLength()];
+//		        int count=input.read(buf);
+//		        Log.log(Log.DEBUG, "read:"+count);
+//		        Log.log(Log.DEBUG, "received directory name: " + new String(buf));
+//
+//				Object obj=JSONValue.parse(new String(buf));
+//				JSONArray array=(JSONArray)obj;
+//				if (array != null && array.size() == 1) {		
+//					String name = (String)((JSONObject)array.get(0)).get("name");
+//					RemoteFile dir = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
+//					Log.log(Log.DEBUG, "creating: "+dir);
+//					if (!dir.mkdir()) {
+//						String s = "Failed to create directory '"+dir.getAbsolutePath()+"'";
+//						Log.log(Log.WARNING, s);
+//						throw new IOException(s);
+//					}
+//				} else
+//					throw new ServletException("Internal error creating directory: error parsing JSON");
+//			}
+		} else if (method.equalsIgnoreCase("delete")) {
 	        if (request.getContentLength() > 0) {
 		        InputStream input = request.getInputStream();
 		        byte[] buf = new byte[request.getContentLength()];
 		        int count=input.read(buf);
 		        Log.log(Log.DEBUG, "read:"+count);
-		        Log.log(Log.DEBUG, "received directory name: " + new String(buf));
+		        Log.log(Log.DEBUG, "received file list: " + new String(buf));
 
-				Object obj=JSONValue.parse(new String(buf));
-				JSONArray array=(JSONArray)obj;
-				if (array != null && array.size() == 1) {		
-					String name = (String)((JSONObject)array.get(0)).get("name");
-					RemoteFile dir = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
-					Log.log(Log.DEBUG, "creating: "+dir);
-					if (!dir.mkdir()) {
-						String s = "Failed to create directory '"+dir.getAbsolutePath()+"'";
-						Log.log(Log.WARNING, s);
-						throw new IOException(s);
+				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+				if (jsonArray != null) {	
+					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+					JSONArray filesArray = (JSONArray)jsonObject.get("files");
+					for (int i = 0; i < filesArray.size(); i++) {
+						String name = (String)filesArray.get(i);
+						if (name.trim().length() == 0)
+							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!
+						RemoteFile condemnedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
+						Log.log(Log.DEBUG, "deleting: "+condemnedFile);
+						DefaultDeleteHandler deleteHandler = new DefaultDeleteHandler();
+						if (!deleteHandler.del(condemnedFile, true)) {
+							String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
+							Log.log(Log.WARNING, s);
+							throw new IOException(s);
+						}
 					}
 				} else
-					throw new ServletException("Internal error creating directory: error parsing JSON");
+					throw new ServletException("Internal error deleting file: error parsing JSON");
 			}
 		} else if (method.equalsIgnoreCase("upload")) {
             response.setContentType("text/html");
@@ -507,7 +558,8 @@ public class DefaultPostHandler extends AbstractHandler {
 	                        	Log.log(Log.DEBUG, file.getAbsolutePath()+" already exists on server");
 	            	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"File already exists\"}</textarea></body></html>");
 	                        } else {	                        
-		                		if (davisSession.getCurrentResource()==null) davisSession.setCurrentResource(davisSession.getDefaultResource());
+		                		if (davisSession.getCurrentResource() == null) 
+		                			davisSession.setCurrentResource(davisSession.getDefaultResource());
 		                        RemoteFileOutputStream stream = null;
 		                    	Log.log(Log.DEBUG, "putting file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
 		                        if (file.getFileSystem() instanceof SRBFileSystem) {

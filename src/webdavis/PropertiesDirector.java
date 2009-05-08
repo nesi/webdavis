@@ -2,8 +2,12 @@ package webdavis;
 
 import java.io.IOException;
 
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.GeneralMetaData;
@@ -123,12 +127,12 @@ public class PropertiesDirector {
      */
     public Document getAllProperties(RemoteFile file, String href, int depth)
             throws IOException {
-        if (depth == DavisUtilities.INFINITE_DEPTH) depth = INFINITY;
+    	if (depth == DavisUtilities.INFINITE_DEPTH) depth = INFINITY;
         Document document = getPropertiesBuilder().createDocument();
         addAllProperties(document, file, href, depth);
         return document;
     }
-
+        
     /**
      * Returns the PROPFIND result XML document for the specified resource
      * containing the values of the specifed properties.
@@ -195,8 +199,8 @@ public class PropertiesDirector {
 
     private void addAllProperties(Document document, RemoteFile file, String href,
             int depth) throws IOException {
-        getPropertiesBuilder().addAllProps(document, file, href);
-        if (depth > 0 && !file.isFile()) {
+    	getPropertiesBuilder().addAllProps(document, file, href);
+    	if (depth > 0 && !file.isFile()) {
         	RemoteFile[] children = getChildren(file);  // null;
 //            SmbFileFilter filter = getFilter();
 //            try {
@@ -219,7 +223,7 @@ public class PropertiesDirector {
             }
         }
     }
-
+    
     private void addProperties(Document document, RemoteFile file, String href,
             Element[] props, int depth) throws IOException {
         getPropertiesBuilder().addProps(document, file, href, props);
@@ -290,9 +294,7 @@ public class PropertiesDirector {
 //    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
 //    		}
     		Log.log(Log.DEBUG, "getChildren '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
-    		return FSUtilities.getIRODSCollectionDetails(file);
-    		
-    		
+    		return FSUtilities.getIRODSCollectionDetails(file);   		
     	}
     	return null;
     }

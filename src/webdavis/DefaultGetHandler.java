@@ -34,7 +34,12 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileInputStream;
@@ -285,6 +290,7 @@ public class DefaultGetHandler extends AbstractHandler {
                     getPropertiesBuilder());
             Document properties = null;
             properties = director.getAllProperties(file, requestUrl, 1);
+
             try {
                 Transformer transformer = templates.newTransformer();
                 String dojoroot=this.getServletConfig().getInitParameter("dojoroot");

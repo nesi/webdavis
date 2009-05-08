@@ -1,6 +1,7 @@
 package webdavis;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 import java.lang.reflect.Field;
 
@@ -22,8 +23,12 @@ import java.util.SimpleTimeZone;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.sdsc.grid.io.RemoteFile;
 
@@ -330,4 +335,40 @@ public class DavisUtilities {
         return base.getOwnerDocument().createElement(tag);
     }
 
+    /**
+     * Dumps a DOM tree to a PrintStream
+     *
+     */
+    public static void dump(Node root, PrintStream out) {   	
+    	dump(root, "", out);
+    }
+    private static void dump(Node root, String prefix, PrintStream out) {
+    	
+    	out.print(prefix);
+    	if (root instanceof Element) {
+    		out.print("<"+((Element)root).getTagName()+">");
+    	} else if (root instanceof CharacterData) {
+    		out.print(((CharacterData)root).getData());
+    	} else 
+    		out.print(root);
+
+    	NamedNodeMap attrs = root.getAttributes();
+    	if (attrs != null) {
+    		int len = attrs.getLength();
+    		for (int i = 0; i < len; i++) {
+    			Node attr = attrs.item(i); 
+    			out.print("  attr"+i+"= '"+attr.toString().trim()+"'");
+    		}
+    	}
+    	out.println();
+
+    	if (root.hasChildNodes()) {
+    		NodeList children = root.getChildNodes();
+    		if (children != null) {
+    			int len = children.getLength();
+    			for (int i = 0; i < len; i++)
+    				dump(children.item(i), prefix+"    ", out); 
+    		}
+    	}
+    }
 }

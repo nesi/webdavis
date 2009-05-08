@@ -63,7 +63,11 @@ public class DefaultDeleteHandler extends AbstractHandler {
         response.flushBuffer();
     }
     
-    private void del(RemoteFile file){
+    public void del(RemoteFile file){
+    	del(file, false);
+    }
+    	
+    public boolean del(RemoteFile file, boolean abortOnFail) {
     	if (file.isDirectory()){
     		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
     		String[] fileList=file.list();
@@ -75,11 +79,11 @@ public class DefaultDeleteHandler extends AbstractHandler {
     					del(new SRBFile( (SRBFile)file,fileList[i]));
     				}else if (file.getFileSystem() instanceof IRODSFileSystem){
     					del(new IRODSFile( (IRODSFile)file,fileList[i]));
-    					
     				}
         		}
     		}
-    		file.delete();
+    		if (!file.delete() && abortOnFail)
+    			return false;
     	}else{
     		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
 			if (file.getFileSystem() instanceof SRBFileSystem){
@@ -87,9 +91,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			}else if (file.getFileSystem() instanceof IRODSFileSystem){
 				((IRODSFile)file).delete();
 			}
-
     	}
-    		
+    	return true;
     }
-
 }

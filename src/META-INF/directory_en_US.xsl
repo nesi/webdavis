@@ -194,9 +194,16 @@
     		handleAs: "json"
   		});
 	}
-	function getPermission(urlString){
-	  	dojo.xhrPost({
+	function getPermission(urlString, data){
+		if (typeof data === "undefined")
+			data = "";
+	  	dojo.rawXhrPost({
     		url: urlString,
+ 		    headers: {
+		        "content-length": data.length,
+		        "content-type": "text/x-json"
+		    },
+ 		    postData: data,
     		load: function(responseObject, ioArgs){
       
 //				console.dir(responseObject);  // Dump it to the console
@@ -238,53 +245,69 @@
 //		alert(perms.sticky);
 		if (perms.sticky!=null){
 			if (perms.sticky=="true"){
-				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky()\">Unset&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections)\">Unset&lt;/button>";
 			}else{
-				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky()\">Set&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections)\">Set&lt;/button>";
 			}
 		}else{
 			document.getElementById("stickyControl").innerHTML="";
 		}
 	}
-	function getMetadata(url){
+	function getMetadata(list, url, batch){
 		ori_url=url;
 		server_url=url+"?method=metadata";
-
-		loadMetadataFromServer(server_url);
+		if (batch) {
+//			loadMetadataFromServer(server_url); // Default metadata is taken from current directory
+			store1=new dojo.data.ItemFileWriteStore({data: {items:[]}}); // Default metadata is empty
+			metadataGrid.setStore(store1);
+		} else
+			loadMetadataFromServer(url+"/"+getFirstCheckedItem(list)+"?method=metadata");
+		dojo.byId('metadataRefreshButton').disabled=batch;  // Don't want the refresh button active in batch mode
 		dijit.byId('dialog1').show();
 	}
 	function refreshMetadata(){
 		loadMetadataFromServer(server_url);
 	}
-	function getFilePermission(url){
+//	function getFilePermission(url){
+//		ori_url=url;
+//		dojo.byId("recursive").disabled=true;
+//		if (document.getElementById("servertype").value=="srb"){
+//			server_url=url+"?method=domains";
+//			getDomains(server_url);
+//		}else{
+//			server_url=url+"?method=userlist";
+//			getUsers(server_url);
+//		}
+//		server_url=url+"?method=permission";
+//		getPermission(server_url);
+//		dijit.byId('dialog2').show();
+//	}
+	function getPermissions(list, url, batch){
 		ori_url=url;
-		dojo.byId("recursive").disabled=true;
+		var sourceURL = url;
+		if (!batch)
+			sourceURL = url+"/"+getFirstCheckedItem(list); 
+		dojo.byId("recursive").disabled=!containsDirectory(list);	// Enable if any dirs in list
 		if (document.getElementById("servertype").value=="srb"){
-			server_url=url+"?method=domains";
+			server_url=sourceURL+"?method=domains";
 			getDomains(server_url);
 		}else{
-			server_url=url+"?method=userlist";
+			server_url=sourceURL+"?method=userlist";
 			getUsers(server_url);
 		}
-		server_url=url+"?method=permission";
-		getPermission(server_url);
-		dijit.byId('dialog2').show();
-	}
-	function getDirPermission(url){
-		ori_url=url;
-		dojo.byId("recursive").disabled=false;
-		if (document.getElementById("servertype").value=="srb"){
-			server_url=url+"?method=domains";
-			getDomains(server_url);
-		}else{
-			server_url=url+"?method=userlist";
-			getUsers(server_url);
+		if (!batch)
+			getPermission(sourceURL+"?method=permission");
+		else {
+			store2=new dojo.data.ItemFileWriteStore({data: {items:[]}});	// Defualt perms are empty
+			permissionGrid.setStore(store2);	
 		}
 		server_url=url+"?method=permission";
-		getPermission(server_url);
 		dijit.byId('dialog2').show();
 	}
-	function savePermission(){
+	function savePermission(list){
+		if (checkedItemsCount(list) == 0)
+			return;
+		var rowCount=dijit.byId('metadataGrid').rowCount;
 		var recursiveValue="";
 		var usernameValue=dojo.byId("formUsername").value;
 		var domainValue;
@@ -310,15 +333,15 @@
 			form_url=server_url+"&amp;username="+usernameValue+"&amp;permission="+permValue+recursiveValue;
 		}
 //		alert(form_url);
-		getPermission(form_url);
+		getPermission(form_url, listToJSON(list));
 	}
-	function setSticky(){
+	function setSticky(list){
 		var form_url=server_url+"&amp;sticky=true";
-		getPermission(form_url);
+		getPermission(form_url, listToJSON(list));
 	}
-	function unsetSticky(){
+	function unsetSticky(list){
 		var form_url=server_url+"&amp;sticky=false";
-		getPermission(form_url);
+		getPermission(form_url, listToJSON(list));
 	}
 	function getSelectedPermission(e){
 		//console.dir(e.rowIndex);
@@ -361,9 +384,15 @@
             }); // end forEach
         } // end if
 	}
-	function saveMetadata(){
+	function saveMetadata(list){
+		if (checkedItemsCount(list) == 0)
+			return;
 		var rowCount=dijit.byId('metadataGrid').rowCount;
-		var data="[";
+
+		//json format is: [{"files":["file1","file2"...],"metadata":[{"name":"foo","value":"bar"},{"name":"foo2","value":"bar2"}...]}]
+		var data=listToJSON(list);
+		data = data.substring(0, data.length-2);	// Trim '}]' off end 
+		data+=",\"metadata\":[";
 		for (var i=0;i&lt;rowCount;i++){
 			if (i>0) data+=",";
 	        <xsl:if test="$servertype='srb'">
@@ -373,7 +402,7 @@
 			data+="{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\", \"unit\":\""+dijit.byId('metadataGrid').getItem(i).unit+"\"}";
 	        </xsl:if>
 		}
-		data+="]";
+		data+="]}]";
 //		alert(dijit.byId('metadataGrid').getItem(0).name);
 //		alert("data:"+data);
 	  	dojo.rawXhrPost({
@@ -399,22 +428,32 @@
     		handleAs: "json"
   		});
 	}
-	
-	
-	function createDirectory(){
-		server_url="?method=createDirectory";
+		
+	function createDirectory(url){
+//		server_url="?method=createDirectory";
 		dijit.byId('dialogCreateDir').hide();
 		var dirName = dojo.byId('formDirectory').value;
-		var data="[{\"name\":\""+dirName+"\"}]";
+//		var data="[{\"name\":\""+dirName+"\"}]";
 		
-	  	dojo.rawXhrPost({
-    		url: server_url,
-    		handleAs: "json",
-		    headers: {
-		        "content-length": data.length,
-		        "content-type": "text/x-json"
-		    },
-		    postData: data,
+//	  	dojo.rawXhrPost({
+//    		url: server_url,
+//    		handleAs: "json",
+//		    headers: {
+//		        "content-length": data.length,
+//		        "content-type": "text/x-json"
+//		    },
+//		    postData: data,
+//		    load: function(responseObject, ioArgs){
+//		      	window.location.reload();
+//		      	return responseObject;
+//		    },
+//    		error: function(response, ioArgs){
+//      			alert("Failed to create directory "+dirName+".");
+//      			return response;
+//    		}
+//  		});
+		dojo.xhr("MKCOL", {
+			url: url+"/"+dirName,
 		    load: function(responseObject, ioArgs){
 		      	window.location.reload();
 		      	return responseObject;
@@ -423,9 +462,9 @@
       			alert("Failed to create directory "+dirName+".");
       			return response;
     		}
-  		});
+		});
 	}
-	
+		
  	function uploadFile(url){ 		
 		server_url="?method=upload";
 		dojo.byId('statusField').innerHTML = "Uploading...";
@@ -464,6 +503,105 @@
 			window.location.reload();
 		}
 	}
+	
+	function listCheckedItems(checkboxes) {
+		var list="";
+		for (i = 0; i &lt; checkboxes.length; i++) 
+			if (checkboxes[i].checked) 
+			  list=list+"\""+trimMode(checkboxes[i].value)+"\",";
+		if (list.length > 0)
+			list = list.substring(0, list.length-1);  // remove trailing ','
+		return list;
+	}
+	
+	function listToJSON(list) {
+		//json format is: [{"files":["file1","file2"...]}]
+		return "[{\"files\":["+listCheckedItems(list)+"]}]";
+	}
+
+	function trimMode(value) {
+		var i = value.indexOf(";");
+		if (i >= 0)
+			return value.substring(0,i);
+		return value;
+	}
+	
+	function getFirstCheckedItem(checkboxes) {
+		for (i = 0; i &lt; checkboxes.length; i++) 
+			if (checkboxes[i].checked) 
+			  return trimMode(checkboxes[i].value);
+		return null;
+	}
+	
+	function checkedItemsCount(checkboxes) {
+		var count=0;
+		for (i = 0; i &lt; checkboxes.length; i++) 
+			if (checkboxes[i].checked) 
+				count++;
+		return count;
+	}
+	
+	function containsDirectory(checkboxes) {
+		for (i = 0; i &lt; checkboxes.length; i++) 
+			if (checkboxes[i].checked) 
+				if (checkboxes[i].value.indexOf(";directory") >= 0)
+					return true;
+		return false;;		
+	}
+	
+	function deleteFiles(list) {
+		server_url="?method=delete";
+		dijit.byId('dialogDelete').hide();
+		var data=listCheckedItems(list);
+		if (data.length == 0)
+			return;
+		//json format is: [{"files":["file1","file2"...]}]
+		var data="[{\"files\":["+data+"]}]";
+			
+	  	dojo.rawXhrPost({
+    		url: server_url,
+    		handleAs: "json",
+		    headers: {
+		        "content-length": data.length,
+		        "content-type": "text/x-json"
+		    },
+		    postData: data,
+		    load: function(responseObject, ioArgs){
+		      	window.location.reload();
+		      	return responseObject;
+		    },
+    		error: function(response, ioArgs){
+      			alert("Failed to delete one or more items");//"+ioArgs.args.filename);
+      			return response;
+    		}
+  		});
+		for (i = 0; i &lt; list.length; i++)
+			list[i].checked=false;
+	}
+	
+	function showMetadata(list, currentURL) {
+		var checkedCount = checkedItemsCount(list);
+		if (checkedCount == 0)
+			return;
+		getMetadata(list, currentURL, (checkedCount > 1));				
+	}
+	
+	function showPermissions(list, currentURL) {
+		var checkedCount = checkedItemsCount(list);
+		if (checkedCount == 0)
+			return;
+		getPermissions(list, currentURL, (checkedCount > 1));				
+	}
+		
+	function checkAll(field) {
+		var button = dojo.byId('checkAllButton');
+		var allChecked = (button.value == "Select none");
+		button.value = allChecked ? "Select all" : "Select none";
+		button.innerHTML = button.value;
+		for (i = 0; i &lt; field.length; i++)
+			field[i].checked = !allChecked;
+	}
+
     			</script>		
             </head>
             <body class="tundra">
@@ -479,8 +617,16 @@
  					<input name="directory" id="formDirectory" dojoType="dijit.form.TextBox" trim="true" value=""/>
 					<br/><br/>
 					<div style="text-align: right;">
-						<button onclick="createDirectory()">Create</button>
+						<button onclick="createDirectory('{$url}')">Create</button>
 						<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
+					</div>
+				</div>					
+             	<div dojoType="dijit.Dialog" id="dialogDelete" title="Delete Items">
+            		Are you sure you want to delete the selected items and their contents?
+					<br/><br/>
+					<div style="text-align: right;">
+						<button onclick="deleteFiles(document.childrenform.selections)">Delete</button>
+						<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
 					</div>
 				</div>					
             	<div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
@@ -499,10 +645,10 @@
 				<table>
 					<tr>
 						<td>
-        					<button onclick="refreshMetadata()">Refresh</button>
+        					<button id="metadataRefreshButton" onclick="refreshMetadata()">Refresh</button>
         					<button onclick="addMetadata()">Add Metadata</button>
         					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
-        					<button onclick="saveMetadata()">Save</button>
+        					<button onclick="saveMetadata(document.childrenform.selections)">Save</button>
         					<button onclick="dijit.byId('dialog1').hide()">Cancel</button>
 						</td>
 					</tr>
@@ -556,7 +702,7 @@
 								</tr>
 								<tr>
 									<td rowspan="2" align="center">
-										<button onclick="savePermission()">Apply</button>
+										<button onclick="savePermission(document.childrenform.selections)">Apply</button>
 										<button onclick="dijit.byId('dialog2').hide();">Cancel</button>
 									</td>
 								</tr>
@@ -586,24 +732,31 @@
                     <xsl:value-of select="format-number(count(D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]), '#,##0')"/>
                     <xsl:text> files):</xsl:text>
                 </p>
-                <table border="0" cellpadding="0" cellspacing="0">
-                   	<tr valign="top">
-                       <td>
-                           <table border="0" cellpadding="6" cellspacing="0">
-                    			<xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
-                                    <xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
-                                        <xsl:sort select="D:propstat/D:prop/D:displayname"/>
-                                    </xsl:apply-templates>
-                    			</xsl:if>
-                    			<xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
-                                    <xsl:apply-templates select="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]" mode="file">
-                                        <xsl:sort select="D:propstat/D:prop/D:displayname"/>
-                                    </xsl:apply-templates>
-                    			</xsl:if>
-                            </table>
-                        </td>
-                	</tr>
-                </table>
+                <button id="checkAllButton" onClick="checkAll(document.childrenform.selections)" value="Select all">Select all</button>
+                &#160;
+			    <button onclick="dijit.byId('dialogDelete').show()">Delete</button>                
+			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
+			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
+			    <form name="childrenform">  
+                	<table border="0" cellpadding="0" cellspacing="0">
+                   		<tr valign="top">
+                       		<td>
+                           		<table border="0" cellpadding="6" cellspacing="0">
+                    				<xsl:if test="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]">
+                                    	<xsl:apply-templates select="D:response[D:href != $href][D:propstat/D:prop/D:resourcetype/D:collection]" mode="directory">
+                                       	<xsl:sort select="D:propstat/D:prop/D:displayname"/>
+                                    	</xsl:apply-templates>
+                    				</xsl:if>
+                    				<xsl:if test="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]">
+                                    	<xsl:apply-templates select="D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]" mode="file">
+                                       	<xsl:sort select="D:propstat/D:prop/D:displayname"/>
+                                    	</xsl:apply-templates>
+                    				</xsl:if>
+                            	</table>
+                        	</td>
+                		</tr>
+                	</table>
+      			</form>
             </xsl:when>
             <xsl:otherwise>
                 <p>
@@ -635,6 +788,7 @@
     </xsl:template>
     <xsl:template match="D:response" mode="directory">
         <tr valign="top">
+    		<td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};directory" /></td>   
             <td nowrap="nowrap">
 		        <a href="{D:href}" class="directory">
 		            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
@@ -649,14 +803,15 @@
             <td class="properties">
                 <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
             </td>
-            <td nowrap="nowrap">
-                <button onclick="getMetadata('{D:href}')">Metadata</button>
-                <button onclick="getDirPermission('{D:href}')">Access Control</button>
-            </td>
+            <!-- <td nowrap="nowrap">
+                 <button onclick="getMetadata('{D:href}')">Metadata</button> 
+                <button onclick="getDirPermission('{D:href}')">Access Control</button> 
+            </td> -->
         </tr>
     </xsl:template>
     <xsl:template match="D:response" mode="file">
         <tr valign="top">
+            <td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};file" /></td>   
             <td nowrap="nowrap">
                 <xsl:if test="position() mod 2 = 1">
                     <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>
@@ -687,13 +842,13 @@
                 </xsl:if>
                 <xsl:apply-templates select="D:propstat/D:prop" mode="properties"/>
             </td>
-            <td nowrap="nowrap">
+            <!-- <td nowrap="nowrap">
                 <xsl:if test="position() mod 2 = 1">
                     <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>
                 </xsl:if>
-                <button onclick="getMetadata('{D:href}')">Metadata</button>
-                <button onclick="getFilePermission('{D:href}')">Access Control</button>
-            </td>
+                 <button onclick="getMetadata('{D:href}')">Metadata</button>  
+                <button onclick="getFilePermission('{D:href}')">Access Control</button> 
+            </td> -->
         </tr>
     </xsl:template>
     <xsl:template match="D:prop" mode="properties">

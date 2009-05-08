@@ -20,8 +20,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import edu.sdsc.grid.io.RemoteFile;
 
@@ -95,12 +99,11 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         while (iterator.hasNext()) {
             Element prop = ((Property) iterator.next()).createElement(document,
                     file);
-            if (prop != null) list.add(prop);
+           if (prop != null) list.add(prop);
         }
-        addProps0(document, file, href,
-                (Element[]) list.toArray(new Element[0]));
+        addProps0(document, file, href, (Element[]) list.toArray(new Element[0]));
     }
-
+    
     public void addProps(Document document, RemoteFile file, String href,
             Element[] props) throws IOException {
         addProps0(document, file, href, props);
@@ -142,7 +145,8 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
 
     private void addProps0(Document document, RemoteFile file, String href,
             Element[] props) throws IOException {
-        Element response = document.createElementNS(Property.DAV_NAMESPACE,
+
+    	Element response = document.createElementNS(Property.DAV_NAMESPACE,
                 "response");
         Element hrefElem = document.createElementNS(Property.DAV_NAMESPACE,
                 "href");
