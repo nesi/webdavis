@@ -298,7 +298,7 @@
 		if (!batch)
 			getPermission(sourceURL+"?method=permission");
 		else {
-			store2=new dojo.data.ItemFileWriteStore({data: {items:[]}});	// Defualt perms are empty
+			store2=new dojo.data.ItemFileWriteStore({data: {items:[]}});	// Default perms are empty
 			permissionGrid.setStore(store2);	
 		}
 		server_url=url+"?method=permission";
@@ -506,7 +506,7 @@
 	
 	function listCheckedItems(checkboxes) {
 		var list="";
-		for (i = 0; i &lt; checkboxes.length; i++) 
+		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 			  list=list+"\""+trimMode(checkboxes[i].value)+"\",";
 		if (list.length > 0)
@@ -527,7 +527,7 @@
 	}
 	
 	function getFirstCheckedItem(checkboxes) {
-		for (i = 0; i &lt; checkboxes.length; i++) 
+		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 			  return trimMode(checkboxes[i].value);
 		return null;
@@ -535,14 +535,14 @@
 	
 	function checkedItemsCount(checkboxes) {
 		var count=0;
-		for (i = 0; i &lt; checkboxes.length; i++) 
+		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 				count++;
 		return count;
 	}
 	
 	function containsDirectory(checkboxes) {
-		for (i = 0; i &lt; checkboxes.length; i++) 
+		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 				if (checkboxes[i].value.indexOf(";directory") >= 0)
 					return true;
@@ -576,8 +576,7 @@
       			return response;
     		}
   		});
-		for (i = 0; i &lt; list.length; i++)
-			list[i].checked=false;
+		uncheckAll(list);
 	}
 	
 	function showMetadata(list, currentURL) {
@@ -594,13 +593,18 @@
 		getPermissions(list, currentURL, (checkedCount > 1));				
 	}
 		
-	function checkAll(field) {
-		var button = dojo.byId('checkAllButton');
+	function toggleAll(field) {
+		var button = dojo.byId('toggleAllButton');
 		var allChecked = (button.value == "Select none");
 		button.value = allChecked ? "Select all" : "Select none";
 		button.innerHTML = button.value;
-		for (i = 0; i &lt; field.length; i++)
+		for (i = 1; i &lt; field.length; i++) // Ignore dummy first element
 			field[i].checked = !allChecked;
+	}
+	
+	function uncheckAll(field) {
+		for (i = 1; i &lt; field.length; i++) // Ignore dummy first element
+			field[i].checked = false;;
 	}
 
     			</script>		
@@ -733,12 +737,13 @@
                     <xsl:value-of select="format-number(count(D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]), '#,##0')"/>
                     <xsl:text> files):</xsl:text>
                 </p>
-                <button id="checkAllButton" onClick="checkAll(document.childrenform.selections)" value="Select all">Select all</button>
+                <button id="toggleAllButton" onClick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
                 &#160;
-			    <button onclick="dijit.byId('dialogDelete').show()">Delete</button>                
+			    <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>                
 			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
 			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
 			    <form name="childrenform">  
+					<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
                 	<table border="0" cellpadding="0" cellspacing="0">
                    		<tr valign="top">
                        		<td>
