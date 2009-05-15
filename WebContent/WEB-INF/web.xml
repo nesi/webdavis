@@ -1220,6 +1220,22 @@
         <param-name>insecureConnection</param-name>
         <param-value>shib</param-value>
     </init-param>
+    <init-param>
+        <param-name>shared-token-header-name</param-name>
+        <param-value>auEduPersonSharedToken</param-value>
+    </init-param>
+    <init-param>
+        <param-name>cn-header-name</param-name>
+        <param-value>cn</param-value>
+    </init-param>
+    <init-param>
+        <param-name>admin-cert-file</param-name>
+        <param-value>/etc/grid-security/hostcert.pem</param-value>
+    </init-param>
+    <init-param>
+        <param-name>admin-key-file</param-name>
+        <param-value>/etc/grid-security/hostkey.pem</param-value>
+    </init-param>
 
 
 		<init-param>
