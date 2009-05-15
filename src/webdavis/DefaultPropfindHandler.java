@@ -206,6 +206,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
             response.setStatus(SC_MULTISTATUS);
             response.setContentType("text/xml; charset=\"utf-8\"");
             collector.writeTo(response.getOutputStream());
+//            collector.writeTo(System.out);
             response.flushBuffer();
         } catch (TransformerException ex) {
             throw new IOException(ex.getMessage());
