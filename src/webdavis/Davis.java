@@ -114,17 +114,22 @@ public class Davis extends HttpServlet {
 
 	private String insecureConnection;
 	
-	private String serverName;
-	private int serverPort;
+	static protected String serverName;
+	static protected int serverPort;
 	private String defaultResource;
 	private String zoneName;
 	private String defaultIdp;
-	private String serverType;
+	static protected String serverType;
 	private String myproxyServer;
 	private String proxyHost;
 	private String proxyPort;
 	private String proxyUsername;
 	private String proxyPassword;
+	
+	private String sharedTokenHeaderName;
+	private String commonNameHeaderName;
+	static protected String adminCertFile;
+	static protected String adminKeyFile;
 
 	protected long nonceSecret=this.hashCode() ^ System.currentTimeMillis();
 
@@ -219,6 +224,12 @@ public class Davis extends HttpServlet {
 		proxyPassword = getServletConfig().getInitParameter(
 				"proxy-password");
 
+		sharedTokenHeaderName=config.getInitParameter("shared-token-header-name");
+		commonNameHeaderName=config.getInitParameter("cn-header-name");
+		adminCertFile=config.getInitParameter("admin-cert-file");
+		adminKeyFile=config.getInitParameter("admin-key-file");
+
+		
 		initLockManager(config);
 		// initFilter(config);
 		initHandlers(config);
@@ -331,7 +342,7 @@ public class Davis extends HttpServlet {
 		String idpName = null;
 		String user = null;
 		String basicUsername = null;
-		String password = null;
+		char[] password = null;
 		String domain = defaultDomain;
 		DavisSession davisSession = null;
 		String sessionID = null;
@@ -351,8 +362,11 @@ public class Davis extends HttpServlet {
 				for (Cookie cookie:cookies){
 					if (cookie.getName().startsWith("_shibstate")||cookie.getName().startsWith("_shibsession")||cookie.getName().startsWith("_saml_idp")) shibCookieNum++;
 				}
-				if (shibCookieNum==3&&(gssCredential = shibUtil.getSLCSCertificate(request))!=null){  //found shib session, get SLCS
-					
+				String sharedToken=request.getHeader(sharedTokenHeaderName);
+				String commonName=request.getHeader(commonNameHeaderName);
+				if (sharedToken!=null&&commonName!=null&&shibCookieNum>0&&shibUtil.passInShibSession(sharedToken,commonName)){  //found shib session, get username/password
+					user=shibUtil.getUsername();
+					password=shibUtil.getPassword();
 				}else{  // no shib session, ask for username/password
 					fail(serverName, request, response);
 					return;
@@ -369,7 +383,7 @@ public class Davis extends HttpServlet {
 				// System.out.println("authInfo:"+authInfo);
 				int index = authInfo.indexOf(':');
 				user = (index != -1) ? authInfo.substring(0, index) : authInfo;
-				password = (index != -1) ? authInfo.substring(index + 1) : "";
+				password = (index != -1) ? authInfo.substring(index + 1).toCharArray() : "".toCharArray();
 				basicUsername = user;
 
 				if ((index = user.indexOf('\\')) != -1
@@ -415,7 +429,7 @@ public class Davis extends HttpServlet {
 							GetParams getRequest = new GetParams();
 							getRequest.setCredentialName(null);
 							getRequest.setLifetime(3600);
-							getRequest.setPassphrase(password);
+							getRequest.setPassphrase(new String(password));
 							getRequest.setUserName(user);
 							gssCredential = mp.get(null,getRequest);
 							
@@ -472,8 +486,7 @@ public class Davis extends HttpServlet {
 								return;
 							}
 							Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());  //+" "+user+" "+password
-							gssCredential = client.slcsLogin(idp, user,
-									password.toCharArray());
+							gssCredential = client.slcsLogin(idp, user,	password);
 						}
 						if (gssCredential == null) {
 							fail(serverName, request, response);
@@ -562,8 +575,9 @@ public class Davis extends HttpServlet {
 			if (gssCredential != null) {
 				if (serverType.equalsIgnoreCase("irods")){
 					davisSession = new DavisSession();
-					account = new IRODSAccount(serverName,serverPort,"","","",zoneName,defaultResource);
-					((IRODSAccount)account).setGSSCredential(gssCredential);
+					account = new IRODSAccount(serverName,serverPort,gssCredential);
+//					account = new IRODSAccount(serverName,serverPort,"","","",zoneName,defaultResource);
+//					((IRODSAccount)account).setGSSCredential(gssCredential);
 					davisSession.setZone(zoneName);
 					davisSession.setServerName(serverName);
 					davisSession.setServerPort(serverPort);
@@ -590,10 +604,10 @@ public class Davis extends HttpServlet {
 					}
 				}
 
-			} else {
+			} else if (user!=null&&password!=null) {
 				Log.log(Log.DEBUG,"login with username/password");
 				if (serverType.equalsIgnoreCase("irods")){
-					account = new IRODSAccount(serverName, serverPort, user, password, "/" + zoneName + "/home/" + user, zoneName, defaultResource);
+					account = new IRODSAccount(serverName, serverPort, user, new String(password), "/" + zoneName + "/home/" + user, zoneName, defaultResource);
 					davisSession = new DavisSession();
 					davisSession.setServerName(serverName);
 					davisSession.setServerPort(serverPort);
@@ -601,7 +615,7 @@ public class Davis extends HttpServlet {
 					davisSession.setZone(zoneName);
 				}else{
 					account = new SRBAccount(serverName, serverPort, user,
-							password, "/" + zoneName + "/home/" + user + "."
+							new String(password), "/" + zoneName + "/home/" + user + "."
 									+ domain, domain, defaultResource);
 					davisSession = new DavisSession();
 					davisSession.setServerName(serverName);
