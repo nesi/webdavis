@@ -6,6 +6,8 @@
     <xsl:param name="url"/>
     <xsl:param name="unc"/>
     <xsl:param name="parent"/>
+    <xsl:param name="trash"/>
+    <xsl:param name="home"/>
  
     <xsl:template match="/">
         <html>
@@ -432,7 +434,7 @@
 	function createDirectory(url){
 //		server_url="?method=createDirectory";
 		dijit.byId('dialogCreateDir').hide();
-		var dirName = dojo.byId('formDirectory').value;
+		var dirName = dojo.byId('directoryInputBox').value;
 //		var data="[{\"name\":\""+dirName+"\"}]";
 		
 //	  	dojo.rawXhrPost({
@@ -606,6 +608,11 @@
 		for (i = 1; i &lt; field.length; i++) // Ignore dummy first element
 			field[i].checked = false;;
 	}
+	
+	function navigate(form){
+		var URL = document.mainToolbar.location.options[document.mainToolbar.location.selectedIndex].value;
+		window.location.href = URL;
+	}
 
     			</script>		
             </head>
@@ -619,7 +626,7 @@
             <!-- Dialogs begin-->
             	<div dojoType="dijit.Dialog" id="dialogCreateDir" title="Create Directory">
             		New directory name:
- 					<input name="directory" id="formDirectory" dojoType="dijit.form.TextBox" trim="true" value=""/>
+ 					<input name="directory" id="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 					<br/><br/>
 					<div style="text-align: right;">
 						<button onclick="createDirectory('{$url}')">Create</button>
@@ -738,7 +745,7 @@
                     <xsl:text> files):</xsl:text>
                 </p>
                 <button id="toggleAllButton" onClick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
-                &#160;
+                &#160;&#160;
 			    <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>                
 			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
 			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
@@ -782,9 +789,16 @@
             <table>
             	<tr>-->
              		<br/>
-             		<button onclick="dijit.byId('dialogCreateDir').show()">Create Directory</button>
-            		<button onclick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show();">Upload</button>
-            		<br/>
+             		<form name="mainToolbar">
+             			<input type="button" value="Create Directory" onClick="dijit.byId('dialogCreateDir').show()"/>
+              			<input type="button" value="Upload" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
+                 		&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+						<select name="location">
+							<option value="{$home}">Home</option>
+							<option value="{$trash}">Trash</option>
+						</select>
+						<input type="button" value="Go to" onClick="navigate(this)"/>
+					</form>            		
             		<xsl:if test="$url != '/'">
                 		<br/><a href="{$parent}" class="parent">Parent</a>
             		</xsl:if>

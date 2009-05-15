@@ -307,7 +307,8 @@ public class DefaultGetHandler extends AbstractHandler {
                 transformer.setParameter("url", file.getAbsolutePath());
                 transformer.setParameter("unc", file.toString());
                 transformer.setParameter("parent", request.getContextPath()+file.getParent());
-
+                transformer.setParameter("home", davisSession.getHomeDirectory());
+                transformer.setParameter("trash", davisSession.getTrashDirectory());
 //                String type;
 //                switch (file.getType()) {
 //                case SmbFile.TYPE_WORKGROUP:

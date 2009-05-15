@@ -91,6 +91,9 @@ public class DavisSession implements Serializable{
 	public String getHomeDirectory() {
 		return homeDirectory;
 	}
+	public String getTrashDirectory() {
+		return "/"+getZone()+"/trash"+getHomeDirectory().replaceFirst("/"+getZone(), "");
+	}
 	public void setHomeDirectory(String homeDirectory) {
 		this.homeDirectory = homeDirectory;
 	}

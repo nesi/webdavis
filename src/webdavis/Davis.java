@@ -658,8 +658,7 @@ public class Davis extends HttpServlet {
 					homeDir = srbFileSystem.getHomeDirectory();
 					resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
 					if (homeDir == null)
-						homeDir = "/" + zoneName + "/home/" + user + "."
-								+ domain;
+						homeDir = "/" + zoneName + "/home/" + user + "." + domain;
 				}
 				Log.log(Log.DEBUG, "zone:"+davisSession.getZone());
 				if (resList!=null) {
@@ -686,7 +685,7 @@ public class Davis extends HttpServlet {
 //				}
 				Log.log(Log.DEBUG, "homedir:" + homeDir);
 				davisSession.setHomeDirectory(homeDir);
-
+				Log.log(Log.DEBUG, "trashdir:" + davisSession.getTrashDirectory());
 				Log.log(Log.DEBUG, "Authentication succeeded. home=" + homeDir
 						+ " defaultRes=" + davisSession.getDefaultResource()
 						+ " zone=" + davisSession.getZone());
