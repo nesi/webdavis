@@ -215,10 +215,10 @@ public class DefaultGetHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        if (!file.canRead()){
-    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
-    		return;
-        }
+//        if (!file.canRead()){
+//    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
+//    		return;
+//        }
         String requestUrl = getRequestURL(request);
         Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
         if (file.getName().endsWith("/") && !requestUrl.endsWith("/")) {
