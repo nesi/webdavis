@@ -258,17 +258,21 @@
 	function getMetadata(list, url, batch){
 		ori_url=url;
 		server_url=url+"?method=metadata";
+		var metadata_url = "";
 		if (batch) {
 //			loadMetadataFromServer(server_url); // Default metadata is taken from current directory
 			store1=new dojo.data.ItemFileWriteStore({data: {items:[]}}); // Default metadata is empty
 			metadataGrid.setStore(store1);
-		} else
-			loadMetadataFromServer(url+"/"+getFirstCheckedItem(list)+"?method=metadata");
+		} else {
+			metadata_url = url+"/"+getFirstCheckedItem(list)+"?method=metadata";
+			loadMetadataFromServer(metadata_url);
+		}
+		dijit.byId('dialog1').attr("url", metadata_url);
 		dojo.byId('metadataRefreshButton').disabled=batch;  // Don't want the refresh button active in batch mode
 		dijit.byId('dialog1').show();
 	}
-	function refreshMetadata(){
-		loadMetadataFromServer(server_url);
+	function refreshMetadata(url){
+		loadMetadataFromServer(url);
 	}
 //	function getFilePermission(url){
 //		ori_url=url;
@@ -657,7 +661,7 @@
 				<table>
 					<tr>
 						<td>
-        					<button id="metadataRefreshButton" onclick="refreshMetadata()">Refresh</button>
+        					<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialog1').attr('url'))">Refresh</button>
         					<button onclick="addMetadata()">Add Metadata</button>
         					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
         					<button onclick="saveMetadata(document.childrenform.selections)">Save</button>
