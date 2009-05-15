@@ -276,6 +276,7 @@ public class ShibUtil {
 						}
 					}
 				}
+				irodsFileSystem.close();
 		       	return true;
 	        }
 		} catch (GlobusCredentialException e) {
