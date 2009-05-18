@@ -296,7 +296,7 @@ public class ShibUtil {
     }
 	public void changePasswordRule(IRODSFileSystem fs, String username,String password){
 		String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
-	    System.out.println(rule);
+//	    System.out.println(rule);
 		java.io.ByteArrayInputStream inputStream =
 	        new java.io.ByteArrayInputStream(rule.getBytes());
 	    try {
