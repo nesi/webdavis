@@ -475,17 +475,19 @@ public class FSUtilities {
 				IRODSMetaDataSet.CREATION_DATE,
 				IRODSMetaDataSet.MODIFICATION_DATE,
 				IRODSMetaDataSet.SIZE,
-				IRODSMetaDataSet.FILE_ACCESS_TYPE 
+//				IRODSMetaDataSet.FILE_ACCESS_TYPE 
 			};
 		MetaDataCondition conditions[] = {
 							MetaDataSet.newCondition(
 									GeneralMetaData.DIRECTORY_NAME,	MetaDataCondition.EQUAL, file.getAbsolutePath() ),
+							MetaDataSet.newCondition(
+									IRODSMetaDataSet.FILE_REPLICA_NUM,	MetaDataCondition.EQUAL, 0 ),
 //							MetaDataSet.newCondition(
 //									IRODSMetaDataSet.USER_NAME,	MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName() ),
 						};
 		MetaDataSelect selects[] =
 				MetaDataSet.newSelection( selectFieldNames );
-		MetaDataRecordList[] fileDetails;
+		
 		MetaDataCondition conditions1[] = {
 				MetaDataSet.newCondition(
 						IRODSMetaDataSet.PARENT_DIRECTORY_NAME,	MetaDataCondition.EQUAL, file.getAbsolutePath() ),
@@ -498,15 +500,16 @@ public class FSUtilities {
 					IRODSMetaDataSet.DIRECTORY_TYPE,
 					IRODSMetaDataSet.DIRECTORY_CREATE_DATE,
 					IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
-					IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
+//					IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
 					} );
 		try {
-			fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions,selects,MAX_QUERY_NUM);
+			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions,selects,MAX_QUERY_NUM);
     		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions1,selects1,MAX_QUERY_NUM,Namespace.DIRECTORY);
     		if (fileDetails==null) fileDetails=new MetaDataRecordList[0];
     		if (dirDetails==null) dirDetails=new MetaDataRecordList[0];
     		CachedFile[] files=new CachedFile[fileDetails.length+dirDetails.length];
     		int i=0;
+    		Log.log(Log.DEBUG, "file num:"+fileDetails.length);
     		for (MetaDataRecordList p:fileDetails) {
     			files[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME),(String)p.getValue(IRODSMetaDataSet.FILE_NAME));
     			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
@@ -519,6 +522,7 @@ public class FSUtilities {
 //    				files[i].setCanWriteFlag(false);
     			i++;
     		}
+    		Log.log(Log.DEBUG, "col num:"+dirDetails.length);
     		for (MetaDataRecordList p:dirDetails) {
     			files[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),file.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
     			files[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
