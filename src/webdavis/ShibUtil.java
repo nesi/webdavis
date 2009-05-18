@@ -260,15 +260,15 @@ public class ShibUtil {
 					changePasswordRule(irodsFileSystem, username, new String(password));
 				}else {
 					String[] names=commonName.split(" ");
-					username=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
+					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
 					for (int i=0;i<20;i++){
-						if (i>0) username+=i;
+						if (i>0) username=base+i;
 						conditions[0] = MetaDataSet.newCondition(
 										IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
 						userDetails = irodsFileSystem.query(conditions,selects,1);
 						if (userDetails==null||userDetails.length==0){
 							admin.USER.addUser(username, "rodsuser");
-							admin.USER.modifyInfo(username, sharedToken);
+							admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
 							password=getRandomPassword(12);
 //							admin.USER.modifyPassword(username, new String(password));
 							changePasswordRule(irodsFileSystem, username, new String(password));
