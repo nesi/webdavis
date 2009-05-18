@@ -247,7 +247,7 @@ public class ShibUtil {
 					};
 				MetaDataCondition conditions[] = {
 									MetaDataSet.newCondition(
-											IRODSMetaDataSet.USER_INFO,	MetaDataCondition.EQUAL, sharedToken)
+											IRODSMetaDataSet.USER_INFO,	MetaDataCondition.LIKE, "%<ST>"+sharedToken+"</ST>%")
 								};
 				MetaDataSelect selects[] =
 						MetaDataSet.newSelection( selectFieldNames );
