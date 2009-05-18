@@ -218,7 +218,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				}else
 					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
 							GeneralMetaData.ACCESS_CONSTRAINT});
-				Log.log(Log.DEBUG, "permissions: "+permissions);
+				Log.log(Log.DEBUG, "irods permissions: "+permissions);
 				str.append("items:[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
@@ -234,10 +234,11 @@ public class DefaultPostHandler extends AbstractHandler {
 	                    {
 							// "user name"
 							str.append("{username:'").append(
-									permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME))
-									.append("#")
-									.append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE))
-									.append("', ");
+									permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME));
+							if (!((IRODSFileSystem)file.getFileSystem()).getZone().equals(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE)))	
+								str.append("#")
+								   .append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE));
+							str.append("', ");
 	    					// "directory access constraint"
 	    					str
 	    							.append("permission:'")
