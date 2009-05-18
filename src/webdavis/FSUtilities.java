@@ -390,7 +390,8 @@ public class FSUtilities {
 			recordList = fs
 						.query(
 								new MetaDataSelect[] { MetaDataSet
-										.newSelection(IRODSMetaDataSet.USER_NAME) });
+										.newSelection(IRODSMetaDataSet.USER_NAME),MetaDataSet
+										.newSelection(IRODSMetaDataSet.USER_ZONE) });
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -402,6 +403,7 @@ public class FSUtilities {
 
             for(int i=0; i<recordList.length; i++) {
                 names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.USER_NAME);
+                if (!recordList[i].getValue(IRODSMetaDataSet.USER_ZONE).equals(fs.getZone())) names[i] += "#"+(String)recordList[i].getValue(IRODSMetaDataSet.USER_ZONE);
             }
         } else {
             names = new String[]{};
