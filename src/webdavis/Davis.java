@@ -364,9 +364,10 @@ public class Davis extends HttpServlet {
 				}
 				String sharedToken=request.getHeader(sharedTokenHeaderName);
 				String commonName=request.getHeader(commonNameHeaderName);
-				if (sharedToken!=null&&commonName!=null&&shibCookieNum>0&&shibUtil.passInShibSession(sharedToken,commonName)){  //found shib session, get username/password
-					user=shibUtil.getUsername();
-					password=shibUtil.getPassword();
+				Map result;
+				if (sharedToken!=null&&commonName!=null&&shibCookieNum>0&&(result=shibUtil.passInShibSession(sharedToken,commonName))!=null){  //found shib session, get username/password
+					user=(String) result.get("username");
+					password=(char[]) result.get("password");
 				}else{  // no shib session, ask for username/password
 					fail(serverName, request, response);
 					return;

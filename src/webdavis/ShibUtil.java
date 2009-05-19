@@ -9,6 +9,8 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import javax.net.ssl.SSLContext;
@@ -56,8 +58,6 @@ import au.org.mams.slcs.client.SLCSConfig;
 public class ShibUtil {
 	private SLCSConfig config;
 	private String slcsLoginURL;
-	private String username;
-	private char[] password;
 	
 	public ShibUtil(){
 //		config = SLCSConfig.getInstance();
@@ -233,8 +233,11 @@ public class ShibUtil {
         return in;
 
     }
-    public boolean passInShibSession(String sharedToken, String commonName){
-    	if (sharedToken==null) return false;
+    public Map passInShibSession(String sharedToken, String commonName){
+    	String username=null;
+    	char[] password=null;
+    	Map result=new HashMap();
+    	if (sharedToken==null) return null;
 		GlobusCredential adminCred;
 		try {
 			adminCred = new GlobusCredential(Davis.adminCertFile, Davis.adminKeyFile);
@@ -262,11 +265,15 @@ public class ShibUtil {
 					String[] names=commonName.split(" ");
 					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
 					for (int i=0;i<20;i++){
-						if (i>0) username=base+i;
+						if (i>0) 
+							username=base+i;
+						else
+							username=base;
 						conditions[0] = MetaDataSet.newCondition(
 										IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
 						userDetails = irodsFileSystem.query(conditions,selects,1);
 						if (userDetails==null||userDetails.length==0){
+							Log.log(Log.DEBUG, "Creating new user "+username);
 							admin.USER.addUser(username, "rodsuser");
 							admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
 							password=getRandomPassword(12);
@@ -276,8 +283,10 @@ public class ShibUtil {
 						}
 					}
 				}
+				result.put("username", username);
+				result.put("password", password);
 				irodsFileSystem.close();
-		       	return true;
+		       	return result;
 	        }
 		} catch (GlobusCredentialException e) {
 			// TODO Auto-generated catch block
@@ -292,7 +301,7 @@ public class ShibUtil {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return false;
+		return null;
     }
 	public void changePasswordRule(IRODSFileSystem fs, String username,String password){
 		String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
@@ -326,15 +335,15 @@ public class ShibUtil {
     	ShibUtil util=new ShibUtil();
 //    	System.out.println(util.getRandomPassword(8));
     	System.out.println(util.passInShibSession("J-YInIFGT8iQi_9xP0beCkhAhQE","Shunde Zhang"));
-    	System.out.println(util.getUsername());
-    	System.out.println(util.getPassword());
+//    	System.out.println(util.getUsername());
+//    	System.out.println(util.getPassword());
     }
-	public String getUsername() {
-		return username;
-	}
-	public char[] getPassword() {
-		return password;
-	}
+//	public String getUsername() {
+//		return username;
+//	}
+//	public char[] getPassword() {
+//		return password;
+//	}
 	private char[] getRandomPassword(int length) {
 		  char[] buffer = new char[length];
 		  Random random = new Random();
