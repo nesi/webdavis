@@ -1,7 +1,7 @@
 <project name="DAVIS" default="dist" basedir=".">
 
   <property name="app.name"      value="davis"/>
-  <property name="app.version"   value="0.6.2"/>
+  <property name="app.version"   value="0.7.0"/>
   <property name="build.home"    value="${basedir}/build"/>
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
