@@ -245,6 +245,10 @@ public class ShibUtil {
 	        if (Davis.serverType.equalsIgnoreCase("irods")){
 		        IRODSAccount adminAccount=new IRODSAccount(Davis.serverName,Davis.serverPort,gssCredential);
 		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
+		        
+		        password=getRandomPassword(12);
+		        createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
+		        
 		        String[] selectFieldNames = {
 						IRODSMetaDataSet.USER_NAME,
 					};
@@ -255,33 +259,35 @@ public class ShibUtil {
 				MetaDataSelect selects[] =
 						MetaDataSet.newSelection( selectFieldNames );
 				MetaDataRecordList[] userDetails = irodsFileSystem.query(conditions,selects,1);
-				IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
+//				IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
 				if (userDetails!=null) {
 					username=(String) userDetails[0].getValue(IRODSMetaDataSet.USER_NAME);
-					password=getRandomPassword(12);
+//					password=getRandomPassword(12);
 //					admin.USER.modifyPassword(username, new String(password));
-					changePasswordRule(irodsFileSystem, username, new String(password));
+//					changePasswordRule(irodsFileSystem, username, new String(password));
 				}else {
-					String[] names=commonName.split(" ");
-					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
-					for (int i=0;i<20;i++){
-						if (i>0) 
-							username=base+i;
-						else
-							username=base;
-						conditions[0] = MetaDataSet.newCondition(
-										IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
-						userDetails = irodsFileSystem.query(conditions,selects,1);
-						if (userDetails==null||userDetails.length==0){
-							Log.log(Log.DEBUG, "Creating new user "+username);
-							admin.USER.addUser(username, "rodsuser");
-							admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
-							password=getRandomPassword(12);
-//							admin.USER.modifyPassword(username, new String(password));
-							changePasswordRule(irodsFileSystem, username, new String(password));
-							break;
-						}
-					}
+					irodsFileSystem.close();
+					return null;
+//					String[] names=commonName.split(" ");
+//					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
+//					for (int i=0;i<20;i++){
+//						if (i>0) 
+//							username=base+i;
+//						else
+//							username=base;
+//						conditions[0] = MetaDataSet.newCondition(
+//										IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
+//						userDetails = irodsFileSystem.query(conditions,selects,1);
+//						if (userDetails==null||userDetails.length==0){
+//							Log.log(Log.DEBUG, "Creating new user "+username);
+//							admin.USER.addUser(username, "rodsuser");
+//							admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
+//							password=getRandomPassword(12);
+////							admin.USER.modifyPassword(username, new String(password));
+//							changePasswordRule(irodsFileSystem, username, new String(password));
+//							break;
+//						}
+//					}
 				}
 				result.put("username", username);
 				result.put("password", password);
@@ -305,6 +311,20 @@ public class ShibUtil {
     }
 	public void changePasswordRule(IRODSFileSystem fs, String username,String password){
 		String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
+//	    System.out.println(rule);
+		java.io.ByteArrayInputStream inputStream =
+	        new java.io.ByteArrayInputStream(rule.getBytes());
+	    try {
+			java.util.HashMap outputParameters = 
+			    fs.executeRule( inputStream );
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+	public void createUser(IRODSFileSystem fs, String cn,String password,String st){
+		String rule="createUserRule||msiExecCmd(createUser,*cn *st *password,null,null,null,*OUT)|nop\n*cn="+cn+"%*st="+st+"%*password="+password+"\n*OUT";
 //	    System.out.println(rule);
 		java.io.ByteArrayInputStream inputStream =
 	        new java.io.ByteArrayInputStream(rule.getBytes());
@@ -350,7 +370,7 @@ public class ShibUtil {
 //		  System.out.println(random.nextInt(74));
 //		  char[] chars = new char[] { 'a', 'b', 'c', 'd' /*you get the picture*/};
 		  for ( int i = 0; i < length; i++ ) {
-		    buffer[i]=(char) (random.nextInt(74)+48);
+		    buffer[i]=(char) (random.nextInt(63)+63);
 		  }
 		  return buffer;
 		}

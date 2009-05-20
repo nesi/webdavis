@@ -640,7 +640,7 @@ public class Davis extends HttpServlet {
 					homeDir = irodsFileSystem.getHomeDirectory();
 					if (davisSession.getAccount()==null||davisSession.getAccount().equals("")){
 						user = irodsFileSystem.getUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
-						if (user==null){
+						if (user==null||user.equals("")){
 							fail(serverName, request, response);
 							return;
 						}
