@@ -29,6 +29,8 @@ public class DefaultMkcolHandler extends AbstractHandler {
      * If the directory could not be created (the parent is not a share or
      * directory, or does not exist) a 409 (Conflict) error is sent to the
      * client.
+     * If directory creation fails, a 403 (Forbidden) error is sent to the
+     * client.
      *
      * @param request The request being serviced.
      * @param response The servlet response.
@@ -55,8 +57,10 @@ public class DefaultMkcolHandler extends AbstractHandler {
             return;
         }
 //        try {
-            file.mkdir();
-            response.setStatus(HttpServletResponse.SC_CREATED);
+            if (file.mkdir())
+                response.setStatus(HttpServletResponse.SC_CREATED);
+            else
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 //        } catch (SmbAuthException ex) {
 //            throw ex;
 //        } catch (IOException ex) {

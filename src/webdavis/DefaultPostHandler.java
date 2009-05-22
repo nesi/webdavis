@@ -499,35 +499,35 @@ public class DefaultPostHandler extends AbstractHandler {
 //				} else
 //					throw new ServletException("Internal error creating directory: error parsing JSON");
 //			}
-		} else if (method.equalsIgnoreCase("delete")) {
-	        if (request.getContentLength() > 0) {
-		        InputStream input = request.getInputStream();
-		        byte[] buf = new byte[request.getContentLength()];
-		        int count=input.read(buf);
-		        Log.log(Log.DEBUG, "read:"+count);
-		        Log.log(Log.DEBUG, "received file list: " + new String(buf));
-
-				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
-				if (jsonArray != null) {	
-					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-					JSONArray filesArray = (JSONArray)jsonObject.get("files");
-					for (int i = 0; i < filesArray.size(); i++) {
-						String name = (String)filesArray.get(i);
-						if (name.trim().length() == 0)
-							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!
-						RemoteFile condemnedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
-						Log.log(Log.DEBUG, "deleting: "+condemnedFile);
-						DefaultDeleteHandler deleteHandler = new DefaultDeleteHandler();
-						if (!deleteHandler.del(condemnedFile, true)) {
-							String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
-							Log.log(Log.WARNING, s);
-							response.sendError(HttpServletResponse.SC_BAD_REQUEST, s);
-							return;
-						}
-					}
-				} else
-					throw new ServletException("Internal error deleting file: error parsing JSON");
-			}
+//		} else if (method.equalsIgnoreCase("delete")) {
+//	        if (request.getContentLength() > 0) {
+//		        InputStream input = request.getInputStream();
+//		        byte[] buf = new byte[request.getContentLength()];
+//		        int count=input.read(buf);
+//		        Log.log(Log.DEBUG, "read:"+count);
+//		        Log.log(Log.DEBUG, "received file list: " + new String(buf));
+//
+//				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+//				if (jsonArray != null) {	
+//					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+//					JSONArray filesArray = (JSONArray)jsonObject.get("files");
+//					for (int i = 0; i < filesArray.size(); i++) {
+//						String name = (String)filesArray.get(i);
+//						if (name.trim().length() == 0)
+//							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!
+//						RemoteFile condemnedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
+//						Log.log(Log.DEBUG, "deleting: "+condemnedFile);
+//						DefaultDeleteHandler deleteHandler = new DefaultDeleteHandler();
+//						if (!deleteHandler.del(condemnedFile)) {
+//							String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
+//							Log.log(Log.WARNING, s);
+//							response.sendError(HttpServletResponse.SC_BAD_REQUEST, s);
+//							return;
+//						}
+//					}
+//				} else
+//					throw new ServletException("Internal error deleting file: error parsing JSON");
+//			}
 		} else if (method.equalsIgnoreCase("upload")) {
             response.setContentType("text/html");
 			if (!ServletFileUpload.isMultipartContent(request)) 

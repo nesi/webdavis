@@ -1,11 +1,18 @@
 package webdavis;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.servlet.ServletException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
@@ -36,40 +43,85 @@ public class DefaultDeleteHandler extends AbstractHandler {
      * @throws ServletException If an application error occurs.
      * @throws IOException If an IO error occurs while handling the request.
      */
-    public void service(HttpServletRequest request,
-            HttpServletResponse response, DavisSession davisSession)
-                    throws ServletException, IOException {
-    	RemoteFile file = getRemoteFile(request, davisSession);
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
+    	throws ServletException, IOException {
+ 
+    	ArrayList fileList = new ArrayList();
+    	boolean batch = false;
+    	RemoteFile uriFile = getRemoteFile(request, davisSession);
+        if (request.getContentLength() <= 0) {
+        	fileList.add(uriFile);
+        } else {
+        	batch = true;
+	        InputStream input = request.getInputStream();
+	        byte[] buf = new byte[request.getContentLength()];
+	        int count=input.read(buf);
+	        Log.log(Log.DEBUG, "read:"+count);
+	        Log.log(Log.DEBUG, "received file list: " + new String(buf));
+
+			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			if (jsonArray != null) {	
+				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
+				for (int i = 0; i < fileNamesArray.size(); i++) {
+					String name = (String)fileNamesArray.get(i);
+					if (name.trim().length() == 0)
+						continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
+					fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
+				}
+			} else
+				throw new ServletException("Internal error deleting file: error parsing JSON");
+		}
+		
+        Iterator iterator = fileList.iterator();
+        while (iterator.hasNext()) {
+        	RemoteFile condemnedFile = (RemoteFile)iterator.next();
+			Log.log(Log.DEBUG, "deleting: "+condemnedFile);
+	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
+			if (result != HttpServletResponse.SC_NO_CONTENT) {
+				if (batch) {
+	    			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
+	    			Log.log(Log.WARNING, s);
+	    			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, s); // Batch delete failed
+	    		} else
+		    		response.sendError(result);
+				return;
+			}
+        }
+		response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+		response.flushBuffer();
+   }		 
+    	
+    private int deleteFile(HttpServletRequest request, DavisSession davisSession, RemoteFile file, boolean batch) throws IOException {
+    	
+ //   	RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
+            /*response.sendError(*/ return HttpServletResponse.SC_NOT_FOUND/*)*/;
+            //return;
         }
-        int result = checkLockOwnership(request, file);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
+        if (!batch) {
+        	int result = checkLockOwnership(request, file);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+        	result = checkConditionalRequest(request, file);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+        	LockManager lockManager = getLockManager();
+        	if (lockManager != null) 
+        		file = lockManager.getLockedResource(file, davisSession);
         }
-        result = checkConditionalRequest(request, file);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
-        }
-        LockManager lockManager = getLockManager();
-        if (lockManager != null) {
-            file = lockManager.getLockedResource(file, davisSession);
-        }
-        del(file);
-        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-        response.flushBuffer();
+        boolean success = del(file);
+        if (batch) 
+        	return success ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_NOT_MODIFIED; // If delete failed, let caller know with SC_NOT_MODIFIED
+        return HttpServletResponse.SC_NO_CONTENT;
+       // response.flushBuffer();
     }
     
-    public boolean del(RemoteFile file){
-    	return del(file, false);
-    }
-    	
     private boolean error = false;
     
-    public boolean del(RemoteFile file, boolean abortOnFail) {
+    public boolean del(RemoteFile file) {
     	if (file.isDirectory()){
     		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
     		String[] fileList=file.list();
@@ -78,20 +130,19 @@ public class DefaultDeleteHandler extends AbstractHandler {
         		for (int i=0;i<fileList.length;i++){
         			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
     				if (file.getFileSystem() instanceof SRBFileSystem){
-    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]), abortOnFail);
+    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]));
     				}else if (file.getFileSystem() instanceof IRODSFileSystem){
-    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]), abortOnFail);
+    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]));
     				}
         		}
     		}
-    		if ((!file.delete() || error) && abortOnFail)
-    			return !error;
+    		error = error || !file.delete(); 
     	}else{
     		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
 			if (file.getFileSystem() instanceof SRBFileSystem){
-				error = error || !((SRBFile)file).delete(true);
+				error = error || !((SRBFile)file).delete(true); 
 			}else if (file.getFileSystem() instanceof IRODSFileSystem){
-				error = error || !((IRODSFile)file).delete();
+				error = error || !((IRODSFile)file).delete(); 
 			}
     	}
     	return !error;

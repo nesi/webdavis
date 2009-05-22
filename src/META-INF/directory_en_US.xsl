@@ -436,28 +436,9 @@
 	}
 		
 	function createDirectory(url){
-//		server_url="?method=createDirectory";
 		dijit.byId('dialogCreateDir').hide();
 		var dirName = dojo.byId('directoryInputBox').value;
-//		var data="[{\"name\":\""+dirName+"\"}]";
 		
-//	  	dojo.rawXhrPost({
-//    		url: server_url,
-//    		handleAs: "json",
-//		    headers: {
-//		        "content-length": data.length,
-//		        "content-type": "text/x-json"
-//		    },
-//		    postData: data,
-//		    load: function(responseObject, ioArgs){
-//		      	window.location.reload();
-//		      	return responseObject;
-//		    },
-//    		error: function(response, ioArgs){
-//      			alert("Failed to create directory "+dirName+".");
-//      			return response;
-//    		}
-//  		});
 		dojo.xhr("MKCOL", {
 			url: url+"/"+dirName,
 		    load: function(responseObject, ioArgs){
@@ -465,7 +446,7 @@
 		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
-      			alert("Failed to create directory "+dirName+".");
+      			alert("Failed to create directory "+dirName+":\n  "+response);
       			return response;
     		}
 		});
@@ -475,7 +456,7 @@
 		server_url="?method=upload";
 		dojo.byId('statusField').innerHTML = "Uploading...";
 		uploadInProgress = true;
-		
+	
 		dojo.io.iframe.send({
 			url: server_url,
 			method: "POST",
@@ -512,7 +493,7 @@
 	
 	function listCheckedItems(checkboxes) {
 		var list="";
-		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 			  list=list+"\""+trimMode(checkboxes[i].value)+"\",";
 		if (list.length > 0)
@@ -533,7 +514,7 @@
 	}
 	
 	function getFirstCheckedItem(checkboxes) {
-		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 			  return trimMode(checkboxes[i].value);
 		return null;
@@ -541,48 +522,90 @@
 	
 	function checkedItemsCount(checkboxes) {
 		var count=0;
-		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 				count++;
 		return count;
 	}
 	
 	function containsDirectory(checkboxes) {
-		for (i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
 			if (checkboxes[i].checked) 
 				if (checkboxes[i].value.indexOf(";directory") >= 0)
 					return true;
-		return false;;		
+		return false;
 	}
 	
-	function deleteFiles(list) {
-		server_url="?method=delete";
+	function deleteFiles(url, list) {
 		dijit.byId('dialogDelete').hide();
-		var data=listCheckedItems(list);
-		if (data.length == 0)
+		if (checkedItemsCount(list) == 0)
 			return;
-		//json format is: [{"files":["file1","file2"...]}]
-		var data="[{\"files\":["+data+"]}]";
-			
-	  	dojo.rawXhrPost({
-    		url: server_url,
-    		handleAs: "json",
-		    headers: {
+		var data='[{"files":['+listCheckedItems(list)+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+		dojo.xhr("DELETE", {
+			url: url,
+			headers: {
 		        "content-length": data.length,
 		        "content-type": "text/x-json"
 		    },
-		    postData: data,
+		    putData: data, // This can be specified as rawBody in dojo 1.4
 		    load: function(responseObject, ioArgs){
 		      	window.location.reload();
 		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
-      			alert("Failed to delete one or more items");//"+ioArgs.args.filename);
+      			alert("Failed to delete one or more items.");
       			window.location.reload(); // Reload on error in case some files were deleted
       			return response;
     		}
-  		});
+		}, true);
+//		});
+//	  	dojo.rawXhrPost({
+//    		url: server_url,
+//   		handleAs: "json",
+//		    headers: {
+//		        "content-length": data.length,
+//		        "content-type": "text/x-json"
+//		    },
+//		    postData: data,
+//		    load: function(responseObject, ioArgs){
+//		      	window.location.reload();
+//		      	return responseObject;
+//		    },
+//   		error: function(response, ioArgs){
+//      			alert("Failed to delete one or more items.");
+//      			window.location.reload(); // Reload on error in case some files were deleted
+//      			return response;
+//    		}
+//  		});
 		uncheckAll(list);
+	}
+	
+	function restoreFiles(list) {
+	
+		dijit.byId('dialogRestore').hide();
+		for (var i = 1; i &lt; list.length; i++) // Ignore dummy first element
+			if (list[i].checked)
+				moveFile(trimMode(list[i].value), "blah", true);
+		uncheckAll(list);
+	}
+	
+	function moveFile(file, destination, synchronous) {
+//alert("moving from "+file+" to "+destination);			
+		dojo.xhr("MOVE", {
+			sync: synchronous, 
+			url: file,
+			headers: {
+				"destination": destination
+			},
+		    load: function(responseObject, ioArgs){
+//		      	window.location.reload();
+		      	return responseObject;
+		    },
+    		error: function(response, ioArgs){
+//      			alert("Failed to move item: "+file);
+      			return response;
+    		}
+		});
 	}
 	
 	function showMetadata(list, currentURL) {
@@ -604,12 +627,12 @@
 		var allChecked = (button.value == "Select none");
 		button.value = allChecked ? "Select all" : "Select none";
 		button.innerHTML = button.value;
-		for (i = 1; i &lt; field.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
 			field[i].checked = !allChecked;
 	}
 	
 	function uncheckAll(field) {
-		for (i = 1; i &lt; field.length; i++) // Ignore dummy first element
+		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
 			field[i].checked = false;;
 	}
 	
@@ -641,8 +664,16 @@
             		Are you sure you want to delete the selected items and their contents?
 					<br/><br/>
 					<div style="text-align: right;">
-						<button onclick="deleteFiles(document.childrenform.selections)">Delete</button>
+						<button onclick="deleteFiles('{$url}', document.childrenform.selections)">Delete</button>
 						<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
+					</div>
+				</div>					
+              	<div dojoType="dijit.Dialog" id="dialogRestore" title="Restore Items">
+            		Are you sure you want to restore the selected items and their contents?
+					<br/><br/>
+					<div style="text-align: right;">
+						<button onclick="restoreFiles(document.childrenform.selections)">Restore</button>
+						<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 					</div>
 				</div>					
             	<div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
@@ -748,6 +779,11 @@
                     <xsl:value-of select="format-number(count(D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]), '#,##0')"/>
                     <xsl:text> files):</xsl:text>
                 </p>
+                <xsl:if test="starts-with($url, $trash)">
+                	<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogRestore').show()">Restore</button>
+                </xsl:if> 
+<!-- <button onclick="alert('href={$href} trash={$trash} url={$url} unc={$unc}')">Debug</button> -->
+                
                 <button id="toggleAllButton" onClick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
                 &#160;&#160;
 			    <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>                
