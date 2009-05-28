@@ -112,7 +112,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
         	if (lockManager != null) 
         		file = lockManager.getLockedResource(file, davisSession);
         }
-        boolean success = del(file);
+        boolean success = del(file, davisSession);
         if (batch) 
         	return success ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_NOT_MODIFIED; // If delete failed, let caller know with SC_NOT_MODIFIED
         return HttpServletResponse.SC_NO_CONTENT;
@@ -121,7 +121,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
     
     private boolean error = false;
     
-    public boolean del(RemoteFile file) {
+    public boolean del(RemoteFile file, DavisSession davisSession) {
     	if (file.isDirectory()){
     		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
     		String[] fileList=file.list();
@@ -130,9 +130,9 @@ public class DefaultDeleteHandler extends AbstractHandler {
         		for (int i=0;i<fileList.length;i++){
         			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
     				if (file.getFileSystem() instanceof SRBFileSystem){
-    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]));
+    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
     				}else if (file.getFileSystem() instanceof IRODSFileSystem){
-    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]));
+    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]),davisSession);
     				}
         		}
     		}
@@ -142,7 +142,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			if (file.getFileSystem() instanceof SRBFileSystem){
 				error = error || !((SRBFile)file).delete(true); 
 			}else if (file.getFileSystem() instanceof IRODSFileSystem){
-				error = error || !((IRODSFile)file).delete(); 
+				boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
+				error = error || !((IRODSFile)file).delete(force); 
 			}
     	}
     	return !error;
