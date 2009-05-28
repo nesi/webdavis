@@ -372,7 +372,7 @@ public class Davis extends HttpServlet {
 					fail(serverName, request, response);
 					return;
 				}
-				sessionID = "shib id" + "%" + request.getServerName() + "#" + request.getRemoteAddr();  // need to change shib id to something else
+				sessionID = user + "*shib%" + request.getServerName() + "#" + request.getRemoteAddr();  // need to change shib id to something else
 				Log.log(Log.DEBUG, "second attempt: sessionID:"+sessionID);
 				davisSession=getDavisSession(sessionID,request);
 			}
