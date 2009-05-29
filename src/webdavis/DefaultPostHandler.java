@@ -119,10 +119,10 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (username != null) {		// Set permissions
 					domain = request.getParameter("domain");
 					permission = request.getParameter("permission");
-					try {
-						recursive = Boolean.parseBoolean(request.getParameter("recursive"));
-					} catch (Exception _e) {}
 				}
+				try {
+					recursive = Boolean.parseBoolean(request.getParameter("recursive"));
+				} catch (Exception _e) {}
 				Log.log(Log.DEBUG, "recursive="+recursive);
 				String sticky = request.getParameter("sticky");
 				for (int j = 0; j < filesArray.size(); j++) {

@@ -247,9 +247,9 @@
 //		alert(perms.sticky);
 		if (perms.sticky!=null){
 			if (perms.sticky=="true"){
-				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections)\">Unset&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Unset&lt;/button>";
 			}else{
-				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections)\">Set&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Set&lt;/button>";
 			}
 		}else{
 			document.getElementById("stickyControl").innerHTML="";
@@ -341,12 +341,12 @@
 //		alert(form_url);
 		getPermission(form_url, listToJSON(list));
 	}
-	function setSticky(list){
-		var form_url=server_url+"&amp;sticky=true";
+	function setSticky(list, recursive){
+		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=true";
 		getPermission(form_url, listToJSON(list));
 	}
-	function unsetSticky(list){
-		var form_url=server_url+"&amp;sticky=false";
+	function unsetSticky(list, recursive){
+		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=false";
 		getPermission(form_url, listToJSON(list));
 	}
 	function getSelectedPermission(e){
