@@ -1,6 +1,8 @@
 package webdavis;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.servlet.ServletException;
 
@@ -41,6 +43,7 @@ public class DefaultMoveHandler extends AbstractHandler {
      * not provided, a 412 (Precondition Failed) error is sent to the client.
      * <br>
      * If the destination was created, but the source could not be removed,
+     * or if the move fails in batch mode,
      * a 403 (Forbidden) error is sent to the client.
      *
      * @param request The request being serviced.
@@ -49,80 +52,110 @@ public class DefaultMoveHandler extends AbstractHandler {
      * @throws SerlvetException If an application error occurs.
      * @throws IOException If an IO error occurs while handling the request.
      */
-    public void service(HttpServletRequest request,
-            HttpServletResponse response, DavisSession davisSession)
-                    throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, davisSession);
-        if (!file.exists()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        String destination = getRemoteURL(request,
-                request.getHeader("Destination"));
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
+    		throws ServletException, IOException {
+ 
+    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+    	boolean batch = getFileList(request, davisSession, fileList); 
+    	String destination = getRemoteURL(request, request.getHeader("Destination"));
         if (destination == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         RemoteFile destinationFile = getRemoteFile(destination, davisSession);
+        Iterator<RemoteFile> iterator = fileList.iterator();
+        int result = 0;
+        while (iterator.hasNext()) {
+        	RemoteFile sourceFile = iterator.next();
+			Log.log(Log.DEBUG, "moving: "+sourceFile+" to "+destinationFile);
+            if (destinationFile.getAbsolutePath().equals(sourceFile.getAbsolutePath())) {
+            	if (batch)
+            		response.sendError(HttpServletResponse.SC_NO_CONTENT);
+            	return;
+        	}
+			result = moveFile(request, davisSession, sourceFile, destinationFile, batch);
+			if (result != HttpServletResponse.SC_NO_CONTENT && result != HttpServletResponse.SC_CREATED) {
+				if (batch) {
+	    			String s = "Failed to move '"+sourceFile.getAbsolutePath()+"'";
+	    			Log.log(Log.WARNING, s);
+	    			response.sendError(/*HttpServletResponse.SC_UNAUTHORIZED*/result, s); // Batch move failed
+	    		} else
+		    		response.sendError(result);
+				return;
+			}
+        }
+		response.setStatus(result);
+		response.flushBuffer();
+    }
+    
+    private int moveFile(HttpServletRequest request, DavisSession davisSession, RemoteFile file, RemoteFile destinationFile, boolean batch) throws IOException {
+    	
+        if (!file.exists()) {
+            /*response.sendError(*/ return HttpServletResponse.SC_NOT_FOUND/*)*/;
+            //return;
+        }
+        if (batch) {
+        	destinationFile.mkdirs(); // Make sure destination directory exists
+            destinationFile = getRemoteFile(destinationFile.getAbsolutePath()+destinationFile.getPathSeparator()+file.getName(), davisSession);
+       } else {
+            int result = checkLockOwnership(request, file);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+            result = checkLockOwnership(request, destinationFile);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+        	result = checkConditionalRequest(request, file);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+        	result = checkConditionalRequest(request, destinationFile);
+        	if (result != HttpServletResponse.SC_OK) 
+            /*response.sendError(*/ return result/*)*/;
+            //return;
+        	LockManager lockManager = getLockManager();
+        	if (lockManager != null) {
+        		file = lockManager.getLockedResource(file, davisSession);
+        		destinationFile = lockManager.getLockedResource(destinationFile, davisSession);
+        	}
+        }
         Log.log(Log.DEBUG, "file:"+file.getAbsolutePath()+" destinationFile:"+destinationFile.getAbsolutePath());
-        if (destinationFile.getAbsolutePath().equals(file.getAbsolutePath())) return;
-        int result = checkLockOwnership(request, file);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
-        }
-        result = checkLockOwnership(request, destinationFile);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
-        }
-        result = checkConditionalRequest(request, file);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
-        }
-        result = checkConditionalRequest(request, destinationFile);
-        if (result != HttpServletResponse.SC_OK) {
-            response.sendError(result);
-            return;
-        }
-        LockManager lockManager = getLockManager();
-        if (lockManager != null) {
-            file = lockManager.getLockedResource(file, davisSession);
-            destinationFile = lockManager.getLockedResource(destinationFile,
-            		davisSession);
-        }
+
+//        	        boolean success = del(file);
+//        	        if (batch) 
+//        	        	return success ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_NOT_MODIFIED; // If delete failed, let caller know with SC_NOT_MODIFIED
+//        	        return HttpServletResponse.SC_NO_CONTENT;
+ 
         boolean overwritten = false;
         if (destinationFile.exists()) {
-            if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {
-                destinationFile.delete();
+        	if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {
+        		destinationFile.delete();
                 overwritten = true;
-            } else {
-                response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
-                return;
-            }
+            } else 
+                return HttpServletResponse.SC_PRECONDITION_FAILED;
         }
         if (file.getFileSystem() instanceof SRBFileSystem) {
         	((SRBFile)file).setResource(davisSession.getDefaultResource());
         	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
-         }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-//        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
-//        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
-//        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
+        } else 
+        if (file.getFileSystem() instanceof IRODSFileSystem) {
+//        	        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
+//        	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+//        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
         }
-        try {
-            file.renameTo(destinationFile);
-//            file.delete();
-            response.setStatus(overwritten ? HttpServletResponse.SC_NO_CONTENT :
-                    HttpServletResponse.SC_CREATED);
-            response.flushBuffer();
-//        } catch (SmbAuthException ex) {
-//            throw ex;
-        } catch (IOException ex) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    DavisUtilities.getResource(DefaultMoveHandler.class,
-                            "cantDeleteSource", null, request.getLocale()));
-        }
+//        	        try {
+        if (!file.renameTo(destinationFile) && batch)  
+            return HttpServletResponse.SC_FORBIDDEN;
+//        	            file.delete();
+            /*response.setStatus(*/return overwritten ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_CREATED/*)*/;
+//        	            response.flushBuffer();
+//        	        } catch (SmbAuthException ex) {
+//        	            throw ex;
+/*        	        } catch (IOException ex) { // Not thrown by renameTo
+        	            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+        	                    DavisUtilities.getResource(DefaultMoveHandler.class,
+        	                            "cantDeleteSource", null, request.getLocale()));
+        	        } */
     }
-
 }

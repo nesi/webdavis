@@ -8,7 +8,7 @@
     <xsl:param name="parent"/>
     <xsl:param name="trash"/>
     <xsl:param name="home"/>
- 
+ 	
     <xsl:template match="/">
         <html>
             <head>
@@ -446,7 +446,7 @@
 		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
-      			alert("Failed to create directory "+dirName+":\n  "+response);
+      			alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", response));
       			return response;
     		}
 		});
@@ -553,59 +553,44 @@
 		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
-      			alert("Failed to delete one or more items.");
+      			alert("Failed to delete one or more items: "+errorMessage("delete", response));
       			window.location.reload(); // Reload on error in case some files were deleted
       			return response;
     		}
 		}, true);
-//		});
-//	  	dojo.rawXhrPost({
-//    		url: server_url,
-//   		handleAs: "json",
-//		    headers: {
-//		        "content-length": data.length,
-//		        "content-type": "text/x-json"
-//		    },
-//		    postData: data,
-//		    load: function(responseObject, ioArgs){
-//		      	window.location.reload();
-//		      	return responseObject;
-//		    },
-//   		error: function(response, ioArgs){
-//      			alert("Failed to delete one or more items.");
-//      			window.location.reload(); // Reload on error in case some files were deleted
-//      			return response;
-//    		}
-//  		});
 		uncheckAll(list);
 	}
 	
-	function restoreFiles(list) {
-	
+	function restoreFiles(url, list) {
 		dijit.byId('dialogRestore').hide();
-		for (var i = 1; i &lt; list.length; i++) // Ignore dummy first element
-			if (list[i].checked)
-				moveFile(trimMode(list[i].value), "blah", true);
-		uncheckAll(list);
+		var hrefBase = '<xsl:value-of select="$href"/>'.substr(0, '<xsl:value-of select="$href"/>'.length-url.length);
+		var destination = hrefBase+'<xsl:value-of select="$home"/>'+url.substring('<xsl:value-of select="$trash"/>'.length, url.length);
+		moveFiles(url, list, destination);
 	}
 	
-	function moveFile(file, destination, synchronous) {
-//alert("moving from "+file+" to "+destination);			
+	function moveFiles(url, list, destination) {
+		if (checkedItemsCount(list) == 0)
+			return;
+		var data='[{"files":['+listCheckedItems(list)+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 		dojo.xhr("MOVE", {
-			sync: synchronous, 
-			url: file,
+			url: url,
 			headers: {
-				"destination": destination
-			},
+		        "content-length": data.length,
+		        "content-type": "text/x-json",
+		        "Destination": destination
+		    },
+		    putData: data, // This can be specified as rawBody in dojo 1.4
 		    load: function(responseObject, ioArgs){
-//		      	window.location.reload();
+		      	window.location.reload();
 		      	return responseObject;
 		    },
     		error: function(response, ioArgs){
-//      			alert("Failed to move item: "+file);
+      			alert("Failed to move one or more items: "+errorMessage("move", response));
+      			window.location.reload(); // Reload on error in case some files were deleted
       			return response;
     		}
-		});
+		}, true);
+		uncheckAll(list);
 	}
 	
 	function showMetadata(list, currentURL) {
@@ -640,6 +625,31 @@
 		var URL = document.mainToolbar.location.options[document.mainToolbar.location.selectedIndex].value;
 		window.location.href = URL;
 	}
+	
+	function inTrash() {
+		return '<xsl:value-of select="$url"/>'.indexOf('<xsl:value-of select="$trash"/>') == 0;
+	}
+	
+	function errorMessage(method, message) {
+		message = ""+message; // Convert to string
+//alert("analysing "+message+" for method "+method);
+		var i = message.indexOf(' status:');
+		if (i &lt; 0)
+			return message;
+		var code = message.substring(i+8, message.length);
+//alert("code="+code);
+		switch(code) {
+			case "403":	switch(method) {
+							//case "move": 
+							//case "copy": return "source and destination URI are the same";
+							default: return "refused";
+					  	}
+			case "405":	return "path already exists";
+			case "412": return "destination already exists";
+			default: 	return message;
+		}
+	}
+
 
     			</script>		
             </head>
@@ -672,7 +682,7 @@
             		Are you sure you want to restore the selected items and their contents?
 					<br/><br/>
 					<div style="text-align: right;">
-						<button onclick="restoreFiles(document.childrenform.selections)">Restore</button>
+						<button onclick="restoreFiles('{$url}', document.childrenform.selections)">Restore</button>
 						<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 					</div>
 				</div>					
@@ -779,14 +789,19 @@
                     <xsl:value-of select="format-number(count(D:response[not(D:propstat/D:prop/D:resourcetype/D:collection)]), '#,##0')"/>
                     <xsl:text> files):</xsl:text>
                 </p>
-                <xsl:if test="starts-with($url, $trash)">
-                	<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogRestore').show()">Restore</button>
-                </xsl:if> 
-<!-- <button onclick="alert('href={$href} trash={$trash} url={$url} unc={$unc}')">Debug</button> -->
-                
-                <button id="toggleAllButton" onClick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
+<!-- 
+					<button onclick="alert('href={$href}\n trash={$trash}\n url={$url}\n unc={$unc}\n home={$home}\n parent={$parent}')">Debug</button>
+-->               
+                <button id="toggleAllButton" onclick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
                 &#160;&#160;
-			    <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>                
+                <xsl:choose>
+                	<xsl:when test="starts-with($url, $trash)">
+                		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogRestore').show()">Restore</button>
+                	</xsl:when>
+                	<xsl:otherwise>	
+ 			   	 		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ 			   	 	</xsl:otherwise>                
+                </xsl:choose> 
 			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
 			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
 			    <form name="childrenform">  

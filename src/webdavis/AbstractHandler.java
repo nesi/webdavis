@@ -2,10 +2,12 @@ package webdavis;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 //import java.net.URLDecoder;
 
 import java.security.Principal;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -18,6 +20,10 @@ import javax.servlet.ServletException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
@@ -994,6 +1000,38 @@ public abstract class AbstractHandler implements MethodHandler {
     
     public String getServerType(){
     	return config.getInitParameter("server-type");
+    }
+
+    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
+    	
+//    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+    	boolean batch = false;
+    	RemoteFile uriFile = getRemoteFile(request, davisSession);
+        if (request.getContentLength() <= 0) {
+        	fileList.add(uriFile);
+        } else {
+        	batch = true;
+	        InputStream input = request.getInputStream();
+	        byte[] buf = new byte[request.getContentLength()];
+	        int count=input.read(buf);
+	        Log.log(Log.DEBUG, "read:"+count);
+	        Log.log(Log.DEBUG, "received file list: " + new String(buf));
+
+			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			if (jsonArray != null) {	
+				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
+				for (int i = 0; i < fileNamesArray.size(); i++) {
+					String name = (String)fileNamesArray.get(i);
+					if (name.trim().length() == 0)
+						continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
+					fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
+				}
+			} else
+				throw new ServletException("Internal error deleting file: error parsing JSON");
+		}
+//        return fileList;
+        return batch;
     }
 
     public abstract void service(HttpServletRequest request,

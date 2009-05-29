@@ -51,7 +51,7 @@ public class DefaultMkcolHandler extends AbstractHandler {
             response.sendError(result);
             return;
         }
-         result = checkConditionalRequest(request, file);
+        result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
             return;

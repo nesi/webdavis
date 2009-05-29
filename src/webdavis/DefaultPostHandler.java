@@ -123,6 +123,7 @@ public class DefaultPostHandler extends AbstractHandler {
 						recursive = Boolean.parseBoolean(request.getParameter("recursive"));
 					} catch (Exception _e) {}
 				}
+				Log.log(Log.DEBUG, "recursive="+recursive);
 				String sticky = request.getParameter("sticky");
 				for (int j = 0; j < filesArray.size(); j++) {
 					String fileName = (String)filesArray.get(j);
@@ -524,7 +525,7 @@ public class DefaultPostHandler extends AbstractHandler {
 //							response.sendError(HttpServletResponse.SC_BAD_REQUEST, s);
 //							return;
 //						}
-//					}
+//					} 
 //				} else
 //					throw new ServletException("Internal error deleting file: error parsing JSON");
 //			}
