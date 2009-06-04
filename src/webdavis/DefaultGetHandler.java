@@ -213,6 +213,12 @@ public class DefaultGetHandler extends AbstractHandler {
         if (!file.exists()) {
             Log.log(Log.DEBUG, "File does not exist.");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
+//response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
+//ServletOutputStream output = response.getOutputStream();
+//String s = "Path can't be accessed.";
+//output.print(s);
+//response.setContentLength(s.length());
+//response.flushBuffer();
             return;
         }
 //        if (!file.canRead()){

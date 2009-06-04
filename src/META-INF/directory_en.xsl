@@ -247,9 +247,9 @@
 //		alert(perms.sticky);
 		if (perms.sticky!=null){
 			if (perms.sticky=="true"){
-				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections)\">Unset&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Unset&lt;/button>";
 			}else{
-				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections)\">Set&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Set&lt;/button>";
 			}
 		}else{
 			document.getElementById("stickyControl").innerHTML="";
@@ -341,12 +341,12 @@
 //		alert(form_url);
 		getPermission(form_url, listToJSON(list));
 	}
-	function setSticky(list){
-		var form_url=server_url+"&amp;sticky=true";
+	function setSticky(list, recursive){
+		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=true";
 		getPermission(form_url, listToJSON(list));
 	}
-	function unsetSticky(list){
-		var form_url=server_url+"&amp;sticky=false";
+	function unsetSticky(list, recursive){
+		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=false";
 		getPermission(form_url, listToJSON(list));
 	}
 	function getSelectedPermission(e){
@@ -650,7 +650,16 @@
 		}
 	}
 
-
+	function toBreadcrumb(path) {
+		var result = "";
+		var subpath = "";
+		var dirs = path.split('/');
+		for (var i = 1; i &lt; dirs.length; i++) {
+			subpath = subpath+'/'+dirs[i];
+			result = result+'<a class="title" href="'+subpath+'">/'+dirs[i]+'</a>';
+		}
+		return result;
+	}
     			</script>		
             </head>
             <body class="tundra">
@@ -681,7 +690,7 @@
               	<div dojoType="dijit.Dialog" id="dialogRestore" title="Restore Items">
             		Are you sure you want to restore the selected items and their contents?
 					<br/><br/>
-					<div style="text-align: right;">
+					<div style="text-align: right;">myFunction
 						<button onclick="restoreFiles('{$url}', document.childrenform.selections)">Restore</button>
 						<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 					</div>
@@ -835,7 +844,10 @@
     </xsl:template>
     <xsl:template match="D:response" mode="base">
         <p>
-            <a class="title" href="{$href}" folder="{$href}"><xsl:value-of select="$url"/></a><br/>
+        	<script type="text/javascript">
+        		document.write(toBreadcrumb('<xsl:value-of select="$url"/>'));
+        	</script><br/>
+<!--            <a class="title" href="{$href}" folder="{$href}"><xsl:value-of select="$url"/></a><br/> -->
             <a class="unc" href="{$href}" folder="{$href}"><xsl:value-of select="$unc"/></a><br/>
             <xsl:text>Last modified on </xsl:text>
             <xsl:value-of select="D:propstat/D:prop/D:getlastmodified"/>
