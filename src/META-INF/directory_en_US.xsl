@@ -858,7 +858,7 @@
              		<br/>
              		<form name="mainToolbar">
              			<input type="button" value="Create Directory" onClick="dijit.byId('dialogCreateDir').show()"/>
-              			<input type="button" value="Upload" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
+              			<input type="button" value="Upload File" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
                  		&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
 						<select name="location">
 							<option value="{$home}">Home</option>
