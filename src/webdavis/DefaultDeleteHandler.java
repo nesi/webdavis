@@ -137,16 +137,25 @@ public class DefaultDeleteHandler extends AbstractHandler {
     				}
         		}
     		}
-    		error = error || !file.delete(); 
-    	}else{
-    		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
-			if (file.getFileSystem() instanceof SRBFileSystem){
-				error = error || !((SRBFile)file).delete(true); 
-			}else if (file.getFileSystem() instanceof IRODSFileSystem){
-				boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
-				error = error || !((IRODSFile)file).delete(force); 
-			}
     	}
+		Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
+		if (file.getFileSystem() instanceof SRBFileSystem){
+			error = error || !((SRBFile)file).delete(true); 
+		}else if (file.getFileSystem() instanceof IRODSFileSystem){
+			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
+			Log.log(Log.DEBUG, "deleting - force:"+force);
+			error = error || !((IRODSFile)file).delete(force); 
+		}
+//    	}else{
+//    		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
+//			if (file.getFileSystem() instanceof SRBFileSystem){
+//				error = error || !((SRBFile)file).delete(true); 
+//			}else if (file.getFileSystem() instanceof IRODSFileSystem){
+//				boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
+//				Log.log(Log.DEBUG, "deleting file - force:"+force);
+//				error = error || !((IRODSFile)file).delete(force); 
+//			}
+//    	}
     	return !error;
     }
 }
