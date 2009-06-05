@@ -247,15 +247,15 @@
 //		alert(perms.sticky);
 		if (perms.sticky!=null){
 			if (perms.sticky=="true"){
-				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Unset&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is sticky.&lt;button onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset&lt;/button>";
 			}else{
-				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(document.childrenform.selections, dojo.byId('recursive').checked)\">Set&lt;/button>";
+				document.getElementById("stickyControl").innerHTML="This directory is not sticky.&lt;button onclick=\"setSticky(dojo.byId('recursive').checked)\">Set&lt;/button>";
 			}
 		}else{
 			document.getElementById("stickyControl").innerHTML="";
 		}
 	}
-	function getMetadata(list, url, batch){
+	function getMetadata(url, batch){
 		ori_url=url;
 		server_url=url+"?method=metadata";
 		var metadata_url = "";
@@ -264,7 +264,7 @@
 			store1=new dojo.data.ItemFileWriteStore({data: {items:[]}}); // Default metadata is empty
 			metadataGrid.setStore(store1);
 		} else {
-			metadata_url = url+"/"+getFirstCheckedItem(list)+"?method=metadata";
+			metadata_url = url+"/"+getFirstCheckedItem()+"?method=metadata";
 			loadMetadataFromServer(metadata_url);
 		}
 		dijit.byId('dialog1').attr("url", metadata_url);
@@ -288,12 +288,12 @@
 //		getPermission(server_url);
 //		dijit.byId('dialog2').show();
 //	}
-	function getPermissions(list, url, batch){
+	function getPermissions(url, batch){
 		ori_url=url;
 		var sourceURL = url;
 		if (!batch)
-			sourceURL = url+"/"+getFirstCheckedItem(list); 
-		dojo.byId("recursive").disabled=!containsDirectory(list);	// Enable if any dirs in list
+			sourceURL = url+"/"+getFirstCheckedItem(); 
+		dojo.byId("recursive").disabled=!directoryIsChecked();	// Enable if any dirs in list
 		if (document.getElementById("servertype").value=="srb"){
 			server_url=sourceURL+"?method=domains";
 			getDomains(server_url);
@@ -310,8 +310,8 @@
 		server_url=url+"?method=permission";
 		dijit.byId('dialog2').show();
 	}
-	function savePermission(list){
-		if (checkedItemsCount(list) == 0)
+	function savePermission(){
+		if (checkedItemsCount() == 0)
 			return;
 		var rowCount=dijit.byId('metadataGrid').rowCount;
 		var recursiveValue="";
@@ -339,15 +339,15 @@
 			form_url=server_url+"&amp;username="+usernameValue+"&amp;permission="+permValue+recursiveValue;
 		}
 //		alert(form_url);
-		getPermission(form_url, listToJSON(list));
+		getPermission(form_url, listToJSON());
 	}
-	function setSticky(list, recursive){
+	function setSticky(recursive){
 		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=true";
-		getPermission(form_url, listToJSON(list));
+		getPermission(form_url, listToJSON());
 	}
-	function unsetSticky(list, recursive){
+	function unsetSticky(recursive){
 		var form_url=server_url+"&amp;recursive="+recursive+"&amp;sticky=false";
-		getPermission(form_url, listToJSON(list));
+		getPermission(form_url, listToJSON());
 	}
 	function getSelectedPermission(e){
 		//console.dir(e.rowIndex);
@@ -390,13 +390,13 @@
             }); // end forEach
         } // end if
 	}
-	function saveMetadata(list){
-		if (checkedItemsCount(list) == 0)
+	function saveMetadata(){
+		if (checkedItemsCount() == 0)
 			return;
 		var rowCount=dijit.byId('metadataGrid').rowCount;
 
 		//json format is: [{"files":["file1","file2"...],"metadata":[{"name":"foo","value":"bar"},{"name":"foo2","value":"bar2"}...]}]
-		var data=listToJSON(list);
+		var data=listToJSON();
 		data = data.substring(0, data.length-2);	// Trim '}]' off end 
 		data+=",\"metadata\":[";
 		for (var i=0;i&lt;rowCount;i++){
@@ -491,19 +491,19 @@
 		}
 	}
 	
-	function listCheckedItems(checkboxes) {
+	function listCheckedItems() {
 		var list="";
-		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
-			if (checkboxes[i].checked) 
-			  list=list+"\""+trimMode(checkboxes[i].value)+"\",";
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			if (document.childrenform.selections[i].checked) 
+			  list=list+"\""+trimMode(document.childrenform.selections[i].value)+"\",";
 		if (list.length > 0)
 			list = list.substring(0, list.length-1);  // remove trailing ','
 		return list;
 	}
 	
-	function listToJSON(list) {
+	function listToJSON() {
 		//json format is: [{"files":["file1","file2"...]}]
-		return "[{\"files\":["+listCheckedItems(list)+"]}]";
+		return "[{\"files\":["+listCheckedItems()+"]}]";
 	}
 
 	function trimMode(value) {
@@ -513,34 +513,34 @@
 		return value;
 	}
 	
-	function getFirstCheckedItem(checkboxes) {
-		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
-			if (checkboxes[i].checked) 
-			  return trimMode(checkboxes[i].value);
+	function getFirstCheckedItem() {
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			if (document.childrenform.selections[i].checked) 
+			  return trimMode(document.childrenform.selections[i].value);
 		return null;
 	}
 	
-	function checkedItemsCount(checkboxes) {
+	function checkedItemsCount() {
 		var count=0;
-		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
-			if (checkboxes[i].checked) 
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			if (document.childrenform.selections[i].checked) 
 				count++;
 		return count;
 	}
 	
-	function containsDirectory(checkboxes) {
-		for (var i = 1; i &lt; checkboxes.length; i++) // Ignore dummy first element
-			if (checkboxes[i].checked) 
-				if (checkboxes[i].value.indexOf(";directory") >= 0)
+	function directoryIsChecked() {
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			if (document.childrenform.selections[i].checked) 
+				if (document.childrenform.selections[i].value.indexOf(";directory") >= 0)
 					return true;
 		return false;
 	}
 	
-	function deleteFiles(url, list) {
+	function deleteFiles(url) {
 		dijit.byId('dialogDelete').hide();
-		if (checkedItemsCount(list) == 0)
+		if (checkedItemsCount() == 0)
 			return;
-		var data='[{"files":['+listCheckedItems(list)+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+		var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 		dojo.xhr("DELETE", {
 			url: url,
 			headers: {
@@ -558,20 +558,46 @@
       			return response;
     		}
 		}, true);
-		checkAll(list, false);
+		checkAll(false);
 	}
 	
-	function restoreFiles(url, list) {
+	function rename(name, newName){
+		dijit.byId('dialogRename').hide();
+		var url = '<xsl:value-of select="$url"/>/'+name;
+		var destination = '<xsl:value-of select="$href"/>/'+newName;
+		renameFile(url, destination);
+	}
+
+	function renameFile(url, destination) {
+		dojo.xhr("MOVE", {
+			url: url,
+			headers: {
+		        "Destination": destination
+		    },
+		    load: function(responseObject, ioArgs){
+		      	window.location.reload();
+		      	return responseObject;
+		    },
+    		error: function(response, ioArgs){
+      			alert("Failed to move items: "+errorMessage("move", response));
+      			window.location.reload(); // Reload on error in case file was deleted
+      			return response;
+    		}
+		}, true);
+		checkAll(false);
+	}
+	
+	function restoreFiles(url) {
 		dijit.byId('dialogRestore').hide();
 		var hrefBase = '<xsl:value-of select="$href"/>'.substr(0, '<xsl:value-of select="$href"/>'.length-url.length);
 		var destination = hrefBase+'<xsl:value-of select="$home"/>'+url.substring('<xsl:value-of select="$trash"/>'.length, url.length);
-		moveFiles(url, list, destination);
+		moveFiles(url, destination);
 	}
 	
-	function moveFiles(url, list, destination) {
-		if (checkedItemsCount(list) == 0)
+	function moveFiles(url, destination) {
+		if (checkedItemsCount() == 0)
 			return;
-		var data='[{"files":['+listCheckedItems(list)+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+		var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 		dojo.xhr("MOVE", {
 			url: url,
 			headers: {
@@ -590,21 +616,21 @@
       			return response;
     		}
 		}, true);
-		checkAll(list, false);
+		checkAll(false);
 	}
 	
-	function showMetadata(list, currentURL) {
-		var checkedCount = checkedItemsCount(list);
+	function showMetadata(currentURL) {
+		var checkedCount = checkedItemsCount();
 		if (checkedCount == 0)
 			return;
-		getMetadata(list, currentURL, (checkedCount > 1));				
+		getMetadata(currentURL, (checkedCount > 1));				
 	}
 	
-	function showPermissions(list, currentURL) {
-		var checkedCount = checkedItemsCount(list);
+	function showPermissions(currentURL) {
+		var checkedCount = checkedItemsCount();
 		if (checkedCount == 0)
 			return;
-		getPermissions(list, currentURL, (checkedCount > 1));				
+		getPermissions(currentURL, (checkedCount > 1));				
 	}
 		
 	function setToggleButtonState(state) {
@@ -616,17 +642,27 @@
 	function getToggleButtonState() {
 		return dojo.byId('toggleAllButton').value == "Select all";
 	}
+	
+	function refreshButtons() {
+		dojo.byId('renameButton').disabled = checkedItemsCount() != 1;
+		dojo.byId('deleteButton').disabled = checkedItemsCount() == 0;
+		dojo.byId('metadataButton').disabled = checkedItemsCount() == 0;
+		dojo.byId('accessControlButton').disabled = checkedItemsCount() == 0;
+		var button = dojo.byId('restoreButton');
+		if (button != null)
+			button.disabled = checkedItemsCount() == 0;
+	}
 		
-	function toggleAll(field) {
+	function toggleAll() {
 		var allChecked = !getToggleButtonState();
 		setToggleButtonState(allChecked);
-		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
-			field[i].checked = !allChecked;
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			document.childrenform.selections[i].checked = !allChecked;
 	}
 	
-	function checkAll(field, state) {
-		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
-			field[i].checked = state;
+	function checkAll(state) {
+		for (var i = 1; i &lt; document.childrenform.selections.length; i++) // Ignore dummy first element
+			document.childrenform.selections[i].checked = state;
 	}
 	
 	function navigate(form){
@@ -687,19 +723,28 @@
 						<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
 					</div>
 				</div>					
+            	<div dojoType="dijit.Dialog" id="dialogRename" title="Rename">
+            		New name:
+ 					<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true"/>
+					<br/><br/>
+					<div style="text-align: right;">
+						<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
+						<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
+					</div>
+				</div>					
              	<div dojoType="dijit.Dialog" id="dialogDelete" title="Delete Items">
             		Are you sure you want to delete the selected items and their contents?
 					<br/><br/>
 					<div style="text-align: right;">
-						<button onclick="deleteFiles('{$url}', document.childrenform.selections)">Delete</button>
+						<button onclick="deleteFiles('{$url}')">Delete</button>
 						<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
 					</div>
 				</div>					
               	<div dojoType="dijit.Dialog" id="dialogRestore" title="Restore Items">
             		Are you sure you want to restore the selected items and their contents?
 					<br/><br/>
-					<div style="text-align: right;">myFunction
-						<button onclick="restoreFiles('{$url}', document.childrenform.selections)">Restore</button>
+					<div style="text-align: right;">
+						<button onclick="restoreFiles('{$url}')">Restore</button>
 						<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 					</div>
 				</div>					
@@ -722,7 +767,7 @@
         					<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialog1').attr('url'))">Refresh</button>
         					<button onclick="addMetadata()">Add Metadata</button>
         					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
-        					<button onclick="saveMetadata(document.childrenform.selections)">Save</button>
+        					<button onclick="saveMetadata()">Save</button>
         					<button onclick="dijit.byId('dialog1').hide()">Cancel</button>
 						</td>
 					</tr>
@@ -776,7 +821,7 @@
 								</tr>
 								<tr>
 									<td rowspan="2" align="center">
-										<button onclick="savePermission(document.childrenform.selections)">Apply</button>
+										<button onclick="savePermission()">Apply</button>
 										<button onclick="dijit.byId('dialog2').hide();">Cancel</button>
 									</td>
 								</tr>
@@ -809,22 +854,23 @@
 <!-- 
 					<button onclick="alert('href={$href}\n trash={$trash}\n url={$url}\n unc={$unc}\n home={$home}\n parent={$parent}')">Debug</button>
 -->               
-                <button id="toggleAllButton" onclick="toggleAll(document.childrenform.selections)" value="Select all">Select all</button>
+                <button id="toggleAllButton" onclick="toggleAll(); refreshButtons()" value="Select all">Select all</button>
                 &#160;&#160;
                 <xsl:choose>
                 	<xsl:when test="starts-with($url, $trash)">
-                		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogRestore').show()">Restore</button>
-  			   	 		<button onclick="checkAll(document.childrenform.selections, true); setToggleButtonState(!getToggleButtonState()); dijit.byId('dialogDelete').show()">Empty Trash</button>
+                		<button id="restoreButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogRestore').show()" disabled="true">Restore</button>
+  			   	 		<button onclick="checkAll(true); setToggleButtonState(!getToggleButtonState()); dijit.byId('dialogDelete').show()">Empty Trash</button>
                 	</xsl:when>
                 	<xsl:otherwise>	
- <!-- 			   	 		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ <!-- 			   	 		<button id="deleteButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogDelete').show()" disabled="true">Delete</button>
  -->
  			   	 	</xsl:otherwise>                
                 </xsl:choose> 
- <!-- -->               <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ <!-- -->               <button id="deleteButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogDelete').show()" disabled="true">Delete</button>
  <!-- -->
-			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
-			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
+			    <button id="renameButton" onclick="dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()" disabled="true">Rename</button>
+			    <button id="metadataButton" onclick="showMetadata('{$url}')" disabled="true">Metadata</button>
+			    <button id="accessControlButton" onclick="showPermissions('{$url}')" disabled="true">Access Control</button><br/> 
 			    <form name="childrenform">  
 					<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
                 	<table border="0" cellpadding="0" cellspacing="0">
@@ -887,7 +933,7 @@
     </xsl:template>
     <xsl:template match="D:response" mode="directory">
         <tr valign="top">
-    		<td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};directory" /></td>   
+    		<td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};directory" onClick="refreshButtons()"/></td>   
             <td nowrap="nowrap">
 		        <a href="{D:href}" class="directory">
 		            <xsl:if test="D:propstat/D:prop/D:ishidden = '1'">
@@ -910,7 +956,7 @@
     </xsl:template>
     <xsl:template match="D:response" mode="file">
         <tr valign="top">
-            <td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};file" /></td>   
+            <td><input type="checkbox" name="selections" value="{D:propstat/D:prop/D:displayname};file" onClick="refreshButtons()"/></td>   
             <td nowrap="nowrap">
                 <xsl:if test="position() mod 2 = 1">
                     <xsl:attribute name="bgcolor">#eeffdd</xsl:attribute>

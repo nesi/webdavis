@@ -145,7 +145,7 @@ public class DefaultMoveHandler extends AbstractHandler {
 //        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
         }
 //        	        try {
-        if (!file.renameTo(destinationFile) && batch)  
+        if (!file.renameTo(destinationFile) /*&& batch*/)  
             return HttpServletResponse.SC_FORBIDDEN;
 //        	            file.delete();
             /*response.setStatus(*/return overwritten ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_CREATED/*)*/;
