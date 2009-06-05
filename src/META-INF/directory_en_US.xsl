@@ -558,7 +558,7 @@
       			return response;
     		}
 		}, true);
-		uncheckAll(list);
+		checkAll(list, false);
 	}
 	
 	function restoreFiles(url, list) {
@@ -590,7 +590,7 @@
       			return response;
     		}
 		}, true);
-		uncheckAll(list);
+		checkAll(list, false);
 	}
 	
 	function showMetadata(list, currentURL) {
@@ -607,18 +607,26 @@
 		getPermissions(list, currentURL, (checkedCount > 1));				
 	}
 		
-	function toggleAll(field) {
+	function setToggleButtonState(state) {
 		var button = dojo.byId('toggleAllButton');
-		var allChecked = (button.value == "Select none");
-		button.value = allChecked ? "Select all" : "Select none";
+		button.value = state ? "Select all" : "Select none";
 		button.innerHTML = button.value;
+	}
+	
+	function getToggleButtonState() {
+		return dojo.byId('toggleAllButton').value == "Select all";
+	}
+		
+	function toggleAll(field) {
+		var allChecked = !getToggleButtonState();
+		setToggleButtonState(allChecked);
 		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
 			field[i].checked = !allChecked;
 	}
 	
-	function uncheckAll(field) {
+	function checkAll(field, state) {
 		for (var i = 1; i &lt; field.length; i++) // Ignore dummy first element
-			field[i].checked = false;;
+			field[i].checked = state;
 	}
 	
 	function navigate(form){
@@ -806,11 +814,15 @@
                 <xsl:choose>
                 	<xsl:when test="starts-with($url, $trash)">
                 		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogRestore').show()">Restore</button>
+  			   	 		<button onclick="checkAll(document.childrenform.selections, true); setToggleButtonState(!getToggleButtonState()); dijit.byId('dialogDelete').show()">Empty Trash</button>
                 	</xsl:when>
                 	<xsl:otherwise>	
- 			   	 		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ <!-- 			   	 		<button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ -->
  			   	 	</xsl:otherwise>                
                 </xsl:choose> 
+ <!-- -->               <button onclick="if (checkedItemsCount(document.childrenform.selections) > 0) dijit.byId('dialogDelete').show()">Delete</button>
+ <!-- -->
 			    <button onclick="showMetadata(document.childrenform.selections, '{$url}')">Metadata</button>
 			    <button onclick="showPermissions(document.childrenform.selections, '{$url}')">Access Control</button><br/> 
 			    <form name="childrenform">  
@@ -859,7 +871,7 @@
              		<form name="mainToolbar">
              			<input type="button" value="Create Directory" onClick="dijit.byId('dialogCreateDir').show()"/>
               			<input type="button" value="Upload File" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
-                 		&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+                 		&#160;&#160;&#160;&#160;
 						<select name="location">
 							<option value="{$home}">Home</option>
 							<option value="{$trash}">Trash</option>
