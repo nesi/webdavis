@@ -1200,6 +1200,35 @@
         <param-value>webdavis.DefaultUnlockHandler</param-value>
     </init-param>
 -->
+
+<!--
+    anonymousCredentials:
+
+        Specifies an account to use for anonymous browsing.
+        Syntax is username:password
+
+
+-->
+    <init-param>
+        <param-name>anonymousCredentials</param-name>
+        <param-value>anonymous:anything</param-value>
+    </init-param>
+
+<!--
+    anonymousCollections:
+
+        Specifies collections for anonymous browsing.
+        split by comma, e.g. /ARCS/projects/public,/ARCS/projects/open
+
+
+-->
+    <init-param>
+        <param-name>anonymousCollections</param-name>
+        <param-value>/ARCS/projects/public,/ARCS/projects/open</param-value>
+    </init-param>
+
+
+
 <!--
     insecureConnection:
 

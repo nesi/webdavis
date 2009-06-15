@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -126,6 +127,10 @@ public class Davis extends HttpServlet {
 	private String proxyUsername;
 	private String proxyPassword;
 	
+	private String anonymousUsername;
+	private String anonymousPassword;
+	private List<String> anonymousCollections;
+	
 	private String sharedTokenHeaderName;
 	private String commonNameHeaderName;
 	static protected String adminCertFile;
@@ -228,7 +233,15 @@ public class Davis extends HttpServlet {
 		commonNameHeaderName=config.getInitParameter("cn-header-name");
 		adminCertFile=config.getInitParameter("admin-cert-file");
 		adminKeyFile=config.getInitParameter("admin-key-file");
-
+		String anonymousCredentials=config.getInitParameter("anonymousCredentials");
+		if (anonymousCredentials!=null){
+			anonymousUsername=anonymousCredentials.split(":")[0];
+			anonymousPassword=anonymousCredentials.split(":")[1];
+		}
+		String anonymousCollectionString=config.getInitParameter("anonymousCollections");
+		if (anonymousCollectionString!=null){
+			anonymousCollections=Arrays.asList(anonymousCollectionString.split(","));
+		}		
 		
 		initLockManager(config);
 		// initFilter(config);
@@ -289,6 +302,7 @@ public class Davis extends HttpServlet {
 		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".",
 				new Object[] { request.getMethod(), request.getRequestURL() });
 		if (Log.getThreshold() < Log.INFORMATION) {
+			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
 			StringBuffer headers = new StringBuffer();
 			Enumeration headerNames = request.getHeaderNames();
 			while (headerNames.hasMoreElements()) {
@@ -346,14 +360,14 @@ public class Davis extends HttpServlet {
 		String domain = defaultDomain;
 		DavisSession davisSession = null;
 		String sessionID = null;
-		sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
-		Log.log(Log.DEBUG, "first attempt: sessionID:"+sessionID);
-		davisSession=getDavisSession(sessionID,request);
+//		sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
+//		Log.log(Log.DEBUG, "first attempt: sessionID:"+sessionID);
+//		davisSession=getDavisSession(sessionID,request);
 
 		GSSCredential gssCredential = null;
 		RemoteAccount account = null;
 		String authorization = request.getHeader("Authorization");
-		if (davisSession == null && authorization == null){
+		if (davisSession == null && authorization == null && !request.isSecure()){
 			//before login, check if there is shib session
 			Cookie[] cookies=request.getCookies();
 			int shibCookieNum=0;
@@ -372,8 +386,8 @@ public class Davis extends HttpServlet {
 					fail(serverName, request, response);
 					return;
 				}
-				sessionID = user + "*shib%" + request.getServerName() + "#" + request.getRemoteAddr();  // need to change shib id to something else
-				Log.log(Log.DEBUG, "second attempt: sessionID:"+sessionID);
+				sessionID = sharedToken + "*shib%" + request.getServerName() + "#" + request.getRemoteAddr();  // need to change shib id to something else
+				Log.log(Log.DEBUG, "trying to get session for shib login. sessionID:"+sessionID);
 				davisSession=getDavisSession(sessionID,request);
 			}
 		}else if (davisSession == null && authorization != null){
@@ -413,8 +427,8 @@ public class Davis extends HttpServlet {
 					user = user.substring(0, index);
 				}
 				
-				sessionID = basicUsername + "%" + request.getServerName() + "#" + request.getRemoteAddr();
-				Log.log(Log.DEBUG, "third attempt: sessionID:"+sessionID);
+				sessionID = SimpleMD5.MD5(authorization) + "*basic%" + request.getServerName() + "#" + request.getRemoteAddr();
+				Log.log(Log.DEBUG, "trying to get session for basic auth(https). sessionID:"+sessionID);
 				davisSession=getDavisSession(sessionID,request);
 
 				if (davisSession==null && idpName != null) {
@@ -567,6 +581,15 @@ public class Davis extends HttpServlet {
 	//}
 			}
 			
+		}else if (anonymousCollections!=null&&isAnonymousPath(pathInfo)){
+				user=anonymousUsername;
+				password=anonymousPassword.toCharArray();
+				sessionID=SimpleMD5.MD5(anonymousUsername+":"+anonymousPassword)+"*basic%" + request.getServerName() + "#" + request.getRemoteAddr();
+//				String authString="Basic "+Base64.toString((anonymousUsername+":"+anonymousPassword).getBytes());
+//				response.addHeader("Authorization", authString);
+		}else{
+			fail(serverName, request, response);
+			return;
 		}
 
 		String homeDir = null;
@@ -1007,5 +1030,10 @@ public class Davis extends HttpServlet {
         
         return Base64.toString(nounce);
     }
-
+    private boolean isAnonymousPath(String path){
+    	for (String s:anonymousCollections){
+    		if (path.startsWith(s)) return true;
+    	}
+    	return false;
+    }
 }
