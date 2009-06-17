@@ -60,7 +60,7 @@ public class DefaultMkcolHandler extends AbstractHandler {
             if (file.mkdir())
                 response.setStatus(HttpServletResponse.SC_CREATED);
             else
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setStatus(HttpServletResponse.SC_CONFLICT);
 //        } catch (SmbAuthException ex) {
 //            throw ex;
 //        } catch (IOException ex) {
