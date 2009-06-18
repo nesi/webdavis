@@ -63,6 +63,7 @@ public class DefaultPutHandler extends AbstractHandler {
         }
         if (length == 0){
         	Log.log(Log.DEBUG, "request.getInputStream().available(): "+request.getInputStream().available());
+        	return;
         }
         RemoteFile file = getRemoteFile(request, davisSession);
         boolean existsCurrently = file.exists();

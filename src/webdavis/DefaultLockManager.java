@@ -15,6 +15,8 @@ import java.util.TimerTask;
 import javax.servlet.http.HttpServletResponse;
 
 import edu.sdsc.grid.io.RemoteFile;
+import edu.sdsc.grid.io.irods.IRODSFile;
+import edu.sdsc.grid.io.srb.SRBFile;
 
 /**
  * Lock manager for webdav
@@ -199,8 +201,21 @@ public class DefaultLockManager implements LockManager {
     private boolean coveredBy(RemoteFile resource, BasicLock lock)
             throws IOException {
         if (lock == null || resource == null) return false;
-        String path = resource.getCanonicalPath();
-        String lockPath = lock.getResource().getCanonicalPath();
+        String path=null;
+        Log.log(Log.DEBUG, (resource instanceof IRODSFile)+" "+(resource instanceof SRBFile)+" "+resource.getClass());
+        if (resource instanceof IRODSFile)
+        	path = ((IRODSFile)resource).getCanonicalPath();
+        else if (resource instanceof SRBFile)
+        	path = ((SRBFile)resource).getCanonicalPath();
+        else
+        	path=resource.getCanonicalPath();
+        String lockPath = null;
+        if (resource instanceof IRODSFile)
+        	lockPath = ((IRODSFile)(lock.getResource())).getCanonicalPath();
+        else if (resource instanceof SRBFile)
+        	lockPath = ((SRBFile)(lock.getResource())).getCanonicalPath();
+        else
+        	lockPath = lock.getResource().getCanonicalPath();
         if (path.equals(lockPath)) return true; // same resource
         if (!path.startsWith(lockPath) || !(lockPath.endsWith("/") ||
                 path.substring(lockPath.length()).startsWith("/"))) {

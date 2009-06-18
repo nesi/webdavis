@@ -89,7 +89,7 @@ public abstract class AbstractHandler implements MethodHandler {
         ServletConfig config = getServletConfig();
         String charset = (config == null) ? null : (String)
                 config.getServletContext().getAttribute(
-                        Davis.REQUEST_URI_CHARSET);
+                        DavisConfig.REQUEST_URI_CHARSET);
         return (charset != null) ? charset : "UTF-8";
 //        return (charset != null) ? charset : "ISO-8859-1";
     }
@@ -604,7 +604,7 @@ public abstract class AbstractHandler implements MethodHandler {
      */
     protected DavisSession getPrincipal(HttpServletRequest request)
             throws IOException {
-        return (DavisSession) request.getAttribute(Davis.PRINCIPAL);
+        return (DavisSession) AuthorizationProcessor.getInstance().getDavisSessionByID((String) request.getSession().getAttribute(Davis.SESSION_ID));
     }
 
     /**

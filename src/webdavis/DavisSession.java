@@ -25,6 +25,7 @@ public class DavisSession implements Serializable{
 	private String sessionID;
 	private String currentRoot;
 	private String currentResource;
+	private int sharedSessionNumber;
 	public void disconnect(){
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
@@ -99,6 +100,7 @@ public class DavisSession implements Serializable{
 	}
 	public DavisSession(){
 		currentRoot=null;
+		sharedSessionNumber=0;
 	}
 	public RemoteFileSystem getRemoteFileSystem() {
 		if (!remoteFileSystem.isConnected()){
@@ -135,6 +137,7 @@ public class DavisSession implements Serializable{
 		buffer.append("{").append(defaultResource).append("}");
 		buffer.append("[").append(homeDirectory).append("]");
 		buffer.append("<").append(currentRoot).append(":").append(currentResource).append(">");
+		buffer.append("(shared session num:").append(sharedSessionNumber).append(")");
 		return buffer.toString();
 	}
 	public String getCurrentRoot() {
@@ -148,5 +151,14 @@ public class DavisSession implements Serializable{
 	}
 	public void setCurrentResource(String currentResource) {
 		this.currentResource = currentResource;
+	}
+	public void increaseSharedNumber() {
+		sharedSessionNumber++;
+	}
+	public void descreaseSharedNumber() {
+		sharedSessionNumber--;
+	}
+	public boolean isShared(){
+		return sharedSessionNumber>0;
 	}
 }

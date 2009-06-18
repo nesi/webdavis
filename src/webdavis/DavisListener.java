@@ -25,22 +25,24 @@ public class DavisListener implements HttpSessionListener {
 
 	public void sessionDestroyed(HttpSessionEvent event) {
 		HttpSession session = event.getSession();
-		Log.log(Log.DEBUG,"session destroyed: "+session.getId());
-		Map sessMap = (Map)session.getAttribute(Davis.CREDENTIALS);
-		if (sessMap==null) return;
-		List creds= new ArrayList(sessMap.values());
-		Log.log(Log.DEBUG,"Going to dump credentials:"+creds);
-		DavisSession davisSession=null;
-		Map contMap;
-		for (int i=0;i<creds.size();i++){
-			davisSession=(DavisSession)creds.get(i);
-			contMap = (Map) session.getServletContext().getAttribute(Davis.CREDENTIALS);
-			if (contMap != null) {
-				Log.log(Log.DEBUG,"Dumping credential cache:"+davisSession.getSessionID());
-				davisSession = (DavisSession) contMap.remove(davisSession.getSessionID());
-			}
-			if (davisSession!=null) davisSession.disconnect();
-		}
+		String sessionID = (String) session.getAttribute(Davis.SESSION_ID);
+		Log.log(Log.DEBUG,"HTTP session to destroy: "+session.getId()+". Davis session to destroy: "+sessionID);
+		AuthorizationProcessor.getInstance().destroy(sessionID);
+//		Map sessMap = (Map)session.getAttribute(Davis.CREDENTIALS);
+//		if (sessMap==null) return;
+//		List creds= new ArrayList(sessMap.values());
+//		Log.log(Log.DEBUG,"Going to dump credentials:"+creds);
+//		DavisSession davisSession=null;
+//		Map contMap;
+//		for (int i=0;i<creds.size();i++){
+//			davisSession=(DavisSession)creds.get(i);
+//			contMap = (Map) session.getServletContext().getAttribute(Davis.CREDENTIALS);
+//			if (contMap != null) {
+//				Log.log(Log.DEBUG,"Dumping credential cache:"+davisSession.getSessionID());
+//				davisSession = (DavisSession) contMap.remove(davisSession.getSessionID());
+//			}
+//			if (davisSession!=null) davisSession.disconnect();
+//		}
 		
 		
 	}

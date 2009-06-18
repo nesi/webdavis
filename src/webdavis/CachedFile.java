@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.File;
 import java.io.IOException;
 
 import edu.sdsc.grid.io.RemoteFile;
@@ -10,6 +11,7 @@ public class CachedFile extends RemoteFile {
 	private boolean isDir;
 	private long lastModified;
 	private boolean canWrite;
+	private String canonicalPath;
 	
 	public CachedFile(RemoteFileSystem rfs, String path, String filename)
 			throws NullPointerException {
@@ -86,5 +88,13 @@ public class CachedFile extends RemoteFile {
 	}
 	public void setCanWriteFlag(boolean canWrite){
 		this.canWrite=canWrite;
+	}
+
+	public String getCanonicalPath() {
+		return getPath()+File.separator+getName();
+	}
+
+	public void setCanonicalPath(String canonicalPath) {
+		this.canonicalPath = canonicalPath;
 	}
 }
