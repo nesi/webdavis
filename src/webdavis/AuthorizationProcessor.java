@@ -487,6 +487,7 @@ public class AuthorizationProcessor {
 				Log.log(Log.DEBUG,"destroying:"+session);
 				session.disconnect();
 				connectionPool.remove(sessionID);
+				Log.log(Log.DEBUG,"num of connections in pool:"+connectionPool.size());
 			}else{
 				Log.log(Log.DEBUG,"connection is being used:"+session);
 			}

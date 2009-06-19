@@ -63,7 +63,7 @@ public class DefaultPutHandler extends AbstractHandler {
         }
         if (length == 0){
         	Log.log(Log.DEBUG, "request.getInputStream().available(): "+request.getInputStream().available());
-        	return;
+//        	return;
         }
         RemoteFile file = getRemoteFile(request, davisSession);
         boolean existsCurrently = file.exists();
@@ -102,28 +102,30 @@ public class DefaultPutHandler extends AbstractHandler {
         InputStream input = request.getInputStream();
         RemoteFileOutputStream outputStream = null;
     	Log.log(Log.DEBUG, "davisSession.getCurrentResource():"+davisSession.getCurrentResource());
-    	try{
-            if (file.getFileSystem() instanceof SRBFileSystem) {
-            	((SRBFile)file).setResource(davisSession.getCurrentResource());
-            	outputStream = new SRBFileOutputStream((SRBFile)file);
-            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-//            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
-            	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
-            	outputStream = new IRODSFileOutputStream((IRODSFile)file);
-            }
-            byte[] buf = new byte[8192];
-            int count;
-//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
-            BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
-            while ((count = input.read(buf)) != -1) {
-//            	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
-                output.write(buf, 0, count);
-            }
-            output.flush();
-            output.close();
-    	}catch (Exception e){
-    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
-    		return;
+    	if (length>0) {
+	    	try{
+	            if (file.getFileSystem() instanceof SRBFileSystem) {
+	            	((SRBFile)file).setResource(davisSession.getCurrentResource());
+	            	outputStream = new SRBFileOutputStream((SRBFile)file);
+	            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+	//            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
+	            	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
+	            	outputStream = new IRODSFileOutputStream((IRODSFile)file);
+	            }
+	            byte[] buf = new byte[8192];
+	            int count;
+	//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
+	            BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
+	            while ((count = input.read(buf)) != -1) {
+	//            	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
+	                output.write(buf, 0, count);
+	            }
+	            output.flush();
+	            output.close();
+	    	}catch (Exception e){
+	    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
+	    		return;
+	    	}
     	}
         response.setStatus(HttpServletResponse.SC_CREATED);
         response.setHeader("Location", getRequestURL(request));
