@@ -70,7 +70,7 @@ public class AuthorizationProcessor {
 		String basicUsername = null;
 		char[] password = null;
 		String domain = davisConfig.getDefaultDomain();
-		String defaultResource;
+		String defaultResource=davisConfig.getDefaultResource();
 		String serverName=davisConfig.getServerName();
 		GSSCredential gssCredential=null;
 		String sessionID=null;
@@ -276,12 +276,13 @@ public class AuthorizationProcessor {
 		if (gssCredential!=null){
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
 				davisSession = new DavisSession();
-				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential);
+				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,"",defaultResource);
 //				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),"","","",davisConfig.getZoneName(),davisConfig.getDefaultResource());
 //				((IRODSAccount)account).setGSSCredential(gssCredential);
 				davisSession.setZone(davisConfig.getZoneName());
 				davisSession.setServerName(davisConfig.getServerName());
 				davisSession.setServerPort(davisConfig.getServerPort());
+				davisSession.setDefaultResource(defaultResource);
 				try {
 					davisSession.setDn(gssCredential.getName().toString());
 				} catch (GSSException e) {
@@ -307,22 +308,24 @@ public class AuthorizationProcessor {
 		}else if (user!=null&&password!=null){
 			Log.log(Log.DEBUG,"login with username/password");
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
-				account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), davisConfig.getDefaultResource());
+				account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), defaultResource);
 				davisSession = new DavisSession();
 				davisSession.setServerName(davisConfig.getServerName());
 				davisSession.setServerPort(davisConfig.getServerPort());
 				davisSession.setAccount(user);
 				davisSession.setZone(davisConfig.getZoneName());
+				davisSession.setDefaultResource(defaultResource);
 			}else{
 				account = new SRBAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user,
 						new String(password), "/" + davisConfig.getZoneName() + "/home/" + user + "."
-								+ domain, domain, davisConfig.getDefaultResource());
+								+ domain, domain, defaultResource);
 				davisSession = new DavisSession();
 				davisSession.setServerName(davisConfig.getServerName());
 				davisSession.setDomain(domain);
 				davisSession.setServerPort(davisConfig.getServerPort());
 				davisSession.setAccount(user);
 				davisSession.setZone(davisConfig.getZoneName());
+				davisSession.setDefaultResource(defaultResource);
 			}
 		}
 		
