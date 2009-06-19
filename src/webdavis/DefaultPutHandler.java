@@ -102,16 +102,16 @@ public class DefaultPutHandler extends AbstractHandler {
         InputStream input = request.getInputStream();
         RemoteFileOutputStream outputStream = null;
     	Log.log(Log.DEBUG, "davisSession.getCurrentResource():"+davisSession.getCurrentResource());
-    	if (length>0) {
-	    	try{
-	            if (file.getFileSystem() instanceof SRBFileSystem) {
-	            	((SRBFile)file).setResource(davisSession.getCurrentResource());
-	            	outputStream = new SRBFileOutputStream((SRBFile)file);
-	            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-	//            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
-	            	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
-	            	outputStream = new IRODSFileOutputStream((IRODSFile)file);
-	            }
+    	try{
+            if (file.getFileSystem() instanceof SRBFileSystem) {
+            	((SRBFile)file).setResource(davisSession.getCurrentResource());
+            	outputStream = new SRBFileOutputStream((SRBFile)file);
+            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+//            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
+            	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
+            	outputStream = new IRODSFileOutputStream((IRODSFile)file);
+            }
+        	if (length>0) {
 	            byte[] buf = new byte[8192];
 	            int count;
 	//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
@@ -122,10 +122,11 @@ public class DefaultPutHandler extends AbstractHandler {
 	            }
 	            output.flush();
 	            output.close();
-	    	}catch (Exception e){
-	    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
-	    		return;
-	    	}
+        	}
+        	if (outputStream!=null) outputStream.close();
+    	}catch (Exception e){
+    		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Resource not accessible.");
+    		return;
     	}
         response.setStatus(HttpServletResponse.SC_CREATED);
         response.setHeader("Location", getRequestURL(request));
