@@ -259,7 +259,13 @@ public class Davis extends HttpServlet {
 				}
 				String sharedToken=request.getHeader(config.getSharedTokenHeaderName());
 				String commonName=request.getHeader(config.getCommonNameHeaderName());
-				if (shibCookieNum>0) davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName);
+				String shibSessionID=request.getHeader("Shib-Session-ID");
+				if (shibCookieNum>0) davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID);
+			}
+			if (davisSession==null){
+				response.sendError(HttpServletResponse.SC_FORBIDDEN, "Shibboleth login failed.");
+				response.flushBuffer();
+				return;
 			}
 		}else if (authorization != null){
 			davisSession=authorizationProcessor.getDavisSession(authorization);
@@ -454,6 +460,7 @@ public class Davis extends HttpServlet {
 		// Log.log(Log.DEBUG, "Closing HTTP connection.");
 		// response.setHeader("Connection", "close");
 		// }
+		response.sendError(HttpServletResponse.SC_UNAUTHORIZED,"Login failed.");
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 		response.flushBuffer();
 	}

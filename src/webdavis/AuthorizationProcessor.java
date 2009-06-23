@@ -49,25 +49,24 @@ public class AuthorizationProcessor {
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
-		return login(authorization, null, null);
+		return login(authorization, null, null, null);
 		
 	}
-	public DavisSession getDavisSession(String sharedToken, String commonName){
-		String sessionID = sharedToken + "*shib";
+	public DavisSession getDavisSession(String sharedToken, String commonName, String shibSessionID){
+		String sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
 		Log.log(Log.DEBUG, "trying to get session for shib auth(http). sessionID:"+sessionID);
 		DavisSession davisSession=connectionPool.get(sessionID);
 		if (davisSession!=null){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
-		return login(null, sharedToken, commonName);
+		return login(null, sharedToken, commonName, shibSessionID);
 	}
 	
-	private DavisSession login(String authorization, String sharedToken, String commonName){
+	private DavisSession login(String authorization, String sharedToken, String commonName, String shibSessionID){
 		
 		String idpName = null;
 		String user = null;
-		String basicUsername = null;
 		char[] password = null;
 		String domain = davisConfig.getDefaultDomain();
 		String defaultResource=davisConfig.getDefaultResource();
@@ -75,12 +74,13 @@ public class AuthorizationProcessor {
 		GSSCredential gssCredential=null;
 		String sessionID=null;
 		if (sharedToken!=null&&commonName!=null){
-			sessionID = sharedToken + "*shib";
+			sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
 			ShibUtil shibUtil=new ShibUtil();
 			Map result;
 			if (sharedToken!=null&&commonName!=null&&(result=shibUtil.passInShibSession(sharedToken,commonName))!=null){  //found shib session, get username/password
 				user=(String) result.get("username");
 				password=(char[]) result.get("password");
+				Log.log(Log.DEBUG,"shibUtil got user "+user+" and generated a new password.");
 			}
 		}else if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) {
 			sessionID=SimpleMD5.MD5(authorization) + "*basic";
@@ -97,7 +97,6 @@ public class AuthorizationProcessor {
 			int index = authInfo.indexOf(':');
 			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
 			password = (index != -1) ? authInfo.substring(index + 1).toCharArray() : "".toCharArray();
-			basicUsername = user;
 
 			if ((index = user.indexOf('\\')) != -1
 					|| (index = user.indexOf('/')) != -1) {
