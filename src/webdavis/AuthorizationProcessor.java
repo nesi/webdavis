@@ -388,7 +388,7 @@ public class AuthorizationProcessor {
 					+ " zone=" + davisSession.getZone());
 		} catch (Exception e) {
 			e.printStackTrace();
-			Log.log(Log.DEBUG, "Authentication failed.");
+			Log.log(Log.WARNING, "Authentication failed.");
 			return null;
 		}
 		if (davisSession!=null){
@@ -489,7 +489,7 @@ public class AuthorizationProcessor {
 				Log.log(Log.DEBUG,"destroying:"+session);
 				session.disconnect();
 				connectionPool.remove(sessionID);
-				Log.log(Log.DEBUG,"num of connections in pool:"+connectionPool.size());
+				Log.log(Log.INFORMATION,"num of connections in pool:"+connectionPool.size());
 			}else{
 				Log.log(Log.DEBUG,"connection is being used:"+session);
 			}

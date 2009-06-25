@@ -26,7 +26,7 @@ public class DavisListener implements HttpSessionListener {
 	public void sessionDestroyed(HttpSessionEvent event) {
 		HttpSession session = event.getSession();
 		String sessionID = (String) session.getAttribute(Davis.SESSION_ID);
-		Log.log(Log.DEBUG,"HTTP session to destroy: "+session.getId()+". Davis session to destroy: "+sessionID);
+		Log.log(Log.INFORMATION,"HTTP session to destroy: "+session.getId()+". Davis session to destroy: "+sessionID);
 		AuthorizationProcessor.getInstance().destroy(sessionID);
 //		Map sessMap = (Map)session.getAttribute(Davis.CREDENTIALS);
 //		if (sessMap==null) return;

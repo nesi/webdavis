@@ -750,7 +750,7 @@
 
     <init-param>
         <param-name>webdavis.Log.threshold</param-name>
-        <param-value>DEBUG</param-value>
+        <param-value>WARNING</param-value>
     </init-param>
 
 <!--

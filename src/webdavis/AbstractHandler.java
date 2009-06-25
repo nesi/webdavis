@@ -212,7 +212,7 @@ public abstract class AbstractHandler implements MethodHandler {
           }
       }
       if (index == -1) {
-          Log.log(Log.DEBUG, "Specified URL is not under this context.");
+          Log.log(Log.ERROR, "Specified URL is not under this context.");
           return null;
       }
       index += base.length();
@@ -221,7 +221,7 @@ public abstract class AbstractHandler implements MethodHandler {
       String result=unescape(httpUrl, charset);
 //      Log.log(Log.DEBUG, "before Conversion, httpUrl = \"{0}\".", httpUrl);
 //      String result = URLDecoder.decode( httpUrl, charset );
-      Log.log(Log.DEBUG, "Converted to path \"{0}\".", result);
+      Log.log(Log.INFORMATION, "Converted to path \"{0}\".", result);
       return result;
 //		if (result.indexOf("~")>-1) {
 //			System.out.println(request.getContextPath());
@@ -269,7 +269,7 @@ public abstract class AbstractHandler implements MethodHandler {
             Log.log(Log.DEBUG,"uri(b4 changing home dir,~):'"+uri+"'");
     		if (uri.startsWith("/~")) {
     			uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
-    			Log.log(Log.DEBUG,"changed path to '"+uri+"'");
+    			Log.log(Log.INFORMATION,"changed path to '"+uri+"'");
     		}
             if (rfs instanceof SRBFileSystem){
             	file=new SRBFile((SRBFileSystem) rfs,uri);
@@ -341,7 +341,7 @@ public abstract class AbstractHandler implements MethodHandler {
     		if (uri.startsWith("/~")) {
                 Log.log(Log.DEBUG,"uri(b4 changing home dir,~):"+uri);
 				uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
-				Log.log(Log.DEBUG,"changed path to "+uri);
+				Log.log(Log.INFORMATION,"changed path to "+uri);
 			}
     		Log.log(Log.DEBUG,"uri: "+uri);
             
@@ -375,7 +375,7 @@ public abstract class AbstractHandler implements MethodHandler {
 //        if (exists) return utf8;
         if (file != null) {
             if (exception != null) {
-                Log.log(Log.DEBUG, exception);
+                Log.log(Log.ERROR, exception);
                 throw exception;
             }
             return file;
@@ -388,7 +388,7 @@ public abstract class AbstractHandler implements MethodHandler {
 //            return utf8;
 //        }
         if (exception != null) {
-            Log.log(Log.DEBUG, exception);
+            Log.log(Log.ERROR, exception);
             throw exception;
         }
         Log.log(Log.WARNING, "Returning null RemoteFile (shouldn't happen).");
@@ -411,7 +411,7 @@ public abstract class AbstractHandler implements MethodHandler {
             	file=new IRODSFile((IRODSFileSystem) rfs,path);
             }
         } catch (Exception ex) {
-            Log.log(Log.DEBUG, ex);
+            Log.log(Log.ERROR, ex);
             throw new IOException(ex.getMessage());
        }
        return file;
@@ -475,7 +475,7 @@ public abstract class AbstractHandler implements MethodHandler {
         } catch (IOException ex) {
             String message = DavisUtilities.getResource(AbstractHandler.class,
                     "cantCreateSmbFile", new Object[] { ex }, null);
-            Log.log(Log.DEBUG, message + "\n{0}", ex);
+            Log.log(Log.ERROR, message + "\n{0}", ex);
             throw new IOException(message);
         }
     }
@@ -868,7 +868,7 @@ public abstract class AbstractHandler implements MethodHandler {
                     list = new StringBuffer();
                 } else {
                     int result = processNoTagList(list.toString().trim(),
-                            request, getRelativeSmbFile(request, file,
+                            request, getRelativeFile(request, file,
                                     resource.toString().trim()));
                     list.setLength(0);
                     resource.setLength(0);
@@ -901,10 +901,10 @@ public abstract class AbstractHandler implements MethodHandler {
         }
         if (inList || inResource || inQuote) throw new IllegalStateException();
         return processNoTagList(list.toString().trim(), request,
-                getRelativeSmbFile(request, file, resource.toString().trim()));
+                getRelativeFile(request, file, resource.toString().trim()));
     }
 
-    private RemoteFile getRelativeSmbFile(HttpServletRequest request, RemoteFile base,
+    private RemoteFile getRelativeFile(HttpServletRequest request, RemoteFile base,
             String httpUrl) throws IOException {
     	RemoteFile file = null;
         IOException exception = null;

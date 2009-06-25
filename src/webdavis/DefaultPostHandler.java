@@ -94,7 +94,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		RemoteFile file = getRemoteFile(request, davisSession);
 		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
 		if (!file.exists()) {
-			Log.log(Log.DEBUG, "File does not exist.");
+			Log.log(Log.WARNING, "File does not exist.");
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
 			return;
 		}
@@ -564,13 +564,13 @@ public class DefaultPostHandler extends AbstractHandler {
 	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 	                        boolean existsCurrently = file.exists();
 	                        if (existsCurrently && !file.isFile()) {
-	                        	Log.log(Log.DEBUG, file.getAbsolutePath()+" already exists on server");
+	                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
 	            	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"File already exists\"}</textarea></body></html>");
 	                        } else {	                        
 		                		if (davisSession.getCurrentResource() == null) 
 		                			davisSession.setCurrentResource(davisSession.getDefaultResource());
 		                        RemoteFileOutputStream stream = null;
-		                    	Log.log(Log.DEBUG, "putting file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
+		                    	Log.log(Log.DEBUG, "saving file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
 		                        if (file.getFileSystem() instanceof SRBFileSystem) {
 		                        	((SRBFile)file).setResource(davisSession.getCurrentResource());
 		                        	stream = new SRBFileOutputStream((SRBFile)file);

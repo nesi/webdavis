@@ -91,7 +91,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
         int depth = DavisUtilities.parseDepth(request.getHeader("Depth"));
         RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
-        	Log.log(Log.DEBUG, file.getAbsolutePath()+" not exists!");
+        	Log.log(Log.ERROR, file.getAbsolutePath()+" not exists!");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }

@@ -286,7 +286,7 @@ public class Davis extends HttpServlet {
 			session.setAttribute(SESSION_ID, davisSession.getSessionID());
 			davisSession.increaseSharedNumber();
 		}
-		Log.log(Log.DEBUG, "Final davisSession: " + davisSession);
+		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
 
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {

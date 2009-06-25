@@ -211,7 +211,7 @@ public class DefaultGetHandler extends AbstractHandler {
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         if (!file.exists()) {
-            Log.log(Log.DEBUG, "File does not exist.");
+            Log.log(Log.WARNING, "File does not exist.");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
 //response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
 //ServletOutputStream output = response.getOutputStream();
@@ -231,7 +231,7 @@ public class DefaultGetHandler extends AbstractHandler {
             StringBuffer redirect = new StringBuffer(requestUrl).append("/");
             String query = request.getQueryString();
             if (query != null) redirect.append("?").append(query);
-            Log.log(Log.DEBUG, "Redirecting to \"{0}\".", redirect);
+            Log.log(Log.INFORMATION, "Redirecting to \"{0}\".", redirect);
             response.sendRedirect(redirect.toString());
             return;
         }
@@ -409,7 +409,7 @@ public class DefaultGetHandler extends AbstractHandler {
             }
             output.flush();
         }catch (Exception _e){
-        	Log.log(Log.DEBUG, "remote peer is closed");
+        	Log.log(Log.WARNING, "remote peer is closed");
         }
         input.close();
     }

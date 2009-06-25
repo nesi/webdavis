@@ -62,6 +62,7 @@ public class DefaultPutHandler extends AbstractHandler {
             return;
         }
         if (length == 0){
+        	Log.log(Log.INFORMATION, "content length = 0");
         	Log.log(Log.DEBUG, "request.getInputStream().available(): "+request.getInputStream().available());
 //        	return;
         }
@@ -108,7 +109,7 @@ public class DefaultPutHandler extends AbstractHandler {
             	outputStream = new SRBFileOutputStream((SRBFile)file);
             }else if (file.getFileSystem() instanceof IRODSFileSystem) {
 //            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
-            	Log.log(Log.DEBUG, "putting file into res:"+((IRODSFile)file).getResource());
+            	Log.log(Log.DEBUG, "saving file into res:"+((IRODSFile)file).getResource());
             	outputStream = new IRODSFileOutputStream((IRODSFile)file);
             }
         	if (length>0) {
