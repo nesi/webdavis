@@ -123,7 +123,7 @@
 	dojo.require("dojo.io.iframe");
 	dojo.require("dijit.ProgressBar");
 	
-    var layout1= [{
+    var metadataLayout= [{
 			defaultCell: { editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'  },
 			rows: [
         { field: "name", width: "150px", name: "Name", editable: true},
@@ -134,22 +134,65 @@
         ]}
     ];
 
-    var layout2= [
+    var permissionsLayout= [
         { field: "username", width: "200px", name: "Username"},
         <xsl:if test="$servertype='srb'">
         { field: "domain", width: "200px", name: "Domain"},
         </xsl:if>
         { field: "permission", width: "auto", name: "Permission"}
     ];
-	var model2 = new dojox.grid.data.Table(null, []);
-	var store1=new dojo.data.ItemFileWriteStore("{data: []}");
-	var store2=new dojo.data.ItemFileWriteStore("{data: []}");
-	var store3=new dojo.data.ItemFileWriteStore("{data: []}");
-	var store4=new dojo.data.ItemFileWriteStore("{data: []}");
+    
+    var layoutReplicas= [
+    	{ field: "resource", width: "150px", name: "Resource"},
+     	{ field: "number", width: "auto", name: "Replica Number"}
+    ];
+    
+//	var model2 = new dojox.grid.data.Table(null, []);
+	var metadataStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+	var permissionsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+	var domainsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+	var usersStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+	var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 	var server_url;
-	var ori_url;
+	var ori_url; // Used in getDomains for getting user list
 	var uploadInProgress = false;
+		
+	function resetPermissionsStore() {
+		permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
+		permissionGrid.setStore(permissionsStore);	
+	}
 	
+	function resetMetadataStore() {
+		metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
+		metadataGrid.setStore(metadataStore);
+	}
+	
+	function resetReplicasStore() { 
+		replicasStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
+		replicasGrid.setStore(replicasStore);  
+	}
+	
+	var cursorCount = 0;
+
+	function setCursor(busy, force) {
+		document.body.style.cursor = busy ? 'wait' : 'default';
+		if (force)
+			cursorCount = 0;
+	}
+	
+	function cursorBusy(busy) {
+		if (busy) {
+			cursorCount++
+			setCursor(true, false);
+		} else {
+			cursorCount--
+			if (cursorCount &lt; 0)
+				cursorCount = 0;
+			if (cursorCount == 0)
+				setCursor(false, false);
+		}
+	}
+
 	function getDomains(urlString){
 	  	dojo.xhrPost({
     		url: urlString,
@@ -157,9 +200,9 @@
       
 //				console.dir(formDomain);  // Dump it to the console
 //         		console.dir(responseObject.items[0].username);  // Prints username     			
-				store3=new dojo.data.ItemFileWriteStore({data: responseObject});
+				domainsStore=new dojo.data.ItemFileWriteStore({data: responseObject});
 				var formDomainObj = dijit.byId('formDomain');
-				formDomainObj.store=store3;
+				formDomainObj.store=domainsStore;
 				formDomainObj.onChange=function(val){
 //					alert(server_url);
 					dijit.byId('formUsername').textbox.value = "";
@@ -168,7 +211,7 @@
 //					console.dir(formDomainObj.item);
 				}
 //				alert("xx");
-//      			formDomain.setStore(store3);
+//      			formDomain.setStore(domainsStore);
 //       			return responseObject;
     		},
     		error: function(response, ioArgs){
@@ -185,9 +228,9 @@
       
 //				console.dir(formDomain);  // Dump it to the console
 //         		console.dir(responseObject.items[0].username);  // Prints username     			
-				store4=new dojo.data.ItemFileWriteStore({data: responseObject});
+				usersStore=new dojo.data.ItemFileWriteStore({data: responseObject});
 				var formUsernameObj = dijit.byId('formUsername');
-				formUsernameObj.store=store4;
+				formUsernameObj.store=usersStore;
     		},
     		error: function(response, ioArgs){
       			alert("Error when loading domain list.");
@@ -229,8 +272,8 @@
       
 //				console.dir(responseObject);  // Dump it to the console
 //         		console.dir(responseObject.items[0].username);  // Prints username     			
-				store1=new dojo.data.ItemFileWriteStore({data: responseObject});
-				metadataGrid.setStore(store1);
+				metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+				metadataGrid.setStore(metadataStore);
       			
 //       			return responseObject;
     		},
@@ -242,8 +285,8 @@
   		});
 	}
 	function populatePermission(perms){
-		store2=new dojo.data.ItemFileWriteStore({data: perms});
-		permissionGrid.setStore(store2);
+		permissionsStore=new dojo.data.ItemFileWriteStore({data: perms});
+		permissionGrid.setStore(permissionsStore);
 //		alert(perms.sticky);
 		if (perms.sticky!=null){
 			if (perms.sticky=="true"){
@@ -261,15 +304,15 @@
 		var metadata_url = "";
 		if (batch) {
 //			loadMetadataFromServer(server_url); // Default metadata is taken from current directory
-			store1=new dojo.data.ItemFileWriteStore({data: {items:[]}}); // Default metadata is empty
-			metadataGrid.setStore(store1);
+			resetMetadataStore();
+
 		} else {
 			metadata_url = url+"/"+getFirstCheckedItem()+"?method=metadata";
 			loadMetadataFromServer(metadata_url);
 		}
-		dijit.byId('dialog1').attr("url", metadata_url);
+		dijit.byId('dialogMetadata').attr("url", metadata_url);
 		dojo.byId('metadataRefreshButton').disabled=batch;  // Don't want the refresh button active in batch mode
-		dijit.byId('dialog1').show();
+		dijit.byId('dialogMetadata').show();
 	}
 	function refreshMetadata(url){
 		loadMetadataFromServer(url);
@@ -286,7 +329,7 @@
 //		}
 //		server_url=url+"?method=permission";
 //		getPermission(server_url);
-//		dijit.byId('dialog2').show();
+//		dijit.byId('dialogPermissions').show();
 //	}
 	function getPermissions(url, batch){
 		ori_url=url;
@@ -303,13 +346,85 @@
 		}
 		if (!batch)
 			getPermission(sourceURL+"?method=permission");
-		else {
-			store2=new dojo.data.ItemFileWriteStore({data: {items:[]}});	// Default perms are empty
-			permissionGrid.setStore(store2);	
-		}
+		else 
+			resetPermissionsStore();
 		server_url=url+"?method=permission";
-		dijit.byId('dialog2').show();
+		dijit.byId('dialogPermissions').show();
 	}
+	function getReplicas(url, action){
+		cursorBusy(true);	
+		server_url = url+"/"+getFirstCheckedItem()+"?method=replicas"+action;
+	  	dojo.xhrPost({
+    		url: server_url,
+    		load: function(responseObject, ioArgs){    
+				replicasStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+				replicasGrid.setStore(replicasStore);  
+				loadResourcesFromServer(url);
+ 				cursorBusy(false);
+       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error while fetching replicas: "+errorMessage("replicas", response));
+       			cursorBusy(false);
+      			return response;
+    		},
+ //   		sync: true,
+    		handleAs: "json"
+  		});
+	}
+	function loadResourcesFromServer(url){
+		var server_url = url+"/"+getFirstCheckedItem()+"?method=resources";
+		cursorBusy(true);	
+		dojo.byId('replicasStatusField').innerHTML='Fetching list of resources from server...';
+	  	dojo.xhrPost({
+    		url: server_url,
+    		load: function(responseObject, ioArgs){    
+				var resources = responseObject.items;
+				replicasStore.fetch({
+					onComplete: 
+						function(items, request){
+							for (var i = 0; i &lt; resources.length; i++) {
+								var resourceName = resources[i].name;
+								var found = false;
+								for (var j = 0; j &lt; items.length; j++) {	
+									var replicaName = replicasStore.getValue(items[j], "resource");
+									if (replicaName == resourceName) {
+										found = true;
+										break;
+									}
+								}
+								if (!found) {
+									var newItem = {resource: resourceName, number: null};
+									replicasStore.newItem(newItem);
+								}
+							}
+						}
+				});
+				cursorBusy(false);
+				dojo.byId('replicasStatusField').innerHTML='';
+       			return responseObject;
+    		},
+    		error: function(response, ioArgs){
+      			alert("Error while fetching resources: "+errorMessage("resources", response));
+      			cursorBusy(false);
+ 				dojo.byId('replicasStatusField').innerHTML='';
+      			return response;
+    		},
+//    		sync: true,
+    		handleAs: "json"
+  		});
+	}
+	
+	function deleteReplica() {
+		var resource = replicasStore.getValue(replicasGrid.selection.getFirstSelected(), "resource");
+		getReplicas('<xsl:value-of select="$url"/>', "&amp;delete="+resource);
+	}
+	
+	function replicate() {
+		var resource = replicasStore.getValue(replicasGrid.selection.getFirstSelected(), "resource");
+		getReplicas('<xsl:value-of select="$url"/>', "&amp;replicate="+resource);
+	}
+	
 	function savePermission(){
 		if (checkedItemsCount() == 0)
 			return;
@@ -352,7 +467,7 @@
 	function getSelectedPermission(e){
 		//console.dir(e.rowIndex);
 		//console.dir(permissionGrid.getItem(e.rowIndex).username);
-		//console.dir(store2.items[e.rowIndex]);
+		//console.dir(permissionsStore.items[e.rowIndex]);
 		//console.dir(dojo.byId("formUsername").value);
 		dojo.byId("formUsername").value=permissionGrid.getItem(e.rowIndex).username;
 		dojo.byId("formDomain").value=permissionGrid.getItem(e.rowIndex).domain;
@@ -372,8 +487,8 @@
         var myNewItem = {name: "name", value: "value", unit: "unit"};
         </xsl:if>
         // Insert the new item into the store:
-        // (we use store3 from the example above in this example)
-        store1.newItem(myNewItem);
+        // (we use domainsStore from the example above in this example)
+        metadataStore.newItem(myNewItem);
 	}
 	function delMetadata(){
         // Get all selected items from the Grid:
@@ -385,7 +500,7 @@
             dojo.forEach(items, function(selectedItem) {
                 if(selectedItem !== null) {
                     // Delete the item from the data store:
-                    store1.deleteItem(selectedItem);
+                    metadataStore.deleteItem(selectedItem);
                 } // end if
             }); // end forEach
         } // end if
@@ -422,8 +537,8 @@
       
 //				console.dir(responseObject);  // Dump it to the console
 //         		console.dir(responseObject.items[0].username);  // Prints username     			
-				store1=new dojo.data.ItemFileWriteStore({data: responseObject});
-				metadataGrid.setStore(store1);
+				metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+				metadataGrid.setStore(metadataStore);
       			
 //       			return responseObject;
     		},
@@ -454,7 +569,7 @@
 		
  	function uploadFile(url){ 		
 		server_url="?method=upload";
-		dojo.byId('statusField').innerHTML = "Uploading...";
+		dojo.byId('uploadStatusField').innerHTML = "Uploading...";
 		uploadInProgress = true;
 	
 		dojo.io.iframe.send({
@@ -486,7 +601,7 @@
 			dijit.byId('dialogUpload').hide();
 		else {
 			uploadInProgress = false;
-			dojo.byId('statusField').innerHTML = "Canceling...";
+			dojo.byId('uploadStatusField').innerHTML = "Canceling...";
 			window.location.reload();
 		}
 	}
@@ -633,6 +748,16 @@
 		getPermissions(currentURL, (checkedCount > 1));				
 	}
 		
+	function showReplicas(currentURL) {
+		var checkedCount = checkedItemsCount();
+		if (checkedCount != 1)
+			return;
+		resetReplicasStore();
+		dojo.byId('replicasStatusField').innerHTML='Loading...';
+		dijit.byId('dialogReplicas').show();
+		getReplicas(currentURL, "");
+	}
+	
 	function setToggleButtonState(state) {
 		var button = dojo.byId('toggleAllButton');
 		button.value = state ? "Select all" : "Select none";
@@ -645,12 +770,21 @@
 	
 	function refreshButtons() {
 		dojo.byId('renameButton').disabled = checkedItemsCount() != 1;
+		dojo.byId('replicasButton').disabled = checkedItemsCount() != 1;
 		dojo.byId('deleteButton').disabled = checkedItemsCount() == 0;
 		dojo.byId('metadataButton').disabled = checkedItemsCount() == 0;
 		dojo.byId('accessControlButton').disabled = checkedItemsCount() == 0;
-		var button = dojo.byId('restoreButton');
-		if (button != null)
-			button.disabled = checkedItemsCount() == 0;
+		if (replicasGrid.selection.getSelectedCount() == 0) {
+			dojo.byId('replicasDeleteButton').disabled = true;
+			dojo.byId('replicasReplicateButton').disabled = true;
+		} else {
+			var item = replicasGrid.selection.getFirstSelected();
+			var isReplica = replicasStore.getValue(item, "number") != null;
+			dojo.byId('replicasDeleteButton').disabled = !isReplica;
+			dojo.byId('replicasReplicateButton').disabled = isReplica;			
+		}
+		if (dojo.byId('restoreButton') != null)
+			dojo.byId('restoreButton').disabled = checkedItemsCount() == 0;
 	}
 		
 	function toggleAll() {
@@ -674,22 +808,23 @@
 		return '<xsl:value-of select="$url"/>'.indexOf('<xsl:value-of select="$trash"/>') == 0;
 	}
 	
-	function errorMessage(method, message) {
-		message = ""+message; // Convert to string
-//alert("analysing "+message+" for method "+method);
-		var i = message.indexOf(' status:');
-		if (i &lt; 0)
+	function errorMessage(method, messageObject) {
+		var code = messageObject.status;
+		var message = messageObject.message;
+		if (code &lt; 0)
 			return message;
-		var code = message.substring(i+8, message.length);
-//alert("code="+code);
 		switch(code) {
-			case "403":	switch(method) {
+			case 0:		switch(method) {
+							case "replicas": return "replicate failed";
+							default: return message;
+						}
+			case 403:	switch(method) {
 							//case "move": 
 							//case "copy": return "source and destination URI are the same";
 							default: return "refused";
 					  	}
-			case "405":	return "path already exists";
-			case "412": return "destination already exists";
+			case 405:	return "path already exists";
+			case 412: 	return "destination already exists";
 			default: 	return message;
 		}
 	}
@@ -753,36 +888,36 @@
             		File to upload:
             		<input type="file" name="uploadFileName" id="formUpload"/>
             		</form>
-					<div id="statusField"></div>
+					<div id="uploadStatusField"></div>
 					<br/>
 					<div style="text-align: right;">
 						<button id="uploadStartButton" onclick="uploadStartButton.disabled=true; uploadFile();">Upload</button> 
 						<button id="uploadCancelButton" onclick="uploadCancelButton.disabled=true; uploadCancel();">Cancel</button>
 					</div>
 				</div>					
-            	<div dojoType="dijit.Dialog" id="dialog1" title="Metadata">
+            	<div dojoType="dijit.Dialog" id="dialogMetadata" title="Metadata">
 				<table>
 					<tr>
 						<td>
-        					<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialog1').attr('url'))">Refresh</button>
+        					<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialogMetadata').attr('url'))">Refresh</button>
         					<button onclick="addMetadata()">Add Metadata</button>
         					<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
         					<button onclick="saveMetadata()">Save</button>
-        					<button onclick="dijit.byId('dialog1').hide()">Cancel</button>
+        					<button onclick="dijit.byId('dialogMetadata').hide()">Cancel</button>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="layout1"></div>
+							<div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="metadataLayout"></div>
 						</td>
 					</tr>
 				</table>
 				</div>
-				<div dojoType="dijit.Dialog" id="dialog2" title="Permissions">
+				<div dojoType="dijit.Dialog" id="dialogPermissions" title="Permissions">
 				<table>
 					<tr>
-						<td width="600px">   <!-- dojoType="" structure="layout2" dojox.Grid store="store2"-->
-							<div id="permissionGrid"  structure="layout2" dojoType="dojox.grid.DataGrid" jsId="permissionGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
+						<td width="600px">   <!-- dojoType="" structure="permissionsLayout" dojox.Grid store="permissionsStore"-->
+							<div id="permissionGrid"  structure="permissionsLayout" dojoType="dojox.grid.DataGrid" jsId="permissionGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
 						</td>
 						<td valign="top">
 							<table>
@@ -792,12 +927,12 @@
 								<xsl:if test="$servertype='srb'">
 								<tr>
 									<td>Domain</td>
-									<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store3"/></td>
+									<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="domainsStore"/></td>
 								</tr>
 								</xsl:if>
 								<tr>
 									<td>Username</td>
-									<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="store4"/></td>
+									<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="usersStore"/></td>
 								</tr>
 								<tr>
 									<td>Permission</td>
@@ -822,10 +957,29 @@
 								<tr>
 									<td rowspan="2" align="center">
 										<button onclick="savePermission()">Apply</button>
-										<button onclick="dijit.byId('dialog2').hide();">Cancel</button>
+										<button onclick="dijit.byId('dialogPermissions').hide()">Cancel</button>
 									</td>
 								</tr>
 							</table>
+						</td>
+					</tr>
+				</table>
+				</div>
+				<div dojoType="dijit.Dialog" id="dialogReplicas" title="Replicas" onCancel="setCursor(false, true)">
+				<table>
+					<tr>
+						<td width="300px">
+							<div id="replicasGrid" structure="layoutReplicas" dojoType="dojox.grid.DataGrid" jsId="replicasGrid" selectionMode="single" loadingMessage="loading" autoHeight="true" onClick="refreshButtons()"></div>
+						</td>
+						<td valign="top">
+							<button id="replicasDeleteButton" style="width:100%" onclick="deleteReplica()">Delete</button><br/>
+							<button id="replicasReplicateButton" style="width:100%" onclick="replicate()">Replicate</button><br/>
+							<button style="width:100%" onclick="dijit.byId('dialogReplicas').hide()">Cancel</button><br/>	
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div id="replicasStatusField"></div>
 						</td>
 					</tr>
 				</table>
@@ -853,7 +1007,7 @@
                 </p>
 <!-- 
 					<button onclick="alert('href={$href}\n trash={$trash}\n url={$url}\n unc={$unc}\n home={$home}\n parent={$parent}')">Debug</button>
--->               
+ -->               
                 <button id="toggleAllButton" onclick="toggleAll(); refreshButtons()" value="Select all">Select all</button>
                 &#160;&#160;
                 <xsl:choose>
@@ -870,7 +1024,8 @@
  <!-- -->
 			    <button id="renameButton" onclick="dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()" disabled="true">Rename</button>
 			    <button id="metadataButton" onclick="showMetadata('{$url}')" disabled="true">Metadata</button>
-			    <button id="accessControlButton" onclick="showPermissions('{$url}')" disabled="true">Access Control</button><br/> 
+			    <button id="accessControlButton" onclick="showPermissions('{$url}')" disabled="true">Access Control</button> 
+			    <button id="replicasButton" onclick="showReplicas('{$url}')" disabled="true">Replicas</button><br/>
 			    <form name="childrenform">  
 					<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
                 	<table border="0" cellpadding="0" cellspacing="0">
@@ -916,7 +1071,7 @@
              		<br/>
              		<form name="mainToolbar">
              			<input type="button" value="Create Directory" onClick="dijit.byId('dialogCreateDir').show()"/>
-              			<input type="button" value="Upload File" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('statusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
+              			<input type="button" value="Upload File" onClick="uploadCancelButton.disabled=false; uploadStartButton.disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"/>
                  		&#160;&#160;&#160;&#160;
 						<select name="location">
 							<option value="{$home}">Home</option>

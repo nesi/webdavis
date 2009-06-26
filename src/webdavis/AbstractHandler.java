@@ -1003,8 +1003,11 @@ public abstract class AbstractHandler implements MethodHandler {
     }
 
     protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
+    	return getFileList(request, davisSession, fileList, null);
+    }
+    
+    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList, JSONObject object) throws IOException, ServletException {
     	
-//    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
     	boolean batch = false;
     	RemoteFile uriFile = getRemoteFile(request, davisSession);
         if (request.getContentLength() <= 0) {
@@ -1018,8 +1021,9 @@ public abstract class AbstractHandler implements MethodHandler {
 	        Log.log(Log.DEBUG, "received file list: " + new String(buf));
 
 			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			JSONObject jsonObject = null;
 			if (jsonArray != null) {	
-				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+				jsonObject = (JSONObject)jsonArray.get(0);
 				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
 				for (int i = 0; i < fileNamesArray.size(); i++) {
 					String name = (String)fileNamesArray.get(i);
@@ -1029,8 +1033,9 @@ public abstract class AbstractHandler implements MethodHandler {
 				}
 			} else
 				throw new ServletException("Internal error deleting file: error parsing JSON");
+			if (object != null)
+				object.putAll(jsonObject);
 		}
-//        return fileList;
         return batch;
     }
 

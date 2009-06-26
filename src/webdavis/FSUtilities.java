@@ -114,63 +114,44 @@ public class FSUtilities {
 	  }
 	
 	 
-	 public static String[] getIRODSResources(IRODSFileSystem fs) throws IOException {
-		 return getIRODSResources(fs,((IRODSAccount)fs.getAccount()).getZone());
-	 }
-	 public static String[] getIRODSResources(IRODSFileSystem fs, String currentZone) throws IOException {
-			MetaDataRecordList[] recordList = null;
-			Log.log(Log.DEBUG, "getting res for "+currentZone+" from "+fs);
-			try {
-				recordList = fs
-							.query(
-									new MetaDataCondition[] {
-//									        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCESS_PRIVILEGE,
-//									  	          MetaDataCondition.LIKE, "%write%" ),
-//									  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_NAME,
-//									  	          MetaDataCondition.EQUAL, fs.getUserName()),
-//									  	        MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN,
-//									  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
-//									  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
-//									  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
-											
-											MetaDataSet
-											.newCondition(
-													IRODSMetaDataSet.RESOURCE_ZONE,
-													MetaDataCondition.EQUAL,
-													currentZone) 
-													},
-									new MetaDataSelect[] { MetaDataSet
-											.newSelection(IRODSMetaDataSet.RESOURCE_NAME) });
-//				recordList = fs.query(MetaDataSet
-//						.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
+	public static String[] getIRODSResources(IRODSFileSystem fs) throws IOException {
+		return getIRODSResources(fs,((IRODSAccount)fs.getAccount()).getZone());
+	}
+	public static String[] getIRODSResources(IRODSFileSystem fs, String currentZone) throws IOException {
+		MetaDataRecordList[] recordList = null;
+		Log.log(Log.DEBUG, "getting res for "+currentZone+" from "+fs);
+		try {
+			recordList = fs.query(
+				new MetaDataCondition[] {
+//						MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCESS_PRIVILEGE, MetaDataCondition.LIKE, "%write%"),
+//						MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_NAME, MetaDataCondition.EQUAL, fs.getUserName()),
+//						MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN, MetaDataCondition.EQUAL, fs.getDomainName()),
+//						MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE, MetaDataCondition.EQUAL, fs.getMcatZone()),											
+						MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, currentZone)},		
+				new MetaDataSelect[] {MetaDataSet.newSelection(IRODSMetaDataSet.RESOURCE_NAME)});
+//			recordList = fs.query(MetaDataSet.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
+//			recordList = MetaDataRecordList.getAllResults(recordList);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
-//				recordList = MetaDataRecordList.getAllResults(recordList);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+	   	String[] names;
+	    if(recordList != null) {
+	    	names = new String[recordList.length];
+	    	for(int i=0; i<recordList.length; i++) 
+	    		names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.RESOURCE_NAME);
+	    } else 
+	    	names = new String[]{};
 
-	    	
-	    	String[] names;
-	        if(recordList != null) {
-	            names = new String[recordList.length];
-
-	            for(int i=0; i<recordList.length; i++) {
-	                names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.RESOURCE_NAME);
-	            }
-	        } else {
-	            names = new String[]{};
-	        }
-
-	        return names;
-		 
-		 
+	    return names;
 	 }	 
-	    public static String[] getSRBResources(SRBFileSystem fs) throws IOException {
+	 
+	 public static String[] getSRBResources(SRBFileSystem fs) throws IOException {
 	     return getSRBResources(fs,fs.getMcatZone());
-	    }
+	 }
 	    
-    public static String[] getSRBResources(SRBFileSystem fs, String currentZone) throws IOException {
+	 public static String[] getSRBResources(SRBFileSystem fs, String currentZone) throws IOException {
 
         //we want to get all of the zones
         MetaDataCondition conditions[] = {

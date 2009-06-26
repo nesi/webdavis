@@ -145,8 +145,11 @@ public class DefaultMoveHandler extends AbstractHandler {
 //        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
         }
 //        	        try {
-        if (!file.renameTo(destinationFile) /*&& batch*/)  
-            return HttpServletResponse.SC_FORBIDDEN;
+        if (!file.renameTo(destinationFile) /*&& batch*/) {
+        	// Jargon sometimes returns false when the rename seems to have worked, so check
+        	if (!destinationFile.exists() || file.exists()) 
+        		return HttpServletResponse.SC_FORBIDDEN;
+        }
 //        	            file.delete();
             /*response.setStatus(*/return overwritten ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_CREATED/*)*/;
 //        	            response.flushBuffer();

@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -25,6 +27,7 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 
 import edu.sdsc.grid.io.DirectoryMetaData;
+import edu.sdsc.grid.io.FileMetaData;
 import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
@@ -35,7 +38,9 @@ import edu.sdsc.grid.io.MetaDataTable;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileOutputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
+import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
@@ -269,7 +274,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("]}");
 
 		} else if (method.equalsIgnoreCase("metadata")) {
-
 			if (request.getContentLength() > 0) {	// write metadata if given in request
 		        InputStream input = request.getInputStream();
 		        byte[] buf = new byte[request.getContentLength()];
@@ -360,13 +364,11 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (!file.isDirectory()){
 					selects = new MetaDataSelect[1];
 					// "definable metadata for files"
-					selects[0] = MetaDataSet
-							.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+					selects[0] = MetaDataSet.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
 				}else{
 					selects = new MetaDataSelect[1];
 					// "definable metadata for files"
-					selects[0] = MetaDataSet
-							.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+					selects[0] = MetaDataSet.newSelection(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
 				}
 				if (selects!=null){
 					rl = file.query(selects);
@@ -380,11 +382,9 @@ public class DefaultPostHandler extends AbstractHandler {
 
 						int metaDataIndex;
 						if (file.isDirectory())
-							metaDataIndex = rl[i]
-									.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+							metaDataIndex = rl[i].getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
 						else
-							metaDataIndex = rl[i]
-									.getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+							metaDataIndex = rl[i].getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
 						if (metaDataIndex > -1) {
 							MetaDataTable t = rl[i].getTableValue(metaDataIndex);
 							for (int j = 0; j < t.getRowCount(); j++) {
@@ -429,19 +429,13 @@ public class DefaultPostHandler extends AbstractHandler {
 			}else if (file.getFileSystem() instanceof IRODSFileSystem) {
 				selects=new MetaDataSelect[3];
 				if (file.isDirectory()){
-				    selects[0] = 
-			            MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_NAME );
-					selects[1] = 
-					    MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_VALUE );
-					selects[2] = 
-			            MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_UNITS );    
+				    selects[0] = MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_NAME );
+					selects[1] = MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_VALUE );
+					selects[2] = MetaDataSet.newSelection( IRODSMetaDataSet.META_COLL_ATTR_UNITS );    
 				}else{
-				    selects[0] = 
-			            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_NAME );
-					selects[1] = 
-					    MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_VALUE );
-					selects[2] = 
-			            MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
+				    selects[0] = MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_NAME );
+					selects[1] = MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_VALUE );
+					selects[2] = MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
 				}
 				rl = file.query( selects );
 //				selects = new MetaDataSelect[1];
@@ -477,58 +471,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
-
-//		} else if (method.equalsIgnoreCase("createDirectory")) {
-//	        if (request.getContentLength() > 0) {
-//		        InputStream input = request.getInputStream();
-//		        byte[] buf = new byte[request.getContentLength()];
-//		        int count=input.read(buf);
-//		        Log.log(Log.DEBUG, "read:"+count);
-//		        Log.log(Log.DEBUG, "received directory name: " + new String(buf));
-//
-//				Object obj=JSONValue.parse(new String(buf));
-//				JSONArray array=(JSONArray)obj;
-//				if (array != null && array.size() == 1) {		
-//					String name = (String)((JSONObject)array.get(0)).get("name");
-//					RemoteFile dir = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
-//					Log.log(Log.DEBUG, "creating: "+dir);
-//					if (!dir.mkdir()) {
-//						String s = "Failed to create directory '"+dir.getAbsolutePath()+"'";
-//						Log.log(Log.WARNING, s);
-//						throw new IOException(s);
-//					}
-//				} else
-//					throw new ServletException("Internal error creating directory: error parsing JSON");
-//			}
-//		} else if (method.equalsIgnoreCase("delete")) {
-//	        if (request.getContentLength() > 0) {
-//		        InputStream input = request.getInputStream();
-//		        byte[] buf = new byte[request.getContentLength()];
-//		        int count=input.read(buf);
-//		        Log.log(Log.DEBUG, "read:"+count);
-//		        Log.log(Log.DEBUG, "received file list: " + new String(buf));
-//
-//				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
-//				if (jsonArray != null) {	
-//					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-//					JSONArray filesArray = (JSONArray)jsonObject.get("files");
-//					for (int i = 0; i < filesArray.size(); i++) {
-//						String name = (String)filesArray.get(i);
-//						if (name.trim().length() == 0)
-//							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!
-//						RemoteFile condemnedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+name, davisSession);
-//						Log.log(Log.DEBUG, "deleting: "+condemnedFile);
-//						DefaultDeleteHandler deleteHandler = new DefaultDeleteHandler();
-//						if (!deleteHandler.del(condemnedFile)) {
-//							String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
-//							Log.log(Log.WARNING, s);
-//							response.sendError(HttpServletResponse.SC_BAD_REQUEST, s);
-//							return;
-//						}
-//					} 
-//				} else
-//					throw new ServletException("Internal error deleting file: error parsing JSON");
-//			}
 		} else if (method.equalsIgnoreCase("upload")) {
             response.setContentType("text/html");
 			if (!ServletFileUpload.isMultipartContent(request)) 
@@ -612,8 +554,72 @@ public class DefaultPostHandler extends AbstractHandler {
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
 			for (int i = 0; i < domains.length; i++) {
 				if (i>0) str.append(",\n");
-					str.append("{name:'").append(domains[i]).append("'}");
+				str.append("{name:'").append(domains[i]).append("'}");
 			}
+			str.append("\n");
+			str.append("]}");
+		} else if (method.equalsIgnoreCase("resources")) {
+			str.append("{\nitems:[\n");
+			String[] resources = null;
+			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem)
+				resources = FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem());
+			else
+				resources = FSUtilities.getIRODSResources((IRODSFileSystem)file.getFileSystem());
+			for (int i = 0; i < resources.length; i++) { 
+				if (i > 0) str.append(",\n");
+				str.append("{name:'").append(resources[i]).append("'}");
+			}
+			str.append("\n");
+			str.append("]}");
+		} else if (method.equalsIgnoreCase("replicas")) {
+			String deleteResource = request.getParameter("delete");
+			String replicateResource = request.getParameter("replicate");
+	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+	    	/*boolean batch = */getFileList(request, davisSession, fileList); 
+	        Iterator<RemoteFile> iterator = fileList.iterator();
+			str.append("{\nitems:[\n");
+	        while (iterator.hasNext()) {
+	        	file = iterator.next();
+	        	if (!file.isDirectory()) {	// Can't get replica info for a directory
+	        		if (deleteResource != null) {
+	        			Log.log(Log.DEBUG, "Deleting replica at "+deleteResource);
+                        if (file.getFileSystem() instanceof SRBFileSystem) {
+    	        			Log.log(Log.DEBUG, "Not currently supported by Jargon");
+                        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+                        	((IRODSFile)file).deleteReplica(deleteResource);	//Currently ALWAYS returns false!
+    	        			Log.log(Log.DEBUG, "Not currently working in Jargon");
+                        }
+	        		}
+	        		if (replicateResource != null) {
+	        			Log.log(Log.DEBUG, "Replicating to "+replicateResource);
+                        if (file.getFileSystem() instanceof SRBFileSystem) {
+ //   	        			Log.log(Log.DEBUG, "Not currently supported by Jargon");
+                     ((SRBFile)file).replicate(replicateResource);	
+                        } else if (file.getFileSystem() instanceof IRODSFileSystem) {
+                        	try {
+                        		((IRODSFile)file).replicate(replicateResource);
+                        	} catch (IRODSException e) {
+                    			Log.log(Log.DEBUG, "Replicate failed: "+e.getMessage());
+                    			response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    			return;
+                        	}
+                        	//   	        			Log.log(Log.DEBUG, "Not currently working in Jargon");
+                        }
+	        		}
+	        		
+	        		// Now get replica info
+		    		MetaDataRecordList[] rl = null;
+		    		String[] selectFieldNames = new String[] {FileMetaData.FILE_REPLICA_NUM, ResourceMetaData.RESOURCE_NAME};
+		    		MetaDataSelect selects[] = MetaDataSet.newSelection(selectFieldNames);
+		    		rl = file.query(selects);
+		    		if (rl != null)
+			    		for (int i = 0; i < rl.length; i++) {
+							if (i > 0) str.append(",\n");
+							str.append("{resource:'").append(rl[i].getValue(ResourceMetaData.RESOURCE_NAME)).append("', ");
+							str.append("number:'").append(rl[i].getValue(FileMetaData.FILE_REPLICA_NUM)).append("'}");
+			    		}
+	        	}
+	        }
 			str.append("\n");
 			str.append("]}");
 		} else if (method.equalsIgnoreCase("userlist")) {
@@ -622,13 +628,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
 				for (int i = 0; i < users.length; i++) {
 					if (i>0) str.append(",\n");
-						str.append("{name:'").append(users[i]).append("'}");
+					str.append("{name:'").append(users[i]).append("'}");
 				}
 			}else if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem){
 				String[] users=FSUtilities.getUsernames((IRODSFileSystem)davisSession.getRemoteFileSystem());
 				for (int i = 0; i < users.length; i++) {
 					if (i>0) str.append(",\n");
-						str.append("{name:'").append(users[i]).append("'}");
+					str.append("{name:'").append(users[i]).append("'}");
 				}
 			}
 			str.append("\n");
