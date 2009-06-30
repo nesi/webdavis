@@ -199,12 +199,15 @@ public class Davis extends HttpServlet {
 			while (headerNames.hasMoreElements()) {
 				String headerName = (String) headerNames.nextElement();
 				headers.append("    ").append(headerName).append(": ");
-				Enumeration headerValues = request.getHeaders(headerName);
-				while (headerValues.hasMoreElements()) {
-					headers.append(headerValues.nextElement());
-					if (headerValues.hasMoreElements())
-						headers.append(", ");
-				}
+				if (!headerName.equalsIgnoreCase("Authorization")){
+					Enumeration headerValues = request.getHeaders(headerName);
+					while (headerValues.hasMoreElements()) {
+						headers.append(headerValues.nextElement());
+						if (headerValues.hasMoreElements())
+							headers.append(", ");
+					}
+				}else 
+					headers.append("censored");
 				if (headerNames.hasMoreElements())
 					headers.append("\n");
 			}
