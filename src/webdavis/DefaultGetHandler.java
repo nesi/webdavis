@@ -211,7 +211,7 @@ public class DefaultGetHandler extends AbstractHandler {
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         if (!file.exists()) {
-            Log.log(Log.WARNING, "File does not exist.");
+            Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist.");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
 //response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
 //ServletOutputStream output = response.getOutputStream();
