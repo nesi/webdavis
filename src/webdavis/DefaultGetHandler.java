@@ -412,6 +412,7 @@ public class DefaultGetHandler extends AbstractHandler {
         	Log.log(Log.WARNING, "remote peer is closed");
         }
         input.close();
+        output.close();
     }
 
     private void writeFile(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
