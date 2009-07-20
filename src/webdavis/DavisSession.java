@@ -161,4 +161,7 @@ public class DavisSession implements Serializable{
 	public boolean isShared(){
 		return sharedSessionNumber>0;
 	}
+	public boolean isConnected() {
+		return remoteFileSystem.isConnected();
+	}
 }
