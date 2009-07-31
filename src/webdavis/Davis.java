@@ -252,7 +252,7 @@ public class Davis extends HttpServlet {
 		AuthorizationProcessor authorizationProcessor=AuthorizationProcessor.getInstance();
 		String authorization = request.getHeader("Authorization");
 
-		if (authorization == null && !request.isSecure()){
+		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
 			Cookie[] cookies=request.getCookies();
 			int shibCookieNum=0;
