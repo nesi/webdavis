@@ -400,7 +400,14 @@ public class DefaultGetHandler extends AbstractHandler {
             response.setHeader("Accept-Ranges","bytes"); 
         }
         ServletOutputStream output = response.getOutputStream();
-        byte[] buf = new byte[8192];
+        int bufferSize = (int) (file.length() / 100);
+        //minimum buf size of 50KiloBytes
+        if (bufferSize < 51200)
+            bufferSize = 51200;
+            //maximum buf size of 5MegaByte
+        else if (bufferSize > 5242880)
+            bufferSize = 5242880;
+        byte[] buf = new byte[bufferSize];
         int count;
         try{
             while ((count = input.read(buf)) >0) {
