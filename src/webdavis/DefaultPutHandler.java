@@ -113,7 +113,14 @@ public class DefaultPutHandler extends AbstractHandler {
             	outputStream = new IRODSFileOutputStream((IRODSFile)file);
             }
         	if (length>0) {
-	            byte[] buf = new byte[8192];
+                int bufferSize = length / 100;
+                //minimum buf size of 50KiloBytes
+                if (bufferSize < 51200)
+                    bufferSize = 51200;
+                    //maximum buf size of 5MegaByte
+                else if (bufferSize > 5242880)
+                    bufferSize = 5242880;
+                byte[] buf = new byte[bufferSize];
 	            int count;
 	//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
 	            BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
