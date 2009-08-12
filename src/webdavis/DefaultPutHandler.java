@@ -51,10 +51,13 @@ public class DefaultPutHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
-        int length = request.getContentLength();
+        long length = -1;
+        try {
+        	length=Long.parseLong(request.getHeader("Content-Length"));
+        }catch (Exception _e){}
         Log.log(Log.DEBUG, "request.getContentLength(): "+length);
         if (length==-1){
-        	length=Integer.parseInt(request.getHeader("x-expected-entity-length"));
+        	length=Long.parseLong(request.getHeader("x-expected-entity-length"));
             Log.log(Log.DEBUG, "request.getHeader(\"x-expected-entity-length\"): "+length);
         }
         if (length < 0) {
@@ -113,7 +116,7 @@ public class DefaultPutHandler extends AbstractHandler {
             	outputStream = new IRODSFileOutputStream((IRODSFile)file);
             }
         	if (length>0) {
-                int bufferSize = length / 100;
+                int bufferSize = (int) (length / 100);
                 //minimum buf size of 50KiloBytes
                 if (bufferSize < 51200)
                     bufferSize = 51200;

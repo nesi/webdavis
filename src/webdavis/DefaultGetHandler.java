@@ -7,6 +7,7 @@ import java.io.OutputStream;
 
 import java.net.URL;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -374,22 +375,14 @@ public class DefaultGetHandler extends AbstractHandler {
                 "application/octet-stream");
         response.setContentLength((int) file.length());
 //        RemoteFileInputStream input = null;
-        RemoteRandomAccessFile input = null;
-        if (file.getFileSystem() instanceof SRBFileSystem) {
-//        	input = new SRBFileInputStream((SRBFile)file);
-        	input = new SRBRandomAccessFile((SRBFile)file,"r");
-        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-        	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
-        	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
-        }
         String startingPoint=request.getHeader("Content-Range");
+        long offset=0;
         if (startingPoint==null) startingPoint=request.getHeader("Range");
         if (startingPoint!=null){
         	try{
         		String offsetString=startingPoint.substring(startingPoint.indexOf("bytes")+6,startingPoint.indexOf("-"));
         		Log.log(Log.DEBUG, "offset:"+offsetString);
-        		long offset=Long.parseLong(offsetString);
-        		input.seek(offset);
+        		offset=Long.parseLong(offsetString);
         		response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
         		response.setHeader("Content-Range",startingPoint.substring(0,6)+offset+"-"+file.length()+"/"+file.length());
                 response.setContentLength((int) (file.length()-offset));
@@ -399,7 +392,6 @@ public class DefaultGetHandler extends AbstractHandler {
         }else{
             response.setHeader("Accept-Ranges","bytes"); 
         }
-        ServletOutputStream output = response.getOutputStream();
         int bufferSize = (int) (file.length() / 100);
         //minimum buf size of 50KiloBytes
         if (bufferSize < 51200)
@@ -409,16 +401,61 @@ public class DefaultGetHandler extends AbstractHandler {
             bufferSize = 5242880;
         byte[] buf = new byte[bufferSize];
         int count;
-        try{
-            while ((count = input.read(buf)) >0) {
-//            	Log.log(Log.DEBUG, "read "+count);
-                output.write(buf, 0, count);
+        ServletOutputStream output = response.getOutputStream();
+        int interval=request.getSession().getMaxInactiveInterval();
+        long startTime=new Date().getTime();
+        Log.log(Log.DEBUG, "Downloading file from "+offset+" max inactive interval:"+interval+" starting at:"+new Date(startTime));
+        if (offset>0){
+            RemoteRandomAccessFile input = null;
+            if (file.getFileSystem() instanceof SRBFileSystem) {
+//            	input = new SRBFileInputStream((SRBFile)file);
+            	input = new SRBRandomAccessFile((SRBFile)file,"r");
+            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+            	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
+            	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
             }
-            output.flush();
-        }catch (Exception _e){
-        	Log.log(Log.WARNING, "remote peer is closed");
+    		input.seek(offset);
+            try{
+                while ((count = input.read(buf)) >0) {
+//                	Log.log(Log.DEBUG, "read "+count);
+                	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
+                		//increase interval by 5 mins
+                		request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval()+300);
+                		Log.log(Log.DEBUG, "session time is extended to:"+request.getSession().getMaxInactiveInterval());
+                	}
+                    output.write(buf, 0, count);
+                }
+                output.flush();
+            }catch (Exception _e){
+            	Log.log(Log.WARNING, "remote peer is closed");
+            }
+            input.close();
+        }else{
+            RemoteFileInputStream input = null;
+            if (file.getFileSystem() instanceof SRBFileSystem) {
+            	input = new SRBFileInputStream((SRBFile)file);
+            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+            	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
+            	input = new IRODSFileInputStream((IRODSFile)file);
+            }
+            try{
+                while ((count = input.read(buf)) >0) {
+                	//inactive interval - "idle" time < 1 min, increase inactive interval
+                	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
+                		//increase interval by 5 mins
+                		request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval()+300);
+                		Log.log(Log.DEBUG, "session time is extended to:"+request.getSession().getMaxInactiveInterval());
+                	}
+//                	Log.log(Log.DEBUG, "read "+count);
+                    output.write(buf, 0, count);
+                }
+                output.flush();
+            }catch (Exception _e){
+            	Log.log(Log.WARNING, "remote peer is closed");
+            }
+            input.close();
         }
-        input.close();
+        request.getSession().setMaxInactiveInterval(interval);
         output.close();
     }
 
