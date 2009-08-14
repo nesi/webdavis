@@ -164,6 +164,82 @@
 			return result;
 		}
 
+		function listCheckedItems() {
+			var list="";
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				if (document.childrenform.selections[i].checked) 
+				  list=list+"\""+trimMode(document.childrenform.selections[i].value)+"\",";
+			if (list.length > 0)
+				list = list.substring(0, list.length-1);  // remove trailing ','
+			return list;
+		}
+		
+		function listToJSON() {
+			//json format is: [{"files":["file1","file2"...]}]
+			return "[{\"files\":["+listCheckedItems()+"]}]";
+		}
+
+		function trimMode(value) {
+			var i = value.indexOf(";");
+			if (i >= 0)
+				return value.substring(0,i);
+			return value;
+		}
+		
+		function getFirstCheckedItem() {
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				if (document.childrenform.selections[i].checked) 
+				  return trimMode(document.childrenform.selections[i].value);
+			return null;
+		}
+		
+		function checkedItemsCount() {
+			var count=0;
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				if (document.childrenform.selections[i].checked) 
+					count++;
+			return count;
+		}
+		
+		function directoryIsChecked() {
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				if (document.childrenform.selections[i].checked) 
+					if (document.childrenform.selections[i].value.indexOf(";directory") >= 0)
+						return true;
+			return false;
+		}
+		
+		function toggleAll() {
+			var allChecked = !getToggleButtonState();
+			setToggleButtonState(allChecked);
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				document.childrenform.selections[i].checked = !allChecked;
+		}
+		
+		function checkAll(state) {
+			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
+				document.childrenform.selections[i].checked = state;
+		}
+		
+		function refreshButtons() {
+//			dojo.byId('renameButton').disabled = checkedItemsCount() != 1;
+//			dojo.byId('replicasButton').disabled = checkedItemsCount() != 1;
+//			dojo.byId('deleteButton').disabled = checkedItemsCount() == 0;
+//			dojo.byId('metadataButton').disabled = checkedItemsCount() == 0;
+//			dojo.byId('accessControlButton').disabled = checkedItemsCount() == 0;
+//			if (replicasGrid.selection.getSelectedCount() == 0) {
+//				dojo.byId('replicasDeleteButton').disabled = true;
+//				dojo.byId('replicasReplicateButton').disabled = true;
+//			} else {
+//				var item = replicasGrid.selection.getFirstSelected();
+//				var isReplica = replicasStore.getValue(item, "number") != null;
+//				dojo.byId('replicasDeleteButton').disabled = !isReplica;
+//				dojo.byId('replicasReplicateButton').disabled = isReplica;			
+//			}
+//			if (dojo.byId('restoreButton') != null)
+//				dojo.byId('restoreButton').disabled = checkedItemsCount() == 0;
+		}
+		
 		function setCurrentDirectory(dir) {
 			currentDirectory = dir;
 		}
@@ -210,20 +286,16 @@
    								humanReadable(files[i].size);
 						listing = listing +
 								'</small></td>'+
-    						'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="checkbox" id="checkbox'+i+'" /></td>'+
+    						'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+';directory" onClick="refreshButtons()"/></td>'+
   						'</tr>';
 					}
       		}
       		dojo.html.set(dojo.byId("directoryTable"), listing);
 			dojo.html.set(dojo.byId("breadcrumb"), toBreadcrumb(getCurrentDirectory()));
 		}
-
-		var browserBusy = false; // Indicates browser is busy 
 		
 		function fetchDirectory(url) {
-			//alert("fetchdirectory "+url);			
 			displayDirectory(null);
-			broswerBusy = true;
 			cursorBusy(true);
 			dojo.xhr("GET", {
 				url: url+"?format=json",
@@ -232,21 +304,17 @@
 			    load: function(responseObject, ioArgs){
 			    	displayDirectory(responseObject.items);
 			    	cursorBusy(false);
-			    	browserBusy = false;
 			      	return responseObject;
 			    },
 	    		error: function(response, ioArgs){
 	      			alert("Failed to fetch directory details for "+url+": "+errorMessage("get", response));
 	      			cursorBusy(false);
-	      			browserBusy = false;
 	      			return response;
 	    		}
 			});
 		}
 
 		function gotoDirectory(url) {
-			if (browserBusy)
-				return;
 			setCurrentDirectory(url);
 			fetchDirectory(getCurrentDirectory());
 		}
@@ -279,6 +347,70 @@
 	    		}
 			});
 		}
+
+		function uploadFile(){ 		
+			server_url="?method=upload";
+			dojo.byId('uploadStatusField').innerHTML = "Uploading...";
+			uploadInProgress = true;
+		
+			dojo.io.iframe.send({
+				url: server_url,
+				method: "POST",
+				form: "uploadForm",
+				handleAs: "json",
+				handle: function(response, ioArgs){
+							dijit.byId('dialogUpload').hide();
+							if (response.status == "success") {
+								alert("Successfully transferred "+response.message+" bytes");
+								refreshCurrentDirectory();						
+							}else 
+								alert("Failed to upload file: "+response.message);
+							uploadInProgress = false;
+							return response;
+						},
+				error: function(response, ioArgs) {
+							dijit.byId('dialogUpload').hide();
+							alert("Failed to upload file: "+response);
+							uploadInProgress = false;
+							return response;
+						}
+			});
+		}
+
+		function uploadCancel() {
+			if (!uploadInProgress)  
+				dijit.byId('dialogUpload').hide();
+			else {
+				uploadInProgress = false;
+				dojo.byId('uploadStatusField').innerHTML = "Canceling...";
+				window.location.reload();	// Is this the only way to kill a transfer?
+			}
+		}
+
+		function deleteFiles(url) {
+			dijit.byId('dialogDelete').hide();
+			if (checkedItemsCount() == 0)
+				return;
+			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+			dojo.xhr("DELETE", {
+				url: url,
+				headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json"
+			    },
+			    putData: data, // This can be specified as rawBody in dojo 1.4
+			    load: function(responseObject, ioArgs){
+			      	refreshCurrentDirectory();
+			      	return responseObject;
+			    },
+	    		error: function(response, ioArgs){
+	      			alert("Failed to delete one or more items: "+errorMessage("delete", response));
+	      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
+	      			return response;
+	    		}
+			}, true);
+			checkAll(false);
+		}		
 	</script>
 </head>
 
@@ -293,7 +425,27 @@
 		<button onclick="dijit.byId('dialogCreateDir').hide()">Cancel</button>
 	</div>
 </div>		
-
+<div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
+ 	<form id="uploadForm" enctype="multipart/form-data" name="uploadTest" method="post">
+   		File to upload:
+   		<input type="file" name="uploadFileName" id="formUpload"/>
+ 	</form>
+	<div id="uploadStatusField"></div>
+	<br/>
+	<div style="text-align: right;">
+		<button id="uploadStartButton" onclick="dojo.byId('uploadStartButton').disabled=true; uploadFile();">Upload</button> 
+		<button id="uploadCancelButton" onclick="dojo.byId('uploadCancelButton').disabled=true; uploadCancel();">Cancel</button>
+	</div>
+</div>					
+<div dojoType="dijit.Dialog" id="dialogDelete" title="Delete Items">
+    Are you sure you want to delete the selected items and their contents?
+	<br/><br/>
+	<div style="text-align: right;">
+		<button onclick="deleteFiles(getCurrentDirectory())">Delete</button>
+		<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
+	</div>
+</div>					
+ 
 <!-- Main body -->			
 <table id="header" width="100%" border="0" cellspacing="0" cellpadding="12">
 	<tr>
@@ -351,7 +503,7 @@
           			<td bgcolor="#CCCCCC">
 						<table class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
-                				<td onclick='alert("not implemented yet")'><strong><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</strong></td>
+                				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"><strong><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</strong></td>
               				</tr>
           				</table>
 					</td>
@@ -381,7 +533,8 @@
 		</td>
   	</tr>
 </table>
-<form id="form2" name="form2" method="post" action="">
+<form id="childrenform" name="childrenform">
+	<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
 	<table width="100%" border="0" cellspacing="0" cellpadding="12">
   		<tr>
     		<td width="80%" valign="top">
@@ -416,7 +569,8 @@
     			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
-          				<td class="text">Delete</td>
+        			<!-- Add disable button below -->
+          				<td class="activeItem" id="deleteButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogDelete').show()" >Delete</td>
         			</tr>
     			</table>
 			</td>

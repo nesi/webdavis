@@ -12,7 +12,9 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -251,6 +253,12 @@ public class DefaultGetHandler extends AbstractHandler {
         	String format = request.getParameter("format");
         	if (format != null && format.equals("json")) {
         		GeneralFile[] fileList = file.listFiles();
+        		Comparator comparator = new Comparator() {
+					public int compare(Object file1, Object file2) {
+						return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
+					}     			
+        		};
+        		Arrays.sort((Object[])fileList, comparator);
     			str.append("{\nitems:[\n");
 				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
