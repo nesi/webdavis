@@ -10,6 +10,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -171,6 +172,8 @@ public class Davis extends HttpServlet {
 		Log.log(Log.DEBUG, "Davis finished destroy.");
 	}
 
+	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
+	
 	/**
 	 * Authenticates the user against a domain before forwarding the request to
 	 * the appropriate handler.
@@ -190,6 +193,8 @@ public class Davis extends HttpServlet {
 		if (pathInfo == null || "".equals(pathInfo))
 			pathInfo = "/";
 		
+		profilingTimer = new Date();		
+		Log.log(Log.DEBUG, "#### Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
 		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".",
 				new Object[] { request.getMethod(), request.getRequestURL() });
 		if (Log.getThreshold() < Log.INFORMATION) {
@@ -290,6 +295,7 @@ public class Davis extends HttpServlet {
 			davisSession.increaseSharedNumber();
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
+		Log.log(Log.DEBUG, "#### Time after establishing session: "+(new Date().getTime()-profilingTimer.getTime()));
 
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
@@ -315,6 +321,7 @@ public class Davis extends HttpServlet {
 					+ request.getMethod());
 			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 		}
+		Log.log(Log.DEBUG, "#### Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
 	}
 
 	/**

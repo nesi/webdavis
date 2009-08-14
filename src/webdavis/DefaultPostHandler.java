@@ -143,7 +143,6 @@ public class DefaultPostHandler extends AbstractHandler {
 						} else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
 							Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
 							((IRODSFile) selectedFile).changePermissions(permission, username, recursive);
-//				System.err.println("permissions="+((IRODSFile) selectedFile).query(new String[]{UserMetaData.USER_NAME, IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT}));
 						}
 					}
 					if (sticky!=null) {
@@ -472,7 +471,20 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 		} else if (method.equalsIgnoreCase("upload")) {
-            response.setContentType("text/html");
+
+			
+//	IRODSFile f=new IRODSFile((IRODSFileSystem)file.getFileSystem(), ((IRODSFileSystem)file.getFileSystem()).getHomeDirectory()+"/temp2.txt");
+//System.err.println("f="+f);
+//System.err.println("exists="+f.exists());
+//	f.setResource("arcs-df.ivec.org");
+//	f.replicate("arcs-df.intersect.org.au");
+////	f.replicate("data-dev.ersa.edu.au");
+////	f.setResource("second.ngdata-dev.hpcu.uq.edu.au");
+////	f.replicate("second.ngdata-dev.hpcu.uq.edu.au");
+////	f.deleteReplica("second.ngdata-dev.hpcu.uq.edu.au");
+//System.err.println("replicate finished");
+			
+			response.setContentType("text/html");
 			if (!ServletFileUpload.isMultipartContent(request)) 
 	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Invalid request (not multipart)\"}</textarea></body></html>");
 	        else {

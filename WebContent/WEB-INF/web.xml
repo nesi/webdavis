@@ -1269,6 +1269,13 @@
 
 		<init-param>
 			<description>
+				organisation name - default is Davis
+			</description>
+			<param-name>organisation-name</param-name>
+			<param-value>Australian Research Collaboration Service</param-value>
+		</init-param>
+		<init-param>
+			<description>
 				authentication realm - default is Davis
 			</description>
 			<param-name>authentication-realm</param-name>
@@ -1375,6 +1382,14 @@
 <servlet-mapping>
 <servlet-name>Davis</servlet-name>
 <url-pattern>/*</url-pattern>
+</servlet-mapping>
+<servlet>
+  <servlet-name>DavisUI</servlet-name>
+  <jsp-file>/WEB-INF/jsp/WEBDavis.jsp</jsp-file>
+</servlet>
+<servlet-mapping>
+  <servlet-name>DavisUI</servlet-name>
+  <url-pattern>/DavisUI/*</url-pattern>
 </servlet-mapping>
 	<listener>
 		<listener-class>webdavis.DavisListener</listener-class>

@@ -1,16 +1,24 @@
 package webdavis;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 
 import java.net.URL;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.SimpleTimeZone;
+import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -42,6 +50,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileInputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
@@ -227,6 +236,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //    		return;
 //        }
         String requestUrl = getRequestURL(request);
+		StringBuffer str = new StringBuffer();
         Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
         if (file.getName().endsWith("/") && !requestUrl.endsWith("/")) {
             StringBuffer redirect = new StringBuffer(requestUrl).append("/");
@@ -237,7 +247,58 @@ public class DefaultGetHandler extends AbstractHandler {
             return;
         }
         if (!file.isFile()) {
-            if ("configure".equals(request.getQueryString())) {
+        	Log.log(Log.DEBUG, "#### Time before creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
+        	String format = request.getParameter("format");
+        	if (format != null && format.equals("json")) {
+        		GeneralFile[] fileList = file.listFiles();
+    			str.append("{\nitems:[\n");
+				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
+				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
+    			for (int i = 0; i < fileList.length; i++) {
+					if (i > 0) 
+						str.append(",\n");
+					String type = fileList[i].isDirectory() ? "d" : "f";
+					str.append("{name:'"+fileList[i].getName()+"', type:'"+type+"', size:'"+fileList[i].length()+"', date:'"+dateFormat.format(fileList[i].lastModified())+"'}");
+				}
+				str.append("\n");
+				str.append("]}");
+				ServletOutputStream op = null;
+				try {
+					 op = response.getOutputStream();
+				} catch (EOFException e) {
+					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
+					return;
+				}
+				byte[] buf = str.toString().getBytes();
+				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + str);
+				op.write(buf);
+				op.flush();
+				op.close();
+                
+                Log.log(Log.DEBUG, "#### Time after creating dynamic json: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
+                return;
+        	}
+if (request.getParameter("newui") != null) {
+    			String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
+				if (dojoroot.indexOf("/") < 0)
+					dojoroot=request.getContextPath()+"/"+dojoroot;
+				Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
+    			request.setAttribute("dojoroot", dojoroot);
+    			request.setAttribute("servertype", getServerType());
+    			request.setAttribute("href", requestUrl);
+    			request.setAttribute("url", file.getAbsolutePath());
+    			request.setAttribute("unc", file.toString());
+    			request.setAttribute("parent", request.getContextPath()+file.getParent());
+    			request.setAttribute("home", davisSession.getHomeDirectory());
+    			request.setAttribute("trash", davisSession.getTrashDirectory());
+    			request.setAttribute("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
+    			request.setAttribute("organisationname", getServletConfig().getInitParameter("organisation-name"));
+    			request.setAttribute("account", davisSession.getAccount());
+    			getServletConfig().getServletContext().getRequestDispatcher("/DavisUI").forward(request, response);
+       		return;
+}
+        	
+        	if ("configure".equals(request.getQueryString())) {
                 Log.log(Log.INFORMATION, "Configuration request received.");
                 showConfiguration(request, response);
                 return;
@@ -294,7 +355,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 }
             }
             PropertiesDirector director = new PropertiesDirector(
-                    getPropertiesBuilder());
+        		getPropertiesBuilder());
             Document properties = null;
             properties = director.getAllProperties(file, requestUrl, 1);
 
@@ -350,11 +411,15 @@ public class DefaultGetHandler extends AbstractHandler {
                 response.setContentType("text/html; charset=\"utf-8\"");
                 collector.writeTo(response.getOutputStream());
                 response.flushBuffer();
-            } catch (TransformerException ex) {
+                
+                Log.log(Log.DEBUG, "#### Time after creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
+            	
+            	} catch (TransformerException ex) {
                 throw new IOException(ex.getMessage());
             }
             return;
         }
+
         String etag = DavisUtilities.getETag(file);
         if (etag != null) response.setHeader("ETag", etag);
         long modified = file.lastModified();
@@ -407,6 +472,7 @@ public class DefaultGetHandler extends AbstractHandler {
         Log.log(Log.DEBUG, "Downloading file from "+offset+" max inactive interval:"+interval+" starting at:"+new Date(startTime));
         if (offset>0){
             RemoteRandomAccessFile input = null;
+            try {
             if (file.getFileSystem() instanceof SRBFileSystem) {
 //            	input = new SRBFileInputStream((SRBFile)file);
             	input = new SRBRandomAccessFile((SRBFile)file,"r");
@@ -415,7 +481,7 @@ public class DefaultGetHandler extends AbstractHandler {
             	input = new IRODSRandomAccessFile((IRODSFile)file,"r");
             }
     		input.seek(offset);
-            try{
+//            try{
                 while ((count = input.read(buf)) >0) {
 //                	Log.log(Log.DEBUG, "read "+count);
                 	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
@@ -426,19 +492,21 @@ public class DefaultGetHandler extends AbstractHandler {
                     output.write(buf, 0, count);
                 }
                 output.flush();
-            }catch (Exception _e){
-            	Log.log(Log.WARNING, "remote peer is closed");
+            }catch (Exception e){
+            	Log.log(Log.WARNING, "remote peer is closed: "+e.getMessage());
             }
-            input.close();
+            if (input != null)
+            	input.close();
         }else{
             RemoteFileInputStream input = null;
+            try {
             if (file.getFileSystem() instanceof SRBFileSystem) {
             	input = new SRBFileInputStream((SRBFile)file);
             }else if (file.getFileSystem() instanceof IRODSFileSystem) {
             	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
             	input = new IRODSFileInputStream((IRODSFile)file);
             }
-            try{
+//            try{
                 while ((count = input.read(buf)) >0) {
                 	//inactive interval - "idle" time < 1 min, increase inactive interval
                 	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
@@ -450,10 +518,11 @@ public class DefaultGetHandler extends AbstractHandler {
                     output.write(buf, 0, count);
                 }
                 output.flush();
-            }catch (Exception _e){
-            	Log.log(Log.WARNING, "remote peer is closed");
+            }catch (Exception e){
+            	Log.log(Log.WARNING, "remote peer is closed: "+e.getMessage());
             }
-            input.close();
+            if (input != null)
+            	input.close();
         }
         request.getSession().setMaxInactiveInterval(interval);
         output.close();
