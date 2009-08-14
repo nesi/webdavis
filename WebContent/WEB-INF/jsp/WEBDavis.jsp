@@ -12,7 +12,6 @@
 		@import "<%=request.getAttribute("dojoroot")%>dojoroot/dojox/grid/resources/Grid.css";
 		@import "<%=request.getAttribute("dojoroot")%>dojoroot/dojox/grid/resources/tundraGrid.css";
 		@import "<%=request.getAttribute("dojoroot")%>dojoroot/dojo/resources/dojo.css"
-
    	</style>
 	<style>
 		.text{font-family:Arial, Helvetica, sans-serif;}
@@ -283,7 +282,7 @@
 	</script>
 </head>
 
-<body>
+<body class="tundra">
 <!-- Dialogs-->
 <div dojoType="dijit.Dialog" id="dialogCreateDir" title="Create Directory">
 	New directory name:
