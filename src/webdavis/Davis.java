@@ -190,6 +190,10 @@ public class Davis extends HttpServlet {
 	protected void service(HttpServletRequest request,
 			HttpServletResponse response) throws IOException, ServletException {
 		String pathInfo = request.getPathInfo();
+		String uri=request.getRequestURI();
+		String queryString = request.getQueryString();
+		Log.log(Log.INFORMATION, "uri:"+uri);
+		Log.log(Log.INFORMATION, "queryString:"+queryString);
 		if (pathInfo == null || "".equals(pathInfo))
 			pathInfo = "/";
 		
@@ -254,8 +258,12 @@ public class Davis extends HttpServlet {
 		
 
 		DavisSession davisSession = null;
+		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor=AuthorizationProcessor.getInstance();
 		String authorization = request.getHeader("Authorization");
+		if (request.getQueryString()!=null&&request.getQueryString().indexOf("reset")>-1){
+			reset=true;
+		}
 
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
@@ -268,7 +276,7 @@ public class Davis extends HttpServlet {
 				String sharedToken=request.getHeader(config.getSharedTokenHeaderName());
 				String commonName=request.getHeader(config.getCommonNameHeaderName());
 				String shibSessionID=request.getHeader("Shib-Session-ID");
-				if (shibCookieNum>0) davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID);
+				if (shibCookieNum>0) davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
 			}
 			if (davisSession==null){
 				response.sendError(HttpServletResponse.SC_FORBIDDEN, "Shibboleth login failed.");
@@ -276,10 +284,10 @@ public class Davis extends HttpServlet {
 				return;
 			}
 		}else if (authorization != null){
-			davisSession=authorizationProcessor.getDavisSession(authorization);
+			davisSession=authorizationProcessor.getDavisSession(authorization, reset);
 		}else if (isAnonymousPath(pathInfo)){
 			String authString="Basic "+Base64.toString((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
-			davisSession=authorizationProcessor.getDavisSession(authString);
+			davisSession=authorizationProcessor.getDavisSession(authString, reset);
 		}else{
 			fail(request, response);
 			return;
@@ -289,7 +297,7 @@ public class Davis extends HttpServlet {
 			return;
 		}
 		HttpSession session = request.getSession(false);
-		if (session == null) {
+		if (session == null || reset) {
 			session = request.getSession();
 			session.setAttribute(SESSION_ID, davisSession.getSessionID());
 			davisSession.increaseSharedNumber();
