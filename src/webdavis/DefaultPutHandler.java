@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Date;
 
 import javax.servlet.ServletException;
 
@@ -125,14 +126,23 @@ public class DefaultPutHandler extends AbstractHandler {
                     bufferSize = 5242880;
                 byte[] buf = new byte[bufferSize];
 	            int count;
+	            int interval=request.getSession().getMaxInactiveInterval();
+	            long startTime=new Date().getTime();
 	//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
 	            BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
 	            while ((count = input.read(buf)) != -1) {
+                	//inactive interval - "idle" time < 1 min, increase inactive interval
+                	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
+                		//increase interval by 5 mins
+                		request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval()+300);
+                		Log.log(Log.DEBUG, "session time is extended to:"+request.getSession().getMaxInactiveInterval());
+                	}
 	//            	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
 	                output.write(buf, 0, count);
 	            }
 	            output.flush();
 	            output.close();
+	            request.getSession().setMaxInactiveInterval(interval);
         	}
         	if (outputStream!=null) outputStream.close();
     	}catch (Exception e){
