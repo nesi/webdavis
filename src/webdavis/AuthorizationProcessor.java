@@ -41,22 +41,30 @@ public class AuthorizationProcessor {
 		}
 		return self;
 	}
-	public DavisSession getDavisSession(String authorization){
+	public DavisSession getDavisSession(String authorization, boolean reset){
 		String sessionID=SimpleMD5.MD5(authorization) + "*basic";
 		Log.log(Log.DEBUG, "trying to get session for basic auth(https). sessionID:"+sessionID);
 		DavisSession davisSession=connectionPool.get(sessionID);
-		if (davisSession!=null){
+		if (davisSession!=null&&reset) {
+			Log.log(Log.INFORMATION, "reset session "+sessionID);
+			davisSession.disconnect();
+			connectionPool.remove(sessionID);
+		}else if (davisSession!=null){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
 		return login(authorization, null, null, null);
 		
 	}
-	public DavisSession getDavisSession(String sharedToken, String commonName, String shibSessionID){
+	public DavisSession getDavisSession(String sharedToken, String commonName, String shibSessionID, boolean reset){
 		String sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
 		Log.log(Log.DEBUG, "trying to get session for shib auth(http). sessionID:"+sessionID);
 		DavisSession davisSession=connectionPool.get(sessionID);
-		if (davisSession!=null){
+		if (davisSession!=null&&reset) {
+			Log.log(Log.INFORMATION, "reset session "+sessionID);
+			davisSession.disconnect();
+			connectionPool.remove(sessionID);
+		}else if (davisSession!=null){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
