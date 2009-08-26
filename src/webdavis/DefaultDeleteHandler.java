@@ -123,29 +123,51 @@ public class DefaultDeleteHandler extends AbstractHandler {
     private boolean error = false;
     
     public boolean del(RemoteFile file, DavisSession davisSession) {
-    	if (file.isDirectory()){
-    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
-    		String[] fileList=file.list();
-    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
-    		if (fileList.length>0){
-        		for (int i=0;i<fileList.length;i++){
-        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
-    				if (file.getFileSystem() instanceof SRBFileSystem){
-    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
-    				}else if (file.getFileSystem() instanceof IRODSFileSystem){
-    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]),davisSession);
-    				}
-        		}
-    		}
-    	}
-		Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
 		if (file.getFileSystem() instanceof SRBFileSystem){
+	    	if (file.isDirectory()){
+	    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
+	    		String[] fileList=file.list();
+	    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
+	    		if (fileList.length>0){
+	        		for (int i=0;i<fileList.length;i++){
+	        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
+	    				error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
+	        		}
+	    		}
+	    	}
+			Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
 			error = error || !((SRBFile)file).delete(true); 
 		}else if (file.getFileSystem() instanceof IRODSFileSystem){
+			//iRODS does suport recursive deletion now
 			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
 			Log.log(Log.DEBUG, "deleting - force:"+force);
 			error = error || !((IRODSFile)file).delete(force); 
 		}
+    	
+    	
+//    	if (file.isDirectory()){
+//    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
+//    		String[] fileList=file.list();
+//    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
+//    		if (fileList.length>0){
+//        		for (int i=0;i<fileList.length;i++){
+//        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
+//    				if (file.getFileSystem() instanceof SRBFileSystem){
+//    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
+//    				}else if (file.getFileSystem() instanceof IRODSFileSystem){
+//    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]),davisSession);
+//    				}
+//        		}
+//    		}
+//    	}
+//		Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
+//		if (file.getFileSystem() instanceof SRBFileSystem){
+//			error = error || !((SRBFile)file).delete(true); 
+//		}else if (file.getFileSystem() instanceof IRODSFileSystem){
+//			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
+//			Log.log(Log.DEBUG, "deleting - force:"+force);
+//			error = error || !((IRODSFile)file).delete(force); 
+//		}
 //    	}else{
 //    		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
 //			if (file.getFileSystem() instanceof SRBFileSystem){
