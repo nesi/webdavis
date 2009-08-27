@@ -247,7 +247,7 @@
 		
 		function refreshButtons() {
 			enableActiveItem('renameButton', checkedItemsCount() == 1);
-//			dojo.byId('replicasButton').disabled = checkedItemsCount() != 1;
+			enableActiveItem('replicasButton', checkedItemsCount() == 1);
 			enableActiveItem('deleteButton', checkedItemsCount() != 0);
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
@@ -714,6 +714,90 @@
 				return;
 			getPermissions(checkedCount > 1);				
 		}
+
+		function getReplicas(action){
+			cursorBusy(true);	
+		  	dojo.xhrPost({
+	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action,
+	    		load: function(responseObject, ioArgs){    
+						replicasStore = new dojo.data.ItemFileWriteStore({data: responseObject});
+						replicasGrid.setStore(replicasStore);  
+						loadResourcesFromServer();
+	 					cursorBusy(false);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error while fetching replicas: "+errorMessage("replicas", response));
+	       				cursorBusy(false);
+	      				return response;
+	    			},
+	 //   		sync: true,
+	    		handleAs: "json"
+	  		});
+		}
+		
+		function loadResourcesFromServer(){
+			var server_url = getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources";
+			cursorBusy(true);	
+			dojo.byId('replicasStatusField').innerHTML = 'Fetching list of resources from server...';
+		  	dojo.xhrPost({
+	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources",
+	    		load: function(responseObject, ioArgs){    
+						var resources = responseObject.items;
+						replicasStore.fetch({
+							onComplete: 
+								function(items, request){
+									for (var i = 0; i < resources.length; i++) {
+										var resourceName = resources[i].name;
+										var found = false;
+										for (var j = 0; j < items.length; j++) {	
+											var replicaName = replicasStore.getValue(items[j], "resource");
+											if (replicaName == resourceName) {
+												found = true;
+												break;
+											}
+										}
+										if (!found) {
+											var newItem = {resource: resourceName, number: null};
+											replicasStore.newItem(newItem);
+										}
+									}
+								}
+						});
+						cursorBusy(false);
+						dojo.byId('replicasStatusField').innerHTML='';
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error while fetching resources: "+errorMessage("resources", response));
+	      				cursorBusy(false);
+	 					dojo.byId('replicasStatusField').innerHTML = '';
+	      				return response;
+	    			},
+//	    		sync: true,
+	    		handleAs: "json"
+	  		});
+		}
+		
+		function deleteReplica() {
+			var resource = replicasStore.getValue(replicasGrid.selection.getFirstSelected(), "resource");
+			getReplicas("&delete="+resource);
+		}
+		
+		function replicate() {
+			var resource = replicasStore.getValue(replicasGrid.selection.getFirstSelected(), "resource");
+			getReplicas("&replicate="+resource);
+		}		
+
+		function showReplicas() {
+			var checkedCount = checkedItemsCount();
+			if (checkedCount != 1)
+				return;
+			resetReplicasStore();
+			dojo.byId('replicasStatusField').innerHTML='Loading...';
+			dijit.byId('dialogReplicas').show();
+			getReplicas("");
+		}
 	</script>
 </head>
 
@@ -823,6 +907,25 @@
 						</td>
 					</tr>
 				</table>
+			</td>
+		</tr>
+	</table>
+</div>
+<div dojoType="dijit.Dialog" id="dialogReplicas" title="Replicas" onCancel="setCursor(false, true)">
+	<table>
+		<tr>
+			<td width="300px">
+				<div id="replicasGrid" structure="layoutReplicas" dojoType="dojox.grid.DataGrid" jsId="replicasGrid" selectionMode="single" loadingMessage="loading" autoHeight="true" onClick="refreshButtons()"></div>
+			</td>
+			<td valign="top">
+				<button id="replicasDeleteButton" style="width:100%" onclick="deleteReplica()">Delete</button><br/>
+				<button id="replicasReplicateButton" style="width:100%" onclick="replicate()">Replicate</button><br/>
+				<button style="width:100%" onclick="dijit.byId('dialogReplicas').hide()">Cancel</button><br/>	
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div id="replicasStatusField" style="font-size:small"></div>
 			</td>
 		</tr>
 	</table>
@@ -945,6 +1048,11 @@
         			</tr>
     			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+        			<tr>
+          				<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
+        			</tr>
+    			</table>    			
+      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
           				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>
           				
@@ -952,7 +1060,6 @@
     			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
-        			<!-- Add disable button below -->
           				<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; dijit.byId('dialogDelete').show()" >Delete</td>
         			</tr>
     			</table>
