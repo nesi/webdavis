@@ -135,7 +135,6 @@ public class DefaultPostHandler extends AbstractHandler {
 					RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
 						file = selectedFile;
-				
 					if (username != null) {
 						if (/*file.getFileSystem()*/fileSystem instanceof SRBFileSystem) {
 							Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
@@ -176,36 +175,13 @@ public class DefaultPostHandler extends AbstractHandler {
 						else
 							str.append("\n");
 						// "user name"
-						str.append("{username:'").append(
-								permissions[i].getValue(SRBMetaDataSet.USER_NAME))
-								.append("', ");
+						str.append("{username:'").append(permissions[i].getValue(SRBMetaDataSet.USER_NAME)).append("', ");
 						// "user domain"
-						str
-								.append("domain:'")
-								.append(
-										permissions[i]
-												.getValue(SRBMetaDataSet.USER_DOMAIN))
-								.append("', ");
-	                    if(file.isDirectory())
-	                    {
-	    					// "directory access constraint"
-	    					str
-	    							.append("permission:'")
-	    							.append(
-	    									permissions[i]
-	    											.getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
-	    							.append("'}");
-	                    }
-	                    else
-	                    {
-	    					// "file access constraint"
-	    					str
-	    							.append("permission:'")
-	    							.append(
-	    									permissions[i]
-	    											.getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))
-	    							.append("'}");
-	                    }
+						str.append("domain:'").append(permissions[i].getValue(SRBMetaDataSet.USER_DOMAIN)).append("', ");
+	                    if (file.isDirectory()) 	// "directory access constraint"
+	    					str.append("permission:'").append(permissions[i].getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT)).append("'}");
+	                    else 	// "file access constraint"
+	    					str.append("permission:'").append(permissions[i].getValue(SRBMetaDataSet.ACCESS_CONSTRAINT)).append("'}");
 					}
 				}
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
@@ -235,36 +211,17 @@ public class DefaultPostHandler extends AbstractHandler {
 						else
 							str.append("\n");
 						// "user domain"
-	                    if(file.isDirectory())
-	                    {
-							// "user name"
-							str.append("{username:'").append(
-									permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME));
+	                    if(file.isDirectory()) {	// "user name"
+							str.append("{username:'").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME));
 							if (!((IRODSFileSystem)file.getFileSystem()).getZone().equals(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE)))	
-								str.append("#")
-								   .append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE));
+								str.append("#").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE));
 							str.append("', ");
 	    					// "directory access constraint"
-	    					str
-	    							.append("permission:'")
-	    							.append(
-	    									permissions[i]
-	    											.getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))
-	    							.append("'}");
-	                    }
-	                    else
-	                    {
-							// "user name"
-							str.append("{username:'").append(
-									permissions[i].getValue(UserMetaData.USER_NAME))
-									.append("', ");
+	    					str.append("permission:'").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT)).append("'}");
+	                    } else {	// "user name"
+							str.append("{username:'").append(permissions[i].getValue(UserMetaData.USER_NAME)).append("', ");
 	    					// "file access constraint"
-	    					str
-	    							.append("permission:'")
-	    							.append(
-	    									permissions[i]
-	    											.getValue(GeneralMetaData.ACCESS_CONSTRAINT))
-	    							.append("'}");
+	    					str.append("permission:'").append(permissions[i].getValue(GeneralMetaData.ACCESS_CONSTRAINT)).append("'}");
 	                    }
 					}
 				}

@@ -31,6 +31,8 @@
 		.darklink:hover{text-decoration:underline; color:black;}
 		.activeItem{background:#CCC; color:black;}
 		.activeItem:hover{background:#509C52; color:#FFF;}
+		.inactiveItem{background:#DDD; color:#CCC;}
+		.inactiveItem:hover{background:#DDD; color:#CCC;}
    		.dojoxGrid-row-odd td {background:#e8f2ff;}
     	#metadataGrid {border: 1px solid #333; width: 400px; height: 300px;}
 		#permissionGrid {border: 1px solid #333; width: 600px; height: 200px;}
@@ -52,6 +54,7 @@
 		dojo.addOnLoad(function() {
 			setCurrentDirectory("<%=request.getAttribute("url")%>");
 			fetchDirectory(getCurrentDirectory());
+			refreshButtons();
 		});
 
 		var currentDirectory = "";
@@ -60,16 +63,16 @@
 				rows: [
         			{field: "name", width: "150px", name: "Name", editable: true},
         			{field: "value", width: "auto", name: "Value", editable: true}
-        			<% if (request.getAttribute("servertype").equals("irods")) { %>
+        			<%if (request.getAttribute("servertype").equals("irods")) {%>
         				,{field: "unit", width: "50px", name: "Unit", editable: true}
-        			<% } %>
+        			<%}%>
         		]}];
 
     	var permissionsLayout= [
         		{field: "username", width: "200px", name: "Username"},
-        		<% if (request.getAttribute("servertype").equals("srb")) { %>
+        		<%if (request.getAttribute("servertype").equals("srb")) {%>
         			{field: "domain", width: "200px", name: "Domain"},
-       			<% } %>
+       			<%}%>
         		{field: "permission", width: "auto", name: "Permission"}
     		];
     
@@ -83,8 +86,6 @@
 		var domainsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var usersStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-		var server_url;
-		var ori_url; // Used in getDomains for getting user list
 		var uploadInProgress = false;
 
 		function errorMessage(method, messageObject) {			
@@ -106,6 +107,21 @@
 				case 412: 	return "destination already exists";
 				default: 	return message;
 			}
+		}
+		
+		function resetPermissionsStore() {
+			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
+			permissionGrid.setStore(permissionsStore);	
+		}
+		
+		function resetMetadataStore() {
+			metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
+			metadataGrid.setStore(metadataStore);
+		}
+		
+		function resetReplicasStore() { 
+			replicasStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
+			replicasGrid.setStore(replicasStore);  
 		}
 		
 		var cursorCount = 0;	// Depth of cursor busy requests
@@ -220,13 +236,21 @@
 			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
 				document.childrenform.selections[i].checked = state;
 		}
+
+		function enableActiveItem(item, enable) {
+			dojo.byId(item).setAttribute('class', enable ? 'activeItem' : 'inactiveItem');
+		}
+
+		function activeItemIsEnabled(item) {
+			return dojo.byId(item).getAttribute('class') == 'activeItem';
+		}
 		
 		function refreshButtons() {
-//			dojo.byId('renameButton').disabled = checkedItemsCount() != 1;
+			enableActiveItem('renameButton', checkedItemsCount() == 1);
 //			dojo.byId('replicasButton').disabled = checkedItemsCount() != 1;
-//			dojo.byId('deleteButton').disabled = checkedItemsCount() == 0;
-//			dojo.byId('metadataButton').disabled = checkedItemsCount() == 0;
-//			dojo.byId('accessControlButton').disabled = checkedItemsCount() == 0;
+			enableActiveItem('deleteButton', checkedItemsCount() != 0);
+			enableActiveItem('metadataButton', checkedItemsCount() != 0);
+			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
 //			if (replicasGrid.selection.getSelectedCount() == 0) {
 //				dojo.byId('replicasDeleteButton').disabled = true;
 //				dojo.byId('replicasReplicateButton').disabled = true;
@@ -302,15 +326,16 @@
 				preventCache: true,
 	    		handleAs: "json",
 			    load: function(responseObject, ioArgs){
-			    	displayDirectory(responseObject.items);
-			    	cursorBusy(false);
-			      	return responseObject;
-			    },
+			    		displayDirectory(responseObject.items);
+			    		cursorBusy(false);
+			    		refreshButtons();
+			      		return responseObject;
+			    	},
 	    		error: function(response, ioArgs){
-	      			alert("Failed to fetch directory details for "+url+": "+errorMessage("get", response));
-	      			cursorBusy(false);
-	      			return response;
-	    		}
+	      				alert("Failed to fetch directory details for "+url+": "+errorMessage("get", response));
+	      				cursorBusy(false);
+	      				return response;
+	    			}
 			});
 		}
 
@@ -338,23 +363,21 @@
 			dojo.xhr("MKCOL", {
 				url: getCurrentDirectory()+"/"+dirName,
 			    load: function(responseObject, ioArgs){
-			      	refreshCurrentDirectory();
-			      	return responseObject;
-			    },
+			      		refreshCurrentDirectory();
+			      		return responseObject;
+			   		},
 	    		error: function(response, ioArgs){
-	      			alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", response));
-	      			return response;
-	    		}
+	      				alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", response));
+	      				return response;
+	    			}
 			});
 		}
 
 		function uploadFile(){ 		
-			server_url="?method=upload";
 			dojo.byId('uploadStatusField').innerHTML = "Uploading...";
 			uploadInProgress = true;
-		
 			dojo.io.iframe.send({
-				url: server_url,
+				url: getCurrentDirectory()+"?method=upload",
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
@@ -400,17 +423,297 @@
 			    },
 			    putData: data, // This can be specified as rawBody in dojo 1.4
 			    load: function(responseObject, ioArgs){
-			      	refreshCurrentDirectory();
-			      	return responseObject;
-			    },
+			      		refreshCurrentDirectory();
+			      		return responseObject;
+			   		},
 	    		error: function(response, ioArgs){
-	      			alert("Failed to delete one or more items: "+errorMessage("delete", response));
-	      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
-	      			return response;
-	    		}
+	      				alert("Failed to delete one or more items: "+errorMessage("delete", response));
+	      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
+	      				return response;
+	    			}
 			}, true);
 			checkAll(false);
-		}		
+		}	
+			
+		function rename(name, newName){
+			dijit.byId('dialogRename').hide();
+			var url = getCurrentDirectory()+'/'+name;
+			var destination = getCurrentDirectory()+'/'+newName;
+			renameFile(url, destination);
+		}
+
+		function renameFile(url, destination) {
+			dojo.xhr("MOVE", {
+				url: url,
+				headers: {
+			        "Destination": destination
+			    },
+			    load: function(responseObject, ioArgs){
+			       		refreshCurrentDirectory();
+			      		return responseObject;
+			    	},
+	    		error: function(response, ioArgs){
+	      				alert("Failed to move items: "+errorMessage("move", response));
+	      				refreshCurrentDirectory() // Reload on error in case file was deleted
+	      				return response;
+	    			}
+			}, true);
+			checkAll(false);
+		}
+
+		function loadMetadataFromServer(url){
+		  	dojo.xhrPost({
+	    		url: url,
+	    		load: function(responseObject, ioArgs){	      
+						metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						metadataGrid.setStore(metadataStore);	      			
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error when loading metadata.");
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});
+		}
+
+		function getMetadata(batch){
+			var metadataURL = "";
+			if (batch) {
+//				loadMetadataFromServer(getCurrentDirectory()+"?method=metadata");	// Default metadata is taken from current directory
+				resetMetadataStore();
+			} else {
+				metadataURL = getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=metadata";
+				loadMetadataFromServer(metadataURL);
+			}
+			dijit.byId('dialogMetadata').attr("url", metadataURL);
+			dojo.byId('metadataRefreshButton').disabled = batch;	// Don't want the refresh button active in batch mode
+			dijit.byId('dialogMetadata').show();
+		}
+
+		function refreshMetadata(url){
+			loadMetadataFromServer(url);
+		}
+
+		function addMetadata(){
+	        // set the properties for the new item:
+	        <%if (request.getAttribute("servertype").equals("srb")) {%>
+	        	var myNewItem = {name: "name", value: "value"};
+	        <%} else {%>
+	        	var myNewItem = {name: "name", value: "value", unit: "unit"};
+			<%}%>
+	        // Insert the new item into the store:
+	        metadataStore.newItem(myNewItem);
+		}
+		
+		function delMetadata(){
+	        // Get all selected items from the Grid:
+	        var items = metadataGrid.selection.getSelected();
+	        if (items.length){
+	            // Iterate through the list of selected items.
+	            // The current item is available in the variable "selectedItem" within the following function:
+	            dojo.forEach(items, function(selectedItem) {
+	                if (selectedItem !== null) {
+	                    // Delete the item from the data store:
+	                    metadataStore.deleteItem(selectedItem);
+	                }
+	            }); 
+	        } 
+		}
+		
+		function saveMetadata(){
+			if (checkedItemsCount() == 0)
+				return;
+			var rowCount = dijit.byId('metadataGrid').rowCount;
+
+			//json format is: [{"files":["file1","file2"...],"metadata":[{"name":"foo","value":"bar"},{"name":"foo2","value":"bar2"}...]}]
+			var data=listToJSON();
+			data = data.substring(0, data.length-2);	// Trim '}]' off end 
+			data += ",\"metadata\":[";
+			for (var i = 0; i < rowCount; i++){
+				if (i > 0) 
+					data += ",";
+		        <%if (request.getAttribute("servertype").equals("srb")) {%>
+					data += "{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\"}";
+			    <%} else {%>
+					data += "{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\", \"unit\":\""+dijit.byId('metadataGrid').getItem(i).unit+"\"}";
+				<%}%>
+			}
+			data += "]}]";
+//			alert(dijit.byId('metadataGrid').getItem(0).name);
+//			alert("data:"+data);
+		  	dojo.rawXhrPost({
+	    		url: getCurrentDirectory()+"?method=metadata",
+			    headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json"
+			    },
+			    postData: data,
+	    		load: function(responseObject, ioArgs){
+						metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						metadataGrid.setStore(metadataStore);	      			
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error when loading metadata.");
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});
+		}
+
+		function showMetadata() {
+			var checkedCount = checkedItemsCount();
+			if (checkedCount == 0)
+				return;
+			getMetadata(checkedCount > 1);				
+		}
+
+		function getDomains(url){
+		  	dojo.xhrPost({
+	    		url: url,
+	    		load: function(responseObject, ioArgs){
+					domainsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
+					var formDomainObj = dijit.byId('formDomain');
+					formDomainObj.store = domainsStore;
+					formDomainObj.onChange = function(val){
+						dijit.byId('formUsername').textbox.value = "";
+						dijit.byId('formUsername').valueNode.value = "";
+						getUsers(getCurrentDirectory()+"?method=userlist&domain="+formDomainObj.item.name);
+					}
+	       			return responseObject;
+	    		},
+	    		error: function(response, ioArgs){
+	      			alert("Error when loading domain list.");
+	      			return response;
+	    		},
+	    		handleAs: "json"
+	  		});
+		}
+
+		function getUsers(url){
+		  	dojo.xhrPost({
+	    		url: url,
+	    		load: function(responseObject, ioArgs){
+						usersStore = new dojo.data.ItemFileWriteStore({data: responseObject});
+						var formUsernameObj = dijit.byId('formUsername');
+						formUsernameObj.store = usersStore;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error when loading domain list.");
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});
+		}
+
+		function getPermission(url, data){
+			if (typeof data === "undefined")
+				data = "";
+		  	dojo.rawXhrPost({
+	    		url: url,
+	 		    headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json"
+			    },
+	 		    postData: data,
+	    		load: function(responseObject, ioArgs){
+	       				populatePermission(responseObject);	      			
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("Error when loading permissions.");
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});		
+		}
+
+		function populatePermission(permissions){
+			permissionsStore = new dojo.data.ItemFileWriteStore({data: permissions});
+			permissionGrid.setStore(permissionsStore);
+			if (permissions.sticky != null){
+				if (permissions.sticky == "true")
+					document.getElementById("stickyControl").innerHTML = "This directory is sticky <button onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset</button>";
+				else
+					document.getElementById("stickyControl").innerHTML = "This directory is not sticky <button onclick=\"setSticky(dojo.byId('recursive').checked)\">Set</button>";
+			} else
+				document.getElementById("stickyControl").innerHTML = "";
+		}
+
+		function getPermissions(batch){
+			var sourceURL = getCurrentDirectory();
+			if (!batch)
+				sourceURL = getCurrentDirectory()+"/"+getFirstCheckedItem(); 
+			dojo.byId("recursive").disabled = !directoryIsChecked();	// Enable if any dirs in list
+	        <%if (request.getAttribute("servertype").equals("srb")) {%>
+				getDomains(sourceURL+"?method=domains");
+		    <%} else {%>
+				getUsers(sourceURL+"?method=userlist");
+			<%}%>
+			if (!batch)
+				getPermission(sourceURL+"?method=permission");
+			else 
+				resetPermissionsStore();
+			dijit.byId('dialogPermissions').show();
+		}
+
+		function savePermission(){
+			if (checkedItemsCount() == 0)
+				return;
+			var rowCount = dijit.byId('metadataGrid').rowCount;
+			var recursiveValue = "";
+			var usernameValue = dojo.byId("formUsername").value;
+			var domainValue;
+			var permValue = dojo.byId("formPerm").options[dojo.byId("formPerm").selectedIndex].value;
+	        <%if (request.getAttribute("servertype").equals("srb")) {%>
+				domainValue = dojo.byId("formDomain").value;
+				if (!dijit.byId("formDomain").isValid() || domainValue == ""){
+					alert("Please enter a valid domain.");
+					return;
+				}
+			<%}%>
+			if (!dijit.byId("formUsername").isValid() || usernameValue == ""){
+				alert("Please enter a valid username.");
+				return;
+			}
+			if (dojo.byId("recursive").disabled == false)
+				recursiveValue = "&recursive="+(dojo.byId("recursive").checked);			
+	        <%if (request.getAttribute("servertype").equals("srb")) {%>
+				var form_url = getCurrentDirectory()+"?method=permission"+"&username="+usernameValue+"&domain="+domainValue+"&permission="+permValue+recursiveValue;
+			<%} else {%>
+				var form_url = getCurrentDirectory()+"?method=permission"+"&username="+usernameValue+"&permission="+permValue+recursiveValue;
+			<%}%>
+			getPermission(form_url, listToJSON());
+		}
+
+		function setSticky(recursive){
+			var form_url = getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=true";
+			getPermission(form_url, listToJSON());
+		}
+
+		function unsetSticky(recursive){
+			var form_url = getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=false";
+			getPermission(form_url, listToJSON());
+		}
+
+		function getSelectedPermission(e){
+			dojo.byId("formUsername").value = permissionGrid.getItem(e.rowIndex).username;
+			dojo.byId("formDomain").value = permissionGrid.getItem(e.rowIndex).domain;
+			for (var i = 0; i < dojo.byId("formPerm").options.length; i++){
+				if (dojo.byId("formPerm").options[i].text == permissionGrid.getItem(e.rowIndex).permission) 
+					dojo.byId("formPerm").options[i].selected = true;
+				else
+					dojo.byId("formPerm").options[i].selected = false;
+			}
+		}
+
+		function showPermissions() {
+			var checkedCount = checkedItemsCount();
+			if (checkedCount == 0)
+				return;
+			getPermissions(checkedCount > 1);				
+		}
 	</script>
 </head>
 
@@ -441,11 +744,90 @@
     Are you sure you want to delete the selected items and their contents?
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="deleteFiles(getCurrentDirectory())">Delete</button>
+		<button onclick="deleteFiles(getCurrentDirectory()); checkAll(false); refreshButtons();">Delete</button>
 		<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
 	</div>
 </div>					
- 
+<div dojoType="dijit.Dialog" id="dialogRename" title="Rename">
+    New name:
+	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
+	<br/><br/>
+	<div style="text-align: right;">
+		<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
+		<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
+	</div>
+</div>					
+<div dojoType="dijit.Dialog" id="dialogMetadata" title="Metadata">
+	<table>
+		<tr>
+			<td>
+	        	<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialogMetadata').attr('url'))">Refresh</button>
+	    		<button onclick="addMetadata()">Add Metadata</button>
+	    		<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
+	    		<button onclick="saveMetadata()">Save</button>
+	    		<button onclick="dijit.byId('dialogMetadata').hide()">Close</button>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="metadataLayout"></div>
+			</td>
+		</tr>
+	</table>
+</div>
+<div dojoType="dijit.Dialog" id="dialogPermissions" title="Permissions">
+	<table>
+		<tr>
+			<td>
+				<div style="width: 450px;" id="permissionGrid" structure="permissionsLayout" dojoType="dojox.grid.DataGrid" jsId="permissionGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
+			</td>
+			<td valign="top">
+				<table>
+					<tr>
+						<td colspan="2"><span id="stickyControl"></span></td>
+					</tr>
+	        		<%if (request.getAttribute("servertype").equals("srb")) {%>
+					  <tr>
+						  <td>Domain</td>
+						  <td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="domainsStore"/></td>
+					  </tr>
+					<%}%>
+					<tr>
+						<td>Username</td>
+						<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="usersStore"/></td>
+					</tr>
+					<tr>
+						<td>Permission</td>
+						<td>
+							<select id="formPerm" typdojoType="dijit.form.Select" name="permission">
+								<option value="all">all</option>
+								<option value="w">write</option>
+								<option value="r">read</option>
+								<option value="n">null</option>
+	        					<%if (request.getAttribute("servertype").equals("srb")) {%>
+									<option value="c">curate</option>
+									<option value="t">annotate</option>
+								<%}%>
+								<!-- <option value="o">owner</option> -->
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Recursive</td>
+						<td><input type="checkbox" name="recursive" id="recursive" dojoType="dijit.form.CheckBox"/></td>
+					</tr>
+					<tr>
+						<td rowspan="2" align="center">
+							<button onclick="savePermission()">Apply</button>
+							<button onclick="dijit.byId('dialogPermissions').hide()">Cancel</button>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</div>
+
 <!-- Main body -->			
 <table id="header" width="100%" border="0" cellspacing="0" cellpadding="12">
 	<tr>
@@ -501,7 +883,7 @@
       		<table id="button_table" border="0" cellspacing="4" cellpadding="0">
         		<tr class="text">
           			<td bgcolor="#CCCCCC">
-						<table class="activeItem" border="0" cellspacing="0" cellpadding="6">
+						<table id='uploadButton' class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
                 				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"><strong><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</strong></td>
               				</tr>
@@ -554,23 +936,24 @@
       			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
-          				<td class="text">Access Control</td>
+          				<td class="activeItem" id="accessControlButton" onclick="if (!activeItemIsEnabled('accessControlButton')) return; showPermissions()">Access&nbsp;Control</td>       				
         			</tr>
       			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
-          				<td class="text">Meta Data</td>
+          				<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
         			</tr>
     			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
-          				<td class="text">Rename</td>
+          				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>
+          				
         			</tr>
     			</table>
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
         			<!-- Add disable button below -->
-          				<td class="activeItem" id="deleteButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogDelete').show()" >Delete</td>
+          				<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; dijit.byId('dialogDelete').show()" >Delete</td>
         			</tr>
     			</table>
 			</td>
