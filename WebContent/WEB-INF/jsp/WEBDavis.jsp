@@ -282,10 +282,8 @@
           			'</table>'
 					);
 				dojo.html.set(dojo.byId("trashRestoreRow"), 
-	            	'<td class="activeItem" id="trashRestoreButton" onclick="if (!activeItemIsEnabled(\'trashRestoreButton\')) return; if (checkedItemsCount() > 0) dijit.byId(\'dialogRestore\').show()"/>Restore</strong></td>'
-					);
+	            	'<td class="activeItem" id="trashRestoreButton" onclick="if (!activeItemIsEnabled(\'trashRestoreButton\')) return; if (checkedItemsCount() > 0) dijit.byId(\'dialogRestore\').show()"/>Restore</strong></td>');
 				dojo.byId("trashRestoreTable").setAttribute('class', 'hoverBorderSide');
-                	//<button id="restoreButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogRestore').show()" disabled="true">Restore</button>
 			} else {
 				dojo.html.set(dojo.byId("trashEmpty"), "");
 				dojo.html.set(dojo.byId("trashRestoreRow"), "");
