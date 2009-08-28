@@ -288,7 +288,7 @@
                 	//<button id="restoreButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogRestore').show()" disabled="true">Restore</button>
 			} else {
 				dojo.html.set(dojo.byId("trashEmpty"), "");
-//				dojo.html.set(dojo.byId("trashRestore"), "");
+				dojo.html.set(dojo.byId("trashRestoreRow"), "");
 				dojo.byId("trashRestoreTable").setAttribute('class', 'invisible');
 			}
 			if (dojo.byId('trashRestoreButton') != null) 
@@ -495,18 +495,8 @@
 		}
 
 		function restoreFiles() {
-			var url = getCurrentDirectory();
-			var initialurl = "<%=request.getAttribute("url")%>";
-			var home = "<%=request.getAttribute("home")%>";
-			var trash = "<%=request.getAttribute("trash")%>";
-			var href = "<%=request.getAttribute("href")%>";
-			var hrefabsolute = "<%=request.getAttribute("hrefabsolute")%>";
 			dijit.byId('dialogRestore').hide();
-			var relativePath = url.substr(trash.length, url.length);
-			var destination = home+relativePath;
-//			var hrefBase = href.substr(0, href.length-initialurl.length);
-//			var destination = hrefBase+home+initialurl.substring(trash.length, initialurl.length);
-			alert("url="+url+" initurl="+initialurl+" home="+home+" trash="+trash+" href="+href+" hrefabsolute="+hrefabsolute+" relpath="+relativePath+" dest="+destination);
+			var destination = "<%=request.getAttribute("home")%>"+getCurrentDirectory().substr("<%=request.getAttribute("trash")%>".length, getCurrentDirectory().length);
 			moveFiles(url, destination);
 		}
 		
