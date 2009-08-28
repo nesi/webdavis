@@ -286,7 +286,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 Log.log(Log.DEBUG, "#### Time after creating dynamic json: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
                 return;
         	}
-if (request.getParameter("newui") != null) {
+if (request.getParameter("oldui") == null) {
     			String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot=request.getContextPath()+"/"+dojoroot;

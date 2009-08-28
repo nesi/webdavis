@@ -57,8 +57,11 @@ public class DefaultMoveHandler extends AbstractHandler {
  
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
     	boolean batch = getFileList(request, davisSession, fileList); 
-    	String destination = getRemoteURL(request, request.getHeader("Destination"));
-        if (destination == null) {
+    	String destinationField = request.getHeader("Destination");
+    	if (destinationField.indexOf("://") < 0)	// If destination field is a relative path, prepend a protocol for getRemoteURL()
+    		destinationField = "http://"+destinationField;
+    	String destination = getRemoteURL(request, destinationField);
+		if (destination == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }

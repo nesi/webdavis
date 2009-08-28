@@ -23,16 +23,18 @@
 		#hor_rule{margin: 0px -12px -12px 0px;}
 		#table.HoverGreen {background:#509C52; color:#FFF;}
 		#table.HoverGrey {background:#CCC; color:#FFF; border:1px solid #CCC;}
-<!--		.hoverBorderSide {margin: 2px; border: 1px solid #CCC;}-->
+		.hoverBorderSide {margin: 2px; border: 1px solid #CCC;}
 		.link{text-decoration:none; color:#04E;}
 		.darklink{text-decoration:none; color:black;}
-<!--		.linkOver{text-decoration:underline;}-->
+		.linkOver{text-decoration:underline;}
 		.link:hover{text-decoration:underline; color:#04E;}
 		.darklink:hover{text-decoration:underline; color:black;}
 		.activeItem{background:#CCC; color:black;}
 		.activeItem:hover{background:#509C52; color:#FFF;}
 		.inactiveItem{background:#DDD; color:#CCC;}
 		.inactiveItem:hover{background:#DDD; color:#CCC;}
+		.invisible{background:white; color:white; border: 0px;}
+		.linkImage{text-decoration:underline; color:#04E;}
    		.dojoxGrid-row-odd td {background:#e8f2ff;}
     	#metadataGrid {border: 1px solid #333; width: 400px; height: 300px;}
 		#permissionGrid {border: 1px solid #333; width: 600px; height: 200px;}
@@ -54,6 +56,7 @@
 		dojo.addOnLoad(function() {
 			setCurrentDirectory("<%=request.getAttribute("url")%>");
 			fetchDirectory(getCurrentDirectory());
+			setToggleButtonState(true);
 			refreshButtons();
 		});
 
@@ -237,6 +240,16 @@
 				document.childrenform.selections[i].checked = state;
 		}
 
+		function setToggleButtonState(state) {
+			var s = state ? "Select all" : "Select none";
+			dojo.byId("toggleAllButton").title = s;
+			dojo.html.set(dojo.byId("toggleAllButton"), s);
+		}
+	
+		function getToggleButtonState() {
+			return dojo.byId('toggleAllButton').title == "Select all";
+		}
+	
 		function enableActiveItem(item, enable) {
 			dojo.byId(item).setAttribute('class', enable ? 'activeItem' : 'inactiveItem');
 		}
@@ -251,17 +264,37 @@
 			enableActiveItem('deleteButton', checkedItemsCount() != 0);
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
-//			if (replicasGrid.selection.getSelectedCount() == 0) {
-//				dojo.byId('replicasDeleteButton').disabled = true;
-//				dojo.byId('replicasReplicateButton').disabled = true;
-//			} else {
-//				var item = replicasGrid.selection.getFirstSelected();
-//				var isReplica = replicasStore.getValue(item, "number") != null;
-//				dojo.byId('replicasDeleteButton').disabled = !isReplica;
-//				dojo.byId('replicasReplicateButton').disabled = isReplica;			
-//			}
-//			if (dojo.byId('restoreButton') != null)
-//				dojo.byId('restoreButton').disabled = checkedItemsCount() == 0;
+			if (replicasGrid.selection.getSelectedCount() == 0) {
+				dojo.byId('replicasDeleteButton').disabled = true;
+				dojo.byId('replicasReplicateButton').disabled = true;
+			} else {
+				var item = replicasGrid.selection.getFirstSelected();
+				var isReplica = replicasStore.getValue(item, "number") != null;
+				dojo.byId('replicasDeleteButton').disabled = !isReplica;
+				dojo.byId('replicasReplicateButton').disabled = isReplica;			
+			}
+			if (getCurrentDirectory().indexOf('<%=request.getAttribute("trash")%>') >= 0) {
+				dojo.html.set(dojo.byId("trashEmpty"), 
+          			'<table class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
+            		'	<tr>'+
+              		'		<td onclick="checkAll(true); setToggleButtonState(!getToggleButtonState()); dijit.byId(\'dialogDelete\').show()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
+            		'	</tr>'+
+          			'</table>'
+					);
+				dojo.html.set(dojo.byId("trashRestoreRow"), 
+	            	'<td class="activeItem" id="trashRestoreButton" onclick="if (!activeItemIsEnabled(\'trashRestoreButton\')) return; if (checkedItemsCount() > 0) dijit.byId(\'dialogRestore\').show()"/>Restore</strong></td>'
+					);
+				dojo.byId("trashRestoreTable").setAttribute('class', 'hoverBorderSide');
+                	//<button id="restoreButton" onclick="if (checkedItemsCount() > 0) dijit.byId('dialogRestore').show()" disabled="true">Restore</button>
+			} else {
+				dojo.html.set(dojo.byId("trashEmpty"), "");
+//				dojo.html.set(dojo.byId("trashRestore"), "");
+				dojo.byId("trashRestoreTable").setAttribute('class', 'invisible');
+			}
+			if (dojo.byId('trashRestoreButton') != null) 
+				enableActiveItem('trashRestoreButton', checkedItemsCount() != 0);
+				
+			setToggleButtonState(getToggleButtonState());
 		}
 		
 		function setCurrentDirectory(dir) {
@@ -461,6 +494,47 @@
 			checkAll(false);
 		}
 
+		function restoreFiles() {
+			var url = getCurrentDirectory();
+			var initialurl = "<%=request.getAttribute("url")%>";
+			var home = "<%=request.getAttribute("home")%>";
+			var trash = "<%=request.getAttribute("trash")%>";
+			var href = "<%=request.getAttribute("href")%>";
+			var hrefabsolute = "<%=request.getAttribute("hrefabsolute")%>";
+			dijit.byId('dialogRestore').hide();
+			var relativePath = url.substr(trash.length, url.length);
+			var destination = home+relativePath;
+//			var hrefBase = href.substr(0, href.length-initialurl.length);
+//			var destination = hrefBase+home+initialurl.substring(trash.length, initialurl.length);
+			alert("url="+url+" initurl="+initialurl+" home="+home+" trash="+trash+" href="+href+" hrefabsolute="+hrefabsolute+" relpath="+relativePath+" dest="+destination);
+			moveFiles(url, destination);
+		}
+		
+		function moveFiles(url, destination) {
+			if (checkedItemsCount() == 0)
+				return;
+			var data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+			dojo.xhr("MOVE", {
+				url: url+"?destination="+destination,
+				headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json",
+			        "Destination": destination
+			    },
+			    putData: data, // This can be specified as rawBody in dojo 1.4
+			    load: function(responseObject, ioArgs){
+			      	refreshCurrentDirectory();
+			      	return responseObject;
+			    },
+	    		error: function(response, ioArgs){
+	      			alert("Failed to move one or more items: "+errorMessage("move", response));
+	      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
+	      			return response;
+	    		}
+			}, true);
+			checkAll(false);
+		}
+		
 		function loadMetadataFromServer(url){
 		  	dojo.xhrPost({
 	    		url: url,
@@ -802,7 +876,9 @@
 </head>
 
 <body class="tundra">
-<!-- Dialogs-->
+
+
+<!-- -------------- Dialogs -------------- -->
 <div dojoType="dijit.Dialog" id="dialogCreateDir" title="Create Directory">
 	New directory name:
 	<input name="directory" id="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -839,6 +915,14 @@
 	<div style="text-align: right;">
 		<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
 		<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
+	</div>
+</div>					
+<div dojoType="dijit.Dialog" id="dialogRestore" title="Restore Items">
+    Are you sure you want to restore the selected items and their contents?
+	<br/><br/>
+	<div style="text-align: right;">
+		<button onclick="restoreFiles()">Restore</button>
+		<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 	</div>
 </div>					
 <div dojoType="dijit.Dialog" id="dialogMetadata" title="Metadata">
@@ -931,7 +1015,9 @@
 	</table>
 </div>
 
-<!-- Main body -->			
+
+
+<!-- ---------Main body------------ -->			
 <table id="header" width="100%" border="0" cellspacing="0" cellpadding="12">
 	<tr>
     	<td valign="bottom">
@@ -939,9 +1025,10 @@
 		</td>
     	<!-- <td align="right" valign="bottom"> -->
     	<td align="right" valign="top">
-			<table border="0" cellspacing="0" cellpadding="6">
+			<table border="0" cellspacing="0" cellpadding="3">
       			<tr class="text">
-        			<td>You are logged in as &lt;<a class="link" onclick="gotoDirectory('<%=request.getAttribute("home")%>'); return false" href="<%=request.getAttribute("home")%>"><%=request.getAttribute("account")%></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+        			<td>You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="gotoDirectory('<%=request.getAttribute("home")%>'); return false" href="<%=request.getAttribute("home")%>"><%=request.getAttribute("account")%></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+        			</tr><tr><td align="right"><a title="Go to my trash folder" onclick="gotoDirectory('<%=request.getAttribute("trash")%>'); return false" href="<%=request.getAttribute("trash")%>"><img border="0" alt="trash" src="/images/trash.png" width="20" height="20"/></a></td>
       			</tr>
     		</table>
       		<!-- <table id="mode_buttons" border="0" cellspacing="4" cellpadding="0">
@@ -985,19 +1072,21 @@
 			</p>
       		<table id="button_table" border="0" cellspacing="4" cellpadding="0">
         		<tr class="text">
-          			<td bgcolor="#CCCCCC">
+          			<td>
 						<table id='uploadButton' class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
                 				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"><strong><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</strong></td>
               				</tr>
           				</table>
 					</td>
-          			<td bgcolor="#CCCCCC">
+          			<td>
 						<table class="activeItem" border="0" cellspacing="0" cellpadding="6">
             				<tr>
               					<td onclick="dijit.byId('dialogCreateDir').show()"><strong><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</strong></td>
             				</tr>
           				</table>
+					</td>
+					<td id="trashEmpty">
 					</td>
         		</tr>
       		</table>
@@ -1027,9 +1116,9 @@
 	   			</table>
 			</td>
     		<td valign="top">
-				<table border="0" cellspacing="2" cellpadding="6">
+				<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
       				<tr>
-        				<td class="text">&nbsp;</td>
+      					<td class="activeItem" id="toggleAllButton" onclick="toggleAll(); refreshButtons()" title=""></td>
       				</tr>
     			</table>
       			<table border="0" cellspacing="2" cellpadding="6">
@@ -1061,6 +1150,10 @@
       			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
           				<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; dijit.byId('dialogDelete').show()" >Delete</td>
+        			</tr>
+    			</table>
+      			<table class="invisible" id="trashRestoreTable" border="0" cellspacing="0" cellpadding="6">
+        			<tr id="trashRestoreRow">
         			</tr>
     			</table>
 			</td>
