@@ -191,6 +191,7 @@
 	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root">
 	  <fileset dir="${web.home}"/>
 	</copy>
+  	<move file="${build.home}/${app.name}-${app.version}/webapps/root/images" todir="${build.home}/${app.name}-${app.version}/webapps"/>
   	<move file="${build.home}/${app.name}-${app.version}/webapps/root/dojoroot" todir="${build.home}/${app.name}-${app.version}/webapps"/>
   	<mkdir dir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes"/>
  	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes/">
@@ -202,6 +203,7 @@
   	<delete dir="${build.home}/META-INF"/>
   	<delete dir="${build.home}/WEB-INF"/>
   	<delete dir="${build.home}/dojoroot"/>
+  	<delete dir="${build.home}/images"/>
 	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
 	  <tarfileset dir="${build.home}" />
 	</tar>
