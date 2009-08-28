@@ -201,9 +201,7 @@ public class AuthorizationProcessor {
 						}
 						Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());  //+" "+user+" "+password
 						gssCredential = client.slcsLogin(idp, user,	password);
-					}
-					if (gssCredential == null) {
-						return null;
+						Log.log(Log.DEBUG,"Got porxy from idp: "+gssCredential.getName().toString());
 					}
 				} catch (GeneralSecurityException e) {
 					// TODO Auto-generated catch block
@@ -211,6 +209,9 @@ public class AuthorizationProcessor {
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				}
+				if (gssCredential == null) {
+					return null;
 				}
 			}
 		}else if (authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
