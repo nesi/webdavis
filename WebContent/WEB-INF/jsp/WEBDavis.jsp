@@ -29,10 +29,9 @@
 		.linkOver{text-decoration:underline;}
 		.link:hover{text-decoration:underline; color:#04E;}
 		.darklink:hover{text-decoration:underline; color:black;}
-		.activeItem{background:#CCC; color:black;}
+		.activeItem{background:#AFCAAF; color:black; font-family:Arial, Helvetica, sans-serif; font-weight:bold;}
 		.activeItem:hover{background:#509C52; color:#FFF;}
-		.inactiveItem{background:#DDD; color:#CCC;}
-		.inactiveItem:hover{background:#DDD; color:#CCC;}
+		.inactiveItem{background:#AFCAAF; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold;}
 		.invisible{background:white; color:white; border: 0px;}
 		.linkImage{text-decoration:underline; color:#04E;}
    		.dojoxGrid-row-odd td {background:#e8f2ff;}
@@ -1015,8 +1014,14 @@
     	<td align="right" valign="top">
 			<table border="0" cellspacing="0" cellpadding="3">
       			<tr class="text">
-        			<td>You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="gotoDirectory('<%=request.getAttribute("home")%>'); return false" href="<%=request.getAttribute("home")%>"><%=request.getAttribute("account")%></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
-        			</tr><tr><td align="right"><a title="Go to my trash folder" onclick="gotoDirectory('<%=request.getAttribute("trash")%>'); return false" href="<%=request.getAttribute("trash")%>"><img border="0" alt="trash" src="/images/trash.png" width="20" height="20"/></a></td>
+        			<td align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="gotoDirectory('<%=request.getAttribute("home")%>'); return false" href="<%=request.getAttribute("home")%>"><%=request.getAttribute("account")%></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+        		</tr>
+        		<tr>
+        			
+        			<td align="right">
+        				<a title="Go to my home folder" onclick="gotoDirectory('<%=request.getAttribute("home")%>'); return false" href="<%=request.getAttribute("home")%>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>
+        				<a title="Go to my trash folder" onclick="gotoDirectory('<%=request.getAttribute("trash")%>'); return false" href="<%=request.getAttribute("trash")%>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>
+       				</td>
       			</tr>
     		</table>
       		<!-- <table id="mode_buttons" border="0" cellspacing="4" cellpadding="0">
@@ -1063,14 +1068,14 @@
           			<td>
 						<table id='uploadButton' class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
-                				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"><strong><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</strong></td>
+                				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.byId('uploadStatusField').innerHTML=''; dijit.byId('dialogUpload').show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>
               				</tr>
           				</table>
 					</td>
           			<td>
 						<table class="activeItem" border="0" cellspacing="0" cellpadding="6">
             				<tr>
-              					<td onclick="dijit.byId('dialogCreateDir').show()"><strong><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</strong></td>
+              					<td onclick="dijit.byId('dialogCreateDir').show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>
             				</tr>
           				</table>
 					</td>
@@ -1100,47 +1105,45 @@
 	<table width="100%" border="0" cellspacing="0" cellpadding="12">
   		<tr>
     		<td width="80%" valign="top">
-				<table id="directoryTable" width="100%" border="0" cellpadding="6" cellspacing="2">
-	   			</table>
+				<table id="directoryTable" width="100%" border="0" cellpadding="6" cellspacing="2"></table>
 			</td>
     		<td valign="top">
-				<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+				<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
       				<tr>
       					<td class="activeItem" id="toggleAllButton" onclick="toggleAll(); refreshButtons()" title=""></td>
       				</tr>
     			</table>
-      			<table border="0" cellspacing="2" cellpadding="6">
+      			<table width="100%" border="0" cellspacing="2" cellpadding="6">
         			<tr>
           				<td class="text">&nbsp;</td>
           			</tr>
       			</table>
-      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
           				<td class="activeItem" id="accessControlButton" onclick="if (!activeItemIsEnabled('accessControlButton')) return; showPermissions()">Access&nbsp;Control</td>       				
         			</tr>
       			</table>
-      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
           				<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
         			</tr>
     			</table>
-      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
           				<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
         			</tr>
     			</table>    			
-      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
-          				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>
-          				
+          				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>         				
         			</tr>
     			</table>
-      			<table class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
           				<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; dijit.byId('dialogDelete').show()" >Delete</td>
         			</tr>
     			</table>
-      			<table class="invisible" id="trashRestoreTable" border="0" cellspacing="0" cellpadding="6">
+      			<table width="100%" class="invisible" id="trashRestoreTable" border="0" cellspacing="0" cellpadding="6">
         			<tr id="trashRestoreRow">
         			</tr>
     			</table>
