@@ -57,6 +57,7 @@
 			fetchDirectory(getCurrentDirectory());
 			setToggleButtonState(true);
 			refreshButtons();
+			initConnects();
 		});
 
 		var currentDirectory = "";
@@ -180,6 +181,23 @@
 				result = result+'<a class="link" onclick="gotoDirectory(\''+subpath+'\'); return false" href="'+subpath+'">'+dirs[i]+'</a>';
 			}
 			return result;
+		}
+
+		function initConnects() {
+			dojo.connect(dojo.byId("directoryInputBox"), 'onkeypress', function(e) {
+				if (e.keyCode == dojo.keys.ENTER) {
+					createDirectory();
+				}
+			});
+			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
+				if (e.keyCode == dojo.keys.ENTER) {
+					rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value);
+				}
+			});
+		}
+
+		function isEnterKey(event) {
+			return event && event.which == 13
 		}
 
 		function listCheckedItems() {
@@ -414,7 +432,8 @@
 				handle: function(response, ioArgs){
 							dijit.byId('dialogUpload').hide();
 							if (response.status == "success") {
-								alert("Successfully transferred "+response.message+" bytes");
+								//alert("Successfully transferred "+response.message+" bytes");
+								window.status="Successfully transferred "+response.message+" bytes";
 								refreshCurrentDirectory();						
 							}else 
 								alert("Failed to upload file: "+response.message);
@@ -878,7 +897,7 @@
 <div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
  	<form id="uploadForm" enctype="multipart/form-data" name="uploadTest" method="post">
    		File to upload:
-   		<input type="file" name="uploadFileName" id="formUpload"/>
+   		<input type="file" name="uploadFileName" id="formUpload" onKeyPress="if (isEnterKey(event)) {dojo.byId('uploadStartButton').disabled=true; uploadFile();}"/>
  	</form>
 	<div id="uploadStatusField"></div>
 	<br/>
