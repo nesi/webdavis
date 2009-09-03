@@ -1298,6 +1298,20 @@
 		</init-param>
 		<init-param>
 			<description>
+				organisation logo
+			</description>
+			<param-name>organisation-logo</param-name>
+			<param-value>/images/logo.jpg</param-value>
+		</init-param>
+		<init-param>
+			<description>
+				organisation logo geometry - widthxheight
+			</description>
+			<param-name>organisation-logo-geometry</param-name>
+			<param-value>28x30</param-value>
+		</init-param>
+		<init-param>
+			<description>
 				myproxy server where certs are stored
 			</description>
 			<param-name>myproxy-server</param-name>

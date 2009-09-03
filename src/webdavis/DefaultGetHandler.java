@@ -331,6 +331,20 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("trash", davisSession.getTrashDirectory());
     			substitutions.put("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
     			substitutions.put("organisationname", getServletConfig().getInitParameter("organisation-name"));
+    			substitutions.put("organisationlogo", getServletConfig().getInitParameter("organisation-logo"));
+    			String[] geom = null;
+    			String geomString = getServletConfig().getInitParameter("organisation-logo-geometry");
+    			String w="";
+    			String h="";
+    			if (geomString != null) {
+    				try {
+    					geom = geomString.split("x");
+    					w = geom[0];
+    					h = geom[1];
+   				} catch (Exception e) {}
+    			}
+    			substitutions.put("organisationlogowidth", w);
+    			substitutions.put("organisationlogoheight", h);
     			substitutions.put("account", davisSession.getAccount());
        			String uiContent = new String(uiHTMLContent);
     			// Make substitutions in UI HTML file
