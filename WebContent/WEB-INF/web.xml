@@ -875,6 +875,21 @@
     </init-param>
 -->
 <!--
+    ui.html:
+
+        Provides the location of the default user interface html file.
+
+        Default Value:
+    
+            /META-INF/dui.html (loads a default file from the Davis jarfile).
+-->
+<!--
+    <init-param>
+        <param-name>ui.html</param-name>
+        <param-value>/META-INF/ui.html</param-value>
+    </init-param>
+-->
+<!--
     directory.xsl:
 
         Provides the location of the default directory view stylesheet.
@@ -1382,14 +1397,6 @@
 <servlet-mapping>
 <servlet-name>Davis</servlet-name>
 <url-pattern>/*</url-pattern>
-</servlet-mapping>
-<servlet>
-  <servlet-name>DavisUI</servlet-name>
-  <jsp-file>/WEB-INF/jsp/WEBDavis.jsp</jsp-file>
-</servlet>
-<servlet-mapping>
-  <servlet-name>DavisUI</servlet-name>
-  <url-pattern>/DavisUI/*</url-pattern>
 </servlet-mapping>
 	<listener>
 		<listener-class>webdavis.DavisListener</listener-class>

@@ -1,10 +1,14 @@
 package webdavis;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
 import java.net.URL;
@@ -16,13 +20,16 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Vector;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -159,10 +166,11 @@ public class DefaultGetHandler extends AbstractHandler {
     private final Map configurations = new HashMap();
 
     private String stylesheetLocation;
-
-    private String configurationLocation;
+    private String configurationLocation; 
+    private String UIHTMLLocation;
 
     private PropertiesBuilder propertiesBuilder;
+    private String uiHTMLContent = "";
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
@@ -177,12 +185,31 @@ public class DefaultGetHandler extends AbstractHandler {
         if (configurationLocation == null) {
             configurationLocation = "/META-INF/configuration.html";
         }
+        UIHTMLLocation = config.getInitParameter("ui.html");
+        if (UIHTMLLocation == null) {
+            UIHTMLLocation = "/META-INF/ui.html";
+        }
+
+        // Load UI html into a string so that subsequent requests can use that directly
+        try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(getResourceAsStream(UIHTMLLocation)));
+			char[] buffer = new char[1024];
+			int numRead = 0;
+			while ((numRead=reader.read(buffer)) != -1) {
+				String readData = String.valueOf(buffer, 0, numRead);
+	            uiHTMLContent += (readData);
+	        }
+	        reader.close();
+		} catch (IOException e) {
+			Log.log(Log.CRITICAL, "Failed to read UI html file: "+e);
+		}
     }
 
     public void destroy() {
         propertiesBuilder.destroy();
         propertiesBuilder = null;
         stylesheetLocation = null;
+        UIHTMLLocation = null;
         synchronized (defaultTemplates) {
             defaultTemplates.clear();
         }
@@ -286,25 +313,41 @@ public class DefaultGetHandler extends AbstractHandler {
                 Log.log(Log.DEBUG, "#### Time after creating dynamic json: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
                 return;
         	}
-if (request.getParameter("oldui") == null) {
+        	if (request.getParameter("oldui") == null) {
     			String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot=request.getContextPath()+"/"+dojoroot;
 				Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
-    			request.setAttribute("dojoroot", dojoroot);
-    			request.setAttribute("servertype", getServerType());
-    			request.setAttribute("href", requestUrl);
-    			request.setAttribute("url", file.getAbsolutePath());
-    			request.setAttribute("unc", file.toString());
-    			request.setAttribute("parent", request.getContextPath()+file.getParent());
-    			request.setAttribute("home", davisSession.getHomeDirectory());
-    			request.setAttribute("trash", davisSession.getTrashDirectory());
-    			request.setAttribute("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
-    			request.setAttribute("organisationname", getServletConfig().getInitParameter("organisation-name"));
-    			request.setAttribute("account", davisSession.getAccount());
-    			getServletConfig().getServletContext().getRequestDispatcher("/DavisUI").forward(request, response);
-       		return;
-}
+				
+				// Define substitutions for UI HTML file
+				Hashtable<String, String> substitutions = new Hashtable();
+    			substitutions.put("dojoroot", dojoroot);
+    			substitutions.put("servertype", getServerType());
+    			substitutions.put("href", requestUrl);
+    			substitutions.put("url", file.getAbsolutePath());
+    			substitutions.put("unc", file.toString());
+    			substitutions.put("parent", request.getContextPath()+file.getParent());
+    			substitutions.put("home", davisSession.getHomeDirectory());
+    			substitutions.put("trash", davisSession.getTrashDirectory());
+    			substitutions.put("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
+    			substitutions.put("organisationname", getServletConfig().getInitParameter("organisation-name"));
+    			substitutions.put("account", davisSession.getAccount());
+       			String uiContent = new String(uiHTMLContent);
+    			// Make substitutions in UI HTML file
+    			for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements() ;) {
+    				String key = keys.nextElement();
+    				String replacement = substitutions.get(key);
+    				if (replacement == null)
+    					replacement = "";
+    				uiContent = uiContent.replaceAll("<parameter *"+key+" */>", replacement);
+    			}
+                response.setContentType("text/html; charset=\"utf-8\"");
+                OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
+                out.write(uiContent, 0, uiContent.length());
+                out.flush();
+                response.flushBuffer();
+                return;
+			}
         	
         	if ("configure".equals(request.getQueryString())) {
                 Log.log(Log.INFORMATION, "Configuration request received.");
