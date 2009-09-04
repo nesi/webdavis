@@ -286,14 +286,14 @@ public class DefaultGetHandler extends AbstractHandler {
 					}     			
         		};
         		Arrays.sort((Object[])fileList, comparator);
-    			str.append("{\nitems:[\n");
+    			str.append("{\n\"items\":[\n");
 				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
     			for (int i = 0; i < fileList.length; i++) {
 					if (i > 0) 
 						str.append(",\n");
 					String type = fileList[i].isDirectory() ? "d" : "f";
-					str.append("{name:'"+fileList[i].getName()+"', type:'"+type+"', size:'"+fileList[i].length()+"', date:'"+dateFormat.format(fileList[i].lastModified())+"'}");
+					str.append("{\"name\":\""+fileList[i].getName()+"\", \"type\":\""+type+"\", \"size\":\""+fileList[i].length()+"\", \"date\":\""+dateFormat.format(fileList[i].lastModified())+"\"}");
 				}
 				str.append("\n");
 				str.append("]}");
