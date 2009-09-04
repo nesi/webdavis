@@ -40,7 +40,7 @@
     	#metadataGrid {border: 1px solid #333; width: 400px; height: 300px;}
 		#permissionGrid {border: 1px solid #333; width: 600px; height: 200px;}
 	</style>	
-	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true"></script>
+	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
 	<script type="text/javascript">
     	dojo.require("dojox.grid.compat.Grid");
     	dojo.require("dojox.grid.DataGrid");
@@ -54,15 +54,32 @@
 		dojo.require("dijit.form.FilteringSelect");
 		dojo.require("dojo.io.iframe");
 		dojo.require("dijit.ProgressBar");
+		dojo.require("dojo.back");
+		
 		dojo.addOnLoad(function() {
-			setCurrentDirectory("<parameter url/>");
-			fetchDirectory(getCurrentDirectory());
+			dojo.back.setInitialState(newBackState("<parameter url/>"));
+			_gotoDirectory("<parameter url/>");
 			setToggleButtonState(true);
 			refreshButtons();
 			initConnects();
 			patchHTML();
 		});
 
+		function newBackState(url) {
+			return {
+				back: 	function(){
+						//	alert('back pressed - url='+this.currentUrl); 
+							_gotoDirectory(this.currentUrl);
+						},
+				forward: function(){
+						//	alert('forward pressed - url='+this.currentUrl); 
+							_gotoDirectory(this.currentUrl);
+						},
+				changeUrl: true,
+				currentUrl: url
+			}
+		}
+		
 		var currentDirectory = "";
 	    var metadataLayout = ("<parameter servertype/>" == 'irods') ? 
 	    	[{
@@ -422,9 +439,18 @@
 			});
 		}
 
-		function gotoDirectory(url) {
+		function _gotoDirectory(url) {
 			setCurrentDirectory(url);
 			fetchDirectory(getCurrentDirectory());
+		}
+		
+		function addToHistory(url) {
+			dojo.back.addToHistory(newBackState(url));
+		}
+		
+		function gotoDirectory(url) {
+			_gotoDirectory(url);
+			addToHistory(url);
 		}
 
 		function refreshCurrentDirectory() {
@@ -912,7 +938,7 @@
 </head>
 
 <body class="tundra">
-
+<script>dojo.back.init();</script>
 
 <!-- -------------- Dialogs -------------- -->
 <div dojoType="dijit.Dialog" id="dialogCreateDir" title="Create Directory">
