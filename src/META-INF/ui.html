@@ -55,8 +55,10 @@
 		dojo.require("dojo.io.iframe");
 		dojo.require("dijit.ProgressBar");
 		dojo.require("dojo.back");
-		
+//dojo.require("dijit.Tree");
+
 		dojo.addOnLoad(function() {
+//fileTreeStore = new dojo.data.ItemFileWriteStore({ items: [ { name:'Kermit', color:'green', age:12, friends:['Gonzo', {_reference:{name:'Fozzie Bear'}}]}, { name:'Fozzie Bear', wears:['hat', 'tie']}, { name:'Miss Piggy', pets:'Foo-Foo'} ]});
 			dojo.back.setInitialState(newBackState("<parameter url/>"));
 			_gotoDirectory("<parameter url/>");
 			setToggleButtonState(true);
@@ -117,6 +119,7 @@
 		var domainsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var usersStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+//var fileTreeStore = new dojo.data.ItemFileReadStore({data: {items:[]}});
 		var uploadInProgress = false;
 
 		function patchHTML() {
@@ -574,7 +577,7 @@
 		function restoreFiles() {
 			dijit.byId('dialogRestore').hide();
 			var destination = "<parameter home/>"+getCurrentDirectory().substr("<parameter trash/>".length, getCurrentDirectory().length);
-			moveFiles(url, destination);
+			moveFiles(getCurrentDirectory(), destination);
 		}
 		
 		function moveFiles(url, destination) {
@@ -1160,6 +1163,13 @@
 		</td>
   	</tr>
 </table>
+
+<!-- <div dojoType="dijit.Tree" store="fileTreeStore" labelAttr="name" label="blah">
+	<script type="dojo/method" event="onClick" args="item">
+		alert("clicked on "+fileTreeStore.getLabel(item));
+	</script>
+</div> -->
+
 <form id="childrenform" name="childrenform">
 	<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
 	<table width="100%" border="0" cellspacing="0" cellpadding="12">
