@@ -332,6 +332,7 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
     			substitutions.put("organisationname", getServletConfig().getInitParameter("organisation-name"));
     			substitutions.put("organisationlogo", getServletConfig().getInitParameter("organisation-logo"));
+    			substitutions.put("favicon", getServletConfig().getInitParameter("favicon"));
     			String[] geom = null;
     			String geomString = getServletConfig().getInitParameter("organisation-logo-geometry");
     			String w="";

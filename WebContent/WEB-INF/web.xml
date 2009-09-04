@@ -1308,7 +1308,14 @@
 				organisation logo geometry - widthxheight
 			</description>
 			<param-name>organisation-logo-geometry</param-name>
-			<param-value>28x30</param-value>
+			<param-value>32x32</param-value>
+		</init-param>	
+		<init-param>
+			<description>
+				favicon for browser title bar
+			</description>
+			<param-name>favicon</param-name>
+			<param-value>http://www.arcs.org.au/favicon.ico</param-value>
 		</init-param>
 		<init-param>
 			<description>
