@@ -333,6 +333,10 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("organisationname", getServletConfig().getInitParameter("organisation-name"));
     			substitutions.put("organisationlogo", getServletConfig().getInitParameter("organisation-logo"));
     			substitutions.put("favicon", getServletConfig().getInitParameter("favicon"));
+    			String s = DavisConfig.getInstance().getAnonymousUsername();
+    			if (s == null)
+    				s = "";
+    			substitutions.put("anonymoususer",s);
     			String[] geom = null;
     			String geomString = getServletConfig().getInitParameter("organisation-logo-geometry");
     			String w="";
