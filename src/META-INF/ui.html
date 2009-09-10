@@ -55,10 +55,8 @@
 		dojo.require("dojo.io.iframe");
 		dojo.require("dijit.ProgressBar");
 		dojo.require("dojo.back");
-//dojo.require("dijit.Tree");
 
 		dojo.addOnLoad(function() {
-//fileTreeStore = new dojo.data.ItemFileWriteStore({ items: [ { name:'Kermit', color:'green', age:12, friends:['Gonzo', {_reference:{name:'Fozzie Bear'}}]}, { name:'Fozzie Bear', wears:['hat', 'tie']}, { name:'Miss Piggy', pets:'Foo-Foo'} ]});
 			dojo.back.setInitialState(newBackState("<parameter url/>"));
 			_gotoDirectory("<parameter url/>");
 			setToggleButtonState(true);
@@ -119,7 +117,7 @@
 		var domainsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var usersStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 		var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-//var fileTreeStore = new dojo.data.ItemFileReadStore({data: {items:[]}});
+
 		var uploadInProgress = false;
 
 		function patchHTML() {
@@ -259,7 +257,7 @@
 			var list="";
 			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
 				if (document.childrenform.selections[i].checked) 
-				  list=list+"\""+trimMode(document.childrenform.selections[i].value)+"\",";
+				  list=list+"\""+document.childrenform.selections[i].value+"\",";
 			if (list.length > 0)
 				list = list.substring(0, list.length-1);  // remove trailing ','
 			return list;
@@ -270,17 +268,10 @@
 			return "[{\"files\":["+listCheckedItems()+"]}]";
 		}
 
-		function trimMode(value) {
-			var i = value.indexOf(";");
-			if (i >= 0)
-				return value.substring(0,i);
-			return value;
-		}
-		
 		function getFirstCheckedItem() {
 			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
 				if (document.childrenform.selections[i].checked) 
-				  return trimMode(document.childrenform.selections[i].value);
+				  return document.childrenform.selections[i].value;
 			return null;
 		}
 		
@@ -295,7 +286,7 @@
 		function directoryIsChecked() {
 			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
 				if (document.childrenform.selections[i].checked) 
-					if (document.childrenform.selections[i].value.indexOf(";directory") >= 0)
+					if (document.childrenform.selections[i].getAttribute('class') == 'directory')
 						return true;
 			return false;
 		}
@@ -331,25 +322,30 @@
 		}
 		
 		function refreshButtons() {
-			enableActiveItem('renameButton', checkedItemsCount() == 1);
-			enableActiveItem('replicasButton', checkedItemsCount() == 1);
-			enableActiveItem('deleteButton', checkedItemsCount() != 0);
+			enableActiveItem('uploadButton', !isAnonymous());
+			enableActiveItem('createDirectoryButton', !isAnonymous());
+
+
+			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous());
+			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked());
+			enableActiveItem('deleteButton', checkedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
+
 			if (replicasGrid.selection.getSelectedCount() == 0) {
 				dojo.byId('replicasDeleteButton').disabled = true;
 				dojo.byId('replicasReplicateButton').disabled = true;
 			} else {
 				var item = replicasGrid.selection.getFirstSelected();
 				var isReplica = replicasStore.getValue(item, "number") != null;
-				dojo.byId('replicasDeleteButton').disabled = !isReplica;
-				dojo.byId('replicasReplicateButton').disabled = isReplica;			
+				dojo.byId('replicasDeleteButton').disabled = !isReplica || isAnonymous();
+				dojo.byId('replicasReplicateButton').disabled = isReplica || isAnonymous();			
 			}
 			if (getCurrentDirectory().indexOf('<parameter trash/>') >= 0) {
 				dojo.html.set(dojo.byId("trashEmpty"), 
-          			'<table class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
+          			'<table id="emptyTrashButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
             		'	<tr>'+
-              		'		<td onclick="checkAll(true); setToggleButtonState(!getToggleButtonState()); dijit.byId(\'dialogDelete\').show()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
+              		'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; checkAll(true); setToggleButtonState(!getToggleButtonState()); dijit.byId(\'dialogDelete\').show()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
             		'	</tr>'+
           			'</table>'
 					);
@@ -362,8 +358,17 @@
 				dojo.byId("trashRestoreTable").setAttribute('class', 'invisible');
 			}
 			if (dojo.byId('trashRestoreButton') != null) 
-				enableActiveItem('trashRestoreButton', checkedItemsCount() != 0);
+				enableActiveItem('trashRestoreButton', (checkedItemsCount() != 0) && !isAnonymous());
 				
+			dojo.byId("saveMetadataButton").disabled = isAnonymous();
+			var button = dojo.byId("stickyPermissionsButton");
+			if (button != null)
+				button.disabled = isAnonymous();
+			dojo.byId("applyPermissionsButton").disabled = isAnonymous();
+			
+			if (dojo.byId('emptyTrashButton') != null) 
+				enableActiveItem('emptyTrashButton', !isAnonymous());
+			
 			setToggleButtonState(getToggleButtonState());
 		}
 		
@@ -390,30 +395,30 @@
       					'</tr>';
       		if (files != null) {
           		if (files.length == 0) {
-              			listing = listing +
+              			listing +=
               			'<tr><td class="text"><small><i>(Directory is empty)</i></small></td></tr>';
           		} else 
 					for (var i = 0; i < files.length; i++) {
-						listing = listing +
+						var isDir = (files[i].type == 'd');
+						listing +=
 						'<tr>'+
 						'<td bgcolor="#FFFFFF">'
 						var string = "";
-						if (files[i].type == 'd') 
-							listing = listing +
+						if (isDir) 
+							listing +=
 								'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
 						else 
-							listing = listing +
+							listing +=
 								'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
-						listing = listing +
+						listing +=
 							'</td>'+
     						'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
    							'<td align="right" bgcolor="#FFFFFF" class="text"><small>';
- 						if (files[i].type != 'd') 
-							listing = listing +
-   								humanReadable(files[i].size);
-						listing = listing +
+ 						if (!isDir) 
+							listing += humanReadable(files[i].size);
+						listing +=
 								'</small></td>'+
-    						'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+';directory" onClick="refreshButtons()"/></td>'+
+    						'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+'" class="'+(isDir ? "directory" : "file")+'" onClick="refreshButtons()"/></td>'+
   						'</tr>';
 					}
       		}
@@ -466,6 +471,10 @@
 			if (i >= 0)
 				parent = parent.substring(0, i);
 			gotoDirectory(parent);
+		}
+		
+		function isAnonymous() {
+			return ("<parameter account/>" == "anonymous");
 		}
 
 		function createDirectory(){
@@ -631,7 +640,7 @@
 				loadMetadataFromServer(metadataURL);
 			}
 			dijit.byId('dialogMetadata').attr("url", metadataURL);
-			dojo.byId('metadataRefreshButton').disabled = batch;	// Don't want the refresh button active in batch mode
+			dojo.byId('refreshMetadataButton').disabled = batch;	// Don't want the refresh button active in batch mode
 			dijit.byId('dialogMetadata').show();
 		}
 
@@ -775,11 +784,12 @@
 			permissionGrid.setStore(permissionsStore);
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
-					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset</button>");
+					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button id=\"stickyPermissionsButton\" onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset</button>");
 				else
-					dojo.html.set(dojo.byId("stickyControl"), "This directory is not sticky <button onclick=\"setSticky(dojo.byId('recursive').checked)\">Set</button>");
+					dojo.html.set(dojo.byId("stickyControl"), "This directory is not sticky <button id=\"stickyPermissionsButton\" onclick=\"setSticky(dojo.byId('recursive').checked)\">Set</button>");
 			} else
 				dojo.html.set(dojo.byId("stickyControl"), "");
+			refreshButtons();
 		}
 
 		function getPermissions(batch){
@@ -994,10 +1004,10 @@
 	<table>
 		<tr>
 			<td>
-	        	<button id="metadataRefreshButton" onclick="refreshMetadata(dijit.byId('dialogMetadata').attr('url'))">Refresh</button>
+	        	<button id="refreshMetadataButton" onclick="refreshMetadata(dijit.byId('dialogMetadata').attr('url'))">Refresh</button>
 	    		<button onclick="addMetadata()">Add Metadata</button>
 	    		<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
-	    		<button onclick="saveMetadata()">Save</button>
+	    		<button id="saveMetadataButton" onclick="saveMetadata()">Save</button>
 	    		<button onclick="dijit.byId('dialogMetadata').hide()">Close</button>
 			</td>
 		</tr>
@@ -1036,8 +1046,8 @@
 					</tr>
 					<tr>
 						<td rowspan="2" align="center">
-							<button onclick="savePermission()">Apply</button>
-							<button onclick="dijit.byId('dialogPermissions').hide()">Cancel</button>
+							<button id="applyPermissionsButton" onclick="savePermission()">Apply</button>
+							<button onclick="dijit.byId('recursive').setAttribute('checked', false); dijit.byId('dialogPermissions').hide()">Cancel</button>
 						</td>
 					</tr>
 				</table>
@@ -1131,14 +1141,14 @@
           			<td>
 						<table id='uploadButton' class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
-                				<td onclick="dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.html.set(dojo.byId('uploadStatusField'), ''); dijit.byId('dialogUpload').show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>
+                				<td onclick="if (!activeItemIsEnabled('uploadButton')) return; dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.html.set(dojo.byId('uploadStatusField'), ''); dijit.byId('dialogUpload').show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>
               				</tr>
           				</table>
 					</td>
           			<td>
-						<table class="activeItem" border="0" cellspacing="0" cellpadding="6">
+						<table id="createDirectoryButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">
             				<tr>
-              					<td onclick="dijit.byId('dialogCreateDir').show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>
+              					<td onclick="if (!activeItemIsEnabled('createDirectoryButton')) return; dijit.byId('dialogCreateDir').show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>
             				</tr>
           				</table>
 					</td>
@@ -1163,12 +1173,6 @@
 		</td>
   	</tr>
 </table>
-
-<!-- <div dojoType="dijit.Tree" store="fileTreeStore" labelAttr="name" label="blah">
-	<script type="dojo/method" event="onClick" args="item">
-		alert("clicked on "+fileTreeStore.getLabel(item));
-	</script>
-</div> -->
 
 <form id="childrenform" name="childrenform">
 	<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
