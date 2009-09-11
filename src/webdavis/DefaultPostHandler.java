@@ -106,6 +106,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		String requestUrl = getRequestURL(request);
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
 		StringBuffer str = new StringBuffer();
+		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
 			boolean recursive = false;
@@ -115,6 +116,8 @@ public class DefaultPostHandler extends AbstractHandler {
 			Log.log(Log.DEBUG, "read:"+count);
 			Log.log(Log.DEBUG, "received data: " + new String(buf));
 			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			
+			// Write permissions for given items
 			if (jsonArray != null) {	
 				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
 				JSONArray filesArray = (JSONArray)jsonObject.get("files");
