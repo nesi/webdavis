@@ -409,7 +409,7 @@
 								'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
 						else 
 							listing +=
-								'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
+								'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
 						listing +=
 							'</td>'+
     						'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
