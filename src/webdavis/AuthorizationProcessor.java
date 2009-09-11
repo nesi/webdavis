@@ -81,7 +81,7 @@ public class AuthorizationProcessor {
 		String serverName=davisConfig.getServerName();
 		GSSCredential gssCredential=null;
 		String sessionID=null;
-		if (sharedToken!=null&&commonName!=null){
+		if (sharedToken!=null&&commonName!=null&&sharedToken.length()>0&&commonName.length()>0){
 			sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
 			ShibUtil shibUtil=new ShibUtil();
 			Map result;
