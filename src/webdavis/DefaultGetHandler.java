@@ -170,7 +170,7 @@ public class DefaultGetHandler extends AbstractHandler {
     private String UIHTMLLocation;
 
     private PropertiesBuilder propertiesBuilder;
-    private String uiHTMLContent = "";
+    private String uiHTMLContent;
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
@@ -189,22 +189,28 @@ public class DefaultGetHandler extends AbstractHandler {
         if (UIHTMLLocation == null) {
             UIHTMLLocation = "/META-INF/ui.html";
         }
-
         // Load UI html into a string so that subsequent requests can use that directly
+        uiHTMLContent = loadUI(UIHTMLLocation);
+    }
+
+    private String loadUI(String fileName) {
+    	
+    	String result = "";
         try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(getResourceAsStream(UIHTMLLocation)));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(getResourceAsStream(fileName)));
 			char[] buffer = new char[1024];
 			int numRead = 0;
 			while ((numRead=reader.read(buffer)) != -1) {
 				String readData = String.valueOf(buffer, 0, numRead);
-	            uiHTMLContent += (readData);
+	            result += (readData);
 	        }
 	        reader.close();
 		} catch (IOException e) {
 			Log.log(Log.CRITICAL, "Failed to read UI html file: "+e);
 		}
-    }
-
+		return result;
+   }
+    
     public void destroy() {
         propertiesBuilder.destroy();
         propertiesBuilder = null;
@@ -314,6 +320,15 @@ public class DefaultGetHandler extends AbstractHandler {
                 return;
         	}
         	if (request.getParameter("oldui") == null) {
+        		if (request.getParameter("uidev") != null) {
+        			// Simple hack to allow loading of a development ui every time a request is received.
+        			// To use this, add '?uidev' to url and place a link in davis/webapps/root called uidev.html pointing
+        			// to a ui.htlm being worked on. The big advantage of this is that if the only file being modified is ui.html
+        			// then Davis doesn't need to be rebuilt or reinstalled or the server restarted.
+        			String s = "/uidev.html";
+        			Log.log(Log.DEBUG, "loading ui from "+s);
+        			uiHTMLContent = loadUI(s);
+        		}
     			String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot=request.getContextPath()+"/"+dojoroot;
