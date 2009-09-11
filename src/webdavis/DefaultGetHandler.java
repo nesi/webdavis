@@ -3,21 +3,14 @@ package webdavis;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 
-import java.net.URL;
-
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Enumeration;
@@ -25,14 +18,11 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Vector;
 
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 
@@ -52,26 +42,18 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileInputStream;
-import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.RemoteRandomAccessFile;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
-import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSRandomAccessFile;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileInputStream;
-import edu.sdsc.grid.io.srb.SRBFileOutputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
 
@@ -159,11 +141,11 @@ public class DefaultGetHandler extends AbstractHandler {
 
     private static final Timer TIMER = new Timer(true);
 
-    private final Map templateMap = new HashMap();
+    private final Map<String, TemplateTracker> templateMap = new HashMap<String, TemplateTracker>();
 
-    private final Map defaultTemplates = new HashMap();
+    private final Map<Locale, Templates> defaultTemplates = new HashMap<Locale, Templates>();
 
-    private final Map configurations = new HashMap();
+    private final Map<Locale, byte[]> configurations = new HashMap<Locale, byte[]>();
 
     private String stylesheetLocation;
     private String configurationLocation; 
@@ -180,8 +162,7 @@ public class DefaultGetHandler extends AbstractHandler {
         if (stylesheetLocation == null) {
             stylesheetLocation = "/META-INF/directory.xsl";
         }
-        configurationLocation =
-                config.getInitParameter("directory.configuration");
+        configurationLocation = config.getInitParameter("directory.configuration");
         if (configurationLocation == null) {
             configurationLocation = "/META-INF/configuration.html";
         }
@@ -245,8 +226,7 @@ public class DefaultGetHandler extends AbstractHandler {
      * @throws IOException If an IO error occurs while handling the request.
      *
      */
-    public void service(HttpServletRequest request,
-            HttpServletResponse response, DavisSession davisSession)
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
     	String url=getRemoteURL(request,getRequestURL(request),getRequestURICharset());
     	if (url.startsWith("/dojoroot")){
@@ -286,7 +266,7 @@ public class DefaultGetHandler extends AbstractHandler {
         	String format = request.getParameter("format");
         	if (format != null && format.equals("json")) {
         		GeneralFile[] fileList = file.listFiles();
-        		Comparator comparator = new Comparator() {
+        		Comparator<Object> comparator = new Comparator<Object>() {
 					public int compare(Object file1, Object file2) {
 						return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
 					}     			
@@ -335,7 +315,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
 				
 				// Define substitutions for UI HTML file
-				Hashtable<String, String> substitutions = new Hashtable();
+				Hashtable<String, String> substitutions = new Hashtable<String, String>();
     			substitutions.put("dojoroot", dojoroot);
     			substitutions.put("servertype", getServerType());
     			substitutions.put("href", requestUrl);
@@ -361,7 +341,7 @@ public class DefaultGetHandler extends AbstractHandler {
     					geom = geomString.split("x");
     					w = geom[0];
     					h = geom[1];
-   				} catch (Exception e) {}
+    				} catch (Exception e) {}
     			}
     			substitutions.put("organisationlogowidth", w);
     			substitutions.put("organisationlogoheight", h);
@@ -425,22 +405,21 @@ public class DefaultGetHandler extends AbstractHandler {
                     }
                     if (templates == null) {
                         Source source = getStylesheet(view, false, locale);
-                        templates = TransformerFactory.newInstance(
-                                ).newTemplates(source);
-                        if (session == null) session = request.getSession(true);
+                        templates = TransformerFactory.newInstance().newTemplates(source);
+                        if (session == null) 
+                        	session = request.getSession(true);
                         setTemplates(session, templates);
                     }
                 } catch (Exception ex) {
-                    Log.log(Log.WARNING, "Unable to install stylesheet: {0}",
-                            ex);
+                    Log.log(Log.WARNING, "Unable to install stylesheet: {0}", ex);
                     HttpSession session = request.getSession(false);
-                    if (session != null) clearTemplates(session);
+                    if (session != null) 
+                    	clearTemplates(session);
                     showConfiguration(request, response);
                     return;
                 }
             }
-            PropertiesDirector director = new PropertiesDirector(
-        		getPropertiesBuilder());
+            PropertiesDirector director = new PropertiesDirector(getPropertiesBuilder());
             Document properties = null;
             properties = director.getAllProperties(file, requestUrl, 1);
 
@@ -491,8 +470,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //                transformer.setParameter("type", type);
                 transformer.setOutputProperty("encoding", "UTF-8");
                 ByteArrayOutputStream collector = new ByteArrayOutputStream();
-                transformer.transform(new DOMSource(properties),
-                        new StreamResult(collector));
+                transformer.transform(new DOMSource(properties), new StreamResult(collector));
                 response.setContentType("text/html; charset=\"utf-8\"");
                 collector.writeTo(response.getOutputStream());
                 response.flushBuffer();
@@ -500,8 +478,8 @@ public class DefaultGetHandler extends AbstractHandler {
                 Log.log(Log.DEBUG, "#### Time after creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
             	
             	} catch (TransformerException ex) {
-                throw new IOException(ex.getMessage());
-            }
+            		throw new IOException(ex.getMessage());
+            	}
             return;
         }
 
@@ -509,8 +487,7 @@ public class DefaultGetHandler extends AbstractHandler {
         if (etag != null) response.setHeader("ETag", etag);
         long modified = file.lastModified();
         if (modified != 0) {
-            response.setHeader("Last-Modified",
-                    DavisUtilities.formatGetLastModified(modified));
+            response.setHeader("Last-Modified", DavisUtilities.formatGetLastModified(modified));
         }
         int result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
@@ -518,16 +495,15 @@ public class DefaultGetHandler extends AbstractHandler {
             response.flushBuffer();
             return;
         }
-        String contentType = getServletConfig().getServletContext().getMimeType(
-                file.getName());
+        String contentType = getServletConfig().getServletContext().getMimeType(file.getName());
         response.setHeader("Content-Length", String.valueOf(file.length()));
-        response.setContentType((contentType != null) ? contentType :
-                "application/octet-stream");
+        response.setContentType((contentType != null) ? contentType : "application/octet-stream");
         response.setContentLength((int) file.length());
 //        RemoteFileInputStream input = null;
         String startingPoint=request.getHeader("Content-Range");
         long offset=0;
-        if (startingPoint==null) startingPoint=request.getHeader("Range");
+        if (startingPoint==null) 
+        	startingPoint=request.getHeader("Range");
         if (startingPoint!=null){
         	try{
         		String offsetString=startingPoint.substring(startingPoint.indexOf("bytes")+6,startingPoint.indexOf("-"));
@@ -536,8 +512,7 @@ public class DefaultGetHandler extends AbstractHandler {
         		response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
         		response.setHeader("Content-Range",startingPoint.substring(0,6)+offset+"-"+file.length()+"/"+file.length());
                 response.setContentLength((int) (file.length()-offset));
-        	}catch(Exception _e){
-        		
+        	}catch(Exception _e){		
         	}
         }else{
             response.setHeader("Accept-Ranges","bytes"); 
@@ -654,14 +629,12 @@ public class DefaultGetHandler extends AbstractHandler {
     private byte[] getConfiguration(Locale locale)
             throws ServletException, IOException {
         synchronized (configurations) {
-            byte[] configuration = (byte[]) configurations.get(locale);
+            byte[] configuration = configurations.get(locale);
             if (configuration != null) return configuration;
-            InputStream stream = getResourceAsStream(configurationLocation,
-                    locale);
+            InputStream stream = getResourceAsStream(configurationLocation, locale);
             if (stream == null) {
                 throw new ServletException(DavisUtilities.getResource(
-                        DefaultGetHandler.class, "configurationPageError",
-                                null, null));
+                        DefaultGetHandler.class, "configurationPageError", null, null));
             }
             ByteArrayOutputStream collector = new ByteArrayOutputStream();
             byte[] buffer = new byte[2048];
@@ -675,24 +648,22 @@ public class DefaultGetHandler extends AbstractHandler {
         }
     }
 
-    private Templates getTemplates(HttpSession session) throws ServletException,
-            IOException {
+    private Templates getTemplates(HttpSession session) {
         String id = session.getId();
         TemplateTracker tracker;
         synchronized (templateMap) {
-            tracker = (TemplateTracker) templateMap.get(id);
+            tracker = templateMap.get(id);
         }
         if (tracker == null) return null;
         Log.log(Log.DEBUG, "Retrieved precompiled stylesheet.");
         return tracker.getTemplates();
     }
 
-    private void clearTemplates(HttpSession session)
-            throws ServletException, IOException {
+    private void clearTemplates(HttpSession session) {
         String id = session.getId();
         TemplateTracker tracker;
         synchronized (templateMap) {
-            tracker = (TemplateTracker) templateMap.remove(id);
+            tracker = templateMap.remove(id);
         }
         if (tracker != null) {
             Log.log(Log.DEBUG, "Removing precompiled stylesheet.");
@@ -700,8 +671,7 @@ public class DefaultGetHandler extends AbstractHandler {
         }
     }
 
-    private void setTemplates(HttpSession session, Templates templates)
-            throws ServletException, IOException {
+    private void setTemplates(HttpSession session, Templates templates) {
         String id = session.getId();
         long cacheTime = (long) session.getMaxInactiveInterval() * 1000;
         Log.log(Log.DEBUG, "Storing precompiled stylesheet.");
@@ -710,45 +680,39 @@ public class DefaultGetHandler extends AbstractHandler {
         }
     }
 
-    private Templates getDefaultTemplates(Locale locale)
-            throws ServletException, IOException {
+    private Templates getDefaultTemplates(Locale locale) throws ServletException {
         synchronized (defaultTemplates) {
-            Templates templates = (Templates) defaultTemplates.get(locale);
+            Templates templates = defaultTemplates.get(locale);
             if (templates != null) return templates;
             try {
                 Source source = getStylesheet(stylesheetLocation, true, locale);
-                templates = TransformerFactory.newInstance().newTemplates(
-                        source);
+                templates = TransformerFactory.newInstance().newTemplates(source);
                 defaultTemplates.put(locale, templates);
                 return templates;
             } catch (Exception ex) {
                 throw new ServletException(DavisUtilities.getResource(
-                        DefaultGetHandler.class, "stylesheetError", null,
-                                null));
+                        DefaultGetHandler.class, "stylesheetError", null, null));
             }
         }
     }
 
     private InputStream getResourceAsStream(String location, Locale locale) {
         int index = location.indexOf('.');
-        String prefix = (index != -1) ? location.substring(0, index) :
-                location;
+        String prefix = (index != -1) ? location.substring(0, index) : location;
         String suffix = (index != -1) ? location.substring(index) : "";
         String language = locale.getLanguage();
         String country = locale.getCountry();
         String variant = locale.getVariant();
         InputStream stream = null;
         if (!variant.equals("")) {
-            stream = getResourceAsStream(prefix + '_' + language + '_' +
-                    country + '_' + variant + suffix);
+            stream = getResourceAsStream(prefix+'_'+language+'_'+country+'_'+variant+suffix);
             if (stream != null) return stream;
         }
         if (!country.equals("")) {
-            stream = getResourceAsStream(prefix + '_' + language + '_' +
-                    country + suffix);
+            stream = getResourceAsStream(prefix+'_'+language+'_'+country+suffix);
             if (stream != null) return stream;
         }
-        stream = getResourceAsStream(prefix + '_' + language + suffix);
+        stream = getResourceAsStream(prefix+'_'+language+suffix);
         if (stream != null) return stream;
         Locale secondary = Locale.getDefault();
         if (!locale.equals(secondary)) {
@@ -756,16 +720,14 @@ public class DefaultGetHandler extends AbstractHandler {
             country = secondary.getCountry();
             variant = secondary.getVariant();
             if (!variant.equals("")) {
-                stream = getResourceAsStream(prefix + '_' + language + '_' +
-                        country + '_' + variant + suffix);
+                stream = getResourceAsStream(prefix+'_'+language+'_'+country+'_'+variant+suffix);
                 if (stream != null) return stream;
             }
             if (!country.equals("")) {
-                stream = getResourceAsStream(prefix + '_' + language + '_' +
-                        country + suffix);
+                stream = getResourceAsStream(prefix+'_'+language+'_'+country+suffix);
                 if (stream != null) return stream;
             }
-            stream = getResourceAsStream(prefix + '_' + language + suffix);
+            stream = getResourceAsStream(prefix+'_'+language+suffix);
             if (stream != null) return stream;
         }
         return getResourceAsStream(location);
@@ -825,8 +787,7 @@ public class DefaultGetHandler extends AbstractHandler {
         }
 
         public void run() {
-            Log.log(Log.DEBUG, "Removing cached stylesheet for session {0}",
-                    id);
+            Log.log(Log.DEBUG, "Removing cached stylesheet for session {0}", id);
             synchronized (templateMap) {
                 templateMap.remove(id);
             }
@@ -835,7 +796,5 @@ public class DefaultGetHandler extends AbstractHandler {
         public Templates getTemplates() {
             return templates;
         }
-
     }
-
 }
