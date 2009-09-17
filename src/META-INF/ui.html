@@ -62,6 +62,7 @@
 			setToggleButtonState(true);
 			refreshButtons();
 			initConnects();
+			initWidgets();
 			patchHTML();
 		});
 
@@ -98,13 +99,13 @@
 
     	var permissionsLayout = ("<parameter servertype/>" == 'irods') ?
     		[
-        		{field: "username", width: "200px", name: "Username"},
+    		 	{field: "username", width: "200px", name: "Username"},
         		{field: "permission", width: "auto", name: "Permission"}
         	] :
         	[
-        		 {field: "username", width: "200px", name: "Username"},
-        		 {field: "domain", width: "200px", name: "Domain"},
-        		 {field: "permission", width: "auto", name: "Permission"}
+        		{field: "username", width: "200px", name: "Username"},
+        		{field: "domain", width: "200px", name: "Domain"},
+        		{field: "permission", width: "auto", name: "Permission"}
         	];
     
     	var layoutReplicas = [
@@ -119,6 +120,19 @@
 		var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
 
 		var uploadInProgress = false;
+		
+		function addOption(selectName, value, text, title) {
+    		var option = document.createElement('option');
+    		option.text = text;
+    		option.value = value;
+    		option.title = title;
+    		var select = dojo.byId(selectName);
+    		try {
+    			select.add(option, null); // standards compliant; doesn't work in IE
+    		} catch(ex) {
+    			select.add(option); // IE only
+    		}			
+		}
 
 		function patchHTML() {
     		if ("<parameter servertype/>" == 'srb')
@@ -127,21 +141,22 @@
 					'	<td>Domain</td>'+
 					'	<td><input name="domain" id="formDomain" jsId="formDomain" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="domainsStore"/></td>'+
 					'</tr>');
-        	
-    		if ("<parameter servertype/>" == 'srb')
-        		dojo.html.set(dojo.byId('formPerm'), 
-        			'	<option value="all">all</option>'+
-        			'	<option value="w">write</option>'+
-        			'	<option value="r">read</option>'+
-        			'	<option value="n">null</option>'+
-        			'	<option value="c">curate</option>'+
-        			'	<option value="t">annotate</option>');
-        	else
-        		dojo.html.set(dojo.byId('formPerm'), 
-        			'	<option value="all">read and write</option>'+
-        			'	<option value="w">write only</option>'+
-        			'	<option value="r">read only</option>'+
-        			'	<option value="n">no access</option>');
+		}
+		
+		function initWidgets() {
+    		if ("<parameter servertype/>" == 'srb') {
+            	addOption('formPerm', 'all', 'all', 'all');
+            	addOption('formPerm', 'w', 'write', 'write');
+            	addOption('formPerm', 'r', 'read', 'read');
+            	addOption('formPerm', 'n', 'null', 'null');
+            	addOption('formPerm', 'c', 'curate', 'curate');
+            	addOption('formPerm', 't', 'annotate', 'annotate');
+        	} else {
+            	addOption('formPerm', 'all', 'read and write', 'own');
+            	addOption('formPerm', 'w', 'write only', 'modify object');
+            	addOption('formPerm', 'r', 'read only', 'read object');
+            	addOption('formPerm', 'n', 'no access', 'null');
+        	}
 		}
 		
 		function errorMessage(method, messageObject) {			
@@ -851,10 +866,11 @@
 		}
 
 		function getSelectedPermission(e){
-			dojo.byId("formUsername").value = permissionGrid.getItem(e.rowIndex).username;
-			dojo.byId("formDomain").value = permissionGrid.getItem(e.rowIndex).domain;
+			dijit.byId("formUsername").attr('displayedValue', ''+permissionGrid.getItem(e.rowIndex).username);
+	        if ("<parameter servertype/>" == 'srb') 
+	        	dojo.byId("formDomain").value = permissionGrid.getItem(e.rowIndex).domain;
 			for (var i = 0; i < dojo.byId("formPerm").options.length; i++){
-				if (dojo.byId("formPerm").options[i].text == permissionGrid.getItem(e.rowIndex).permission) 
+				if (dojo.byId("formPerm").options[i].title == permissionGrid.getItem(e.rowIndex).permission) 
 					dojo.byId("formPerm").options[i].selected = true;
 				else
 					dojo.byId("formPerm").options[i].selected = false;
@@ -1038,12 +1054,12 @@
 						<td>Username</td>
 						<td><input name="username" id="formUsername" jsId="formUsername" dojoType="dijit.form.FilteringSelect" autocomplete="true" searchAttr="name" store="usersStore"/></td>
 					</tr>
-					<tr>
-						<td>Permission</td>
-						<td>
-	        				<select id="formPerm" typdojoType="dijit.form.Select" name="permission"></select>
-						</td>
-					</tr>
+        			<tr>
+        				<td>Permission</td>
+        				<td>
+        					<select id="formPerm" name="permission"></select>
+            			</td>
+            		</tr>
 					<tr>
 						<td>Recursive</td>
 						<td><input type="checkbox" name="recursive" id="recursive" dojoType="dijit.form.CheckBox"/></td>
