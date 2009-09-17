@@ -313,35 +313,45 @@
 			return dojo.byId('toggleAllButton').title == "Select all";
 		}
 	
-		function enableActiveItem(item, enable) {
-			dojo.byId(item).setAttribute('class', enable ? 'activeItem' : 'inactiveItem');
+		function enableActiveItem(itemName, enable) {
+			var item = dojo.byId(itemName);
+			if (item != null)
+				item.setAttribute('class', enable ? 'activeItem' : 'inactiveItem');
+		}
+		
+		function enableButton(buttonName, enable) {
+			var button = dojo.byId(buttonName);
+			if (button != null)
+				button.disabled = !enable;
 		}
 
 		function activeItemIsEnabled(item) {
 			return dojo.byId(item).getAttribute('class') == 'activeItem';
 		}
 		
+		function isTrash() {
+			return getCurrentDirectory().indexOf('<parameter trash/>') >= 0;
+		}
+		
 		function refreshButtons() {
-			enableActiveItem('uploadButton', !isAnonymous());
-			enableActiveItem('createDirectoryButton', !isAnonymous());
-
-
-			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous());
-			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked());
+			enableActiveItem('uploadButton', !isAnonymous() && ! isTrash());
+			enableActiveItem('createDirectoryButton', !isAnonymous() && !isTrash());
+			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous() && !isTrash());
+			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !isTrash());
 			enableActiveItem('deleteButton', checkedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
 
 			if (replicasGrid.selection.getSelectedCount() == 0) {
-				dojo.byId('replicasDeleteButton').disabled = true;
-				dojo.byId('replicasReplicateButton').disabled = true;
+				enableButton('replicasDeleteButton', false);
+				enableButton('replicasReplicateButton', false);
 			} else {
 				var item = replicasGrid.selection.getFirstSelected();
 				var isReplica = replicasStore.getValue(item, "number") != null;
-				dojo.byId('replicasDeleteButton').disabled = !isReplica || isAnonymous();
-				dojo.byId('replicasReplicateButton').disabled = isReplica || isAnonymous();			
+				enableButton('replicasDeleteButton', isReplica && !isAnonymous());
+				enableButton('replicasReplicateButton', !isReplica && !isAnonymous());			
 			}
-			if (getCurrentDirectory().indexOf('<parameter trash/>') >= 0) {
+			if (isTrash()) {
 				dojo.html.set(dojo.byId("trashEmpty"), 
           			'<table id="emptyTrashButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
             		'	<tr>'+
@@ -357,17 +367,11 @@
 				dojo.html.set(dojo.byId("trashRestoreRow"), "");
 				dojo.byId("trashRestoreTable").setAttribute('class', 'invisible');
 			}
-			if (dojo.byId('trashRestoreButton') != null) 
-				enableActiveItem('trashRestoreButton', (checkedItemsCount() != 0) && !isAnonymous());
-				
-			dojo.byId("saveMetadataButton").disabled = isAnonymous();
-			var button = dojo.byId("stickyPermissionsButton");
-			if (button != null)
-				button.disabled = isAnonymous();
-			dojo.byId("applyPermissionsButton").disabled = isAnonymous();
-			
-			if (dojo.byId('emptyTrashButton') != null) 
-				enableActiveItem('emptyTrashButton', !isAnonymous());
+			enableActiveItem('trashRestoreButton', (checkedItemsCount() != 0) && !isAnonymous());
+			enableButton('saveMetadataButton', !isAnonymous());
+			enableButton('stickyPermissionsButton', !isAnonymous());
+			enableButton('applyPermissionsButton', !isAnonymous());
+			enableActiveItem('emptyTrashButton', !isAnonymous());
 			
 			setToggleButtonState(getToggleButtonState());
 		}
@@ -640,7 +644,7 @@
 				loadMetadataFromServer(metadataURL);
 			}
 			dijit.byId('dialogMetadata').attr("url", metadataURL);
-			dojo.byId('refreshMetadataButton').disabled = batch;	// Don't want the refresh button active in batch mode
+			enableButton('refreshMetadataButton', !batch);	// Don't want the refresh button active in batch mode
 			dijit.byId('dialogMetadata').show();
 		}
 
@@ -796,7 +800,7 @@
 			var sourceURL = getCurrentDirectory();
 			if (!batch)
 				sourceURL = getCurrentDirectory()+"/"+getFirstCheckedItem(); 
-			dojo.byId("recursive").disabled = !directoryIsChecked();	// Enable if any dirs in list
+			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb')
 				getDomains(sourceURL+"?method=domains");
 		    else
@@ -966,13 +970,13 @@
 <div dojoType="dijit.Dialog" id="dialogUpload" title="Upload">
  	<form id="uploadForm" enctype="multipart/form-data" name="uploadTest" method="post">
    		File to upload:
-   		<input type="file" name="uploadFileName" id="formUpload" onKeyPress="if (isEnterKey(event)) {dojo.byId('uploadStartButton').disabled=true; uploadFile();}"/>
+   		<input type="file" name="uploadFileName" id="formUpload" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); uploadFile();}"/>
  	</form>
 	<div id="uploadStatusField"></div>
 	<br/>
 	<div style="text-align: right;">
-		<button id="uploadStartButton" onclick="dojo.byId('uploadStartButton').disabled=true; uploadFile();">Upload</button> 
-		<button id="uploadCancelButton" onclick="dojo.byId('uploadCancelButton').disabled=true; uploadCancel();">Cancel</button>
+		<button id="uploadStartButton" onclick="enableButton('uploadStartButton', false); uploadFile();">Upload</button> 
+		<button id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
 	</div>
 </div>					
 <div dojoType="dijit.Dialog" id="dialogDelete" title="Delete Items">
@@ -1141,7 +1145,7 @@
           			<td>
 						<table id='uploadButton' class="activeItem" border="0" cellspacing="0" cellpadding="6">
              				<tr>
-                				<td onclick="if (!activeItemIsEnabled('uploadButton')) return; dojo.byId('uploadCancelButton').disabled=false; dojo.byId('uploadStartButton').disabled=false; dojo.html.set(dojo.byId('uploadStatusField'), ''); dijit.byId('dialogUpload').show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>
+                				<td onclick="if (!activeItemIsEnabled('uploadButton')) return; enableButton('uploadCancelButton', true); enableButton('uploadStartButton', true); dojo.html.set(dojo.byId('uploadStatusField'), ''); dijit.byId('dialogUpload').show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>
               				</tr>
           				</table>
 					</td>
@@ -1202,11 +1206,11 @@
           				<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
         			</tr>
     			</table>
-      			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+      		<!--	<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
         			<tr>
           				<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
         			</tr>
-    			</table>    			
+    			</table>   -->	
       			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
           				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>         				
