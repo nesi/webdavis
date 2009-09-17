@@ -237,13 +237,13 @@ public class DefaultGetHandler extends AbstractHandler {
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         if (!file.exists()) {
             Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist.");
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
 //response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
 //ServletOutputStream output = response.getOutputStream();
 //String s = "Path can't be accessed.";
 //output.print(s);
 //response.setContentLength(s.length());
-//response.flushBuffer();
+            response.flushBuffer();
             return;
         }
 //        if (!file.canRead()){
@@ -491,7 +491,7 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         int result = checkConditionalRequest(request, file);
         if (result != HttpServletResponse.SC_OK) {
-            response.setStatus(result);
+            response.sendError(result, "Request Error.");
             response.flushBuffer();
             return;
         }
