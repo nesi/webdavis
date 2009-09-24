@@ -265,7 +265,8 @@ public class DefaultGetHandler extends AbstractHandler {
         	Log.log(Log.DEBUG, "#### Time before creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
         	String format = request.getParameter("format");
         	if (format != null && format.equals("json")) {
-        		GeneralFile[] fileList = file.listFiles();
+        		//GeneralFile[] fileList = file.listFiles();
+        		RemoteFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
         		Comparator<Object> comparator = new Comparator<Object>() {
 					public int compare(Object file1, Object file2) {
 						return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
