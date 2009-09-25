@@ -238,6 +238,7 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
             propertyMap.put("supportedlock", SupportedLockProperty.class);
         }
         propertyMap.put("resourcetype", ResourceTypeProperty.class);
+ //@TBD move these to davis config file?
         Enumeration parameters = config.getInitParameterNames();
         while (parameters.hasMoreElements()) {
             String name = (String) parameters.nextElement();

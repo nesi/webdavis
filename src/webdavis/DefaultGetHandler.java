@@ -310,10 +310,12 @@ public class DefaultGetHandler extends AbstractHandler {
         			Log.log(Log.DEBUG, "loading ui from "+s);
         			uiHTMLContent = loadUI(s);
         		}
-    			String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
+    			String dojoroot=/*this.getServletConfig().getInitParameter("dojoroot")*/ DavisConfig.getInstance().getDojoroot();
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot=request.getContextPath()+"/"+dojoroot;
 				Log.log(Log.DEBUG, "dojoroot:"+dojoroot);
+				
+				DavisConfig config = DavisConfig.getInstance();
 				
 				// Define substitutions for UI HTML file
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
@@ -325,16 +327,16 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("parent", request.getContextPath()+file.getParent());
     			substitutions.put("home", davisSession.getHomeDirectory());
     			substitutions.put("trash", davisSession.getTrashDirectory());
-    			substitutions.put("authenticationrealm", getServletConfig().getInitParameter("authentication-realm"));
-    			substitutions.put("organisationname", getServletConfig().getInitParameter("organisation-name"));
-    			substitutions.put("organisationlogo", getServletConfig().getInitParameter("organisation-logo"));
-    			substitutions.put("favicon", getServletConfig().getInitParameter("favicon"));
-    			String s = DavisConfig.getInstance().getAnonymousUsername();
+    			substitutions.put("authenticationrealm", config.getRealm());
+    			substitutions.put("organisationname", config.getOrganisationName());
+    			substitutions.put("organisationlogo", config.getOrganisationLogo());
+    			substitutions.put("favicon", config.getFavicon());
+    			String s = config.getAnonymousUsername();
     			if (s == null)
     				s = "";
     			substitutions.put("anonymoususer",s);
     			String[] geom = null;
-    			String geomString = getServletConfig().getInitParameter("organisation-logo-geometry");
+    			String geomString = config.getOrganisationLogoGeometry();
     			String w="";
     			String h="";
     			if (geomString != null) {
@@ -426,7 +428,7 @@ public class DefaultGetHandler extends AbstractHandler {
 
             try {
                 Transformer transformer = templates.newTransformer();
-                String dojoroot=this.getServletConfig().getInitParameter("dojoroot");
+                String dojoroot=/*this.getServletConfig().getInitParameter("dojoroot")*/DavisConfig.getInstance().getDojoroot();
         		if (dojoroot.indexOf("/")<0){
 //        			System.out.println(request.getPathInfo());
 //        			System.out.println(request.getRequestURI());

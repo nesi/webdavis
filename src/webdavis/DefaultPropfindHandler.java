@@ -57,9 +57,9 @@ public class DefaultPropfindHandler extends AbstractHandler {
         super.init(config);
         propertiesBuilder = new DefaultPropertiesBuilder();
         propertiesBuilder.init(config);
-        String maximumXmlRequest = config.getInitParameter("maximumXmlRequest");
-        this.maximumXmlRequest = (maximumXmlRequest != null) ?
-                Long.parseLong(maximumXmlRequest) : 20000l;
+//        String maximumXmlRequest = config.getInitParameter("maximumXmlRequest");
+//        this.maximumXmlRequest = (maximumXmlRequest != null) ? Long.parseLong(maximumXmlRequest) : 20000l;
+        maximumXmlRequest = DavisConfig.getInstance().getMaximumXmlRequest();
     }
 
     public void destroy() {
@@ -113,7 +113,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
 				if (resList==null||resList.length==0){
 		        	davisSession.setCurrentResource(davisSession.getDefaultResource());
 				}else{
-					String defaultResource=getServletConfig().getInitParameter("default-resource");
+					String defaultResource=/*getServletConfig().getInitParameter("default-resource")*/DavisConfig.getInstance().getDefaultResource();
 					String currentRes=null;
 					for (String res : resList) {
 						Log.log(Log.DEBUG, "res:"+res);

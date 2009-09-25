@@ -48,6 +48,7 @@ public class CompressionFilter implements Filter {
     private boolean deflateEnabled = true;
 
     public void init(FilterConfig config) throws ServletException {
+//@TBD Move these params into config file?
         String compressionLevel = config.getInitParameter("compressionLevel");
         if (compressionLevel != null) {
             this.compressionLevel = Integer.parseInt(compressionLevel);

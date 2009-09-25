@@ -93,41 +93,41 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		DavisConfig.getInstance().initConfig(config);
 		
-		String logProviderName = Log.class.getName();
-		String logProvider = config.getInitParameter(logProviderName);
-		System.out.println(logProviderName);
-		System.out.println(logProvider);
-		if (logProvider != null) {
-			try {
-				System.setProperty(logProviderName, logProvider);
-			} catch (Exception ignore) {
-			}
-		}
-		String logThreshold = config.getInitParameter(logProviderName
-				+ ".threshold");
-		if (logThreshold != null) {
-			try {
-				System
-						.setProperty(logProviderName + ".threshold",
-								logThreshold);
-			} catch (Exception ignore) {
-			}
-		}
+//		String logProviderName = Log.class.getName();
+//		String logProvider = config.getInitParameter(logProviderName);
+//		System.out.println(logProviderName);
+//		System.out.println(logProvider);
+//		if (logProvider != null) {
+//			try {
+//				System.setProperty(logProviderName, logProvider);
+//			} catch (Exception ignore) {
+//			}
+//		}
+//		String logThreshold = config.getInitParameter(logProviderName
+//				+ ".threshold");
+//		if (logThreshold != null) {
+//			try {
+//				System
+//						.setProperty(logProviderName + ".threshold",
+//								logThreshold);
+//			} catch (Exception ignore) {
+//			}
+//		}
+		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) {
-			Properties props = new Properties();
-			Enumeration params = config.getInitParameterNames();
-			while (params.hasMoreElements()) {
-				String paramName = (String) params.nextElement();
-				props
-						.setProperty(paramName, config
-								.getInitParameter(paramName));
-			}
-			ByteArrayOutputStream stream = new ByteArrayOutputStream();
-			props.list(new PrintStream(stream));
-			Log.log(Log.DEBUG, "Davis init parameters: {0}", stream);
+//			Properties props = new Properties();
+//			Enumeration params = config.getInitParameterNames();
+//			while (params.hasMoreElements()) {
+//				String paramName = (String) params.nextElement();
+//				props.setProperty(paramName, config.getInitParameter(paramName));
+//			}
+//			ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//			props.list(new PrintStream(stream));
+//			Log.log(Log.DEBUG, "Davis init parameters: {0}", stream);
+			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
 		}
-		String jargonDebug= config.getInitParameter("jargon.debug");
+		String jargonDebug= /*config.*/DavisConfig.getInstance().getJargonDebug();
 		if (jargonDebug!=null)
 			System.setProperty("jargon.debug", jargonDebug);
 		else
@@ -349,6 +349,7 @@ public class Davis extends HttpServlet {
     private void initLockManager(ServletConfig config) throws ServletException {
 
         String factoryClass = LockManagerFactory.class.getName();
+ //@TBD move this to davis config file?
         String lockProvider = config.getInitParameter(factoryClass);
         if (lockProvider != null) {
             try {
@@ -368,17 +369,14 @@ public class Davis extends HttpServlet {
                     String param = (String) parameters.nextElement();
                     if (!param.startsWith(prefix)) continue;
                     String property = param.substring(prefixLength);
-                    properties.setProperty(property,
-                            config.getInitParameter(param));
+                    properties.setProperty(property, config.getInitParameter(param));
                 }
 
                 if (Log.getThreshold() < Log.INFORMATION) {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     properties.list(new PrintStream(stream));
                     Object[] args = new Object[] { factory.getClass(), stream };
-                    Log.log(Log.DEBUG,
-                            "Initializing lock manager factory {0}):\n{1}",
-                                    args);
+                    Log.log(Log.DEBUG, "Initializing lock manager factory {0}):\n{1}", args);
                 }
 
                 factory.setProperties(properties);
@@ -421,6 +419,7 @@ public class Davis extends HttpServlet {
 			handlers.put("LOCK", new DefaultLockHandler());
 			handlers.put("UNLOCK", new DefaultUnlockHandler());
 		}
+//@TBD move these to davis config file?
 		Enumeration parameters = config.getInitParameterNames();
 		while (parameters.hasMoreElements()) {
 			String name = (String) parameters.nextElement();

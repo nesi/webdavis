@@ -999,7 +999,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
     
     public String getServerType(){
-    	return config.getInitParameter("server-type");
+    	return /*config.getInitParameter("server-type")*/ DavisConfig.getInstance().getServerType();
     }
 
     protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {

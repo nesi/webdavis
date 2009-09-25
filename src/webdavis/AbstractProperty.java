@@ -33,14 +33,13 @@ public abstract class AbstractProperty implements Property {
 
     private String name;
 
-    public void init(String name, ServletConfig config)
-            throws ServletException {
+    public void init(String name, ServletConfig config) throws ServletException {
         this.config = config;
         this.name = name;
-        this.namespace = config.getInitParameter("property." + name +
-                ".namespace");
+//@TBD Move these params into config property file?      
+        this.namespace = config.getInitParameter("property."+name+".namespace");
         if (namespace == null) namespace = DAV_NAMESPACE;
-        this.prefix = config.getInitParameter("property." + name + ".prefix");
+        this.prefix = config.getInitParameter("property."+name+".prefix");
     }
 
     public void destroy() {
