@@ -1,0 +1,20 @@
+webdavis.Log.threshold=WARNING
+
+shared-token-header-name=auEduPersonSharedToken
+cn-header-name=cn
+admin-cert-file=/etc/grid-security/hostcert.pem
+admin-key-file=/etc/grid-security/hostkey.pem
+
+organisation-name=Australian Research Collaboration Service
+authentication-realm=ARCS Data Fabric
+organisation-logo=/images/logo.jpg
+organisation-logo-geometry=32x32
+favicon=http://www.arcs.org.au/favicon.ico
+
+anonymousCredentials=anonymous:anything
+anonymousCollections=/ARCS/projects/public,/ARCS/projects/open
+
+myproxy-server=myproxy.arcs.org.au
+server-type=irods
+default-idp=arcs idp
+zone-name=ARCS

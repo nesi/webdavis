@@ -1,0 +1,269 @@
+#########################################################################
+#
+# This is the main Davis configuration file. All currently supported configuration items are listed
+# along with any default values. 
+#
+# This is a Java properties file, so the format is:
+#
+# itemname=value
+#
+#########################################################################
+
+# Request URI charset. Default is "UTF-8".
+#request-uri.charset=
+
+# acceptBasic:
+#
+#        Indicates whether HTTP Basic authentication is accepted by Davis 
+#        if sent proactively by the client.
+#
+#        Specifies whether HTTP Basic credentials are accepted by Davis 
+#        when presented by clients. This differs from "jcifs.http.enableBasic" 
+#        in that HTTP Basic authentication will not be offered as a choice by 
+#        the server; it will just accept such credentials if sent proactively 
+#        by clients. If enabled, HTTP Basic will only be accepted over secure 
+#        connections (HTTPS) by default.
+#
+#        This setting is ignored if "jcifs.http.enableBasic" is set to "true".
+#
+#        Default Value:
+#            false (HTTP Basic is not accepted unless offered).
+#acceptBasic=false
+
+# alwaysAuthenticate:
+#
+#        Determines whether authentication of the end user is always performed, 
+#        or only performed if required by the resource being accessed.
+#
+#        If set to "true", authentication will always be requested (even if not 
+#        normally required to access the resource in question). This prevents 
+#        anonymous browsing of unprotected resources. Note that if a default 
+#        domain controller is not set (either via "jcifs.smb.client.domain" or 
+#        "jcifs.http.domainController") the root will still be anonymously 
+#        browseable.
+#
+#        Default Value:
+#            true (authentication is always performed if possible).
+#alwaysAuthenticate=true
+
+# closeOnAuthenticate:
+#
+#        Specifies whether Davis should close the HTTP connection when 
+#        starting authentication.
+#
+#        This setting specifies if Davis should send the "Connection: 
+#        close" HTTP header when initially responding to requests for 
+#        authentication. This is not necessary, but more closely mirrors the 
+#        behavior of IIS. Note that setting this to "true" will have an 
+#        adverse impact on performance.
+#
+#        Default Value:
+#            false (the HTTP connection remains open throughout the authentication sequence).
+#closeOnAuthenticate=false
+
+# contextBase:
+#
+#        Specifies a base HTTP context to apply to URIs within Davis.
+#
+#        This setting specifies a base context for URL rewriting, used to 
+#        deploy Davis in a reverse proxying scenario. Davis will 
+#        rewrite URLs relative to the supplied URL context.
+#
+#		 Default is none.
+#contextBase=
+
+# contextBaseHeader:
+#
+#        Indicates the name of an HTTP header containing a context base to 
+#        apply to URIs within Davis.
+#
+#        This specifies an HTTP header that will provide Davis with a 
+#        context base for URL rewriting. If the request carries this header, 
+#        the value will be used as the rewriting context, overriding any value 
+#        specified in the "contextBase" parameter. If the header is not 
+#        present, th value in the "contextBase" parameter will be used (if 
+#        available).
+#
+#		 Default is none.
+#contextBaseHeader=
+
+# webdavis.Log
+#
+#        Specifies the logging implementation classname.
+#
+#        This setting provides the classname of the logging implementation. 
+#        The specified class must extend "webdavis.Log" and provide a no-argument 
+#        constructor.
+#
+#        If not specified, a default logger will be used which logs to 
+#        System.out and System.err.
+#webdavis.Log=
+
+# webdavis.Log.threshold:
+#
+#        Specifies the logging threshold.
+#
+#        This configures the threshold level for logging events. Levels are 
+#        cumulative; for example, specifying "WARNING" will log warnings, 
+#        errors, and critical errors.
+#
+#        Valid settings include:
+#
+#            NOTHING
+#                Nothing is logged.
+#
+#            CRITICAL
+#                Critical errors are logged.
+#
+#            ERROR
+#               Errors are logged.
+#
+#            WARNING
+#                Warnings are logged.
+#
+#            INFORMATION
+#                Informational messages are logged.
+#
+#            DEBUG
+#                Debug messages are logged.
+#
+#        Default Value:
+#            CRITICAL (only critical errors are logged).
+#webdavis.Log.threshold=CRITICAL
+
+# jargon.debug:
+#
+#       Specifies the logging threshold for the jargon library.
+#
+#		The extent of debugging information increases with higher values.
+#
+#		0: No debuging information.
+#
+#		1: A number of methods in GeneralFile can actually result in IOExceptions 
+#		due to failures communicating to the server. These exceptions are caught 
+#		and handled within that GeneralFile method. However sometimes it can be 
+#		useful to see what exceptions did occur. The stack trace of those exceptions 
+#		are printed to System.err. As well as the name of each low level method call 
+#		to the server.
+#
+#		2: Adds information about connection and authentication. Helps to insure 
+#		you are connecting to the expected server as the correct user.
+#
+#   	* Higher debugging levels get especially technical... 
+#
+#		3: Adds information about the query return value.
+#
+#		4: Adds even more information about the query result and the actual query that was sent to the server.
+#
+#   	* Debugging levels beyond here are probably only useful to a developer expanding the Jargon API. 
+#
+#		5: Adds the actual bytes sent to the sever by a query and the bytes returned from the server after a query.
+#
+#		6: Adds every byte sent on the socket connection to the server and every byte returned by the server. 
+#		You'll probably want to read the section on the SRB protocol. 
+#
+#       Default Value:
+#       	0 
+#jargon.debug=0
+
+# maximumXmlRequest:
+#
+#        Specifies the maximum allowable size for an XML request sent by the 
+#        client.
+#
+#        This specifies the maximum size of an XML request document in bytes. 
+#        When processing XML-based requests (such as LOCK or PROPFIND), 
+#        Davis uses this parameter to control the amount of data that will 
+#        be accepted from the client. This protects against certain XML-based 
+#        denial of service attacks, in which the client sends a very large 
+#        request in an attempt to consume all available server resources.
+#
+#        Default Value:   
+#            20000 (about 20 kilobytes).
+#maximumXmlRequest=20000
+
+# insecureConnection:
+#
+#        Indicates which authentication method will be used if users establish
+#        an insecure connection (HTTP). The supported values are:
+#
+#        	shib (shibboleth authentication)
+#        	basic (basic authentication, really not secure, use it if you know what you are doing!)
+#        	block (doesn't allow insecure connections)
+#			digest (will be supported in the future)
+#
+#        	Default Value:  
+#            	block
+#insecureConnection=block
+
+#shared-token-header-name=
+#cn-header-name=
+#admin-cert-file=
+#admin-key-file=
+
+# anonymousCredentials:
+#
+#        Specifies an account to use for anonymous browsing.
+#        Syntax is username:password    Default is none.
+#anonymousCredentials=
+
+# anonymousCollections:
+#
+#        Specifies collections for anonymous browsing.
+#        split by comma, e.g. /ARCS/projects/public,/ARCS/projects/open
+#        Default is none.
+#anonymousCollections=
+
+# Organisation name. Default is "Davis".
+#organisation-name=Davis
+
+# Authentication realm. Default is "Davis".
+#authentication-realm=Davis
+
+# Organisation logo. Default is none.
+#organisation-logo=
+
+# Organisation logo geometry - widthxheight. Default is image size.
+#organisation-logo-geometry=
+
+# favicon for browser title bar. Default is none.
+#favicon=
+
+# myproxy server where certs are stored. Default is none.
+#myproxy-server=myproxy.arcs.org.au
+
+# Server type, srb or irods. No default.
+#server-type=irods
+
+# Default idp name. No Default.
+#default-idp=eResearchSA
+
+# Server port for srb/irods. Default 1247
+#server-port=1247
+
+# Server name for srb/irods. No default.
+#server-name=
+
+# Zone name for srb/irods. No default.
+#zone-name=
+
+# Default domain of user. No default.
+#default-domain=
+
+# Default resource of user
+#default-resource=
+
+# Proxy host for slcs. Default is no proxy.
+#proxy-host=
+
+# Proxy port for slcs. Default is no proxy.
+#proxy-port=
+
+# Proxy username for slcs. Default is no proxy.
+#proxy-username=
+
+# Proxy password for slcs. Default is no proxy.
+#proxy-password=
+
+# dojoroot, if it is deployed at root, put a "/" here, otherwise, leave it blank. Default is "".
+#dojoroot=

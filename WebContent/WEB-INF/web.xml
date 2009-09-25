@@ -15,21 +15,12 @@
 
         Valid settings include:
 
-            0
+            0		Use no compression.
 
+            1 - 9	Compression level (1 is fastest/least compression, 9 is 
+                	slowest/most compression).
 
-                Use no compression.
-
-            1 - 9
-
-
-                Compression level (1 is fastest/least compression, 9 is 
-                slowest/most compression).
-
-            -1
-
-
-                Use a default compression level (medium speed/compression).
+            -1      Use a default compression level (medium speed/compression).
 
         Default Value:
     
@@ -103,6 +94,14 @@
 <servlet>
 <servlet-name>Davis</servlet-name>
 <servlet-class>webdavis.Davis</servlet-class>
+	<init-param>
+		<description>
+			Configuration files to be read (in order)
+		</description>
+		<param-name>config-files</param-name>
+		<param-value>davis-config.txt, davis-config-organisation.txt, davis-config-host.txt, davis-config-dev.txt</param-value>
+	</init-param>
+
 <!--
     alwaysAuthenticate:
 
@@ -748,10 +747,10 @@
             CRITICAL (only critical errors are logged).
 -->
 
-    <init-param>
+    <!-- <init-param>
         <param-name>webdavis.Log.threshold</param-name>
         <param-value>WARNING</param-value>
-    </init-param>
+    </init-param>-->
 
 <!--
     jargon.debug:
@@ -1224,10 +1223,10 @@
 
 
 -->
-    <init-param>
+    <!-- <init-param>
         <param-name>anonymousCredentials</param-name>
         <param-value>anonymous:anything</param-value>
-    </init-param>
+    </init-param>-->
 
 <!--
     anonymousCollections:
@@ -1237,10 +1236,10 @@
 
 
 -->
-    <init-param>
+    <!-- <init-param>
         <param-name>anonymousCollections</param-name>
         <param-value>/ARCS/projects/public,/ARCS/projects/open</param-value>
-    </init-param>
+    </init-param>-->
 
 
 
@@ -1260,7 +1259,7 @@
             block
 -->
 
-    <init-param>
+    <!-- <init-param>
         <param-name>insecureConnection</param-name>
         <param-value>shib</param-value>
     </init-param>
@@ -1279,23 +1278,23 @@
     <init-param>
         <param-name>admin-key-file</param-name>
         <param-value>/etc/grid-security/hostkey.pem</param-value>
-    </init-param>
+    </init-param>-->
 
 
-		<init-param>
+<!-- 		<init-param>
 			<description>
 				organisation name - default is Davis
 			</description>
 			<param-name>organisation-name</param-name>
 			<param-value>Australian Research Collaboration Service</param-value>
-		</init-param>
+		</init-param> 
 		<init-param>
 			<description>
 				authentication realm - default is Davis
 			</description>
 			<param-name>authentication-realm</param-name>
 			<param-value>ARCS Data Fabric</param-value>
-		</init-param>
+		</init-param> 
 		<init-param>
 			<description>
 				organisation logo
@@ -1316,8 +1315,8 @@
 			</description>
 			<param-name>favicon</param-name>
 			<param-value>http://www.arcs.org.au/favicon.ico</param-value>
-		</init-param>
-		<init-param>
+		</init-param> -->
+		<!-- <init-param>
 			<description>
 				myproxy server where certs are stored
 			</description>
@@ -1337,8 +1336,8 @@
 			</description>
 			<param-name>default-idp</param-name>
 			<param-value>eResearchSA</param-value>
-		</init-param>
-		<init-param>
+		</init-param>-->
+		<!-- <init-param>
 			<description>
 				server port of srb/irods
 			</description>
@@ -1365,14 +1364,14 @@
 			</description>
 			<param-name>default-domain</param-name>
 			<param-value>ngspare.sapac.edu.au</param-value>
-		</init-param>
+		</init-param>-->
 		<!-- 
 		default resource of user in this order: 
 			1. resource_name equals this value; 
 			2. resource_name contains this value; 
 			3. first resource in the list
 		 -->
-		<init-param>
+		<!-- <init-param>
 			<description>
 				default resource of user
 			</description>
@@ -1385,14 +1384,14 @@
 			</description>
 			<param-name>proxy-host</param-name>
 			<param-value>www-proxy.sapac.edu.au</param-value>
-		</init-param><!-- www-proxy.sapac.edu.au -->
-		<init-param>
+		</init-param>--><!-- www-proxy.sapac.edu.au -->
+		<!-- <init-param>
 			<description>
 				proxy port for slcs, set to empty if no proxy is needed
 			</description>
 			<param-name>proxy-port</param-name>
 			<param-value>8080</param-value>
-		</init-param><!-- 8080 -->
+		</init-param>
 		<init-param>
 			<description>
 				proxy username for slcs, set to empty if no proxy is needed
@@ -1413,7 +1412,7 @@
 			</description>
 			<param-name>dojoroot</param-name>
 			<param-value></param-value>
-		</init-param>
+		</init-param>-->
 </servlet>
 <servlet-mapping>
 <servlet-name>Davis</servlet-name>
