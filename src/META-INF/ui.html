@@ -174,6 +174,7 @@
 								//case "copy": return "source and destination URI are the same";
 								default: return "refused";
 						  	}
+				case 404:   return "This collection does not exist or you have no permission to access it.";
 				case 405:	return "path already exists";
 				case 412: 	return "destination already exists";
 				default: 	return message;
@@ -444,18 +445,34 @@
       		dojo.html.set(dojo.byId("directoryTable"), listing);
 			dojo.html.set(dojo.byId("breadcrumb"), toBreadcrumb(getCurrentDirectory()));
 		}
+
+		var need_to_set_current_directory=false;
+		var need_to_add_to_history=false;
 		
 		function fetchDirectory(url) {
-			displayDirectory(null);
+//			alert("need_to_set_current_directory:"+need_to_set_current_directory+" need_to_add_to_history:"+need_to_add_to_history);
 			cursorBusy(true);
 			dojo.xhr("GET", {
 				url: url+"?format=json",
 				preventCache: true,
 	    		handleAs: "json",
 			    load: function(responseObject, ioArgs){
-			    		displayDirectory(responseObject.items);
+//			    		alert("ioArgs.xhr.status:"+ioArgs.xhr.status);
+			    		if (ioArgs.xhr.status==200) {
+			    			displayDirectory(null);
+							if (need_to_set_current_directory==true) {
+//								alert("setCurrentDirectory:"+url);
+								setCurrentDirectory(url);
+								need_to_set_current_directory=false;
+							}
+							if (need_to_add_to_history==true) {
+								addToHistory(url);
+								need_to_add_to_history=false;
+							}
+				    		displayDirectory(responseObject.items);
+			    			refreshButtons();
+			    		}
 			    		cursorBusy(false);
-			    		refreshButtons();
 			      		return responseObject;
 			    	},
 	    		error: function(response, ioArgs){
@@ -467,8 +484,8 @@
 		}
 
 		function _gotoDirectory(url) {
-			setCurrentDirectory(url);
-			fetchDirectory(getCurrentDirectory());
+			need_to_set_current_directory=true;
+			fetchDirectory(url);
 		}
 		
 		function addToHistory(url) {
@@ -476,8 +493,8 @@
 		}
 		
 		function gotoDirectory(url) {
+			need_to_add_to_history=true;
 			_gotoDirectory(url);
-			addToHistory(url);
 		}
 
 		function refreshCurrentDirectory() {
