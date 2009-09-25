@@ -267,12 +267,12 @@ public class DefaultGetHandler extends AbstractHandler {
         	if (format != null && format.equals("json")) {
         		//GeneralFile[] fileList = file.listFiles();
         		RemoteFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
-        		Comparator<Object> comparator = new Comparator<Object>() {
-					public int compare(Object file1, Object file2) {
-						return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
-					}     			
-        		};
-        		Arrays.sort((Object[])fileList, comparator);
+//        		Comparator<Object> comparator = new Comparator<Object>() {
+//					public int compare(Object file1, Object file2) {
+//						return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
+//					}     			
+//        		};
+//        		Arrays.sort((Object[])fileList, comparator);
     			str.append("{\n\"items\":[\n");
 				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			

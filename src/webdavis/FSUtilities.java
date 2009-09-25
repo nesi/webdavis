@@ -4,8 +4,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
+import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
@@ -483,12 +485,18 @@ public class FSUtilities {
 					IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
 //					IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
 					} );
+		Comparator<Object> comparator = new Comparator<Object>() {
+			public int compare(Object file1, Object file2) {
+				return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
+			}     			
+		};
 		try {
 			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions,selects,MAX_QUERY_NUM);
     		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditions1,selects1,MAX_QUERY_NUM,Namespace.DIRECTORY);
     		if (fileDetails==null) fileDetails=new MetaDataRecordList[0];
     		if (dirDetails==null) dirDetails=new MetaDataRecordList[0];
-    		CachedFile[] files=new CachedFile[fileDetails.length+dirDetails.length];
+    		CachedFile[] files=new CachedFile[fileDetails.length];
+    		CachedFile[] dirs=new CachedFile[dirDetails.length];
     		int i=0;
     		Log.log(Log.DEBUG, "file num:"+fileDetails.length);
     		for (MetaDataRecordList p:fileDetails) {
@@ -503,21 +511,27 @@ public class FSUtilities {
 //    				files[i].setCanWriteFlag(false);
     			i++;
     		}
+    		Arrays.sort((Object[])files, comparator);
     		Log.log(Log.DEBUG, "col num:"+dirDetails.length);
+    		i=0;
     		for (MetaDataRecordList p:dirDetails) {
-    			files[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),file.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-    			files[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
-    			files[i].setDirFlag(true);
+    			dirs[i]=new CachedFile((RemoteFileSystem)file.getFileSystem(),file.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+    			dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+    			dirs[i].setDirFlag(true);
 //    			int permission=Integer.parseInt((String)p.getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE));
 //    			if (permission>=1120)
-    				files[i].setCanWriteFlag(true);
+    			dirs[i].setCanWriteFlag(true);
 //    			else
 //    				files[i].setCanWriteFlag(false);
     			i++;
     		}
+    		Arrays.sort((Object[])dirs, comparator);
     		
+    		CachedFile[] detailList=new CachedFile[files.length+dirs.length];
+    		System.arraycopy(dirs, 0, detailList, 0, dirs.length);
+    		System.arraycopy(files, 0, detailList, dirs.length, files.length);
     		
-    		return files;
+    		return detailList;
 		} catch (NullPointerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
