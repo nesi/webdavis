@@ -401,47 +401,50 @@
 		}
 		
 		function displayDirectory(files) {
-			var listing =	
-						'<tr class="text">'+
-        					'<td width="50%" bgcolor="#E8E8E8"><strong>File/Directory Name</strong></td>'+
-        					'<td align="center" bgcolor="#E8E8E8"><strong>Last Modified</strong></td>'+
-        					'<td align="center" bgcolor="#E8E8E8"><strong>Size</strong></td>'+
-        					'<td width="12%" align="right" bgcolor="#E8E8E8"><strong>Select</strong></td>'+
-      					'</tr>'+
-      					'<tr>'+
-        					'<td bgcolor="#FFFFFF" class="text"><a class="link" onclick="gotoParentDirectory(); return false" href="'+getCurrentDirectory()+'/..">... Parent Directory</td>'+
-        					'<td bgcolor="#FFFFFF">&nbsp;</td>'+
-        					'<td align="right" bgcolor="#FFFFFF">&nbsp;</td>'+
-      					'</tr>';
+			var listing =
+						'<table width="100%" cellpadding="6" cellspacing="2" rules="none" frame="below" style="border-bottom:dotted; border-width:1px; border-color:gray; ">'+
+							'<tr class="text">'+
+        						'<td width="50%" bgcolor="#E8E8E8"><strong>File/Directory Name</strong></td>'+
+        						'<td align="center" bgcolor="#E8E8E8"><strong>Last Modified</strong></td>'+
+        						'<td align="center" bgcolor="#E8E8E8"><strong>Size</strong></td>'+
+        						'<td width="12%" align="right" bgcolor="#E8E8E8"><strong>Select</strong></td>'+
+        					'</tr>'+
+        					'<tr>'+
+        						'<td bgcolor="#FFFFFF" class="text"><a class="link" onclick="gotoParentDirectory(); return false" href="'+getCurrentDirectory()+'/..">... Parent Directory</td>'+
+        						'<td bgcolor="#FFFFFF">&nbsp;</td>'+
+        						'<td align="right" bgcolor="#FFFFFF">&nbsp;</td>'+
+        					'</tr>';
       		if (files != null) {
           		if (files.length == 0) {
               			listing +=
-              			'<tr><td class="text"><small><i>(Directory is empty)</i></small></td></tr>';
+              				'<tr><td class="text"><small><i>(Directory is empty)</i></small></td></tr>';
           		} else 
 					for (var i = 0; i < files.length; i++) {
 						var isDir = (files[i].type == 'd');
 						listing +=
-						'<tr>'+
-						'<td bgcolor="#FFFFFF">'
+							'<tr>'+
+								'<td bgcolor="#FFFFFF">'
 						var string = "";
 						if (isDir) 
 							listing +=
-								'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
+									'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
 						else 
 							listing +=
-								'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
+									'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+files[i].name+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
 						listing +=
-							'</td>'+
-    						'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
-   							'<td align="right" bgcolor="#FFFFFF" class="text"><small>';
+								'</td>'+
+								'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
+								'<td align="right" bgcolor="#FFFFFF" class="text"><small>';
  						if (!isDir) 
 							listing += humanReadable(files[i].size);
 						listing +=
 								'</small></td>'+
-    						'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+'" class="'+(isDir ? "directory" : "file")+'" onClick="refreshButtons()"/></td>'+
-  						'</tr>';
+								'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+'" class="'+(isDir ? "directory" : "file")+'" onClick="refreshButtons()"/></td>'+
+							'</tr>';
 					}
       		}
+			listing += '</table>';
+
       		dojo.html.set(dojo.byId("directoryTable"), listing);
 			dojo.html.set(dojo.byId("breadcrumb"), toBreadcrumb(getCurrentDirectory()));
 		}
@@ -451,6 +454,7 @@
 		
 		function fetchDirectory(url) {
 //			alert("need_to_set_current_directory:"+need_to_set_current_directory+" need_to_add_to_history:"+need_to_add_to_history);
+//displayDirectory(null);
 			cursorBusy(true);
 			dojo.xhr("GET", {
 				url: url+"?format=json",
@@ -459,7 +463,7 @@
 			    load: function(responseObject, ioArgs){
 //			    		alert("ioArgs.xhr.status:"+ioArgs.xhr.status);
 			    		if (ioArgs.xhr.status==200) {
-			    			displayDirectory(null);
+//			    			displayDirectory(null);
 							if (need_to_set_current_directory==true) {
 //								alert("setCurrentDirectory:"+url);
 								setCurrentDirectory(url);
@@ -1215,8 +1219,8 @@
 	<input type="hidden" name="selections"/> <!-- Dummy first element for checkboxes array forces array when only one item --> 
 	<table width="100%" border="0" cellspacing="0" cellpadding="12">
   		<tr>
-    		<td width="80%" valign="top">
-				<table id="directoryTable" width="100%" border="0" cellpadding="6" cellspacing="2"></table>
+    		<td width="80%" valign="top" id="directoryTable">
+				<!--<table id="directoryTable" width="100%" border="0" cellpadding="6" cellspacing="2"></table>-->
 			</td>
     		<td valign="top">
 				<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
@@ -1262,17 +1266,17 @@
   		</tr>
 	</table>
 </form>
-<table id="hor_rule2" width="80%" border="0" cellpadding="12" cellspacing="0">
-  	<tr>
-    	<td>
-			<table width="100%" border="0" cellpadding="0" cellspacing="0">
-      			<tr>
-        			<td bgcolor="#999999"><img src="/images/1px.png" alt="" width="1" height="1" /></td>
-      			</tr>
-    		</table>
-		</td>
-  	</tr>
-</table>
+<!--<table width="80%" border="0" cellpadding="12" cellspacing="0">
+	<tr>
+	<td>
+		<table width="100%" border="0" cellpadding="0" cellspacing="0">
+  			<tr>
+    			<td bgcolor="#999999"><img src="/images/1px.png" alt="" width="1" height="1" /></td>
+  			</tr>
+		</table>
+	</td>
+	</tr>
+</table>-->
 <p>&nbsp;</p>
 </body>
 </html>
