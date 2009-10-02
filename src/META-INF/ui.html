@@ -260,7 +260,7 @@
 			});
 			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
 				if (e.keyCode == dojo.keys.ENTER) {
-					rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value);
+					rename(escapedFileName(getFirstCheckedItem()), dojo.byId('renameInputBox').value);
 				}
 			});
 		}
@@ -424,6 +424,7 @@
               				'<tr><td class="text"><small><i>(Directory is empty)</i></small></td></tr>';
           		} else 
 					for (var i = 0; i < files.length; i++) {
+						var escapedFile = escapeFileName(files[i].name);
 						var isDir = (files[i].type == 'd');
 						listing +=
 							'<tr>'+
@@ -431,10 +432,10 @@
 						var string = "";
 						if (isDir) 
 							listing +=
-									'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapeFileName(files[i].name)+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
+									'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapedFile+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFile+'">&nbsp;'+files[i].name;
 						else 
 							listing +=
-									'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapeFileName(files[i].name)+'\'); return false" href="'+getCurrentDirectory()+'/'+files[i].name+'">&nbsp;'+files[i].name;
+									'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapedFile+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFile+'">&nbsp;'+files[i].name;
 						listing +=
 								'</td>'+
 								'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
@@ -680,7 +681,7 @@
 //				loadMetadataFromServer(getCurrentDirectory()+"?method=metadata");	// Default metadata is taken from current directory
 				resetMetadataStore();
 			} else {
-				metadataURL = getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=metadata";
+				metadataURL = getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=metadata";
 				loadMetadataFromServer(metadataURL);
 			}
 			dijit.byId('dialogMetadata').attr("url", metadataURL);
@@ -804,6 +805,7 @@
 		function getPermission(url, data){
 			if (typeof data === "undefined")
 				data = "";
+alert("url="+url);
 		  	dojo.rawXhrPost({
 	    		url: url,
 	 		    headers: {
@@ -839,7 +841,7 @@
 		function getPermissions(batch){
 			var sourceURL = getCurrentDirectory();
 			if (!batch)
-				sourceURL = getCurrentDirectory()+"/"+getFirstCheckedItem(); 
+				sourceURL = getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem()); 
 			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb')
 				getDomains(sourceURL+"?method=domains");
@@ -912,7 +914,7 @@
 		function getReplicas(action){
 			cursorBusy(true);	
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action,
+	    		url: getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=replicas"+action,
 	    		load: function(responseObject, ioArgs){    
 						replicasStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						replicasGrid.setStore(replicasStore);  
@@ -931,11 +933,10 @@
 		}
 		
 		function loadResourcesFromServer(){
-			var server_url = getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources";
 			cursorBusy(true);	
 			dojo.html.set(dojo.byId('replicasStatusField'), 'Fetching list of resources from server...');
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources",
+	    		url: getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=resources",
 	    		load: function(responseObject, ioArgs){    
 						var resources = responseObject.items;
 						replicasStore.fetch({
@@ -1033,7 +1034,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
+		<button onclick="rename(escapeFileName(getFirstCheckedItem()), dojo.byId('renameInputBox').value)">Rename</button>
 		<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
 	</div>
 </div>					
