@@ -86,8 +86,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	 * @throws IOException
 	 *             If an IO error occurs while handling the request.
 	 */
-	public void service(HttpServletRequest request,
-			HttpServletResponse response, DavisSession davisSession)
+	public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
 			throws ServletException, IOException {
 
 		String method = request.getParameter("method");
@@ -144,7 +143,10 @@ public class DefaultPostHandler extends AbstractHandler {
 							((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
 						} else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
 							Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
-							((IRODSFile) selectedFile).changePermissions(permission, username, recursive);
+							if (recursive) 
+								iRODSSetPermission((IRODSFile)selectedFile, permission, username);
+							else
+								((IRODSFile) selectedFile).changePermissions(permission, username, recursive);
 						}
 					}
 					if (sticky!=null) {
@@ -654,7 +656,30 @@ public class DefaultPostHandler extends AbstractHandler {
 			((IRODSFile)file).changePermissions(flag?"inherit":"noinherit", "", recursive);
 		}	
 	}
-	
+
+    private boolean error = false;
+
+    private boolean iRODSSetPermission(IRODSFile file, String permission, String username) {
+ 
+    	if (file.isDirectory()) {
+    		Log.log(Log.DEBUG, "(perm)entering dir "+file.getAbsolutePath());
+    		String[] fileList=file.list();
+    		Log.log(Log.DEBUG, "(perm)entering dir has children number: "+fileList.length);
+    		if (fileList.length > 0) 
+        		for (int i=0; i<fileList.length; i++){
+        			Log.log(Log.DEBUG, "(perm)entering child "+fileList[i]);
+    				error = error || !iRODSSetPermission(new IRODSFile(file,fileList[i]), permission, username);
+        		}
+    	}
+		Log.log(Log.DEBUG, "changing permission of "+file.getAbsolutePath());
+		try {
+			file.changePermissions(permission, username, false);
+		} catch (IOException e) {
+			error = true;
+		}
+    	
+    	return !error;
+    }
 	
     private static final Map trackers = new HashMap();	// Set of trackers currently transferring
     
