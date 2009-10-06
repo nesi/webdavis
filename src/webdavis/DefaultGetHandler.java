@@ -243,7 +243,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //String s = "Path can't be accessed.";
 //output.print(s);
 //response.setContentLength(s.length());
-            response.flushBuffer();
+        	response.flushBuffer();
             return;
         }
 //        if (!file.canRead()){
