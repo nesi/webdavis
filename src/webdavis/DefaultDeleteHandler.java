@@ -47,7 +47,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
     	throws ServletException, IOException {
  
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-    	boolean batch = getFileList(request, davisSession, fileList); 
+    	boolean batch = getFileList(request, davisSession, fileList);
+    	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
 //    	boolean batch = false;  	
 //    	RemoteFile uriFile = getRemoteFile(request, davisSession);
 //        if (request.getContentLength() <= 0) {
@@ -81,7 +82,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
 				if (batch) {
-	    			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
+	    			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"' in batch mode";
 	    			Log.log(Log.WARNING, s);
 	    			response.sendError(HttpServletResponse.SC_FORBIDDEN, s); // Batch delete failed
 	    		} else
@@ -120,9 +121,10 @@ public class DefaultDeleteHandler extends AbstractHandler {
        // response.flushBuffer();
     }
     
-    private boolean error = false;
+//    private boolean error = false;
     
     public boolean del(RemoteFile file, DavisSession davisSession) {
+    	boolean result=true;
 		if (file.getFileSystem() instanceof SRBFileSystem){
 	    	if (file.isDirectory()){
 	    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
@@ -131,19 +133,20 @@ public class DefaultDeleteHandler extends AbstractHandler {
 	    		if (fileList.length>0){
 	        		for (int i=0;i<fileList.length;i++){
 	        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
-	    				error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
+	        			result = result & del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
 	        		}
 	    		}
 	    	}
 			Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
-			error = error || !((SRBFile)file).delete(true); 
+			result = result & ((SRBFile)file).delete(true); 
 		}else if (file.getFileSystem() instanceof IRODSFileSystem){
 			//iRODS does suport recursive deletion now
 			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
 			Log.log(Log.DEBUG, "deleting - force:"+force);
-			error = error || !((IRODSFile)file).delete(force); 
+			result = result & ((IRODSFile)file).delete(force); 
 		}
-    	
+		if (!result) Log.log(Log.WARNING,"Failed to delete file: "+file);
+    	return result;
     	
 //    	if (file.isDirectory()){
 //    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
@@ -178,6 +181,6 @@ public class DefaultDeleteHandler extends AbstractHandler {
 //				error = error || !((IRODSFile)file).delete(force); 
 //			}
 //    	}
-    	return !error;
+//    	return !error;
     }
 }
