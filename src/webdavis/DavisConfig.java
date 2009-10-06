@@ -1,7 +1,9 @@
 package webdavis;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStream;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -110,18 +112,33 @@ public class DavisConfig {
 		if (filesList != null) {
 			String[] configFileNames = filesList.split(" *, *");
 			for (int i = 0; i < configFileNames.length; i++) {
-				String fileName = "/WEB-INF/"+configFileNames[i].trim();
-				Properties properties = new Properties();
-		        InputStream stream = null;
-		        try {
-		            stream = config.getServletContext().getResourceAsStream(fileName);
-					properties.load(stream);
-					stream.close();
-					configProperties.putAll(properties);
-		        } catch (Exception e) {
-		        	System.err.println("WARNING: Can't load config file '"+fileName+"' - skipping");
-		        	continue;
-		        }   
+				if (configFileNames[i].trim().startsWith("/")||(configFileNames[i].trim().length()>2&&configFileNames[i].trim().charAt(1)==':')){
+					String fileName = configFileNames[i].trim();
+					Properties properties = new Properties();
+			        InputStream stream = null;
+			        try {
+			            stream = new FileInputStream(new File(fileName));
+						properties.load(stream);
+						stream.close();
+						configProperties.putAll(properties);
+			        } catch (Exception e) {
+			        	System.err.println("WARNING: Can't load config file '"+fileName+"' - skipping");
+			        	continue;
+			        }   
+				}else{
+					String fileName = "/WEB-INF/"+configFileNames[i].trim();
+					Properties properties = new Properties();
+			        InputStream stream = null;
+			        try {
+			            stream = config.getServletContext().getResourceAsStream(fileName);
+						properties.load(stream);
+						stream.close();
+						configProperties.putAll(properties);
+			        } catch (Exception e) {
+			        	System.err.println("WARNING: Can't load config file '"+fileName+"' - skipping");
+			        	continue;
+			        }   
+				}
 			}
 		}
 
