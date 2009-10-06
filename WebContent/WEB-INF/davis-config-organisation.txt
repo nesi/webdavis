@@ -16,5 +16,6 @@ anonymousCollections=/ARCS/projects/public,/ARCS/projects/open
 
 myproxy-server=myproxy.arcs.org.au
 server-type=irods
+server-port=1247
 default-idp=arcs idp
 zone-name=ARCS
