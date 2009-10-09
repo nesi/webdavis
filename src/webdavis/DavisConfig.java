@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -12,6 +13,10 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 public class DavisConfig {
 	private static DavisConfig self;
@@ -95,6 +100,25 @@ public class DavisConfig {
 		return value;
 	}
 	
+	public JSONObject[] getRules() {
+
+		ArrayList rules = new ArrayList();
+		Enumeration<String> propertyNames = (Enumeration<String>) configProperties.propertyNames();
+		while (propertyNames.hasMoreElements()) {
+			String propertyName = propertyNames.nextElement();
+			if (propertyName.startsWith("ruledef")) {  
+				JSONObject rule = (JSONObject)JSONValue.parse(configProperties.getProperty(propertyName));
+				if (rule == null) {
+					System.err.println("ERROR: Failed to parse rule declaration for "+propertyName+" - ignoring");
+					continue;
+				}
+//System.err.println("adding rule for "+propertyName+" = "+configProperties.getProperty(propertyName)+" = "+rule);
+				rules.add(rule);
+			}
+		}
+		return (JSONObject[]) rules.toArray(new JSONObject[0]);
+	}
+	
 	public String getInitParameters() {
 		
 		String s = "";
@@ -141,6 +165,8 @@ public class DavisConfig {
 				}
 			}
 		}
+
+//System.err.println("rules="+getRules());		
 
 		String requestUriCharset = /*config.*/getInitParameter(REQUEST_URI_CHARSET, "UTF-8");
 //		if (requestUriCharset == null)

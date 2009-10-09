@@ -433,19 +433,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("\n");
 			str.append("]}");
 		} else if (method.equalsIgnoreCase("upload")) {
-
-			
-//	IRODSFile f=new IRODSFile((IRODSFileSystem)file.getFileSystem(), ((IRODSFileSystem)file.getFileSystem()).getHomeDirectory()+"/temp2.txt");
-//System.err.println("f="+f);
-//System.err.println("exists="+f.exists());
-//	f.setResource("arcs-df.ivec.org");
-//	f.replicate("arcs-df.intersect.org.au");
-////	f.replicate("data-dev.ersa.edu.au");
-////	f.setResource("second.ngdata-dev.hpcu.uq.edu.au");
-////	f.replicate("second.ngdata-dev.hpcu.uq.edu.au");
-////	f.deleteReplica("second.ngdata-dev.hpcu.uq.edu.au");
-//System.err.println("replicate finished");
-			
 			response.setContentType("text/html");
 			if (!ServletFileUpload.isMultipartContent(request)) 
 	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Invalid request (not multipart)\"}</textarea></body></html>");
@@ -532,6 +519,16 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
+		} else if (method.equalsIgnoreCase("rules")) {
+			str.append("{\n\"items\":[\n");
+			JSONObject[] rules = DavisConfig.getInstance().getRules();
+			for (int i = 0; i < rules.length; i++) {
+				JSONObject rule = rules[i];
+				if (i > 0) str.append(",\n");
+				str.append(rule);
+			}
+			str.append("\n");
+			str.append("]}");
 		} else if (method.equalsIgnoreCase("resources")) {
 			str.append("{\nitems:[\n");
 			String[] resources = null;
@@ -545,6 +542,29 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
+		} else if (method.equalsIgnoreCase("execrule")) {
+			JSONArray jsonArray = getJSONContent(request);
+	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+	    	boolean batch = getFileList(request, davisSession, fileList, jsonArray); 
+System.err.println("file list="+fileList);
+
+	JSONObject jsonObject = null;
+	if (jsonArray != null) {	
+		jsonObject = (JSONObject)jsonArray.get(0);
+//		JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
+//	if (object != null)
+//		object.putAll(jsonObject);
+	}
+
+
+			String ruleName = request.getParameter("rule");
+			Log.log(Log.DEBUG, "Executing rule '"+ruleName+"'");
+			//###TBD: launch rule script here
+			String notice = "Sorry, rules aren't executed by the server yet!";
+			if (notice != null && notice.length() > 0)
+				str.append("{\"notice\":\""+notice+"\"}");
+			str.append("\n");
+			str.append("");
 		} else if (method.equalsIgnoreCase("replicas")) {
 			String deleteResource = request.getParameter("delete");
 			String replicateResource = request.getParameter("replicate");

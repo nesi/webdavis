@@ -1002,25 +1002,39 @@ public abstract class AbstractHandler implements MethodHandler {
     	return /*config.getInitParameter("server-type")*/ DavisConfig.getInstance().getServerType();
     }
 
+    protected JSONArray getJSONContent(HttpServletRequest request) throws IOException {
+    	
+        if (request.getContentLength() <= 0) 
+        	return null;
+        
+        InputStream input = request.getInputStream();
+        byte[] buf = new byte[request.getContentLength()];
+        int count=input.read(buf);
+        Log.log(Log.DEBUG, "read:"+count);
+        Log.log(Log.DEBUG, "received json data: "+new String(buf));
+		return (JSONArray)JSONValue.parse(new String(buf));
+    }
+
     protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
-    	return getFileList(request, davisSession, fileList, null);
+    	
+    	return getFileList(request, davisSession, fileList, getJSONContent(request));
     }
     
-    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList, JSONObject object) throws IOException, ServletException {
-    	
+    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList, JSONArray jsonArray) throws IOException, ServletException {
+    
     	boolean batch = false;
     	RemoteFile uriFile = getRemoteFile(request, davisSession);
         if (request.getContentLength() <= 0) {
         	fileList.add(uriFile);
         } else {
         	batch = true;
-	        InputStream input = request.getInputStream();
-	        byte[] buf = new byte[request.getContentLength()];
-	        int count=input.read(buf);
-	        Log.log(Log.DEBUG, "read:"+count);
-	        Log.log(Log.DEBUG, "received file list: " + new String(buf));
-
-			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+//	        InputStream input = request.getInputStream();
+//	        byte[] buf = new byte[request.getContentLength()];
+//	        int count=input.read(buf);
+//	        Log.log(Log.DEBUG, "read:"+count);
+//	        Log.log(Log.DEBUG, "received file list: " + new String(buf));
+//
+//			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 			JSONObject jsonObject = null;
 			if (jsonArray != null) {	
 				jsonObject = (JSONObject)jsonArray.get(0);
@@ -1033,8 +1047,6 @@ public abstract class AbstractHandler implements MethodHandler {
 				}
 			} else
 				throw new ServletException("Internal error deleting file: error parsing JSON");
-			if (object != null)
-				object.putAll(jsonObject);
 		}
         return batch;
     }
