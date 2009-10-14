@@ -109,12 +109,13 @@ public class DefaultPostHandler extends AbstractHandler {
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
 			boolean recursive = false;
-			InputStream input = request.getInputStream();
-			byte[] buf = new byte[request.getContentLength()];
-			int count=input.read(buf);
-			Log.log(Log.DEBUG, "read:"+count);
-			Log.log(Log.DEBUG, "received data: " + new String(buf));
-			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+			JSONArray jsonArray = getJSONContent(request);						
+//			InputStream input = request.getInputStream();
+//			byte[] buf = new byte[request.getContentLength()];
+//			int count=input.read(buf);
+//			Log.log(Log.DEBUG, "read:"+count);
+//			Log.log(Log.DEBUG, "received data: " + new String(buf));
+//			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 			
 			// Write permissions for given items
 			if (jsonArray != null) {	
@@ -236,21 +237,22 @@ public class DefaultPostHandler extends AbstractHandler {
 
 		} else if (method.equalsIgnoreCase("metadata")) {
 			if (request.getContentLength() > 0) {	// write metadata if given in request
-		        InputStream input = request.getInputStream();
-		        byte[] buf = new byte[request.getContentLength()];
-		        int count=input.read(buf);
-		        Log.log(Log.DEBUG, "read:"+count);
-		        Log.log(Log.DEBUG, "received metadata: " + new String(buf));
-
-				// for testing
-//				String line = null;
-//				StringBuffer buffer = new StringBuffer();
-//				while ((line = reader.readLine()) != null) {
-//					buffer.append(line);
-//				}
-//				Log.log(Log.DEBUG, "received metadata: " + buffer);
-
-				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
+				JSONArray jsonArray = getJSONContent(request);			
+//		        InputStream input = request.getInputStream();
+//		        byte[] buf = new byte[request.getContentLength()];
+//		        int count=input.read(buf);
+//		        Log.log(Log.DEBUG, "read:"+count);
+//		        Log.log(Log.DEBUG, "received metadata: " + new String(buf));
+//
+//				// for testing
+////				String line = null;
+////				StringBuffer buffer = new StringBuffer();
+////				while ((line = reader.readLine()) != null) {
+////					buffer.append(line);
+////				}
+////				Log.log(Log.DEBUG, "received metadata: " + buffer);
+//
+//				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 				if (jsonArray != null) {	
 					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
 					JSONArray filesArray = (JSONArray)jsonObject.get("files");

@@ -1008,11 +1008,17 @@ public abstract class AbstractHandler implements MethodHandler {
         	return null;
         
         InputStream input = request.getInputStream();
+        String s = "";
         byte[] buf = new byte[request.getContentLength()];
-        int count=input.read(buf);
-        Log.log(Log.DEBUG, "read:"+count);
-        Log.log(Log.DEBUG, "received json data: "+new String(buf));
-		return (JSONArray)JSONValue.parse(new String(buf));
+        while (true) {
+        	int count=input.read(buf);
+        	if (count < 0)
+        		break;
+        	s += new String(buf, 0, count);
+        }
+        Log.log(Log.DEBUG, "read:"+s.length());
+        Log.log(Log.DEBUG, "received json data: "+s);
+		return (JSONArray)JSONValue.parse(s);
     }
 
     protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {

@@ -45,7 +45,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
      */
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
     	throws ServletException, IOException {
- 
+    	
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
     	boolean batch = getFileList(request, davisSession, fileList);
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);

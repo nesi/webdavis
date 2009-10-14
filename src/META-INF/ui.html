@@ -580,12 +580,24 @@
 			setToggleButtonState(getToggleButtonState());
 		}
 		
+		function warnBulk(verbose) {
+			if (checkedItemsCount() > 20)
+				alert("There are "+checkedItemsCount()+" items selected, so this might take a while."+(verbose ? " Click on the "+getDir(getCurrentDirectory())+" link to refresh." : ""));
+		}
+		
 		function setCurrentDirectory(dir) {
 			currentDirectory = dir;
 		}
 
 		function getCurrentDirectory() {
 			return currentDirectory;
+		}
+		
+		function getDir(dir) {
+			var i = dir.lastIndexOf("/");
+			if (i < 0)
+				return dir;
+			return dir.substr(i+1);
 		}
 		
 		function escapeFileName(fileName) {
@@ -772,6 +784,7 @@
 			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 			dojo.xhr("DELETE", {
 				url: url,
+	//			sync: true,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -783,6 +796,7 @@
 			   		},
 	    		error: function(response, ioArgs){
 	      				alert("Failed to delete one or more items: "+errorMessage("delete", response));
+//alert("status code: "+ioArgs.xhr.status+" status text: "+ioArgs.xhr.statusText+" reponse was "+response+" ioArgs.xhr="+ioArgs.xhr);
 	      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
 	      				return response;
 	    			}
@@ -1212,7 +1226,7 @@
     Are you sure you want to delete the selected items and their contents?
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="deleteFiles(getCurrentDirectory()); checkAll(false); refreshButtons();">Delete</button>
+		<button onclick="warnBulk(true); deleteFiles(getCurrentDirectory()); checkAll(false); refreshButtons();">Delete</button>
 		<button onclick="dijit.byId('dialogDelete').hide()">Cancel</button>
 	</div>
 </div>					
@@ -1229,7 +1243,7 @@
     Are you sure you want to restore the selected items and their contents?
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="restoreFiles()">Restore</button>
+		<button onclick="warnBulk(true); restoreFiles()">Restore</button>
 		<button onclick="dijit.byId('dialogRestore').hide()">Cancel</button>
 	</div>
 </div>					
@@ -1242,7 +1256,7 @@
 	        	<button id="refreshMetadataButton" onclick="refreshMetadata(dijit.byId('dialogMetadata').attr('url'))">Refresh</button>
 	    		<button onclick="addMetadata()">Add Metadata</button>
 	    		<button onclick="dijit.byId('metadataGrid').removeSelectedRows()">Remove Metadata</button>
-	    		<button id="saveMetadataButton" onclick="saveMetadata()">Save</button>
+	    		<button id="saveMetadataButton" onclick="warnBulk(false); saveMetadata()">Save</button>
 	    		<button onclick="dijit.byId('dialogMetadata').hide()">Close</button>
 			</td>
 		</tr>
@@ -1281,7 +1295,7 @@
 					</tr>
 					<tr>
 						<td rowspan="2" align="center">
-							<button id="applyPermissionsButton" onclick="savePermission()">Apply</button>
+							<button id="applyPermissionsButton" onclick="warnBulk(false); savePermission()">Apply</button>
 							<button onclick="dijit.byId('recursive').setAttribute('checked', false); dijit.byId('dialogPermissions').hide()">Close</button>
 						</td>
 					</tr>
