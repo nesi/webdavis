@@ -152,7 +152,7 @@ public class DefaultGetHandler extends AbstractHandler {
     private String UIHTMLLocation;
 
     private PropertiesBuilder propertiesBuilder;
-    private String uiHTMLContent;
+    private String defaultUIHTMLContent;
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
@@ -171,7 +171,7 @@ public class DefaultGetHandler extends AbstractHandler {
             UIHTMLLocation = "/META-INF/ui.html";
         }
         // Load UI html into a string so that subsequent requests can use that directly
-        uiHTMLContent = loadUI(UIHTMLLocation);
+        defaultUIHTMLContent = loadUI(UIHTMLLocation);
     }
 
     private String loadUI(String fileName) {
@@ -301,6 +301,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 return;
         	}
         	if (request.getParameter("oldui") == null) {
+        		String uiHTMLContent = defaultUIHTMLContent;
         		if (request.getParameter("uidev") != null) {
         			// Simple hack to allow loading of a development ui every time a request is received.
         			// To use this, add '?uidev' to url and place a link in davis/webapps/root called uidev.html pointing
