@@ -49,7 +49,7 @@ public class AuthorizationProcessor {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			davisSession.disconnect();
 			connectionPool.remove(sessionID);
-		}else if (davisSession!=null){
+		}else if (davisSession!=null&&davisSession.isConnected()){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
@@ -64,7 +64,7 @@ public class AuthorizationProcessor {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			davisSession.disconnect();
 			connectionPool.remove(sessionID);
-		}else if (davisSession!=null){
+		}else if (davisSession!=null&&davisSession.isConnected()){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
