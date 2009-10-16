@@ -147,7 +147,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			result = result & ((SRBFile)file).delete(true); 
 		}else if (file.getFileSystem() instanceof IRODSFileSystem){
 			//iRODS does support recursive deletion now
-			if (/*inTrash*/false) { // But not in trash for now
+			if (inTrash/*false*/) { // But not in trash for now
 		    	if (file.isDirectory()){
 		    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
 		    		String[] fileList=file.list();
