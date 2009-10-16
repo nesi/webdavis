@@ -258,9 +258,9 @@
 	  		});
 		}
 		
-		function errorMessage(method, messageObject) {			
-			var code = messageObject.status;
-			var message = messageObject.message;
+		function errorMessage(method, code, message) {			
+//			var code = messageObject.status;
+//			var message = messageObject.message;
 			if (code < 0)
 				return message;
 			switch(code) {
@@ -271,6 +271,7 @@
 				case 403:	switch(method) {
 								//case "move": 
 								//case "copy": return "source and destination URI are the same";
+								case "delete": return message;
 								default: return "refused";
 						  	}
 				case 404:   return "This collection does not exist or you have no permission to access it.";
@@ -685,7 +686,7 @@
 			      		return responseObject;
 			    	},
 	    		error: function(response, ioArgs){
-	      				alert("Failed to fetch directory details for "+url+": "+errorMessage("get", response));
+	      				alert("Failed to fetch directory details for "+url+": "+errorMessage("get", response.code, response.message));
 	      				cursorBusy(false);
 	      				return response;
 	    			}
@@ -733,7 +734,7 @@
 			      		return responseObject;
 			   		},
 	    		error: function(response, ioArgs){
-	      				alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", response));
+	      				alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", response.code, response.message));
 	      				return response;
 	    			}
 			});
@@ -795,7 +796,7 @@
 			      		return responseObject;
 			   		},
 	    		error: function(response, ioArgs){
-	      				alert("Failed to delete one or more items: "+errorMessage("delete", response));
+	      				alert(/*"Failed to delete one or more items: "+*/errorMessage("delete", ioArgs.xhr.status, ioArgs.xhr.statusText));
 //alert("status code: "+ioArgs.xhr.status+" status text: "+ioArgs.xhr.statusText+" reponse was "+response+" ioArgs.xhr="+ioArgs.xhr);
 	      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
 	      				return response;
@@ -822,7 +823,7 @@
 			      		return responseObject;
 			    	},
 	    		error: function(response, ioArgs){
-	      				alert("Failed to move items: "+errorMessage("move", response));
+	      				alert("Failed to move items: "+errorMessage("move", response.code, response.message));
 	      				refreshCurrentDirectory() // Reload on error in case file was deleted
 	      				return response;
 	    			}
@@ -853,7 +854,7 @@
 			      	return responseObject;
 			    },
 	    		error: function(response, ioArgs){
-	      			alert("Failed to move one or more items: "+errorMessage("move", response));
+	      			alert("Failed to move one or more items: "+errorMessage("move", response.code, response.message));
 	      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
 	      			return response;
 	    		}
@@ -1124,7 +1125,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("Error while fetching replicas: "+errorMessage("replicas", response));
+	      				alert("Error while fetching replicas: "+errorMessage("replicas", response.code, response.message));
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1165,7 +1166,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("Error while fetching resources: "+errorMessage("resources", response));
+	      				alert("Error while fetching resources: "+errorMessage("resources", response.code, response.message));
 	      				cursorBusy(false);
 	      				dojo.html.set(dojo.byId('replicasStatusField'), '');
 	      				return response;

@@ -1015,6 +1015,7 @@ public abstract class AbstractHandler implements MethodHandler {
         	if (count < 0)
         		break;
         	s += new String(buf, 0, count);
+//     break;
         }
         Log.log(Log.DEBUG, "read:"+s.length());
         Log.log(Log.DEBUG, "received json data: "+s);
@@ -1052,7 +1053,7 @@ public abstract class AbstractHandler implements MethodHandler {
 					fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
 				}
 			} else
-				throw new ServletException("Internal error deleting file: error parsing JSON");
+				throw new ServletException("Internal error reading file list: error parsing JSON");
 		}
         return batch;
     }

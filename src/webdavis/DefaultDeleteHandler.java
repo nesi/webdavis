@@ -30,6 +30,8 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  */
 public class DefaultDeleteHandler extends AbstractHandler {
 
+	boolean inTrash;
+
     /**
      * Services requests which use the HTTP DELETE method.
      * This implementation deletes the specified file
@@ -45,7 +47,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
      */
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
     	throws ServletException, IOException {
-    	
+    	   	
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
     	boolean batch = getFileList(request, davisSession, fileList);
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
@@ -81,12 +83,14 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			Log.log(Log.DEBUG, "deleting: "+condemnedFile);
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
+    			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
 				if (batch) {
-	    			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"' in batch mode";
-	    			Log.log(Log.WARNING, s);
+	    			Log.log(Log.WARNING, s+" in batch mode");
 	    			response.sendError(HttpServletResponse.SC_FORBIDDEN, s); // Batch delete failed
-	    		} else
-		    		response.sendError(result);
+	    		} else {
+	    			Log.log(Log.WARNING, s);
+		    		response.sendError(result, s);
+	    		}
 				return;
 			}
         }
@@ -114,6 +118,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
         	if (lockManager != null) 
         		file = lockManager.getLockedResource(file, davisSession);
         }
+        if (file.getFileSystem() instanceof IRODSFileSystem)
+        	inTrash=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
         boolean success = del(file, davisSession);
         if (batch) 
         	return success ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_NOT_MODIFIED; // If delete failed, let caller know with SC_NOT_MODIFIED
@@ -140,47 +146,27 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
 			result = result & ((SRBFile)file).delete(true); 
 		}else if (file.getFileSystem() instanceof IRODSFileSystem){
-			//iRODS does suport recursive deletion now
-			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
-			Log.log(Log.DEBUG, "deleting - force:"+force);
-			result = result & ((IRODSFile)file).delete(force); 
+			//iRODS does support recursive deletion now
+			if (/*inTrash*/false) { // But not in trash for now
+		    	if (file.isDirectory()){
+		    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
+		    		String[] fileList=file.list();
+		    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
+		    		if (fileList.length>0){
+		        		for (int i=0;i<fileList.length;i++){
+		        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
+		        			result = result & del(new IRODSFile( (IRODSFile)file,fileList[i]),davisSession);
+		        		}
+		    		}
+		    	}
+				Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath()+" forcefully");
+				result = result & ((IRODSFile)file).delete(true); 
+			} else {
+				Log.log(Log.DEBUG, "deleting - force:"+inTrash);
+				result = result & ((IRODSFile)file).delete(inTrash);
+			}
 		}
 		if (!result) Log.log(Log.WARNING,"Failed to delete file: "+file);
-    	return result;
-    	
-//    	if (file.isDirectory()){
-//    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
-//    		String[] fileList=file.list();
-//    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
-//    		if (fileList.length>0){
-//        		for (int i=0;i<fileList.length;i++){
-//        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
-//    				if (file.getFileSystem() instanceof SRBFileSystem){
-//    					error = error || !del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
-//    				}else if (file.getFileSystem() instanceof IRODSFileSystem){
-//    					error = error || !del(new IRODSFile( (IRODSFile)file,fileList[i]),davisSession);
-//    				}
-//        		}
-//    		}
-//    	}
-//		Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
-//		if (file.getFileSystem() instanceof SRBFileSystem){
-//			error = error || !((SRBFile)file).delete(true); 
-//		}else if (file.getFileSystem() instanceof IRODSFileSystem){
-//			boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
-//			Log.log(Log.DEBUG, "deleting - force:"+force);
-//			error = error || !((IRODSFile)file).delete(force); 
-//		}
-//    	}else{
-//    		Log.log(Log.DEBUG, "deleting file "+file.getAbsolutePath());
-//			if (file.getFileSystem() instanceof SRBFileSystem){
-//				error = error || !((SRBFile)file).delete(true); 
-//			}else if (file.getFileSystem() instanceof IRODSFileSystem){
-//				boolean force=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
-//				Log.log(Log.DEBUG, "deleting file - force:"+force);
-//				error = error || !((IRODSFile)file).delete(force); 
-//			}
-//    	}
-//    	return !error;
+    	return result;    	
     }
 }

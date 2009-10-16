@@ -236,14 +236,20 @@ public class DefaultGetHandler extends AbstractHandler {
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         if (!file.exists()) {
-            Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist.");
-            response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
+            Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost.");
+            try {
+            	response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
 //response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
 //ServletOutputStream output = response.getOutputStream();
 //String s = "Path can't be accessed.";
 //output.print(s);
 //response.setContentLength(s.length());
-        	response.flushBuffer();
+            	response.flushBuffer();
+            } catch (IOException e) {
+            	if (e.getMessage().equals("Closed")) 
+            		Log.log(Log.WARNING, file.getAbsolutePath()+": connection to server may have been lost.");
+            	throw(e);
+            }
             return;
         }
 //        if (!file.canRead()){

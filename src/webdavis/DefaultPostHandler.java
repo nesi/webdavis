@@ -548,7 +548,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 	    	boolean batch = getFileList(request, davisSession, fileList, jsonArray); 
-System.err.println("file list="+fileList);
+//System.err.println("file list="+fileList);
 
 	JSONObject jsonObject = null;
 	if (jsonArray != null) {	
