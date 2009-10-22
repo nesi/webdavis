@@ -99,7 +99,7 @@
 			Configuration files to be read (in order)
 		</description>
 		<param-name>config-files</param-name>
-		<param-value>davis-config.txt, davis-config-organisation.txt, davis-config-host.txt, davis-config-dev.txt</param-value>
+		<param-value>davis.properties, davis-organisation.properties, davis-host.properties, davis-dev.properties</param-value>
 	</init-param>
 
 <!--

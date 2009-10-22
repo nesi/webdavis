@@ -1,3 +1,0 @@
-webdavis.Log.threshold=DEBUG
-insecureConnection=basic
-
