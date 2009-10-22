@@ -521,13 +521,13 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
-		} else if (method.equalsIgnoreCase("rules")) {
+		} else if (method.equalsIgnoreCase("buttons")) {
 			str.append("{\n\"items\":[\n");
-			JSONObject[] rules = DavisConfig.getInstance().getRules();
-			for (int i = 0; i < rules.length; i++) {
-				JSONObject rule = rules[i];
+			JSONObject[] dynamicButtons = DavisConfig.getInstance().getDynamicButtons();
+			for (int i = 0; i < dynamicButtons.length; i++) {
+				JSONObject button = dynamicButtons[i];
 				if (i > 0) str.append(",\n");
-				str.append(rule);
+				str.append(button);
 			}
 			str.append("\n");
 			str.append("]}");
@@ -544,7 +544,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
-		} else if (method.equalsIgnoreCase("execrule")) {
+		} else if (method.equalsIgnoreCase("execbutton")) {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 	    	boolean batch = getFileList(request, davisSession, fileList, jsonArray); 
@@ -559,10 +559,10 @@ public class DefaultPostHandler extends AbstractHandler {
 	}
 
 
-			String ruleName = request.getParameter("rule");
-			Log.log(Log.DEBUG, "Executing rule '"+ruleName+"'");
+			String buttonName = request.getParameter("button");
+			Log.log(Log.DEBUG, "Executing rule '"+buttonName+"'");
 			//###TBD: launch rule script here
-			String notice = "Sorry, rules aren't executed by the server yet!";
+			String notice = "Sorry, dynamic buttons aren't executed by the server yet!";
 			if (notice != null && notice.length() > 0)
 				str.append("{\"notice\":\""+notice+"\"}");
 			str.append("\n");

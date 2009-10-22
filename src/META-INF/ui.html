@@ -60,7 +60,7 @@
 		
 		dojo.addOnLoad(function() {
 			dojo.back.setInitialState(newBackState("<parameter url/>"));
-			getRules();
+			initDynamicButtons();
 			_gotoDirectory("<parameter url/>");
 			setToggleButtonState(true);
 			refreshDisplay();
@@ -206,19 +206,19 @@
         	}
 		}
 		
-		function getRules() {
+		function initDynamicButtons() {
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"?method=rules",
+	    		url: getCurrentDirectory()+"?method=buttons",
 	    		load: function(responseObject, ioArgs){
 		  			cursorBusy(false);
-					var rules = responseObject.items;
-					addRuleButtons(rules);
+					var buttons = responseObject.items;
+					addDynamicButtons(buttons);
 	       			return responseObject;
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when fetching rules list: "+response);
+	      			alert("Internal error when fetching dynamic buttons list: "+response);
 	      			return response;
 	    		},
 	    		sync: true,
@@ -226,23 +226,27 @@
 	  		});
 		}
 		
-		function sendRule(ruleNum) {
-//	alert("sending rule "+ruleNum+": "+dynamicButtons[ruleNum].name);
+		function sendDynamicButton(buttonNum) {
+//	alert("sending dynamic button "+buttonNum+": "+dynamicButtons[buttonNum].name);
 			// Get args as json
 			var data='[{"files":['+listCheckedItems()+']}, {"args":[';
-			if (dynamicButtons[ruleNum].inputs.args != undefined)
-				for (i = 0; i < dynamicButtons[ruleNum].inputs.args.length; i++) {
-					var arg = dynamicButtons[ruleNum].inputs.args[i];
+			if (dynamicButtons[buttonNum].inputs.args != undefined) {
+				var firstTime = true;
+				for (var i = 0; i < dynamicButtons[buttonNum].inputs.args.length; i++) {
+					var arg = dynamicButtons[buttonNum].inputs.args[i];
 					if (arg.name != undefined) {
-						if (i > 0)
+						if (!firstTime) 
 							data += ',';
+						else
+							firstTime = false;
 						data += '{"name": "'+arg.name+'", "value": "'+dijit.byId("arg"+arg.name).value+'"}';
 					}
 				}
+			}
 			data += ']}]'; 		
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"?method=execrule&rule="+dynamicButtons[i],
+	    		url: getCurrentDirectory()+"?method=execbutton&button="+dynamicButtons[buttonNum],
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -257,7 +261,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when executing rule: "+response);
+	      			alert("Internal error when executing dynamic button action: "+response);
 	      			return response;
 	    		},
 	    //		sync: true,
@@ -374,69 +378,69 @@
 		
 		function dynamicButtonHandler(buttonNum) {
 //alert("handling button="+buttonNum+" "+dynamicButtons[buttonNum].name);
-			var rule = dynamicButtons[buttonNum];
-			if (rule.inputs.args != undefined) {
+			var button = dynamicButtons[buttonNum];
+			if (button.inputs.args != undefined) {
 				var content = "";
-				for (var i = 0; i < rule.inputs.args.length; i++) {
-					var hasName = rule.inputs.args[i].name != undefined;
+				for (var i = 0; i < button.inputs.args.length; i++) {
+					var hasName = button.inputs.args[i].name != undefined;
 					if (hasName) {
 						content += '<div style="clear:both; padding-top:10px;">'
 						content += '	<span style="float:left; width:40%; text-align:right;">';
 					}
-					content += rule.inputs.args[i].text;
+					content += button.inputs.args[i].text;
 					if (hasName) {
 						content += '	</span>';
-						content += '	<span style="float:right; width:60%; text-align:left;">&nbsp;<input "name="'+rule.inputs.args[i].name+'" id="arg'+rule.inputs.args[i].name+'" dojoType="dijit.form.TextBox" value=""/></span>';
+						content += '	<span style="float:right; width:60%; text-align:left;">&nbsp;<input "name="'+button.inputs.args[i].name+'" id="arg'+button.inputs.args[i].name+'" dojoType="dijit.form.TextBox" value=""/></span>';
 						content += '</div>';
 					} 
 					content += '<br>';
 				}
 				content += '<br><br><div style="text-align: right;">'+
-					'<button onclick="dijit.byId(\'dynamicDialog\').hide(); sendRule('+buttonNum+')">OK</button>&nbsp;'+
+					'<button onclick="dijit.byId(\'dynamicDialog\').hide(); sendDynamicButton('+buttonNum+')">OK</button>&nbsp;'+
 					'<button onclick="dijit.byId(\'dynamicDialog\').hide()">Cancel</button></dev>';	
 				var dialog = dijit.byId("dynamicDialog");
-				dialog.attr("title", rule.displaytitle);
+				dialog.attr("title", button.displaytitle);
 				dialog.setContent(content);
 				dialog.show();
 			}
 		}
 		
-		function addRuleButtons(rules) {
+		function addDynamicButtons(buttons) {
 			var independentHTML = "";
 			var selectionHTML = "";
 			var currentDirectoryHTML = "";
-			for (i = 0; i < rules.length; i++) {
-				var rule = rules[i];
-				var type = rule.inputs.type;
+			for (i = 0; i < buttons.length; i++) {
+				var button = buttons[i];
+				var type = button.inputs.type;
 				if (type == "independent") {
 					independentHTML +=
 		      			'<td>'+
-						'	<table id="'+rule.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+rule.name+'\')) return; dynamicButtonHandler('+i+')">'+
+						'	<table id="'+button.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
 		         		'		<tr>'+
-		            	'			<td>&nbsp;'+rule.displaytitle+'</td>'+
+		            	'			<td>&nbsp;'+button.displaytitle+'</td>'+
 		          		'		</tr>'+
 		      			'	</table>'+
 						'</td>';
 				} else
 				if (type == "selection") {
 					selectionHTML +=
-						'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+rule.name+'\')) return; dynamicButtonHandler('+i+')">'+
+						'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			    		'	<tr>'+
-			      		'		<td class="activeItem" id="'+rule.name+'"">'+rule.displaytitle+'</td>'+
+			      		'		<td class="activeItem" id="'+button.name+'"">'+button.displaytitle+'</td>'+
 			    		'	</tr>'+
 			    		'</table>';
 				} else
 				if (type == "currentdirectory") {
 					currentDirectoryHTML +=
 	          			'<td>'+
-	          			'	<table id="'+rule.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+rule.name+'\')) return; dynamicButtonHandler('+i+')">'+
+	          			'	<table id="'+button.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
          				'		<tr>'+
-            			'			<td>&nbsp;'+rule.displaytitle+'</td>'+
+            			'			<td>&nbsp;'+button.displaytitle+'</td>'+
             			'		</tr>'+
             			'	</table>'+
             			'</td>';
 				}
-				dynamicButtons[i] = rule;
+				dynamicButtons[i] = button;
 			}						
 			createSelectionButtons(selectionHTML);
 			createCurrentDirectoryButtons(currentDirectoryHTML);
@@ -527,19 +531,19 @@
 			return url.indexOf('<parameter trash/>') >= 0;
 		}
 		
-		function enableDynamicItem(rule) {
+		function enableDynamicItem(button) {
 			var singleOnly = false;
-			if (rule.inputs.singleselection == "true")
+			if (button.inputs.singleselection == "true")
 				singleOnly = true;
 			var anonymousDisable = false;
-			if (rule.anonymous == "disable")
+			if (button.anonymous == "disable")
 				anonymousDisable = true;
 			var trashDisable = false;
-			if (rule.trash == "disable")
+			if (button.trash == "disable")
 				trashDisable = true;
 			var enable = (!isAnonymous() || !anonymousDisable) && (!isTrash(getCurrentDirectory()) || !trashDisable) 
-						&& ((rule.inputs.type != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
-			enableActiveItem(rule.name, enable);			
+						&& ((button.inputs.type != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
+			enableActiveItem(button.name, enable);			
 		}
 		
 		function refreshButtons() {

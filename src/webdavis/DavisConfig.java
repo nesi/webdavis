@@ -100,23 +100,23 @@ public class DavisConfig {
 		return value;
 	}
 	
-	public JSONObject[] getRules() {
+	public JSONObject[] getDynamicButtons() {
 
-		ArrayList rules = new ArrayList();
+		ArrayList declarations = new ArrayList();
 		Enumeration<String> propertyNames = (Enumeration<String>) configProperties.propertyNames();
 		while (propertyNames.hasMoreElements()) {
 			String propertyName = propertyNames.nextElement();
-			if (propertyName.startsWith("ruledef")) {  
-				JSONObject rule = (JSONObject)JSONValue.parse(configProperties.getProperty(propertyName));
-				if (rule == null) {
-					System.err.println("ERROR: Failed to parse rule declaration for "+propertyName+" - ignoring");
+			if (propertyName.startsWith("buttondef")) {  
+				JSONObject declaration = (JSONObject)JSONValue.parse(configProperties.getProperty(propertyName));
+				if (declaration == null) {
+					System.err.println("ERROR: Failed to parse declaration for "+propertyName+" - ignoring");
 					continue;
 				}
 //System.err.println("adding rule for "+propertyName+" = "+configProperties.getProperty(propertyName)+" = "+rule);
-				rules.add(rule);
+				declarations.add(declaration);
 			}
 		}
-		return (JSONObject[]) rules.toArray(new JSONObject[0]);
+		return (JSONObject[]) declarations.toArray(new JSONObject[0]);
 	}
 	
 	public String getInitParameters() {
