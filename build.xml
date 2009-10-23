@@ -188,6 +188,10 @@
 	<copy todir="${build.home}/${app.name}-${app.version}">
 	  <fileset dir="${basedir}/jetty6"/>
 	</copy>
+	<copy todir="${build.home}/${app.name}-${app.version}/bin">
+	  <fileset file="${basedir}/bin/davis-configure.sh"/>
+	</copy>
+
 	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root">
 	  <fileset dir="${web.home}"/>
 	</copy>
@@ -205,7 +209,12 @@
   	<delete dir="${build.home}/dojoroot"/>
   	<delete dir="${build.home}/images"/>
 	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
-	  <tarfileset dir="${build.home}" />
+	  <!--<tarfileset dir="${build.home}" filemode="755">
+	  	<include name="${app.name}-${app.version}/bin/davis-configure.sh"/>
+	  </tarfileset>-->
+	  <tarfileset dir="${build.home}">
+	  	<!--<exclude name="${app.name}-${app.version}/bin/davis-configure.sh"/>-->
+	  </tarfileset>
 	</tar>
 	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
 	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
