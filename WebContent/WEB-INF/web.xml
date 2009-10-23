@@ -80,12 +80,12 @@
     
             GET LOCK POST PROPFIND
 -->
-<!--
+
     <init-param>
         <param-name>methods</param-name>
-        <param-value>GET LOCK POST PROPFIND</param-value>
+        <param-value>LOCK POST PROPFIND</param-value>
     </init-param>
--->
+
 </filter>
 <filter-mapping>
 <filter-name>Compression</filter-name>
