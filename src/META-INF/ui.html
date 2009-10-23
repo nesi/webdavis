@@ -229,7 +229,7 @@
 		function sendDynamicButton(buttonNum) {
 //	alert("sending dynamic button "+buttonNum+": "+dynamicButtons[buttonNum].name);
 			// Get args as json
-			var data='[{"files":['+listCheckedItems()+']}, {"args":[';
+			var data='[{"files":['+listCheckedItems()+'], "args":[';
 			if (dynamicButtons[buttonNum].inputs.args != undefined) {
 				var firstTime = true;
 				for (var i = 0; i < dynamicButtons[buttonNum].inputs.args.length; i++) {
@@ -246,7 +246,7 @@
 			data += ']}]'; 		
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"?method=execbutton&button="+dynamicButtons[buttonNum],
+	    		url: getCurrentDirectory()+"?method=execbutton&button="+dynamicButtons[buttonNum].name,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"

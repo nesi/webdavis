@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -523,10 +524,12 @@ public class DefaultPostHandler extends AbstractHandler {
 			str.append("]}");
 		} else if (method.equalsIgnoreCase("buttons")) {
 			str.append("{\n\"items\":[\n");
-			JSONObject[] dynamicButtons = DavisConfig.getInstance().getDynamicButtons();
-			for (int i = 0; i < dynamicButtons.length; i++) {
-				JSONObject button = dynamicButtons[i];
-				if (i > 0) str.append(",\n");
+			/*JSONObject[]*/ Enumeration dynamicButtons = DavisConfig.getInstance().getDynamicButtons().elements();
+//			for (int i = 0; i < dynamicButtons.length; i++) {
+			int i = 0;
+			while (dynamicButtons.hasMoreElements()) {
+				JSONObject button = (JSONObject)dynamicButtons/*[i]*/.nextElement();
+				if (i++ > 0) str.append(",\n");
 				str.append(button);
 			}
 			str.append("\n");
@@ -549,19 +552,29 @@ public class DefaultPostHandler extends AbstractHandler {
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 	    	boolean batch = getFileList(request, davisSession, fileList, jsonArray); 
 //System.err.println("file list="+fileList);
-
-	JSONObject jsonObject = null;
-	if (jsonArray != null) {	
-		jsonObject = (JSONObject)jsonArray.get(0);
-//		JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
-//	if (object != null)
-//		object.putAll(jsonObject);
-	}
-
-
 			String buttonName = request.getParameter("button");
+
+	    	JSONObject uiJSON = null;
+	    	if (jsonArray != null) 	
+	    		uiJSON = (JSONObject)jsonArray.get(0);
+	    	if (uiJSON == null) {
+	    		Log.log(Log.ERROR, "Internal error servicing dynamic button "+buttonName+" - can't find button declaration");
+    			response.sendError(HttpServletResponse.SC_FORBIDDEN);
+    			return;
+	    	}
 			Log.log(Log.DEBUG, "Executing rule '"+buttonName+"'");
-			//###TBD: launch rule script here
+			JSONObject button = DavisConfig.getInstance().getDynamicButton(buttonName);
+//System.err.println("button="+button);
+			String ruleText = (String)button.get("rule");
+			String commandLine = "exec "+ruleText+" ";
+			JSONArray args = (JSONArray)uiJSON.get("args");
+//System.err.println("args="+args);
+			for (int i = 0; i < args.size(); i++) {
+				JSONObject arg = (JSONObject)args.get(i);
+				commandLine += arg.get("name")+"="+arg.get("value")+" ";
+			}
+System.err.println("commandLine="+commandLine);
+
 			String notice = "Sorry, dynamic buttons aren't executed by the server yet!";
 			if (notice != null && notice.length() > 0)
 				str.append("{\"notice\":\""+notice+"\"}");

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Properties;
 
@@ -74,6 +75,8 @@ public class DavisConfig {
     private long maximumXmlRequest;
 
 	private Properties configProperties = new Properties();
+	private Hashtable<String, JSONObject> dynamicButtons;
+	
 
 	private DavisConfig() {
 	}
@@ -100,23 +103,35 @@ public class DavisConfig {
 		return value;
 	}
 	
-	public JSONObject[] getDynamicButtons() {
+	public Hashtable<String, JSONObject> getDynamicButtons() {
+		
+		return dynamicButtons;
+	}
+		
+	public void findDynamicButtons() {
 
-		ArrayList declarations = new ArrayList();
-		Enumeration<String> propertyNames = (Enumeration<String>) configProperties.propertyNames();
+//		ArrayList declarations = new ArrayList();
+		dynamicButtons = new Hashtable<String, JSONObject>();
+		Enumeration<String> propertyNames = (Enumeration<String>)configProperties.propertyNames();
 		while (propertyNames.hasMoreElements()) {
 			String propertyName = propertyNames.nextElement();
 			if (propertyName.startsWith("buttondef")) {  
 				JSONObject declaration = (JSONObject)JSONValue.parse(configProperties.getProperty(propertyName));
-				if (declaration == null) {
+				if (declaration == null || declaration.get("name") == null) {
 					System.err.println("ERROR: Failed to parse declaration for "+propertyName+" - ignoring");
 					continue;
 				}
 //System.err.println("adding rule for "+propertyName+" = "+configProperties.getProperty(propertyName)+" = "+rule);
-				declarations.add(declaration);
+				String name = (String)declaration.get("name");
+				dynamicButtons.put(name, declaration);
 			}
 		}
-		return (JSONObject[]) declarations.toArray(new JSONObject[0]);
+//		return (JSONObject[]) declarations.toArray(new JSONObject[0]);
+	}
+	
+	public JSONObject getDynamicButton(String name) {
+		
+		return dynamicButtons.get(name);
 	}
 	
 	public String getInitParameters() {
@@ -165,6 +180,7 @@ public class DavisConfig {
 				}
 			}
 		}
+		findDynamicButtons();
 
 //System.err.println("rules="+getRules());		
 
