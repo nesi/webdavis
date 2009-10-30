@@ -1052,7 +1052,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading domain list.");
+	      				alert("Error when loading user list: "+response);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1102,11 +1102,11 @@
 			if (!batch)
 				sourceURL = getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem()); 
 			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
-	        if ("<parameter servertype/>" == 'srb')
+	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
-		    else
+	        else
 				getUsers(sourceURL+"?method=userlist");
-			if (!batch)
+	        if (!batch)
 				getPermission(sourceURL+"?method=permission");
 			else 
 				resetPermissionsStore();
