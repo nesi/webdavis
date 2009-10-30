@@ -56,11 +56,11 @@
 		dojo.require("dijit.ProgressBar");
 		dojo.require("dojo.back");
 		
-		var dynamicButtons = new Array();
+		var dynamicObjects = new Array();
 		
 		dojo.addOnLoad(function() {
 			dojo.back.setInitialState(newBackState("<parameter url/>"));
-			initDynamicButtons();
+			initDynamicObjects();
 			_gotoDirectory("<parameter url/>");
 			setToggleButtonState(true);
 			refreshDisplay();
@@ -206,19 +206,18 @@
         	}
 		}
 		
-		function initDynamicButtons() {
+		function initDynamicObjects() {
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"?method=buttons",
+	    		url: getCurrentDirectory()+"?method=dynamicobjects",
 	    		load: function(responseObject, ioArgs){
 		  			cursorBusy(false);
-					var buttons = responseObject.items;
-					addDynamicButtons(buttons);
+					addDynamicObjects(responseObject.items);
 	       			return responseObject;
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when fetching dynamic buttons list: "+response);
+	      			alert("Internal error when fetching dynamic objects list: "+response);
 	      			return response;
 	    		},
 	    		sync: true,
@@ -227,13 +226,13 @@
 		}
 		
 		function sendDynamicButton(buttonNum) {
-//	alert("sending dynamic button "+buttonNum+": "+dynamicButtons[buttonNum].name);
+//	alert("sending dynamic button "+buttonNum+": "+dynamicObjects[buttonNum].name);
 			// Get args as json
 			var data='[{"files":['+listCheckedItems()+'], "args":[';
-			if (dynamicButtons[buttonNum].inputs.args != undefined) {
+			if (dynamicObjects[buttonNum].inputs.args != undefined) {
 				var firstTime = true;
-				for (var i = 0; i < dynamicButtons[buttonNum].inputs.args.length; i++) {
-					var arg = dynamicButtons[buttonNum].inputs.args[i];
+				for (var i = 0; i < dynamicObjects[buttonNum].inputs.args.length; i++) {
+					var arg = dynamicObjects[buttonNum].inputs.args[i];
 					if (arg.name != undefined) {
 						if (!firstTime) 
 							data += ',';
@@ -246,7 +245,7 @@
 			data += ']}]'; 		
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"?method=execbutton&button="+dynamicButtons[buttonNum].name,
+	    		url: getCurrentDirectory()+"?method=execbutton&button="+dynamicObjects[buttonNum].name,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -377,8 +376,8 @@
 		}
 		
 		function dynamicButtonHandler(buttonNum) {
-//alert("handling button="+buttonNum+" "+dynamicButtons[buttonNum].name);
-			var button = dynamicButtons[buttonNum];
+//alert("handling button="+buttonNum+" "+dynamicObjects[buttonNum].name);
+			var button = dynamicObjects[buttonNum];
 			if (button.inputs.args != undefined) {
 				var content = "";
 				for (var i = 0; i < button.inputs.args.length; i++) {
@@ -405,42 +404,42 @@
 			}
 		}
 		
-		function addDynamicButtons(buttons) {
+		function addDynamicObjects(objects) {
 			var independentHTML = "";
 			var selectionHTML = "";
 			var currentDirectoryHTML = "";
-			for (i = 0; i < buttons.length; i++) {
-				var button = buttons[i];
-				var type = button.inputs.type;
+			for (i = 0; i < objects.length; i++) {
+				var object = objects[i];
+				var type = object.inputs.type;
 				if (type == "independent") {
 					independentHTML +=
 		      			'<td>'+
-						'	<table id="'+button.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
+						'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 		         		'		<tr>'+
-		            	'			<td>&nbsp;'+button.displaytitle+'</td>'+
+		            	'			<td>&nbsp;'+object.displaytitle+'</td>'+
 		          		'		</tr>'+
 		      			'	</table>'+
 						'</td>';
 				} else
 				if (type == "selection") {
 					selectionHTML +=
-						'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
+						'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			    		'	<tr>'+
-			      		'		<td class="activeItem" id="'+button.name+'"">'+button.displaytitle+'</td>'+
+			      		'		<td class="activeItem" id="'+object.name+'"">'+object.displaytitle+'</td>'+
 			    		'	</tr>'+
 			    		'</table>';
 				} else
 				if (type == "currentdirectory") {
 					currentDirectoryHTML +=
 	          			'<td>'+
-	          			'	<table id="'+button.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+button.name+'\')) return; dynamicButtonHandler('+i+')">'+
+	          			'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
          				'		<tr>'+
-            			'			<td>&nbsp;'+button.displaytitle+'</td>'+
+            			'			<td>&nbsp;'+object.displaytitle+'</td>'+
             			'		</tr>'+
             			'	</table>'+
             			'</td>';
 				}
-				dynamicButtons[i] = button;
+				dynamicObjects[i] = object;
 			}						
 			createSelectionButtons(selectionHTML);
 			createCurrentDirectoryButtons(currentDirectoryHTML);
@@ -531,19 +530,19 @@
 			return url.indexOf('<parameter trash/>') >= 0;
 		}
 		
-		function enableDynamicItem(button) {
+		function enableDynamicWidget(widget) {
 			var singleOnly = false;
-			if (button.inputs.singleselection == "true")
+			if (widget.inputs.singleselection == "true")
 				singleOnly = true;
 			var anonymousDisable = false;
-			if (button.anonymous == "disable")
+			if (widget.anonymous == "disable")
 				anonymousDisable = true;
 			var trashDisable = false;
-			if (button.trash == "disable")
+			if (widget.trash == "disable")
 				trashDisable = true;
 			var enable = (!isAnonymous() || !anonymousDisable) && (!isTrash(getCurrentDirectory()) || !trashDisable) 
-						&& ((button.inputs.type != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
-			enableActiveItem(button.name, enable);			
+						&& ((widget.inputs.type != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
+			enableActiveItem(widget.name, enable);			
 		}
 		
 		function refreshButtons() {
@@ -556,8 +555,9 @@
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
 			
-			for (i = 0; i < dynamicButtons.length; i++) 
-				enableDynamicItem(dynamicButtons[i]);
+			for (i = 0; i < dynamicObjects.length; i++) 
+				if (dynamicObjects[i].widgettype == "button")
+					enableDynamicWidget(dynamicObjects[i]);
 
 			if (replicasGrid.selection.getSelectedCount() == 0) {
 				enableButton('replicasDeleteButton', false);
