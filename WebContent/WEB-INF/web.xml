@@ -83,7 +83,7 @@
 
     <init-param>
         <param-name>methods</param-name>
-        <param-value>LOCK POST PROPFIND</param-value>
+        <param-value>LOCK PROPFIND</param-value>
     </init-param>
 
 </filter>
