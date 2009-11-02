@@ -75,7 +75,7 @@ public class DavisConfig {
     private long maximumXmlRequest;
 
 	private Properties configProperties = new Properties();
-	private Hashtable<String, JSONObject> dynamicButtons;
+	private Hashtable<String, JSONObject> dynamicObjects;
 	
 
 	private DavisConfig() {
@@ -103,19 +103,19 @@ public class DavisConfig {
 		return value;
 	}
 	
-	public Hashtable<String, JSONObject> getDynamicButtons() {
+	public Hashtable<String, JSONObject> getDynamicObjects() {
 		
-		return dynamicButtons;
+		return dynamicObjects;
 	}
 		
-	public void findDynamicButtons() {
+	public void findDynamicObjects() {
 
 //		ArrayList declarations = new ArrayList();
-		dynamicButtons = new Hashtable<String, JSONObject>();
+		dynamicObjects = new Hashtable<String, JSONObject>();
 		Enumeration<String> propertyNames = (Enumeration<String>)configProperties.propertyNames();
 		while (propertyNames.hasMoreElements()) {
 			String propertyName = propertyNames.nextElement();
-			if (propertyName.startsWith("buttondef")) {  
+			if (propertyName.startsWith("dynamicobject")) {  
 				JSONObject declaration = (JSONObject)JSONValue.parse(configProperties.getProperty(propertyName));
 				if (declaration == null || declaration.get("name") == null) {
 					System.err.println("ERROR: Failed to parse declaration for "+propertyName+" - ignoring");
@@ -123,15 +123,15 @@ public class DavisConfig {
 				}
 //System.err.println("adding rule for "+propertyName+" = "+configProperties.getProperty(propertyName)+" = "+rule);
 				String name = (String)declaration.get("name");
-				dynamicButtons.put(name, declaration);
+				dynamicObjects.put(name, declaration);
 			}
 		}
 //		return (JSONObject[]) declarations.toArray(new JSONObject[0]);
 	}
 	
-	public JSONObject getDynamicButton(String name) {
+	public JSONObject getDynamicObject(String name) {
 		
-		return dynamicButtons.get(name);
+		return dynamicObjects.get(name);
 	}
 	
 	public String getInitParameters() {
@@ -180,7 +180,7 @@ public class DavisConfig {
 				}
 			}
 		}
-		findDynamicButtons();
+		findDynamicObjects();
 
 //System.err.println("rules="+getRules());		
 

@@ -57,6 +57,7 @@ import edu.sdsc.grid.io.srb.SRBMetaDataRecordList;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 import edu.sdsc.grid.io.MetaDataField;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.fileupload.*;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.*;
@@ -522,15 +523,14 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			str.append("\n");
 			str.append("]}");
-		} else if (method.equalsIgnoreCase("buttons")) {
+		} else if (method.equalsIgnoreCase("dynamicobjects")) {
 			str.append("{\n\"items\":[\n");
-			/*JSONObject[]*/ Enumeration dynamicButtons = DavisConfig.getInstance().getDynamicButtons().elements();
-//			for (int i = 0; i < dynamicButtons.length; i++) {
+			Enumeration dynamicObjects = DavisConfig.getInstance().getDynamicObjects().elements();
 			int i = 0;
-			while (dynamicButtons.hasMoreElements()) {
-				JSONObject button = (JSONObject)dynamicButtons/*[i]*/.nextElement();
+			while (dynamicObjects.hasMoreElements()) {
+				JSONObject dynamicObject = (JSONObject)dynamicObjects.nextElement();
 				if (i++ > 0) str.append(",\n");
-				str.append(button);
+				str.append(dynamicObject);
 			}
 			str.append("\n");
 			str.append("]}");
@@ -563,19 +563,56 @@ public class DefaultPostHandler extends AbstractHandler {
     			return;
 	    	}
 			Log.log(Log.DEBUG, "Executing rule '"+buttonName+"'");
-			JSONObject button = DavisConfig.getInstance().getDynamicButton(buttonName);
+			JSONObject button = DavisConfig.getInstance().getDynamicObject(buttonName);
 //System.err.println("button="+button);
 			String ruleText = (String)button.get("rule");
-			String commandLine = "exec "+ruleText+" ";
+			StringBuffer commandLine = new StringBuffer(ruleText);
+			commandLine.append("\n");
 			JSONArray args = (JSONArray)uiJSON.get("args");
 //System.err.println("args="+args);
+			JSONObject arg;
 			for (int i = 0; i < args.size(); i++) {
-				JSONObject arg = (JSONObject)args.get(i);
-				commandLine += arg.get("name")+"="+arg.get("value")+" ";
+				if (i>0) commandLine.append("%");
+				arg = (JSONObject)args.get(i);
+				commandLine.append("*").append(arg.get("name")).append("=").append(arg.get("value"));
 			}
-System.err.println("commandLine="+commandLine);
+			if (((JSONObject)button.get("inputs")).get("type").equals("selection")&&fileList.size()>0){
+				if (args.size()>0) commandLine.append("%");
+				commandLine.append("*filelist=");
+				for (int i=0;i<fileList.size();i++) {
+					if (i>0) commandLine.append(",");
+					commandLine.append(fileList.get(i).getAbsolutePath()); //+"/"+fileList.get(i).getName());
+				}
+			}
+			commandLine.append("\n*OUT");
+			Log.log(Log.DEBUG, "commandLine="+commandLine);
 
+			//execute rule
+//			String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
+//		    System.out.println(rule);
 			String notice = "Sorry, dynamic buttons aren't executed by the server yet!";
+			java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(commandLine.toString().getBytes());
+		    try {
+				java.util.HashMap outputParameters = ((IRODSFileSystem)file.getFileSystem()).executeRule( inputStream );
+				Object out = outputParameters.get("*OUT");
+				if (out instanceof String){
+					notice = (String)out;
+				} else if (out instanceof String[]) {
+					notice = "Done.";
+					String tmp;
+					for (String s:(String[])out) {
+						if (s!=null) {
+							tmp = new String(Base64.decodeBase64(s.getBytes()), "ISO-8859-1").trim().replace("\n", "");
+							Log.log(Log.DEBUG, "out="+tmp);
+							notice = tmp;
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				notice = "Sorry, there is an error with rule execution!";
+			}
+			
 			if (notice != null && notice.length() > 0)
 				str.append("{\"notice\":\""+notice+"\"}");
 			str.append("\n");

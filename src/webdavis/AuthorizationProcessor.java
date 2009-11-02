@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.codec.binary.Base64;
 import org.globus.myproxy.GetParams;
 import org.globus.myproxy.MyProxy;
 import org.ietf.jgss.GSSCredential;
@@ -18,7 +19,6 @@ import org.ietf.jgss.GSSException;
 import au.edu.archer.desktopshibboleth.idp.IDP;
 import au.org.mams.slcs.client.SLCSClient;
 import au.org.mams.slcs.client.SLCSConfig;
-import edu.sdsc.grid.io.Base64;
 import edu.sdsc.grid.io.RemoteAccount;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
@@ -94,8 +94,8 @@ public class AuthorizationProcessor {
 			sessionID=SimpleMD5.MD5(authorization) + "*basic";
 			String authInfo=null;
 			try {
-				authInfo = new String(Base64.fromString(authorization
-						.substring(6)), "ISO-8859-1");
+				authInfo = new String(Base64.decodeBase64(authorization
+						.substring(6).getBytes()), "ISO-8859-1");
 			} catch (UnsupportedEncodingException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -481,7 +481,7 @@ public class AuthorizationProcessor {
                 break;
        }
         
-        return Base64.toString(nounce);
+        return new String(Base64.encodeBase64(nounce));
     }
 	public void destroyConnectionPool() {
 		for (DavisSession session:connectionPool.values()){
