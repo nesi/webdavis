@@ -73,6 +73,8 @@ public class DavisConfig {
 	private String dojoroot;
 	private String jargonDebug;
     private long maximumXmlRequest;
+    
+    private String displayMetadata;
 
 	private Properties configProperties = new Properties();
 	private Hashtable<String, JSONObject> dynamicObjects;
@@ -182,91 +184,77 @@ public class DavisConfig {
 		}
 		findDynamicObjects();
 
-//System.err.println("rules="+getRules());		
-
-		String requestUriCharset = /*config.*/getInitParameter(REQUEST_URI_CHARSET, "UTF-8");
+		String requestUriCharset = getInitParameter(REQUEST_URI_CHARSET, "UTF-8");
 //		if (requestUriCharset == null)
 //			requestUriCharset = "UTF-8";
 		
 		String logProviderName = Log.class.getName();
-		String logProvider = /*config.*/getInitParameter(logProviderName);
+		String logProvider = getInitParameter(logProviderName);
 		//System.out.println(logProviderName);
 		//System.out.println(logProvider);
 		if (logProvider != null) 
 			try {
 				System.setProperty(logProviderName, logProvider);
 			} catch (Exception ignore) {}
-		String logThreshold = /*config.*/getInitParameter(logProviderName+ ".threshold");
+		String logThreshold = getInitParameter(logProviderName+ ".threshold");
 		if (logThreshold != null) 
 			try {
 				System.setProperty(logProviderName + ".threshold", logThreshold);
 			} catch (Exception ignore) {}
 		
 		// requestUriCharset = "ISO-8859-1";
-		contextBase = /*config.*/getInitParameter("contextBase");
-		contextBaseHeader = /*config.*/getInitParameter("contextBaseHeader");
+		contextBase = getInitParameter("contextBase");
+		contextBaseHeader = getInitParameter("contextBaseHeader");
 		config.getServletContext().setAttribute(REQUEST_URI_CHARSET, requestUriCharset);
-		String acceptBasic = /*config.*/getInitParameter("acceptBasic");
+		String acceptBasic = getInitParameter("acceptBasic");
 		this.acceptBasic = Boolean.valueOf(acceptBasic).booleanValue();
 		String enableBasic = "true";
 		this.enableBasic = (enableBasic == null) || Boolean.valueOf(enableBasic).booleanValue();
-		String closeOnAuthenticate = /*config.*/getInitParameter("closeOnAuthenticate");
+		String closeOnAuthenticate = getInitParameter("closeOnAuthenticate");
 		this.closeOnAuthenticate = Boolean.valueOf(closeOnAuthenticate).booleanValue();
-//		realm = config.getInitParameter("authentication-realm");
-//		if (realm == null || realm.length() == 0)
-//			realm = "Davis";
-		String alwaysAuthenticate = /*config.*/getInitParameter("alwaysAuthenticate");
+		String alwaysAuthenticate = getInitParameter("alwaysAuthenticate");
 		this.alwaysAuthenticate = (alwaysAuthenticate == null) || Boolean.valueOf(alwaysAuthenticate).booleanValue();
-		/*this.*/insecureConnection = /*config.*/getInitParameter("insecureConnection", "block");
-//		if (insecureConnection == null)
-//			insecureConnection = "block";
+		insecureConnection = getInitParameter("insecureConnection", "block");
 
-		defaultIdp = /*config.*/getInitParameter("default-idp");
-		serverType = /*config.*/getInitParameter("server-type");
-		myproxyServer = /*config.*/getInitParameter("myproxy-server");
-		defaultDomain = /*config.*/getInitParameter("default-domain");
+		defaultIdp = getInitParameter("default-idp");
+		serverType = getInitParameter("server-type");
+		myproxyServer = getInitParameter("myproxy-server");
+		defaultDomain = getInitParameter("default-domain");
 		serverPort = 1247;
 		try {
-			serverPort = Integer.parseInt(/*config.*/getInitParameter("server-port"));
+			serverPort = Integer.parseInt(getInitParameter("server-port"));
 		} catch (Exception _e) {}
 		jargonDebug = getInitParameter("jargon.debug", "0");
-		serverName = /*config.*/getInitParameter("server-name");
-		defaultResource = /*config.*/getInitParameter("default-resource");
-		zoneName = /*config.*/getInitParameter("zone-name");
-		proxyHost = /*config.*/getInitParameter("proxy-host");
-		proxyPort = /*config.*/getInitParameter("proxy-port");
-		proxyUsername = /*config.*/getInitParameter("proxy-username");
-		proxyPassword = /*config.*/getInitParameter("proxy-password");
+		serverName = getInitParameter("server-name");
+		defaultResource = getInitParameter("default-resource");
+		zoneName = getInitParameter("zone-name");
+		proxyHost = getInitParameter("proxy-host");
+		proxyPort = getInitParameter("proxy-port");
+		proxyUsername = getInitParameter("proxy-username");
+		proxyPassword = getInitParameter("proxy-password");
 
-		sharedTokenHeaderName = /*config.*/getInitParameter("shared-token-header-name");
-		commonNameHeaderName = /*config.*/getInitParameter("cn-header-name");
-		adminCertFile = /*config.*/getInitParameter("admin-cert-file");
-		adminKeyFile = /*config.*/getInitParameter("admin-key-file");
-		String anonymousCredentials = /*config.*/getInitParameter("anonymousCredentials");
+		sharedTokenHeaderName = getInitParameter("shared-token-header-name");
+		commonNameHeaderName = getInitParameter("cn-header-name");
+		adminCertFile = getInitParameter("admin-cert-file");
+		adminKeyFile = getInitParameter("admin-key-file");
+		String anonymousCredentials = getInitParameter("anonymousCredentials");
 		if (anonymousCredentials != null && anonymousCredentials.length() > 0 && anonymousCredentials.indexOf(":") > 0) {
 			anonymousUsername = anonymousCredentials.split(":")[0];
 			anonymousPassword = anonymousCredentials.split(":")[1];
 		}
-		String anonymousCollectionString = /*config.*/getInitParameter("anonymousCollections");
+		String anonymousCollectionString = getInitParameter("anonymousCollections");
 		if (anonymousCollectionString != null && anonymousCollectionString.length() > 0) 
 			anonymousCollections = Arrays.asList(anonymousCollectionString.split(","));
-		realm = /*config.*/getInitParameter("authentication-realm", "Davis");
-//		if (authenticationRealm == null)
-//			authenticationRealm = "Davis";
-		organisationName = /*config.*/getInitParameter("organisation-name", "Davis");
-//		if (organisationName == null)
-//			organisationName = "Davis";
-		organisationLogo = /*config.*/getInitParameter("organisation-logo", "");
-//		if (organisationLogo == null)
-//			organisationLogo = "";
-		organisationLogoGeometry = /*config.*/getInitParameter("organisation-logo-geometry", "");
-		favicon = /*config.*/getInitParameter("favicon", "");
-//		if (favicon == null)
-//			favicon = "";
-		
+		realm = getInitParameter("authentication-realm", "Davis");
+		organisationName = getInitParameter("organisation-name", "Davis");
+		organisationLogo = getInitParameter("organisation-logo", "");
+		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "");
+		favicon = getInitParameter("favicon", "");		
 		dojoroot = getInitParameter("dojoroot", "");
         String s = getInitParameter("maximumXmlRequest");
         maximumXmlRequest = (s != null) ? Long.parseLong(s) : 20000l;
+        
+        displayMetadata = getInitParameter("displayMetadata", "");
 	}
 
 	public String getDefaultDomain() {
@@ -511,5 +499,9 @@ public class DavisConfig {
 	
 	public long getMaximumXmlRequest() {
 		return maximumXmlRequest;
+	}
+	
+	public String getDisplayMetadata() {
+		return displayMetadata;
 	}
 }

@@ -205,7 +205,7 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         super.destroy();
     }
-
+    
     /**
      * Services requests which use the HTTP GET method.
      * This implementation retrieves the content for non-collection resources,
@@ -235,7 +235,8 @@ public class DefaultGetHandler extends AbstractHandler {
     	}
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
-        if (!file.exists()) {
+        
+        if (!file.exists()) { // File doesn't exist
             Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost.");
             try {
             	response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
@@ -257,9 +258,10 @@ public class DefaultGetHandler extends AbstractHandler {
 //    		return;
 //        }
         String requestUrl = getRequestURL(request);
-		StringBuffer str = new StringBuffer();
+//		StringBuffer str = new StringBuffer();
+		StringBuffer json = new StringBuffer();
         Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
-        if (file.getName().endsWith("/") && !requestUrl.endsWith("/")) {
+        if (file.getName().endsWith("/") && !requestUrl.endsWith("/")) { // Redirect
             StringBuffer redirect = new StringBuffer(requestUrl).append("/");
             String query = request.getQueryString();
             if (query != null) redirect.append("?").append(query);
@@ -267,10 +269,10 @@ public class DefaultGetHandler extends AbstractHandler {
             response.sendRedirect(redirect.toString());
             return;
         }
-        if (!file.isFile()) {
+        if (!file.isFile()) { // Directory
         	Log.log(Log.DEBUG, "#### Time before creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
         	String format = request.getParameter("format");
-        	if (format != null && format.equals("json")) {
+        	if (format != null && format.equals("json")) {  // List directory contents as JSON
         		//GeneralFile[] fileList = file.listFiles();
         		RemoteFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
 //        		Comparator<Object> comparator = new Comparator<Object>() {
@@ -279,17 +281,16 @@ public class DefaultGetHandler extends AbstractHandler {
 //					}     			
 //        		};
 //        		Arrays.sort((Object[])fileList, comparator);
-    			str.append("{\n\"items\":[\n");
+    			json.append("{\n"+escapeJSONArg("items")+":[\n");
 				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
     			for (int i = 0; i < fileList.length; i++) {
 					if (i > 0) 
-						str.append(",\n");
+						json.append(",\n");
 					String type = fileList[i].isDirectory() ? "d" : "f";
-					str.append("{\"name\":\""+fileList[i].getName()+"\", \"type\":\""+type+"\", \"size\":\""+fileList[i].length()+"\", \"date\":\""+dateFormat.format(fileList[i].lastModified())+"\"}");
+					json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(fileList[i].getName())+","+escapeJSONArg("type")+":"+escapeJSONArg(type)+","+escapeJSONArg("size")+":"+escapeJSONArg(""+fileList[i].length())+","+escapeJSONArg("date")+":"+escapeJSONArg(dateFormat.format(fileList[i].lastModified()))+"}");
 				}
-				str.append("\n");
-				str.append("]}");
+				json.append("\n]}");
 				ServletOutputStream op = null;
 				try {
 					 op = response.getOutputStream();
@@ -297,8 +298,8 @@ public class DefaultGetHandler extends AbstractHandler {
 					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 					return;
 				}
-				byte[] buf = str.toString().getBytes();
-				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + str);
+				byte[] buf = json.toString().getBytes();
+				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
 				op.write(buf);
 				op.flush();
 				op.close();
@@ -306,7 +307,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 Log.log(Log.DEBUG, "#### Time after creating dynamic json: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
                 return;
         	}
-        	if (request.getParameter("oldui") == null) {
+        	if (request.getParameter("oldui") == null) { // Use new UI
         		String uiHTMLContent = defaultUIHTMLContent;
         		if (request.getParameter("uidev") != null) {
         			// Simple hack to allow loading of a development ui every time a request is received.
@@ -329,7 +330,7 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("dojoroot", dojoroot);
     			substitutions.put("servertype", getServerType());
     			substitutions.put("href", requestUrl);
-    			substitutions.put("url", file.getAbsolutePath());
+    			substitutions.put("url", file.getAbsolutePath().replace("\\", "\\\\").replace("\"", "\\\"")); // Escape " chars - ui uses this string inside double quotes
     			substitutions.put("unc", file.toString());
     			substitutions.put("parent", request.getContextPath()+file.getParent());
     			substitutions.put("home", davisSession.getHomeDirectory());
@@ -338,6 +339,7 @@ public class DefaultGetHandler extends AbstractHandler {
     			substitutions.put("organisationname", config.getOrganisationName());
     			substitutions.put("organisationlogo", config.getOrganisationLogo());
     			substitutions.put("favicon", config.getFavicon());
+    			substitutions.put("displayMetadata", config.getDisplayMetadata());
     			String s = config.getAnonymousUsername();
     			if (s == null)
     				s = "";
@@ -363,7 +365,7 @@ public class DefaultGetHandler extends AbstractHandler {
     				String replacement = substitutions.get(key);
     				if (replacement == null)
     					replacement = "";
-    				uiContent = uiContent.replaceAll("<parameter *"+key+" */>", replacement);
+    				uiContent = uiContent.replace("<parameter "+key+"/>", replacement);
     			}
                 response.setContentType("text/html; charset=\"utf-8\"");
                 OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
@@ -373,6 +375,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 return;
 			}
         	
+        	// Use old UI
         	if ("configure".equals(request.getQueryString())) {
                 Log.log(Log.INFORMATION, "Configuration request received.");
                 showConfiguration(request, response);

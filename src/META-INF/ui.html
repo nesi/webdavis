@@ -59,9 +59,9 @@
 		var dynamicObjects = new Array();
 		
 		dojo.addOnLoad(function() {
-			dojo.back.setInitialState(newBackState("<parameter url/>"));
+			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
 			initDynamicObjects();
-			_gotoDirectory("<parameter url/>");
+			_gotoDirectory(escape("<parameter url/>"));
 			setToggleButtonState(true);
 			refreshDisplay();
 			initConnects();
@@ -225,6 +225,14 @@
 	  		});
 		}
 		
+		function displayMetadataIsDefined(location) {
+			for (var i = 0; i < dynamicObjects.length; i++){
+				if (dynamicObjects[i].objectType == "displayMetadata" && dynamicObjects[i].location == location) 
+					return true;
+			}
+			return false;
+		}
+		
 		function sendDynamicButton(buttonNum) {
 //	alert("sending dynamic button "+buttonNum+": "+dynamicObjects[buttonNum].name);
 			// Get args as json
@@ -256,6 +264,7 @@
 					var notice = responseObject.notice;
 					if (notice != undefined)
 						alert(notice);
+					refreshCurrentDirectory();
 	       			return responseObject;
 	    		},
 	    		error: function(response, ioArgs){
@@ -357,7 +366,7 @@
 				subpath = subpath+'/'+dirs[i];
 				if (i > 1)
 					result = result + " > ";
-				result = result+'<a class="link" onclick="gotoDirectory(\''+subpath+'\'); return false" href="'+subpath+'">'+dirs[i]+'</a>';
+				result = result+'<a class="link" onclick="gotoDirectory(\''+subpath+'\'); return false" href="'+subpath+'">'+unescape(dirs[i])+'</a>';
 			}
 			return result;
 		}
@@ -370,7 +379,7 @@
 			});
 			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
 				if (e.keyCode == dojo.keys.ENTER) {
-					rename(escapedFileName(getFirstCheckedItem()), dojo.byId('renameInputBox').value);
+					rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value);
 				}
 			});
 		}
@@ -398,63 +407,70 @@
 					'<button onclick="dijit.byId(\'dynamicDialog\').hide(); sendDynamicButton('+buttonNum+')">OK</button>&nbsp;'+
 					'<button onclick="dijit.byId(\'dynamicDialog\').hide()">Cancel</button></dev>';	
 				var dialog = dijit.byId("dynamicDialog");
-				dialog.attr("title", button.displaytitle);
+				dialog.attr("title", button.displayTitle);
 				dialog.setContent(content);
 				dialog.show();
 			}
 		}
 		
 		function addDynamicObjects(objects) {
-			var independentHTML = "";
-			var selectionHTML = "";
-			var currentDirectoryHTML = "";
+			var buttonIndependentHTML = "";
+			var buttonSelectionHTML = "";
+			var buttonCollectionHTML = "";
 			for (i = 0; i < objects.length; i++) {
 				var object = objects[i];
-				var type = object.inputs.type;
-				if (type == "independent") {
-					independentHTML +=
-		      			'<td>'+
-						'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
-		         		'		<tr>'+
-		            	'			<td>&nbsp;'+object.displaytitle+'</td>'+
-		          		'		</tr>'+
-		      			'	</table>'+
-						'</td>';
+				var location = object.location;
+				if (location == "independent") {
+					if (object.objectType == "button") 
+						buttonIndependentHTML +=
+			      			'<td>'+
+							'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+			         		'		<tr>'+
+			            	'			<td>&nbsp;'+object.displayTitle+'</td>'+
+			          		'		</tr>'+
+			      			'	</table>'+
+							'</td>';
 				} else
-				if (type == "selection") {
-					selectionHTML +=
-						'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
-			    		'	<tr>'+
-			      		'		<td class="activeItem" id="'+object.name+'"">'+object.displaytitle+'</td>'+
-			    		'	</tr>'+
-			    		'</table>';
+				if (location == "selection") {
+					if (object.objectType == "button") 
+						buttonSelectionHTML +=
+							'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+				    		'	<tr>'+
+				      		'		<td class="activeItem" id="'+object.name+'"">'+object.displayTitle+'</td>'+
+				    		'	</tr>'+
+				    		'</table>';
 				} else
-				if (type == "currentdirectory") {
-					currentDirectoryHTML +=
-	          			'<td>'+
-	          			'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
-         				'		<tr>'+
-            			'			<td>&nbsp;'+object.displaytitle+'</td>'+
-            			'		</tr>'+
-            			'	</table>'+
-            			'</td>';
+				if (location == "collection") {
+					if (object.objectType == "button") 
+						buttonCollectionHTML +=
+		          			'<td>'+
+		          			'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+	         				'		<tr>'+
+	            			'			<td>&nbsp;'+object.displayTitle+'</td>'+
+	            			'		</tr>'+
+	            			'	</table>'+
+	            			'</td>';
 				}
 				dynamicObjects[i] = object;
 			}						
-			createSelectionButtons(selectionHTML);
-			createCurrentDirectoryButtons(currentDirectoryHTML);
-			createIndependentButtons(independentHTML);
+			createSelectionButtons(buttonSelectionHTML);
+			createCurrentDirectoryButtons(buttonCollectionHTML);
+			createIndependentButtons(buttonIndependentHTML);
 		}
 
 		function isEnterKey(event) {
 			return event && event.which == 13
 		}
 
+		function escapeJSON(s) {
+			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+		}
+		
 		function listCheckedItems() {
 			var list="";
 			for (var i = 1; i < document.childrenform.selections.length; i++) // Ignore dummy first element
 				if (document.childrenform.selections[i].checked) 
-				  list=list+"\""+document.childrenform.selections[i].value+"\",";
+					list=list+"\""+escapeJSON(unescape(document.childrenform.selections[i].value))+"\",";
 			if (list.length > 0)
 				list = list.substring(0, list.length-1);  // remove trailing ','
 			return list;
@@ -532,7 +548,7 @@
 		
 		function enableDynamicWidget(widget) {
 			var singleOnly = false;
-			if (widget.inputs.singleselection == "true")
+			if (widget.inputs.singleSelection == "true")
 				singleOnly = true;
 			var anonymousDisable = false;
 			if (widget.anonymous == "disable")
@@ -541,7 +557,7 @@
 			if (widget.trash == "disable")
 				trashDisable = true;
 			var enable = (!isAnonymous() || !anonymousDisable) && (!isTrash(getCurrentDirectory()) || !trashDisable) 
-						&& ((widget.inputs.type != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
+						&& ((widget.location != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
 			enableActiveItem(widget.name, enable);			
 		}
 		
@@ -556,7 +572,7 @@
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
 			
 			for (i = 0; i < dynamicObjects.length; i++) 
-				if (dynamicObjects[i].widgettype == "button")
+				if (dynamicObjects[i].objectType == "button")
 					enableDynamicWidget(dynamicObjects[i]);
 
 			if (replicasGrid.selection.getSelectedCount() == 0) {
@@ -622,18 +638,25 @@
 			return dir.substr(i+1);
 		}
 		
-		function escapeFileName(fileName) {
-			return fileName.replace(/#/g, "%23").replace(/\?/g, "%3F");
+		function escapeFilename(filename) {
+			return filename./*replace(/#/g, "&num;").replace(/\?/g, "&quest;").*/replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 		}
 		
 		function displayDirectory(files) {
+			var displayMetadataDefined = displayMetadataIsDefined("selection");
 			var listing =
 						'<table width="100%" cellpadding="6" cellspacing="2" rules="none" frame="below" style="border-bottom:dotted; border-width:1px; border-color:gray; ">'+
 							'<tr class="text">'+
-        						'<td width="50%" bgcolor="#E8E8E8"><strong>File/Directory Name</strong></td>'+
-        						'<td align="center" bgcolor="#E8E8E8"><strong>Last Modified</strong></td>'+
-        						'<td align="center" bgcolor="#E8E8E8"><strong>Size</strong></td>'+
-        						'<td width="12%" align="right" bgcolor="#E8E8E8"><strong>Select</strong></td>'+
+        						'<td width="50%" bgcolor="#E8E8E8"><strong><nobr>File/Directory Name</nobr></strong></td>'+
+        						'<td align="center" bgcolor="#E8E8E8"><strong><nobr>Last Modified</nobr></strong></td>'+
+        						'<td align="center" bgcolor="#E8E8E8"><strong><nobr>Size</nobr></strong></td>';
+			if (displayMetadataDefined)
+  				for (var i = 0; i < dynamicObjects.length; i++) {
+  					var dynamicObject = dynamicObjects[i];
+  					if (dynamicObject.objectType == "displayMetadata" && dynamicObject.location == "selection") 
+  						listing += '<td align="center" bgcolor="#E8E8E8"><strong><nobr>'+dynamicObject.displayTitle+'</nobr></strong></td>';
+  				}
+			listing +=			'<td width="12%" align="right" bgcolor="#E8E8E8"><strong><nobr>Select</nobr></strong></td>'+
         					'</tr>'+
         					'<tr>'+
         						'<td bgcolor="#FFFFFF" class="text"><a class="link" onclick="gotoParentDirectory(); return false" href="'+getCurrentDirectory()+'/..">... Parent Directory</td>'+
@@ -646,7 +669,8 @@
               				'<tr><td class="text"><small><i>(Directory is empty)</i></small></td></tr>';
           		} else 
 					for (var i = 0; i < files.length; i++) {
-						var escapedFile = escapeFileName(files[i].name);
+						var escapedFilename = escapeFilename(files[i].name);
+						var escapedFileref = escape(files[i].name);
 						var isDir = (files[i].type == 'd');
 						listing +=
 							'<tr>'+
@@ -654,33 +678,115 @@
 						var string = "";
 						if (isDir) 
 							listing +=
-									'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapedFile+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFile+'">&nbsp;'+files[i].name;
+									'<img src="/images/folder.gif" width="16" height="16"/><a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapedFileref+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'">&nbsp;'+escapedFilename;
 						else 
 							listing +=
-									'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapedFile+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFile+'">&nbsp;'+files[i].name;
+									'<img src="/images/page.gif" width="16" height="16"/><a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapedFileref+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'">&nbsp;'+escapedFilename;
 						listing +=
 								'</td>'+
-								'<td align="right" bgcolor="#FFFFFF" class="text"><small><small>'+files[i].date+'</small></small></td>'+
-								'<td align="right" bgcolor="#FFFFFF" class="text"><small>';
+								'<td align="right" bgcolor="#FFFFFF" class="text"><small><small><nobr>'+files[i].date+'</nobr></small></small></td>'+
+								'<td align="right" bgcolor="#FFFFFF" class="text"><small><nobr>';
  						if (!isDir) 
 							listing += humanReadable(files[i].size);
 						listing +=
-								'</small></td>'+
-								'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+files[i].name+'" class="'+(isDir ? "directory" : "file")+'" onClick="refreshDisplay()"/></td>'+
+								'</nobr></small></td>';
+						if (displayMetadataIsDefined("selection"))
+							listing +=
+								'<td align="right" bgcolor="#FFFFFF" class="text"><div id="listingMetadata'+escapedFileref+'"></div></td>';
+						listing +=
+								'<td align="right" bgcolor="#FFFFFF"><input type="checkbox" name="selections" value="'+escapedFileref+'" class="'+(isDir ? "directory" : "file")+'" onClick="refreshDisplay()"/></td>'+
 							'</tr>';
 					}
       		}
 			listing += '</table>';
       		dojo.html.set(dojo.byId("directoryTable"), listing);
 			dojo.html.set(dojo.byId("breadcrumb"), toBreadcrumb(getCurrentDirectory()));
+			doDisplaySelectionMetadata()
 		}
 
 		var need_to_set_current_directory=false;
 		var need_to_add_to_history=false;
 		
+		function doDisplaySelectionMetadata() {
+			if (!displayMetadataIsDefined("selection")) 
+				return;	
+			cursorBusy(true);
+		  	dojo.xhrPost({
+	    		url: getCurrentDirectory()+"?method=collectionmetadata",
+	    		load: function(responseObject, ioArgs){	  
+		  				if (responseObject != null && responseObject.items.length > 0) 
+		  					for (var n = 0; n < responseObject.items.length; n++) {
+		  						var file = responseObject.items[n];
+		  						var fileName = file.file;
+		  						var html = "";
+				  				for (var i = 0; i < dynamicObjects.length; i++) { // Search for displayMetadata|selection dynamicObjects
+				  					var dynamicObject = dynamicObjects[i];
+				  					if (dynamicObject.objectType == "displayMetadata" && dynamicObject.location == "selection") {
+				  						var hrefMetadataItem = null;
+		  								if (dynamicObject.inputs != null && dynamicObject.inputs.metadataName != null) // Get href metadata tag name
+		  									hrefMetadataItem = dynamicObject.inputs.metadataName;
+				  						for (var j = 0; j < file.metadata.length; j++) {  // Search for matching metadata name
+				  							if (file.metadata[j].name == dynamicObject.metadataName) {
+				  								var href = "";
+						  						for (var k = 0; k < file.metadata.length; k++) // Search for href metadata name
+						  							if (file.metadata[k].name == hrefMetadataItem) {
+						  							    if (href.length > 0 && j > 0) {  // If more than one matching item, don't create an href
+						  							    	href = "";
+						  							    	break;
+						  							    }
+						  								href = 'href="'+file.metadata[k].value+'"';
+						  							}
+				  								html += '<small><small><nobr><a '+href+' target="_blank">'+file.metadata[j].value+'</a></nobr></small></small><br>';
+				  							}
+		  								}
+				  					}
+				  				}
+				  				var target = dojo.byId("listingMetadata"+escape(fileName));
+				  				if (target != null)
+				  					dojo.html.set(target, html);
+		  					}
+		  				cursorBusy(false);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	    				cursorBusy(false);
+	      				alert("Error when loading selection metadata: "+response);
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});
+		}
+
+		function doDisplayCollectionMetadata() {
+			if (!displayMetadataIsDefined("collection")) 
+				return;	
+			cursorBusy(true);
+		  	dojo.xhrPost({
+	    		url: getCurrentDirectory()+"?method=metadata",
+	    		load: function(responseObject, ioArgs){	  
+		  				var html = "";//"&nbsp;&nbsp;&nbsp;&nbsp;Metadata:<br>";
+		  				for (var i = 0; i < dynamicObjects.length; i++) {
+		  					var dynamicObject = dynamicObjects[i];
+		  					if (dynamicObject.objectType == "displayMetadata" && dynamicObject.location == "collection") 
+		  						for (var j = 0; j < responseObject.items.length; j++) 
+		  							if (responseObject.items[j].name == dynamicObject.metadataName)
+		  								html += dynamicObject.displayTitle+responseObject.items[j].value+"<br>";
+		  				}
+		  				dojo.html.set(dojo.byId("displayMetadataHTML"), html);		     			
+		  				cursorBusy(false);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	    				cursorBusy(false);
+	      				alert("Error when loading collection metadata.");
+	      				return response;
+	    			},
+	    		handleAs: "json"
+	  		});
+		}
+		
 		function fetchDirectory(url) {
 //			alert("need_to_set_current_directory:"+need_to_set_current_directory+" need_to_add_to_history:"+need_to_add_to_history);
-//displayDirectory(null);
 			cursorBusy(true);
 			dojo.xhr("GET", {
 				url: url+"?format=json",
@@ -689,7 +795,6 @@
 			    load: function(responseObject, ioArgs){
 //			    		alert("ioArgs.xhr.status:"+ioArgs.xhr.status);
 			    		if (ioArgs.xhr.status==200) {
-//			    			displayDirectory(null);
 							if (need_to_set_current_directory==true) {
 //								alert("setCurrentDirectory:"+url);
 								setCurrentDirectory(url);
@@ -699,7 +804,7 @@
 								addToHistory(url);
 								need_to_add_to_history=false;
 							}
-//					displayDirectory(null);
+							doDisplayCollectionMetadata();
 				    		displayDirectory(responseObject.items);
 			    			refreshDisplay();
 			    		}
@@ -749,7 +854,7 @@
 			var dirName = dojo.byId('directoryInputBox').value;
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
-				url: getCurrentDirectory()+"/"+dirName,
+				url: getCurrentDirectory()+"/"+escape(dirName),
 			    load: function(responseObject, ioArgs){
 						cursorBusy(false);
 			      		refreshCurrentDirectory();
@@ -929,7 +1034,7 @@
 //				loadMetadataFromServer(getCurrentDirectory()+"?method=metadata");	// Default metadata is taken from current directory
 				resetMetadataStore();
 			} else {
-				metadataURL = getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=metadata";
+				metadataURL = getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=metadata";
 				loadMetadataFromServer(metadataURL);
 			}
 			dijit.byId('dialogMetadata').attr("url", metadataURL);
@@ -978,9 +1083,9 @@
 				if (i > 0) 
 					data += ",";
 				if ("<parameter servertype/>" == 'srb') 
-					data += "{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\"}";
+					data += "{\"name\":\""+escapeJSON(dijit.byId('metadataGrid').getItem(i).name)+"\", \"value\":\""+escapeJSON(dijit.byId('metadataGrid').getItem(i).value)+"\"}";
 				else
-					data += "{\"name\":\""+dijit.byId('metadataGrid').getItem(i).name+"\", \"value\":\""+dijit.byId('metadataGrid').getItem(i).value+"\", \"unit\":\""+dijit.byId('metadataGrid').getItem(i).unit+"\"}";
+					data += "{\"name\":\""+escapeJSON(dijit.byId('metadataGrid').getItem(i).name)+"\", \"value\":\""+escapeJSON(dijit.byId('metadataGrid').getItem(i).value)+"\", \"unit\":\""+escapeJSON(dijit.byId('metadataGrid').getItem(i).unit)+"\"}";
 			}
 			data += "]}]";
 //			alert(dijit.byId('metadataGrid').getItem(0).name);
@@ -1100,7 +1205,7 @@
 		function getPermissions(batch){
 			var sourceURL = getCurrentDirectory();
 			if (!batch)
-				sourceURL = getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem()); 
+				sourceURL = getCurrentDirectory()+"/"+getFirstCheckedItem(); 
 			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
@@ -1173,7 +1278,7 @@
 		function getReplicas(action){
 			cursorBusy(true);	
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=replicas"+action,
+	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action,
 	    		load: function(responseObject, ioArgs){    
 						replicasStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						replicasGrid.setStore(replicasStore);  
@@ -1195,7 +1300,7 @@
 			cursorBusy(true);	
 			dojo.html.set(dojo.byId('replicasStatusField'), 'Fetching list of resources from server...');
 		  	dojo.xhrPost({
-	    		url: getCurrentDirectory()+"/"+escapeFileName(getFirstCheckedItem())+"?method=resources",
+	    		url: getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources",
 	    		load: function(responseObject, ioArgs){    
 						var resources = responseObject.items;
 						replicasStore.fetch({
@@ -1294,7 +1399,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="rename(escapeFileName(getFirstCheckedItem()), dojo.byId('renameInputBox').value)">Rename</button>
+		<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
 		<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
 	</div>
 </div>					
@@ -1439,7 +1544,8 @@
 	<tr>
     	<td valign="bottom">
     		<p class="text">You are browsing:</p>
-    		<p class="text" id="breadcrumb"></p>
+    		<div class="text" id="breadcrumb"></div>
+    		<small><div class="text" id="displayMetadataHTML"></div><br></small>
     		<div id="currentDirectoryButtonsHTML"></div>
     	</td>
     	<td align="right" valign="bottom">
@@ -1494,7 +1600,7 @@
     			</table>   -->	
       			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
        				<tr>
-          				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=getFirstCheckedItem(); dijit.byId('dialogRename').show()">Rename</td>         				
+          				<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=unescape(getFirstCheckedItem()); dijit.byId('dialogRename').show()">Rename</td>         				
         			</tr>
     			</table>
       			<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">

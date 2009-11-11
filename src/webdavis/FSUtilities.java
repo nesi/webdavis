@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import edu.sdsc.grid.io.GeneralFile;
@@ -450,6 +451,82 @@ public class FSUtilities {
 		
 	}
 	
+	public static HashMap<String, FileMetadata> getIRODSCollectionMetadata(RemoteFile collection){
+
+		HashMap<String, FileMetadata> results = new HashMap<String, FileMetadata>();
+		
+		Log.log(Log.DEBUG, "getIRODSCollectionMetadata '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
+
+		MetaDataSelect selectsFile[] = 
+			MetaDataSet.newSelection(new String[] {
+					IRODSMetaDataSet.META_DATA_ATTR_NAME,
+					IRODSMetaDataSet.META_DATA_ATTR_VALUE,
+					IRODSMetaDataSet.FILE_NAME,
+					IRODSMetaDataSet.DIRECTORY_NAME
+			});
+		MetaDataCondition conditionsFile[] = {
+				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
+//				MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, tag),
+			};
+		
+		MetaDataSelect selectsDir[] =
+			MetaDataSet.newSelection(new String[] {
+				IRODSMetaDataSet.META_COLL_ATTR_NAME,
+				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
+				IRODSMetaDataSet.DIRECTORY_NAME
+			});
+		MetaDataCondition conditionsDir[] = {
+				MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
+//				MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, tag),
+			};
+//		Comparator<Object> comparator = new Comparator<Object>() {
+//			public int compare(Object file1, Object file2) {
+//				return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
+//			}     			
+//		};
+		try {
+			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, MAX_QUERY_NUM);
+//System.err.println("############# result=");
+//for (int i = 0; i < fileDetails.length; i++) {
+//	System.err.println("  "+fileDetails[i]);
+//}
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, MAX_QUERY_NUM, Namespace.DIRECTORY);
+//for (int i = 0; i < dirDetails.length; i++) {
+//  	System.err.println("  "+dirDetails[i]);
+//}
+ 			if (fileDetails == null) 
+    			fileDetails = new MetaDataRecordList[0];
+    		if (dirDetails == null) 
+    			dirDetails = new MetaDataRecordList[0];
+    		
+    		for (MetaDataRecordList p:fileDetails) {
+    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+    			FileMetadata mdata = results.get(path);
+    			if (mdata == null) {
+	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+	    			results.put(path, mdata);
+    			}
+    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
+    		}
+    		for (MetaDataRecordList p:dirDetails) {
+    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+    			FileMetadata mdata = results.get(path);
+    			if (mdata == null) {
+	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), collection.getAbsolutePath(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+	    			results.put(path, mdata);
+    			}
+    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
+    		}
+    		Log.log(Log.DEBUG, "IRODSCollectionMetadata="+results);
+    		return results;
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	public static RemoteFile[] getIRODSCollectionDetails(RemoteFile file){
 		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
 		String[] selectFieldNames = {

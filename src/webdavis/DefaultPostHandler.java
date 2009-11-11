@@ -10,10 +10,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.servlet.ServletException;
@@ -70,8 +72,6 @@ import org.apache.commons.fileupload.servlet.*;
  */
 public class DefaultPostHandler extends AbstractHandler {
 
-	final static char[] SEPARATORS = {'\\', '/'}; 
-
 	/**
 	 * Services requests which use the HTTP POST method. This may, at some
 	 * point, implement some sort of useful behavior. Right now it doesn't do
@@ -106,7 +106,8 @@ public class DefaultPostHandler extends AbstractHandler {
 		}
 		String requestUrl = getRequestURL(request);
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
-		StringBuffer str = new StringBuffer();
+		//StringBuffer str = new StringBuffer();
+		StringBuffer json = new StringBuffer();
 		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
@@ -141,15 +142,15 @@ public class DefaultPostHandler extends AbstractHandler {
 					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
 						file = selectedFile;
 					if (username != null) {
-						if (/*file.getFileSystem()*/fileSystem instanceof SRBFileSystem) {
+						if (fileSystem instanceof SRBFileSystem) {
 							Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
 							((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
-						} else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
+						} else if (fileSystem instanceof IRODSFileSystem) {
 							Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
 							if (recursive) 
 								iRODSSetPermission((IRODSFile)selectedFile, permission, username);
 							else
-								((IRODSFile) selectedFile).changePermissions(permission, username, recursive);
+								((IRODSFile)selectedFile).changePermissions(permission, username, recursive);
 						}
 					}
 					if (sticky!=null) {
@@ -166,30 +167,30 @@ public class DefaultPostHandler extends AbstractHandler {
 
 			// Fetch permissions for item
 			MetaDataRecordList[] permissions = null;
-			str.append("{\n");
+			json.append("{\n");
 			if (file.getFileSystem() instanceof SRBFileSystem) {
 				permissions = ((SRBFile) file).getPermissions(true);
 				if (file.isDirectory()){
-					str.append("sticky:'").append(this.isPermInherited(file)).append("',\n");
+					json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+isPermInherited(file))+",\n");
 				}
-				str.append("items:[");
+				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
 						// for (MetaDataField f:p.getFields()){
 						// Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
 						// }
 						if (i > 0)
-							str.append(",\n");
+							json.append(",\n");
 						else
-							str.append("\n");
+							json.append("\n");
 						// "user name"
-						str.append("{username:'").append(permissions[i].getValue(SRBMetaDataSet.USER_NAME)).append("', ");
+						json.append("{"+escapeJSONArg("username")+":"+escapeJSONArg(""+permissions[i].getValue(SRBMetaDataSet.USER_NAME))+",");
 						// "user domain"
-						str.append("domain:'").append(permissions[i].getValue(SRBMetaDataSet.USER_DOMAIN)).append("', ");
+						json.append(escapeJSONArg("domain")+":"+escapeJSONArg(""+permissions[i].getValue(SRBMetaDataSet.USER_DOMAIN))+",");
 	                    if (file.isDirectory()) 	// "directory access constraint"
-	    					str.append("permission:'").append(permissions[i].getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT)).append("'}");
+	    					json.append(escapeJSONArg("permission")+":"+escapeJSONArg(""+permissions[i].getValue(SRBMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))+"}");
 	                    else 	// "file access constraint"
-	    					str.append("permission:'").append(permissions[i].getValue(SRBMetaDataSet.ACCESS_CONSTRAINT)).append("'}");
+	    					json.append(escapeJSONArg("permission")+":"+escapeJSONArg(""+permissions[i].getValue(SRBMetaDataSet.ACCESS_CONSTRAINT))+"}");
 					}
 				}
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
@@ -201,42 +202,41 @@ public class DefaultPostHandler extends AbstractHandler {
 						Log.log(Log.DEBUG, "stickBitStr: "+stickBitStr);
 						stickyBit=stickBitStr!=null&&stickBitStr.equals("1");
 					}
-					str.append("sticky:'").append(stickyBit).append("',\n");
+					json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+stickyBit)+",\n");
 					permissions = ((IRODSFile) file).query(new String[]{IRODSMetaDataSet.DIRECTORY_USER_NAME, IRODSMetaDataSet.DIRECTORY_USER_ZONE,
 							IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT});
 				}else
-					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,
-							GeneralMetaData.ACCESS_CONSTRAINT});
+					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,	GeneralMetaData.ACCESS_CONSTRAINT});
 				Log.log(Log.DEBUG, "irods permissions: "+permissions);
-				str.append("items:[");
+				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
 //						for (MetaDataField f:permissions[i].getFields()){
 //						Log.log(Log.DEBUG, f.getName()+" "+permissions[i].getValue(f));
 //						}
 						if (i > 0)
-							str.append(",\n");
+							json.append(",\n");
 						else
-							str.append("\n");
+							json.append("\n");
 						// "user domain"
-	                    if(file.isDirectory()) {	// "user name"
-							str.append("{username:'").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME));
+	                    if (file.isDirectory()) {	// "user name"
+							json.append("{"+escapeJSONArg("username")+":");
+							String s = ""+permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_NAME);
 							if (!((IRODSFileSystem)file.getFileSystem()).getZone().equals(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE)))	
-								str.append("#").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE));
-							str.append("', ");
+								s += "#"+permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_USER_ZONE);
+							json.append(escapeJSONArg(s)+",");
 	    					// "directory access constraint"
-	    					str.append("permission:'").append(permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT)).append("'}");
+	    					json.append(escapeJSONArg("permission")+":"+escapeJSONArg(""+permissions[i].getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT))+"}");
 	                    } else {	// "user name"
-							str.append("{username:'").append(permissions[i].getValue(UserMetaData.USER_NAME)).append("', ");
+							json.append("{"+escapeJSONArg("username")+":"+escapeJSONArg(""+permissions[i].getValue(UserMetaData.USER_NAME))+",");
 	    					// "file access constraint"
-	    					str.append("permission:'").append(permissions[i].getValue(GeneralMetaData.ACCESS_CONSTRAINT)).append("'}");
+	    					json.append(escapeJSONArg("permission")+":"+escapeJSONArg(""+permissions[i].getValue(GeneralMetaData.ACCESS_CONSTRAINT))+"}");
 	                    }
 					}
 				}
 			}
-			str.append("\n");
-			str.append("]}");
-
+			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("metadata")) {
 			if (request.getContentLength() > 0) {	// write metadata if given in request
 				JSONArray jsonArray = getJSONContent(request);			
@@ -270,7 +270,7 @@ public class DefaultPostHandler extends AbstractHandler {
 
 						MetaDataTable metaDataTable = null;
 	
-						if (/*file.getFileSystem()*/fileSystem instanceof SRBFileSystem) {
+						if (fileSystem instanceof SRBFileSystem) {
 							String[][] definableMetaDataValues = new String[metadataArray.size()][2];
 	
 	    					for (int i = 0; i < metadataArray.size(); i++) {
@@ -294,7 +294,7 @@ public class DefaultPostHandler extends AbstractHandler {
 								selectedFile.modifyMetaData(rl);
 							}
 	
-						}else if (/*file.getFileSystem()*/fileSystem instanceof IRODSFileSystem) {
+						}else if (fileSystem instanceof IRODSFileSystem) {
 							//delete all metadata, uses wildcards
 	//						try{
 							((IRODSFile)selectedFile).deleteMetaData(new String[]{"%","%","%"});
@@ -319,7 +319,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			MetaDataTable metaDataTable = null;
 			MetaDataSelect[] selects=null;
 			MetaDataRecordList[] rl = null;
-			str.append("{\nitems:[");
+			json.append("{\n"+escapeJSONArg("items")+":[");
 			boolean b = false;
 			if (file.getFileSystem() instanceof SRBFileSystem) {
 				// conditions = new MetaDataCondition[0];
@@ -341,9 +341,9 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (rl != null) { // Nothing in the database matched the query
 					for (int i = 0; i < rl.length; i++) {
 //						if (i > 0)
-//							str.append(",\n");
+//							json.append(",\n");
 //						else
-//							str.append("\n");
+//							json.append("\n");
 
 						int metaDataIndex;
 						if (file.isDirectory())
@@ -354,13 +354,12 @@ public class DefaultPostHandler extends AbstractHandler {
 							MetaDataTable t = rl[i].getTableValue(metaDataIndex);
 							for (int j = 0; j < t.getRowCount(); j++) {
 								if (b)
-									str.append(",\n");
+									json.append(",\n");
 								else
-									str.append("\n");
-								str.append("{name:'");
-								str.append(t.getStringValue(j, 0)).append("', ");
-								str.append("value:'")
-										.append(t.getStringValue(j, 1)).append("'}");
+									json.append("\n");
+								json.append("{"+escapeJSONArg("name")+":");
+								json.append(escapeJSONArg(t.getStringValue(j, 0))+",");
+								json.append(escapeJSONArg("value")+":"+escapeJSONArg(t.getStringValue(j, 1))+"}");
 								b = true;
 							}
 						}
@@ -411,35 +410,30 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (rl != null) { // Nothing in the database matched the query
 					for (int i = 0; i < rl.length; i++) {
 //						if (i > 0)
-//							str.append(",\n");
+//							json.append(",\n");
 //						else
-//							str.append("\n");
-						if (i>0) str.append(",\n");
+//							json.append("\n");
+						if (i>0) json.append(",\n");
 						if (file.isDirectory()){
-							str.append("{name:'");
-							str.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME)).append("', ");
-							str.append("value:'")
-								.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE)).append("', ");
-							str.append("unit:'")
-									.append(rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_UNITS)).append("'}");
+							json.append("{"+escapeJSONArg("name")+":");
+							json.append(escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME))+",");
+							json.append(escapeJSONArg("value")+":"+escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE))+",");
+							json.append(escapeJSONArg("unit")+":"+escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_COLL_ATTR_UNITS))+"}");
 						}else{
-							str.append("{name:'");
-							str.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME)).append("', ");
-							str.append("value:'")
-								.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE)).append("', ");
-							str.append("unit:'")
-									.append(rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_UNITS)).append("'}");
+							json.append("{"+escapeJSONArg("name")+":");
+							json.append(escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME))+",");
+							json.append(escapeJSONArg("value")+":"+escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE))+",");
+							json.append(escapeJSONArg("unit")+":"+escapeJSONArg((String)rl[i].getValue(IRODSMetaDataSet.META_DATA_ATTR_UNITS))+"}");
 						}
 						b = true;
 					}
 				}
 			}
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("upload")) {
 			response.setContentType("text/html");
-			if (!ServletFileUpload.isMultipartContent(request)) 
-	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Invalid request (not multipart)\"}</textarea></body></html>");
+			if (!ServletFileUpload.isMultipartContent(request)) // Returns json wrapped in an HTML textarea 
+	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Invalid request (not multipart)")));
 	        else {
                 long contentLength = request.getContentLength();
                 if (contentLength==-1)
@@ -463,16 +457,17 @@ public class DefaultPostHandler extends AbstractHandler {
 		                if (!fileItemStream.isFormField()) {
 		                	InputStream inputStream = fileItemStream.openStream();
 		                	String fileName = fileItemStream.getName();
-		                	for (int i = 0; i < SEPARATORS.length; i++) {  // Make sure we remove any absolute portion of path for all platforms
-		                		int j = fileName.lastIndexOf(SEPARATORS[i]); 
-		                		if (j >= 0)
-		                			fileName = fileName.substring(j+1);
-		                	}
+		                	char c = '/';
+		                	if (fileName.startsWith(":\\", 1))	// Win32 upload
+		                		c = '\\';
+		                	int j = fileName.lastIndexOf(c); 
+		                	if (j >= 0)
+		                		fileName = fileName.substring(j+1);
 	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 	                        boolean existsCurrently = file.exists();
 	                        if (existsCurrently && !file.isFile()) {
 	                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
-	            	            str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"File already exists\"}</textarea></body></html>");
+	            	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("File already exists")));
 	                        } else {	                        
 		                		if (davisSession.getCurrentResource() == null) 
 		                			davisSession.setCurrentResource(davisSession.getDefaultResource());
@@ -498,55 +493,79 @@ public class DefaultPostHandler extends AbstractHandler {
 		                        outputStream.close();
 			                    if (tracker.getBytesReceived() >= 0) {
 			                        tracker.setComplete();
-			                        str.append("<html><body><textarea>{\"status\":\"success\",\"message\":\""+tracker.getBytesReceived()+"\"}</textarea></body></html>");
+			                        json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("success")+","+escapeJSONArg("message")+":"+escapeJSONArg(""+tracker.getBytesReceived())));
 			                        result = true;
 			                    } 
 	                        }
 		                }
 		            }
 		            if (!result) 
-		            	str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"No file to upload\"}</textarea></body></html>");
+		            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("No file to upload")));
 		        } catch (EOFException e) {
-                    str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\"Unexpected end of file\"}</textarea></body></html>");
+                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Unexpected end of file")));
 		        } catch (IOException e) {
-                    str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\""+e.getMessage()+"\"}</textarea></body></html>");
+                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
 		        } catch (FileUploadException e) {
-	                str.append("<html><body><textarea>{\"status\":\"failed\", \"message\":\""+e.getMessage()+"\"}</textarea></body></html>");
+	                json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
 		        }
 	        }
 		} else if (method.equalsIgnoreCase("domains")) {
-			str.append("{\nitems:[\n");
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
 			for (int i = 0; i < domains.length; i++) {
-				if (i>0) str.append(",\n");
-				str.append("{name:'").append(domains[i]).append("'}");
+				if (i>0) json.append(",\n");
+				json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(domains[i])+"}");
 			}
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("dynamicobjects")) {
-			str.append("{\n\"items\":[\n");
-			Enumeration dynamicObjects = DavisConfig.getInstance().getDynamicObjects().elements();
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
+			Enumeration<JSONObject> dynamicObjects = DavisConfig.getInstance().getDynamicObjects().elements();
 			int i = 0;
 			while (dynamicObjects.hasMoreElements()) {
-				JSONObject dynamicObject = (JSONObject)dynamicObjects.nextElement();
-				if (i++ > 0) str.append(",\n");
-				str.append(dynamicObject);
+				JSONObject dynamicObject = dynamicObjects.nextElement();
+				if (i++ > 0) json.append(",\n");
+				json.append(dynamicObject.toString()); // No escaping required - the whole dynamic object declaration is sent verbatim
 			}
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("resources")) {
-			str.append("{\nitems:[\n");
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] resources = null;
 			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem)
 				resources = FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem());
 			else
 				resources = FSUtilities.getIRODSResources((IRODSFileSystem)file.getFileSystem());
 			for (int i = 0; i < resources.length; i++) { 
-				if (i > 0) str.append(",\n");
-				str.append("{name:'").append(resources[i]).append("'}");
+				if (i > 0) json.append(",\n");
+				json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(resources[i])+"}");
 			}
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
+		} else if (method.equalsIgnoreCase("collectionmetadata")) {
+			json.append("{"+escapeJSONArg("items")+":[\n");
+			HashMap<String, FileMetadata> files = null;
+			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem)
+				{}//###TBD not implemented yet
+			else
+				files = FSUtilities.getIRODSCollectionMetadata(file);
+			if (file != null) {
+				FileMetadata[] filesMetadata = files.values().toArray(new FileMetadata[0]);
+				for (int i = 0; i < filesMetadata.length; i++) { 
+					if (i > 0) json.append("  ,\n");
+					json.append("  {"+escapeJSONArg("file")+":"+escapeJSONArg(filesMetadata[i].getName())+","+escapeJSONArg("metadata")+": [\n");
+					HashMap<String, ArrayList<String>> metadata = filesMetadata[i].getMetadata();
+					String[] names = metadata.keySet().toArray(new String[0]);
+					for (int j = 0; j < names.length; j++) {
+						if (j > 0) json.append(",\n");
+						String name = names[j];
+						ArrayList<String> values = metadata.get(name);
+						for (int k = 0; k < values.size(); k++) {
+							if (k > 0) json.append(",\n");
+							json.append("    {"+escapeJSONArg("name")+":"+escapeJSONArg(name)+","+escapeJSONArg("value")+":"+escapeJSONArg(values.get(k))+"}");
+						}
+					}
+					json.append("]}\n");
+				}
+			}
+			json.append("]}");
 		} else if (method.equalsIgnoreCase("execbutton")) {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
@@ -572,15 +591,15 @@ public class DefaultPostHandler extends AbstractHandler {
 //System.err.println("args="+args);
 			JSONObject arg;
 			for (int i = 0; i < args.size(); i++) {
-				if (i>0) commandLine.append("%");
+				if (i > 0) commandLine.append("%");
 				arg = (JSONObject)args.get(i);
 				commandLine.append("*").append(arg.get("name")).append("=").append(arg.get("value"));
 			}
-			if (((JSONObject)button.get("inputs")).get("type").equals("selection")&&fileList.size()>0){
-				if (args.size()>0) commandLine.append("%");
+			if (button.get("location").equals("selection") && fileList.size() > 0){
+				if (args.size() > 0) commandLine.append("%");
 				commandLine.append("*filelist=");
-				for (int i=0;i<fileList.size();i++) {
-					if (i>0) commandLine.append(",");
+				for (int i = 0; i < fileList.size(); i++) {
+					if (i > 0) commandLine.append(",");
 					commandLine.append(fileList.get(i).getAbsolutePath()); //+"/"+fileList.get(i).getName());
 				}
 			}
@@ -590,7 +609,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			//execute rule
 //			String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
 //		    System.out.println(rule);
-			String notice = "Sorry, dynamic buttons aren't executed by the server yet!";
+			String notice = null;
 			java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(commandLine.toString().getBytes());
 		    try {
 				java.util.HashMap outputParameters = ((IRODSFileSystem)file.getFileSystem()).executeRule( inputStream );
@@ -614,16 +633,15 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			
 			if (notice != null && notice.length() > 0)
-				str.append("{\"notice\":\""+notice+"\"}");
-			str.append("\n");
-			str.append("");
+				json.append("{"+escapeJSONArg("notice")+":"+escapeJSONArg(notice)+"}");
+			json.append("\n");
 		} else if (method.equalsIgnoreCase("replicas")) {
 			String deleteResource = request.getParameter("delete");
 			String replicateResource = request.getParameter("replicate");
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 	    	/*boolean batch = */getFileList(request, davisSession, fileList); 
 	        Iterator<RemoteFile> iterator = fileList.iterator();
-			str.append("{\nitems:[\n");
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
 	        while (iterator.hasNext()) {
 	        	file = iterator.next();
 	        	if (!file.isDirectory()) {	// Can't get replica info for a directory
@@ -660,31 +678,29 @@ public class DefaultPostHandler extends AbstractHandler {
 		    		rl = file.query(selects);
 		    		if (rl != null)
 			    		for (int i = 0; i < rl.length; i++) {
-							if (i > 0) str.append(",\n");
-							str.append("{resource:'").append(rl[i].getValue(ResourceMetaData.RESOURCE_NAME)).append("', ");
-							str.append("number:'").append(rl[i].getValue(FileMetaData.FILE_REPLICA_NUM)).append("'}");
+							if (i > 0) json.append(",\n");
+							json.append("{"+escapeJSONArg("resource")+":"+escapeJSONArg((String)rl[i].getValue(ResourceMetaData.RESOURCE_NAME))+",");
+							json.append(escapeJSONArg("number")+":"+escapeJSONArg((String)rl[i].getValue(FileMetaData.FILE_REPLICA_NUM))+"}");
 			    		}
 	        	}
 	        }
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("userlist")) {
-			str.append("{\nitems:[\n");
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
 				String[] users=FSUtilities.getUsernamesByDomainName((SRBFileSystem)davisSession.getRemoteFileSystem(),request.getParameter("domain"));
 				for (int i = 0; i < users.length; i++) {
-					if (i>0) str.append(",\n");
-					str.append("{name:'").append(users[i]).append("'}");
+					if (i>0) json.append(",\n");
+					json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(users[i])+"}");
 				}
 			}else if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem){
 				String[] users=FSUtilities.getUsernames((IRODSFileSystem)davisSession.getRemoteFileSystem());
 				for (int i = 0; i < users.length; i++) {
-					if (i>0) str.append(",\n");
-					str.append("{name:'").append(users[i]).append("'}");
+					if (i>0) json.append(",\n");
+					json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(users[i])+"}");
 				}
 			}
-			str.append("\n");
-			str.append("]}");
+			json.append("\n]}");
 		}
 		ServletOutputStream op = null;
 		try {
@@ -693,8 +709,8 @@ public class DefaultPostHandler extends AbstractHandler {
 			Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 			return;
 		}
-		byte[] buf = str.toString().getBytes();
-		Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + str);
+		byte[] buf = json.toString().getBytes();
+		Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
 		op.write(buf);
 		op.flush();
 		op.close();

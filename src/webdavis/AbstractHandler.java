@@ -1057,6 +1057,21 @@ public abstract class AbstractHandler implements MethodHandler {
 		}
         return batch;
     }
+    
+    public String escapeJSONArg(String s) {
+    	
+    	return "\""+escapeJSON(s)+"\"";
+    }
+    
+    protected String escapeJSON(String s) {
+    	
+    	return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+    
+    public String wrapJSONInHTML(String s) {
+    	
+    	return "<html><body><textarea>{"+s+"}</textarea></body></html>";
+    }
 
     public abstract void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
