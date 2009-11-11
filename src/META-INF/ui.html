@@ -379,7 +379,7 @@
 			});
 			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
 				if (e.keyCode == dojo.keys.ENTER) {
-					rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value);
+					rename(getFirstCheckedItem(), escape(dojo.byId('renameInputBox').value));
 				}
 			});
 		}
@@ -987,7 +987,7 @@
 			cursorBusy(true);
 			var data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 			dojo.xhr("MOVE", {
-				url: url+"?destination="+destination,
+				url: url/*+"?destination="+destination*/,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json",
@@ -1399,7 +1399,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button onclick="rename(getFirstCheckedItem(), dojo.byId('renameInputBox').value)">Rename</button>
+		<button onclick="rename(getFirstCheckedItem(), escape(dojo.byId('renameInputBox').value))">Rename</button>
 		<button onclick="dijit.byId('dialogRename').hide()">Cancel</button>
 	</div>
 </div>					
