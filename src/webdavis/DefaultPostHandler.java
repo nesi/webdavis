@@ -577,7 +577,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	    	if (jsonArray != null) 	
 	    		uiJSON = (JSONObject)jsonArray.get(0);
 	    	if (uiJSON == null) {
-	    		Log.log(Log.ERROR, "Internal error servicing dynamic button "+buttonName+" - can't find button declaration");
+	    		Log.log(Log.ERROR, "Internal error servicing dynamic button "+buttonName+" - can't find button name");
     			response.sendError(HttpServletResponse.SC_FORBIDDEN);
     			return;
 	    	}
