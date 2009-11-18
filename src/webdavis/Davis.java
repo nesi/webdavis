@@ -3,54 +3,24 @@ package webdavis;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-
-import java.net.UnknownHostException;
-
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.StringTokenizer;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
-
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.globus.myproxy.GetParams;
-import org.globus.myproxy.MyProxy;
-import org.ietf.jgss.GSSCredential;
-import org.ietf.jgss.GSSException;
-
-import au.edu.archer.desktopshibboleth.idp.IDP;
-import au.org.mams.slcs.client.SLCSClient;
-import au.org.mams.slcs.client.SLCSConfig;
-
-import edu.sdsc.grid.io.Base64;
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.RemoteAccount;
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBAccount;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
-import edu.sdsc.grid.io.srb.SRBMetaDataSet;
+import org.apache.commons.codec.binary.Base64;
 
 /**
  * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
@@ -286,7 +256,7 @@ public class Davis extends HttpServlet {
 		}else if (authorization != null){
 			davisSession=authorizationProcessor.getDavisSession(authorization, reset);
 		}else if (isAnonymousPath(pathInfo)){
-			String authString="Basic "+Base64.toString((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
+			String authString="Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
 			davisSession=authorizationProcessor.getDavisSession(authString, reset);
 		}else{
 			fail(request, response);

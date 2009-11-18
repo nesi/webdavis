@@ -1,38 +1,30 @@
 package webdavis;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
-import java.security.GeneralSecurityException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.security.cert.CertificateException;
-import javax.security.cert.X509Certificate;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.httpclient.ConnectTimeoutException;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.auth.CredentialsProvider;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpConnectionParams;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpStatus;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
@@ -40,20 +32,14 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 
-import edu.sdsc.grid.io.GeneralMetaData;
+import au.org.arcs.jshib.slcs.SLCSConfig;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSAdmin;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
-import edu.sdsc.grid.io.irods.User;
-
-import au.edu.archer.desktopshibboleth.utils.authen.CredentialHandler;
-import au.edu.archer.desktopshibboleth.utils.ssl.InteractiveHttpsClient;
-import au.org.mams.slcs.client.SLCSConfig;
 
 public class ShibUtil {
 	private SLCSConfig config;

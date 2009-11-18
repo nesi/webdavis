@@ -16,9 +16,10 @@ import org.globus.myproxy.MyProxy;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 
-import au.edu.archer.desktopshibboleth.idp.IDP;
-import au.org.mams.slcs.client.SLCSClient;
-import au.org.mams.slcs.client.SLCSConfig;
+import au.org.arcs.jshib.IdP;
+import au.org.arcs.jshib.slcs.SLCSClient;
+import au.org.arcs.jshib.slcs.SLCSConfig;
+
 import edu.sdsc.grid.io.RemoteAccount;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
@@ -149,7 +150,7 @@ public class AuthorizationProcessor {
 						gssCredential = mp.get(null,getRequest);
 						
 					}else{
-						IDP idp = null;
+						IdP idp = null;
 						SLCSClient client;
 						if (davisConfig.getProxyHost() != null && davisConfig.getProxyHost().toString().length() > 0) {
 							SLCSConfig config = SLCSConfig.getInstance();
@@ -166,8 +167,8 @@ public class AuthorizationProcessor {
 								config.setProxyPassword(davisConfig.getProxyPassword().toString());
 						}
 						client = new SLCSClient();
-						List<IDP> idps = client.getAvailableIDPs();
-						for (IDP idptmp : idps) {
+						List<IdP> idps = client.getAvailableIdPs();
+						for (IdP idptmp : idps) {
 							// System.out.println("idp: "+idptmp.getName()+"
 							// "+idptmp.getProviderId());
 							if (idptmp.getName().equalsIgnoreCase(idpName)) {
@@ -176,7 +177,7 @@ public class AuthorizationProcessor {
 							}
 						}
 						if (idp == null) {
-							for (IDP idptmp : idps) {
+							for (IdP idptmp : idps) {
 								// System.out.println("idp: "+idptmp.getName()+"
 								// "+idptmp.getProviderId());
 								if (idptmp.getName().startsWith(idpName)) {
@@ -186,7 +187,7 @@ public class AuthorizationProcessor {
 							}
 						}
 						if (idp == null) {
-							for (IDP idptmp : idps) {
+							for (IdP idptmp : idps) {
 								// System.out.println("idp: "+idptmp.getName()+"
 								// "+idptmp.getProviderId());
 								if (idptmp.getName().indexOf(idpName) > -1) {
