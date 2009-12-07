@@ -107,10 +107,11 @@ public class AuthorizationProcessor {
 			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
 			password = (index != -1) ? authInfo.substring(index + 1).toCharArray() : "".toCharArray();
 
+			idpName=davisConfig.getDefaultIdp();
 			if ((index = user.indexOf('\\')) != -1
 					|| (index = user.indexOf('/')) != -1) {
 				if (index==0){
-					idpName=davisConfig.getDefaultIdp();
+					// do nothing
 				}else
 					idpName = user.substring(0, index);
 				user = user.substring(index + 1);
@@ -148,7 +149,10 @@ public class AuthorizationProcessor {
 						getRequest.setPassphrase(new String(password));
 						getRequest.setUserName(user);
 						gssCredential = mp.get(null,getRequest);
-						
+					}else if (idpName.equalsIgnoreCase("irods")){
+						gssCredential = null;
+					}else if (isExtendedAuthScheme(idpName)){
+						// use extenede authe scheme, need to return gssCredential
 					}else{
 						IdP idp = null;
 						SLCSClient client;
@@ -514,5 +518,9 @@ public class AuthorizationProcessor {
 			return null;
 		}
 		return session;
+	}
+	private boolean isExtendedAuthScheme(String schemeName){
+		// need to add config/code/script for customized auth scheme, e.g. salt
+		return false;
 	}
 }
