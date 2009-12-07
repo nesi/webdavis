@@ -134,6 +134,7 @@ public class AuthorizationProcessor {
 				user = user.substring(0, index);
 			}
 
+			Log.log(Log.DEBUG,"Auth Scheme:"+idpName+" (user="+user+")");
 			if (idpName != null) {
 				// auth with idp
 				try {
@@ -149,7 +150,11 @@ public class AuthorizationProcessor {
 						getRequest.setPassphrase(new String(password));
 						getRequest.setUserName(user);
 						gssCredential = mp.get(null,getRequest);
-					}else if (idpName.equalsIgnoreCase("irods")){
+						if (gssCredential == null) {
+							return null;
+						}
+					}else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
+						// using irods/srb users to login
 						gssCredential = null;
 					}else if (isExtendedAuthScheme(idpName)){
 						// use extenede authe scheme, need to return gssCredential
@@ -206,6 +211,9 @@ public class AuthorizationProcessor {
 						}
 						Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());  //+" "+user+" "+password
 						gssCredential = client.slcsLogin(idp, user,	password);
+						if (gssCredential == null) {
+							return null;
+						}
 						Log.log(Log.DEBUG,"Got porxy from idp: "+gssCredential.getName().toString());
 					}
 				} catch (GeneralSecurityException e) {
@@ -214,9 +222,6 @@ public class AuthorizationProcessor {
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
-				if (gssCredential == null) {
-					return null;
 				}
 			}
 		}else if (authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
@@ -287,6 +292,7 @@ public class AuthorizationProcessor {
 		RemoteAccount account=null;
 		DavisSession davisSession=null;
 		if (gssCredential!=null){
+			Log.log(Log.DEBUG,"login with gssCredential");
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
 				davisSession = new DavisSession();
 				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,"",defaultResource);
