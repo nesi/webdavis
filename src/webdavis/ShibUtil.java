@@ -10,6 +10,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.security.SecureRandom;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -25,6 +26,7 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpConnectionParams;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpStatus;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
@@ -352,14 +354,14 @@ public class ShibUtil {
 //		return password;
 //	}
 	private char[] getRandomPassword(int length) {
-		  char[] buffer = new char[length];
-		  Random random = new Random();
+		  byte[] buffer = new byte[length];
+		  SecureRandom random = new SecureRandom();
 //		  System.out.println(random.nextInt(74));
 //		  char[] chars = new char[] { 'a', 'b', 'c', 'd' /*you get the picture*/};
 		  for ( int i = 0; i < length; i++ ) {
-		    buffer[i]=(char) (random.nextInt(63)+63);
+		    buffer[i]=(byte) (random.nextInt(63)+63);
 		  }
-		  return buffer;
+		  return new String((Base64.encodeBase64(buffer))).toCharArray();
 		}
 
 }
