@@ -51,6 +51,7 @@ public class DavisConfig {
 	private String defaultIdp;
 	private String serverType;
 	private String myproxyServer;
+    private String arcsMyproxyServer;
 	private String proxyHost;
 	private String proxyPort;
 	private String proxyUsername;
@@ -219,6 +220,7 @@ public class DavisConfig {
 		defaultIdp = getInitParameter("default-idp");
 		serverType = getInitParameter("server-type");
 		myproxyServer = getInitParameter("myproxy-server");
+        arcsMyproxyServer = getInitParameter("arcs-myproxy-server");
 		defaultDomain = getInitParameter("default-domain");
 		serverPort = 1247;
 		try {
@@ -380,6 +382,10 @@ public class DavisConfig {
 	public String getMyproxyServer() {
 		return myproxyServer;
 	}
+
+    public String getARCSMyProxyServer(){
+        return this.arcsMyproxyServer;
+    }
 
 	public void setMyproxyServer(String myproxyServer) {
 		this.myproxyServer = myproxyServer;

@@ -13,6 +13,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.codec.binary.Base64;
 import org.globus.myproxy.GetParams;
 import org.globus.myproxy.MyProxy;
+import org.globus.myproxy.MyProxyException;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 
@@ -71,6 +72,32 @@ public class AuthorizationProcessor {
 		}
 		return login(null, sharedToken, commonName, shibSessionID);
 	}
+
+    private GSSCredential myproxyLogin(String user, char[] password, String host)
+    {
+        Log.log(Log.DEBUG,"logging in with myproxy: "+ host);
+        if (host==null||host.equals("")){
+            return null;
+        }
+        MyProxy mp = new MyProxy(host, 7512);
+        GetParams getRequest = new GetParams();
+        getRequest.setCredentialName(null);
+        getRequest.setLifetime(3600);
+        getRequest.setPassphrase(new String(password));
+        getRequest.setUserName(user);
+        try
+        {
+            GSSCredential gssCredential = mp.get(null,getRequest);
+            if (gssCredential == null) {
+                return null;
+            }
+            return gssCredential;
+        }
+        catch(MyProxyException mpe)
+        {
+            return null;
+        }
+    }
 	
 	private DavisSession login(String authorization, String sharedToken, String commonName, String shibSessionID){
 		
@@ -139,21 +166,16 @@ public class AuthorizationProcessor {
 				// auth with idp
 				try {
 					if (idpName.equalsIgnoreCase("myproxy")){
-						Log.log(Log.DEBUG,"logging in with myproxy: "+davisConfig.getMyproxyServer());
-						if (davisConfig.getMyproxyServer()==null||davisConfig.getMyproxyServer().equals("")){
-							return null;
-						}
-						MyProxy mp = new MyProxy(davisConfig.getMyproxyServer(), 7512);
-						GetParams getRequest = new GetParams();
-						getRequest.setCredentialName(null);
-						getRequest.setLifetime(3600);
-						getRequest.setPassphrase(new String(password));
-						getRequest.setUserName(user);
-						gssCredential = mp.get(null,getRequest);
-						if (gssCredential == null) {
-							return null;
-						}
-					}else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
+					    gssCredential = myproxyLogin(user, password, davisConfig.getMyproxyServer());
+                        if(gssCredential == null)
+                            return null;
+					}
+                    else if(idpName.equals("arcs")){
+                        gssCredential = myproxyLogin(user, password, davisConfig.getARCSMyProxyServer());
+                        if(gssCredential == null)
+                            return null;
+                    }
+                    else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
 						// using irods/srb users to login
 						gssCredential = null;
 					}else if (isExtendedAuthScheme(idpName)){
