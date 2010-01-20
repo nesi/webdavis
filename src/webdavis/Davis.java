@@ -246,12 +246,12 @@ public class Davis extends HttpServlet {
 				String sharedToken=request.getHeader(config.getSharedTokenHeaderName());
 				String commonName=request.getHeader(config.getCommonNameHeaderName());
 				String shibSessionID=request.getHeader("Shib-Session-ID");
-				if (sharedToken==null) {
+				if (sharedToken==null||sharedToken.length()==0) {
 					response.sendError(HttpServletResponse.SC_FORBIDDEN, "Shared token is not found in HTTP header.");
 					response.flushBuffer();
 					return;
 				}
-				if (commonName==null) {
+				if (commonName==null||commonName.length()==0) {
 					response.sendError(HttpServletResponse.SC_FORBIDDEN, "Common name is not found in HTTP header.");
 					response.flushBuffer();
 					return;
