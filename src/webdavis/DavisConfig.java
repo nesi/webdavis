@@ -51,7 +51,6 @@ public class DavisConfig {
 	private String defaultIdp;
 	private String serverType;
 	private String myproxyServer;
-    private String arcsMyproxyServer;
 	private String proxyHost;
 	private String proxyPort;
 	private String proxyUsername;
@@ -76,6 +75,11 @@ public class DavisConfig {
     private long maximumXmlRequest;
     
     private String displayMetadata;
+    private String authClass;
+
+	public String getAuthClass() {
+		return authClass;
+	}
 
 	private Properties configProperties = new Properties();
 	private Hashtable<String, JSONObject> dynamicObjects;
@@ -91,12 +95,12 @@ public class DavisConfig {
 		return self;
 	}
 
-	private String getInitParameter(String key) {
+	public String getInitParameter(String key) {
 		
 		return getInitParameter(key, null);
 	}
 	
-	private String getInitParameter(String key, String defaultValue) {
+	public String getInitParameter(String key, String defaultValue) {
 		
 //System.err.print("looking for key "+key);		
 		String value = configProperties.getProperty(key);
@@ -220,7 +224,6 @@ public class DavisConfig {
 		defaultIdp = getInitParameter("default-idp");
 		serverType = getInitParameter("server-type");
 		myproxyServer = getInitParameter("myproxy-server");
-        arcsMyproxyServer = getInitParameter("arcs-myproxy-server");
 		defaultDomain = getInitParameter("default-domain");
 		serverPort = 1247;
 		try {
@@ -257,6 +260,7 @@ public class DavisConfig {
         maximumXmlRequest = (s != null) ? Long.parseLong(s) : 20000l;
         
         displayMetadata = getInitParameter("displayMetadata", "");
+        authClass = getInitParameter("authClass");
 	}
 
 	public String getDefaultDomain() {
@@ -382,10 +386,6 @@ public class DavisConfig {
 	public String getMyproxyServer() {
 		return myproxyServer;
 	}
-
-    public String getARCSMyProxyServer(){
-        return this.arcsMyproxyServer;
-    }
 
 	public void setMyproxyServer(String myproxyServer) {
 		this.myproxyServer = myproxyServer;

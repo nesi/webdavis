@@ -33,13 +33,28 @@ public class AuthorizationProcessor {
 	protected long nonceSecret=this.hashCode() ^ System.currentTimeMillis();
 	private DavisConfig davisConfig;
 	
-	private AuthorizationProcessor(){
+	protected AuthorizationProcessor(){
 		connectionPool=new HashMap<String, DavisSession>();
 		davisConfig=DavisConfig.getInstance();
 	}
 	public static AuthorizationProcessor getInstance(){
 		if (self==null){
-			self=new AuthorizationProcessor();
+			if (DavisConfig.getInstance().getAuthClass()!=null){
+				try {
+					self=(AuthorizationProcessor) Class.forName(DavisConfig.getInstance().getAuthClass()).newInstance();
+					Log.log(Log.DEBUG, DavisConfig.getInstance().getAuthClass()+" init'ed.");
+				} catch (InstantiationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IllegalAccessException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			if (self==null) self=new AuthorizationProcessor();
 		}
 		return self;
 	}
@@ -73,7 +88,7 @@ public class AuthorizationProcessor {
 		return login(null, sharedToken, commonName, shibSessionID);
 	}
 
-    private GSSCredential myproxyLogin(String user, char[] password, String host)
+    protected GSSCredential myproxyLogin(String user, char[] password, String host)
     {
         Log.log(Log.DEBUG,"logging in with myproxy: "+ host);
         if (host==null||host.equals("")){
@@ -170,16 +185,14 @@ public class AuthorizationProcessor {
                         if(gssCredential == null)
                             return null;
 					}
-                    else if(idpName.equals("arcs")){
-                        gssCredential = myproxyLogin(user, password, davisConfig.getARCSMyProxyServer());
-                        if(gssCredential == null)
-                            return null;
-                    }
                     else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
 						// using irods/srb users to login
 						gssCredential = null;
 					}else if (isExtendedAuthScheme(idpName)){
 						// use extenede authe scheme, need to return gssCredential
+						gssCredential = this.processExtendedAuthScheme(idpName, user, password, domain, serverName, defaultResource);
+                        if(gssCredential == null)
+                            return null;
 					}else{
 						IdP idp = null;
 						SLCSClient client;
@@ -547,8 +560,13 @@ public class AuthorizationProcessor {
 		}
 		return session;
 	}
-	private boolean isExtendedAuthScheme(String schemeName){
+	protected boolean isExtendedAuthScheme(String schemeName){
 		// need to add config/code/script for customized auth scheme, e.g. salt
 		return false;
+	}
+	protected GSSCredential processExtendedAuthScheme(String schemeName,
+			String user, char[] password, String domain, String serverName,
+			String defaultResource){
+		return null;
 	}
 }
