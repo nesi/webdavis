@@ -104,8 +104,15 @@ public class AuthorizationProcessor {
         {
             GSSCredential gssCredential = mp.get(null,getRequest);
             if (gssCredential == null) {
+            	Log.log(Log.DEBUG,"can't get gssCredential from myproxy: "+ host);
                 return null;
             }
+            try {
+				Log.log(Log.DEBUG,"gssCredential: "+ gssCredential.getName().toString());
+			} catch (GSSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
             return gssCredential;
         }
         catch(MyProxyException mpe)
