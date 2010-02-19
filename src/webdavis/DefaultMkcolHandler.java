@@ -42,6 +42,7 @@ public class DefaultMkcolHandler extends AbstractHandler {
             HttpServletResponse response, DavisSession davisSession)
                 throws ServletException, IOException {
         RemoteFile file = getRemoteFile(request, davisSession);
+        response.setContentType("text/html; charset=\"utf-8\"");
         if (file.exists()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;

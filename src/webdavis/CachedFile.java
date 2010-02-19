@@ -2,6 +2,8 @@ package webdavis;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
@@ -12,6 +14,8 @@ public class CachedFile extends RemoteFile {
 	private long lastModified;
 	private boolean canWrite;
 	private String canonicalPath;
+	private HashMap<String, ArrayList<String>> metadata;
+	
 	
 	public CachedFile(RemoteFileSystem rfs, String path, String filename)
 			throws NullPointerException {
@@ -96,5 +100,13 @@ public class CachedFile extends RemoteFile {
 
 	public void setCanonicalPath(String canonicalPath) {
 		this.canonicalPath = canonicalPath;
+	}
+	
+	public void setMetadata(HashMap<String, ArrayList<String>> metadata) {
+		this.metadata = metadata;
+	}
+	
+	public HashMap<String, ArrayList<String>> getMetadata() {
+		return metadata;
 	}
 }

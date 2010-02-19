@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -153,7 +154,11 @@ public class DefaultGetHandler extends AbstractHandler {
 
     private PropertiesBuilder propertiesBuilder;
     private String defaultUIHTMLContent;
-
+	private SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
+	private CachedFile[] fileList = null;
+//	private String lastRequestSignature = "";
+//	private String lastSortString = "";
+	
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         propertiesBuilder = new DefaultPropertiesBuilder();
@@ -172,7 +177,8 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         // Load UI html into a string so that subsequent requests can use that directly
         defaultUIHTMLContent = loadUI(UIHTMLLocation);
-    }
+    	dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
+   }
 
     private String loadUI(String fileName) {
     	
@@ -205,7 +211,35 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         super.destroy();
     }
+
+    private boolean sortAscending = true;
+    private String sortField = "name";
     
+	Comparator<Object> comparator = new Comparator<Object>() {
+		public int compare(Object file1, Object file2) {
+			
+			if (sortField.equals("name")) { // File name column
+				if (((GeneralFile)file1).isDirectory() && !((GeneralFile)file2).isDirectory()) // Keep directories separate from files
+					return -1*(sortAscending?1:-1);
+				if (!((GeneralFile)file1).isDirectory() && ((GeneralFile)file2).isDirectory())
+					return (sortAscending?1:-1);
+				return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()))*(sortAscending?1:-1);
+			} else
+			if (sortField.equals("size")) { 
+				if (((GeneralFile)file1).isDirectory() && !((GeneralFile)file2).isDirectory()) // Keep directories separate from files
+					return -1*(sortAscending?1:-1);
+				if (!((GeneralFile)file1).isDirectory() && ((GeneralFile)file2).isDirectory())
+					return (sortAscending?1:-1);
+				return (new Long(((GeneralFile)file1).length()).compareTo(new Long(((GeneralFile)file2).length())))*(sortAscending?1:-1);
+			} else
+			if (sortField.equals("date")) { 
+				return (new Long(((GeneralFile)file1).lastModified()).compareTo(new Long(((GeneralFile)file2).lastModified())))*(sortAscending?1:-1);
+			} 
+
+			return 0; // ###TBD comparator for metadata
+		}     			
+	};
+	
     /**
      * Services requests which use the HTTP GET method.
      * This implementation retrieves the content for non-collection resources,
@@ -228,6 +262,7 @@ public class DefaultGetHandler extends AbstractHandler {
      */
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
+ //System.err.println("======================================================request="+request);
     	String url=getRemoteURL(request,getRequestURL(request),getRequestURICharset());
     	if (url.startsWith("/dojoroot")){
     		writeFile(url,request,response);
@@ -236,7 +271,9 @@ public class DefaultGetHandler extends AbstractHandler {
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         
-        if (!file.exists()) { // File doesn't exist
+        if (!file.exists() 
+   || file.getName().equals("noaccess")     		
+        ) { // File doesn't exist
             Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost.");
             try {
             	response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
@@ -271,6 +308,111 @@ public class DefaultGetHandler extends AbstractHandler {
         }
         if (!file.isFile()) { // Directory
         	Log.log(Log.DEBUG, "#### Time before creating dynamic html: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
+        	String method = request.getParameter("method");
+        	if (method != null && method.equals("dojoquery")) {  // Dojo QueryReadStore request (ie ajax directory listing)
+    			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem) {
+    				Log.log(Log.ERROR, "dojoquery method not implemented for SRB");
+    				return;
+    			}
+
+        		// Request is like ?method=dojoquery&name=*&start=0&count=30&sort=name
+        		String sort = request.getParameter("sort");
+        		if (sort != null) {
+        			sortField = sort;
+        			sortAscending = true;
+        			if (sort.startsWith("-")) {
+        				sortAscending = false;
+        				sortField = sort.substring(1);
+        			}
+        		}
+        		String s = request.getParameter("start");
+        		int start = 0;
+        		if (s != null)
+        			start = Integer.parseInt(s);
+        		s = request.getParameter("count"); 
+        		int count = 0;
+        		if (s != null)
+        			count = Integer.parseInt(s);
+//        		String requestSignature = "name="+file.getPath()+"method="+method+"start="+start+"count="+count;
+//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^request="+requestSignature);     		
+//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastrequest="+lastRequestSignature);
+//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^sort="+sort);
+//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastsort="+lastSortString);
+
+//       			if (!requestSignature.equals(lastRequestSignature) || (sort == null || sort.equals(lastSortString))) {
+//       System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^loading");
+        			fileList = FSUtilities.getIRODSCollectionDetails(file, false); // Only fetch new listing if not sort request
+//       			}
+//        		lastRequestSignature = requestSignature;
+//        		lastSortString = sort;
+        		boolean emptyDir = (fileList.length == 0);
+        		if (!emptyDir)
+        			Arrays.sort((Object[])fileList, comparator);
+        		
+    			json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+1+(emptyDir?1:0)))+",");
+    			json.append(escapeJSONArg("items")+":[\n");
+    			for (int i = start; i < start+count; i++) {
+    				if (i >= fileList.length+1)
+    					break;
+					if (i > start) 
+						json.append(",\n");
+    				if (i == 0) {
+	    				json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
+						      	+"\"date\":{\"value\":\"0\",\"type\":\"top\"},"
+						      	+"\"size\":{\"size\":\"0\",\"type\":\"top\"},"
+						      	+"\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
+	    				continue;
+    				}
+					String type = fileList[i-1].isDirectory() ? "d" : "f";
+					json.append("{\"name\":{\"name\":"+escapeJSONArg(fileList[i-1].getName())+",\"type\":"+escapeJSONArg(type)+"},"
+						      	+"\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
+						      	+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
+						      	+"\"metadata\":{\"values\":[");
+				
+					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
+					if (metadata != null) {
+						json.append("\n");
+						String[] names = metadata.keySet().toArray(new String[0]);
+						for (int j = 0; j < names.length; j++) {
+							if (j > 0) json.append(",\n");
+							String name = names[j];
+							ArrayList<String> values = metadata.get(name);
+							for (int k = 0; k < values.size(); k++) {
+								if (k > 0) json.append(",\n");
+								json.append("    {"+escapeJSONArg("name")+":"+escapeJSONArg(name)+","+escapeJSONArg("value")+":"+escapeJSONArg(values.get(k))+"}");
+							}
+						}
+					}
+					json.append("]");
+					if (metadata != null)
+						json.append("\n    ");
+					json.append(",\"type\":"+escapeJSONArg(type)+"}}");
+				}
+    			if (emptyDir) {
+    				boolean filtered = false;
+    				json.append(",\n{\"name\":{\"name\":\""+(filtered?"(No matches)":"(Directory is empty)")+"\",\"type\":\"bottom\"},"
+					      	+"\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
+					      	+"\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
+					      	+"\"metadata\":{\"value\":\"\",\"type\":\"bottom\"}}");
+    			}
+				json.append("\n]}");
+				ServletOutputStream op = null;
+				try {
+					 op = response.getOutputStream();
+				} catch (EOFException e) {
+					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
+					return;
+				}
+				byte[] buf = json.toString().getBytes();
+				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
+                response.setContentType("text/json; charset=\"utf-8\"");
+				op.write(buf);
+				op.flush();
+				op.close();
+             
+                Log.log(Log.DEBUG, "#### Time after creating dynamic json: "+(new Date().getTime()-Davis.profilingTimer.getTime()));
+                return;
+        	}
         	String format = request.getParameter("format");
         	if (format != null && format.equals("json")) {  // List directory contents as JSON
         		//GeneralFile[] fileList = file.listFiles();
@@ -282,8 +424,6 @@ public class DefaultGetHandler extends AbstractHandler {
 //        		};
 //        		Arrays.sort((Object[])fileList, comparator);
     			json.append("{\n"+escapeJSONArg("items")+":[\n");
-				SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
-				dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));  			
     			for (int i = 0; i < fileList.length; i++) {
 					if (i > 0) 
 						json.append(",\n");
@@ -300,6 +440,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				}
 				byte[] buf = json.toString().getBytes();
 				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
+                response.setContentType("text/json; charset=\"utf-8\"");
 				op.write(buf);
 				op.flush();
 				op.close();

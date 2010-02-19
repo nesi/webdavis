@@ -108,6 +108,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
 		//StringBuffer str = new StringBuffer();
 		StringBuffer json = new StringBuffer();
+        response.setContentType("text/json; charset=\"utf-8\"");
 		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
