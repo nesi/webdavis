@@ -23,6 +23,7 @@ import javax.servlet.ServletOutputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -702,7 +703,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("\n]}");
+		} else if (method.equalsIgnoreCase("logout")) { 
+			// Not useful at the moment because the browser caches username/password and establishes a new session automatically.
+			HttpSession session = request.getSession(true);
+			session.invalidate(); 
+			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
 		}
+		
 		ServletOutputStream op = null;
 		try {
 			 op = response.getOutputStream();
