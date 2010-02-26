@@ -979,6 +979,12 @@
 			});
 		}
 
+		function validateUploadForm() {
+			if (dojo.byId("uploadTextField").value.length == 0) 
+				return false;
+			return true;
+		}
+
 		function uploadFile(){ 		
 			dojo.html.set(dojo.byId('uploadStatusField'), "Uploading...");
 			uploadInProgress = true;
@@ -1517,14 +1523,14 @@
 	</div>
 </div>		
 <div dojoType="dijit.Dialog" id="dialogUplaod" jsId="dialogUpload" title="Upload">
- 	<form id="uploadForm" enctype="multipart/form-data" name="uploadTest" method="post">
+ 	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return validateUploadForm();">
    		File to upload:
-   		<input id="uploadTextField" type="file" name="uploadFileName" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); uploadFile();}"/>
+   		<input id="uploadTextField" type="file" name="uploadFileName" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
  	</form>
 	<div id="uploadStatusField"></div>
 	<br/>
 	<div style="text-align: right;">
-		<button type="button" id="uploadStartButton" onclick="enableButton('uploadStartButton', false); uploadFile();">Upload</button> 
+		<button type="button" id="uploadStartButton" onclick="enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();">Upload</button> 
 		<button type="button" id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
 	</div>
 </div>					
