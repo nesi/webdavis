@@ -47,15 +47,16 @@
 		#listingGrid .dojoxGridRow {background: white;}
 		#listingGrid .dojoxGridRowSelected {background: #C9D8E9;}
 		#listingGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
-		#listingGrid {border-bottom:solid; border-width:1px; border-color:lightgray;}
+		#listingGrid {border-bottom:solid; border-width:1px; border-color:lightgrey;}
 		#listingGrid .dojoxGridMasterHeader {background:white;} /* These 2 are to make the left listingTable border disappear */
 		#listingGrid .dojoxGridMasterView {background:white;}
 	</style>	
-	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
-	<script type="text/javascript">
+<!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
+	<!--<script type="text/javascript" src="http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js"></script>-->
+	<script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
+    <script type="text/javascript">
     	dojo.require("dojox.grid.DataGrid");
     	dojo.require("dojo.data.ItemFileWriteStore");
-    	dojo.require("dojo.data.ItemFileReadStore");
     	dojo.require("dojox.data.QueryReadStore");
     	dojo.require("dijit.form.Button");
     	dojo.require("dijit.form.CheckBox");
@@ -74,6 +75,7 @@
 
 		dojo.addOnLoad(function() {
 //			showDebug();
+			initVariables();
 			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
 			initDynamicObjects();
 //			gotoDirectory(escape("<parameter url/>"), false);
@@ -132,103 +134,147 @@
 	
 		var currentDirectory = "";
  
-		var metadataLayout = ("<parameter servertype/>" == 'irods') ? 
-	    	[{
-				defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
-				rows: [
-        			{field: "name", width: "150px", name: "Name", editable: true},
-        			{field: "value", width: "auto", name: "Value", editable: true},
-        			{field: "unit", width: "50px", name: "Unit", editable: true}
-        	]}] : 
-    	    [{
-				defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
-				rows: [
-					{field: "name", width: "150px", name: "Name", editable: true},
-					{field: "value", width: "auto", name: "Value", editable: true}
-			]}];
-
-    	var permissionsLayout = ("<parameter servertype/>" == 'irods') ?
-    		[
-    		 	{field: "username", width: "200px", name: "Username"},
-        		{field: "permission", width: "auto", name: "Permission"}
-        	] :
-        	[
-        		{field: "username", width: "200px", name: "Username"},
-        		{field: "domain", width: "200px", name: "Domain"},
-        		{field: "permission", width: "auto", name: "Permission"}
-        	];
-    
-    	var replicasLayout = [
-    			{field: "resource", width: "150px", name: "Resource"},
-     			{field: "number", width: "auto", name: "Replica Number"}
-    		];
-    
-    	var listingLayout = [
-            	{field: "name", width: "50%", name: "Name", formatter: gridFormatFile, styles: "text-align: left;"},
-            	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
-            	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
-            	{field: "metadata", width: "15%", name: " ", formatter: gridFormatMetadata, hidden: false}/*,
-            	{field: "id", width: "0%", name: " ", hidden: true}*/
-            ];
-       
-		var metadataStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-		var permissionsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-		var domainsStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-		var usersStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
-		var replicasStore = new dojo.data.ItemFileWriteStore({data: {items:[]}});
+		var metadataLayout;
+    	var permissionsLayout;
+    	var replicasLayout;
+    	var listingLayout;
+		var metadataStore;
+		var permissionsStore;
+		var domainsStore;
+		var usersStore;
+		var replicasStore;		
+		var listingStore;
 		
-		var listingStore = new dojox.data.QueryReadStore({url:escape("<parameter url/>")+"?method=dojoquery",
-			directory:escape("<parameter url/>"),
-			lastURL:escape("<parameter url/>")+"?method=dojoquery",
-			addToHistory:false,
-			_fetchItems:function(request, fetchHandler, errorHandler) {
-				// Assign custom handlers for listingStore's ajax call to Davis server. newFetchHandler is invoked by _xhrFetchHandler
-				// (which is supplied to the ajax call by super._fetchItems) for a successful call. newErrorHandler is invoked by the 
-				// ajax call for a failure http code.
-				var oldErrorHandler = errorHandler;
-				var newErrorHandler = function(errorData, requestObject) {
-					alert("Failed to fetch directory details for "+listingStore.directory+": "+errorMessage("get", errorData.status, ""));
-					// revert store's url cos the request failed
-					// Only needed for dojo < 1.4.1
-					listingGrid._pending_requests[request.start] = false; // Indicate this fetch is complete
-					if (listingStore.lastURL != listingStore.url) // If directory changed, clear selections
-						checkAll(false);
-					listingStore.url = listingStore.lastURL;
-					refreshDisplay(false);
-					cursorBusy(false);
-					if (oldErrorHandler) 
-						return oldErrorHandler(errorData, requestObject);
-				}
-				arguments[2] = newErrorHandler;
-				var oldFetchHandler = fetchHandler;
-				var newFetchHandler = function(items, requestObject, numRows) {
-					cursorBusy(false);
-					if (oldFetchHandler) 
-						return oldFetchHandler(items, requestObject, numRows);
-				}
-				arguments[1] = newFetchHandler;
-				cursorBusy(true);
-				return this.inherited("_fetchItems", arguments);
-			},
-			_xhrFetchHandler:function(data, request, fetchHandler, errorHandler) {
-				// This is only called by a successful ajax call
-//				alert("_xhrFetchHandler: data="+ data);
-				setCurrentDirectory(listingStore.directory);
-				if (listingStore.addToHistory)
-					addToHistory(listingStore.directory);
-				var result = this.inherited("_xhrFetchHandler", arguments);
-				if (listingStore.lastURL != listingStore.url || firstRender) { // If directory changed, clear selections
-					checkAll(false);
-					listingStore.lastURL = listingStore.url;
-					refreshDisplay(true);
-					firstRender = false;
-				} else
-					refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
-				return result;
-			}
-		});
+		function initVariables() {
+			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
+		    	[{
+					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
+					rows: [
+	        			{field: "name", width: "150px", name: "Name", editable: true},
+	        			{field: "value", width: "auto", name: "Value", editable: true},
+	        			{field: "unit", width: "50px", name: "Unit", editable: true}
+	        	]}] : 
+	    	    [{
+					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
+					rows: [
+						{field: "name", width: "150px", name: "Name", editable: true},
+						{field: "value", width: "auto", name: "Value", editable: true}
+				]}];
 
-		var uploadInProgress = false;
+	    	permissionsLayout = ("<parameter servertype/>" == 'irods') ?
+	    		[
+	    		 	{field: "username", width: "200px", name: "Username"},
+	        		{field: "permission", width: "auto", name: "Permission"}
+	        	] :
+	        	[
+	        		{field: "username", width: "200px", name: "Username"},
+	        		{field: "domain", width: "200px", name: "Domain"},
+	        		{field: "permission", width: "auto", name: "Permission"}
+	        	];
+	    
+	    	replicasLayout = [
+	    			{field: "resource", width: "150px", name: "Resource"},
+	     			{field: "number", width: "auto", name: "Replica Number"}
+	    		];
+	    
+	    	listingLayout = [
+	            	{field: "name", width: "50%", name: "Name", formatter: gridFormatFile, styles: "text-align: left;"},
+	            	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
+	            	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
+	            	{field: "metadata", width: "15%", name: " ", formatter: gridFormatMetadata, hidden: false}
+	            ];
+		    	
+			resetMetadataStore();
+			resetPermissionsStore();
+			resetDomainsStore();
+			resetUsersStore();
+			resetReplicasStore();
+
+			listingStore = new dojox.data.QueryReadStore({url:escape("<parameter url/>")+"?method=dojoquery",
+				directory:escape("<parameter url/>"),
+				lastURL:escape("<parameter url/>")+"?method=dojoquery",
+				addToHistory:false,
+				_fetchItems:function(request, fetchHandler, errorHandler) {
+					// Assign custom handlers for listingStore's ajax call to Davis server. newFetchHandler is invoked by _xhrFetchHandler
+					// (which is supplied to the ajax call by super._fetchItems) for a successful call. newErrorHandler is invoked by the 
+					// ajax call for a failure http code.
+					var oldErrorHandler = errorHandler;
+					var newErrorHandler = function(errorData, requestObject) {
+						alert("Failed to fetch directory details for "+listingStore.directory+": "+errorMessage("get", errorData.status, ""));
+						// revert store's url cos the request failed
+						// Only needed for dojo < 1.4.1
+						listingGrid._pending_requests[request.start] = false; // Indicate this fetch is complete
+						if (listingStore.lastURL != listingStore.url) // If directory changed, clear selections
+							checkAll(false);
+						listingStore.url = listingStore.lastURL;
+						refreshDisplay(false);
+						cursorBusy(false);
+						if (oldErrorHandler) 
+							return oldErrorHandler(errorData, requestObject);
+					}
+					arguments[2] = newErrorHandler;
+					var oldFetchHandler = fetchHandler;
+					var newFetchHandler = function(items, requestObject, numRows) {
+						cursorBusy(false);
+						if (oldFetchHandler) 
+							return oldFetchHandler(items, requestObject, numRows);
+					}
+					arguments[1] = newFetchHandler;
+					cursorBusy(true);
+					return this.inherited("_fetchItems", arguments);
+				},
+				_xhrFetchHandler:function(data, request, fetchHandler, errorHandler) {
+					// This is only called by a successful ajax call
+	//				alert("_xhrFetchHandler: data="+ data);
+					setCurrentDirectory(listingStore.directory);
+					if (listingStore.addToHistory)
+						addToHistory(listingStore.directory);
+					// Next line prevents a null node problem for Firefox in listingStore._xhrFetchHandler - second last line
+					// Not necessary? Also - causes problem in Chrome!
+				//	listingGrid.focus.focusHeader(); 
+					var result = this.inherited("_xhrFetchHandler", arguments);
+					if (listingStore.lastURL != listingStore.url || firstRender) { // If directory changed, clear selections
+						checkAll(false);
+						listingStore.lastURL = listingStore.url;
+						refreshDisplay(true);
+						firstRender = false;
+					} else
+						refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
+					return result;
+				}
+			});
+			listingGrid.setStore(listingStore);
+		}
+
+		function resetPermissionsStore() {
+			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
+			permissionGrid.setStructure(permissionsLayout);	
+			permissionGrid.setStore(permissionsStore);	
+		}
+		
+		function resetMetadataStore() {
+			metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
+			metadataGrid.setStructure(metadataLayout);
+			metadataGrid.setStore(metadataStore);
+		}
+		
+		function resetReplicasStore() { 
+			replicasStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
+			replicasGrid.setStructure(replicasLayout);  
+			replicasGrid.setStore(replicasStore);  
+		}
+		
+		function resetDomainsStore() { 
+			domainsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
+			var domainForm = dijit.byId('formDomain');
+			if (domainForm != null)
+				domainForm.store = domainsStore;
+		}
+
+		function resetUsersStore() { 
+			usersStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
+			formUsername.store = usersStore;
+		}
 		
 		function addOption(selectName, value, text, title) {
     		var option = document.createElement('option');
@@ -361,7 +407,6 @@
 			// createDir to be called. So I'm not sure whether IE8 does or doesn't already have an onKeyPress action!
 			dojo.connect(directoryInputBox, 'onKeyPress', function(e) { 
 				if (e.keyCode == dojo.keys.ENTER) {
-//debug("Enter");
 					createDirectory();
 				}
 			});
@@ -416,15 +461,6 @@
     			if (this.domNode != null)
     				columnMenu.oldUnReplace(destroy);
     		}
-    /*		for (var i = 0; i < listingGrid.layout.cells.length; i++) {
-    debug("oldfocus="+listingGrid.layout.cells[i].view.focus);
-    		
-    			listingGrid.layout.cells[i].view.oldFocus = listingGrid.layout.cells[i].view.focus;
-    			listingGrid.layout.cells[i].view.focus = function() {
-    				debug(">"+listingGrid.layout.cells[i].view.hiddenFocusNode);
-    		//		listingGrid.layout.cells[i].view.oldFocus();
-    			}
-    		}*/
 		}
 		
 		function displayMetadataIsDefined(location) {
@@ -532,21 +568,6 @@
 				case 412: 	return "destination already exists";
 				default: 	return message;
 			}
-		}
-		
-		function resetPermissionsStore() {
-			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
-			permissionGrid.setStore(permissionsStore);	
-		}
-		
-		function resetMetadataStore() {
-			metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
-			metadataGrid.setStore(metadataStore);
-		}
-		
-		function resetReplicasStore() { 
-			replicasStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
-			replicasGrid.setStore(replicasStore);  
 		}
 		
 		var cursorCount = 0;	// Depth of cursor busy requests
@@ -985,6 +1006,8 @@
 			return true;
 		}
 
+		var uploadInProgress = false;
+		
 		function uploadFile(){ 		
 			dojo.html.set(dojo.byId('uploadStatusField'), "Uploading...");
 			uploadInProgress = true;
@@ -1504,7 +1527,7 @@
 		function debugButtonHandler() {
 			//gotoDirectory(getCurrentDirectory()+"blah");
 			//logout();
-			debug("dojo version: "+dojo.version);
+			alert("dojo version: "+dojo.version);
 		}
 	</script>
 </head>
