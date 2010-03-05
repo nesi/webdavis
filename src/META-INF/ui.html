@@ -246,6 +246,68 @@
 			listingGrid.setStore(listingStore);
 		}
 
+		function initConnects() {
+			// I've seen strange behaviour for IE8 where it's like two key presses register so the second causes a failure
+			// saying dir already exists. Disabling the following fixed it, but then later hitting Enter didn't cause
+			// createDir to be called. So I'm not sure whether IE8 does or doesn't already have an onKeyPress action!
+			dojo.connect(directoryInputBox, 'onKeyPress', function(e) { 
+				if (e.keyCode == dojo.keys.ENTER) {
+					createDirectory();
+				}
+			});
+			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
+				if (e.keyCode == dojo.keys.ENTER) {
+					rename(getFirstCheckedItem(), escape(dojo.byId('renameInputBox').value));
+				}
+			});
+			dojo.connect(listingGrid, 'onClick', function(e) {refreshDisplay(false)});
+    		dojo.connect(listingGrid, 'onHeaderClick', function(e){
+    			checkAll(false); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
+    		});
+		}
+		
+		function initWidgets() {
+    		if ("<parameter servertype/>" == 'srb') {
+            	addOption('formPerm', 'all', 'all', 'all');
+            	addOption('formPerm', 'w', 'write', 'write');
+            	addOption('formPerm', 'r', 'read', 'read');
+            	addOption('formPerm', 'n', 'null', 'null');
+            	addOption('formPerm', 'c', 'curate', 'curate');
+            	addOption('formPerm', 't', 'annotate', 'annotate');
+        	} else {
+            	addOption('formPerm', 'all', 'read and write', 'own');
+            	addOption('formPerm', 'w', 'write only', 'modify object');
+            	addOption('formPerm', 'r', 'read only', 'read object');
+            	addOption('formPerm', 'n', 'no access', 'null');
+        	}
+    		listingGrid.setSortIndex(0, true);
+    		listingGrid.onCanSelect = function(inRowIndex){
+    			if (!listingStore)
+    				return false;
+    			if (inRowIndex == 0) // Can't select ... Parent Directory row
+    				return false;
+				if (inRowIndex == listingStore._numRows-1) { // If last row
+					if (listingStore._numRows > 2)  // Can select last row if dir is definitely not empty - there won't be a "dir empty" row
+						return true;
+				 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
+					// dir listing with more than a page's worth of items. 
+					// If 0 or 1 item, should be safe to call getValue to check the row's type.
+    				var name = listingStore.getValue(listingGrid.getItem(inRowIndex), "name"); 
+    				if (name.type == "bottom")
+    					return false;
+    				return true;
+				}
+    		};
+    		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
+    		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
+    		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
+    		columnMenu.oldUnReplace = columnMenu.unReplace;
+    		columnMenu.unReplace = function(destroy) {
+    			if (this.domNode != null)
+    				columnMenu.oldUnReplace(destroy);
+    		}
+		}
+		
 		function resetPermissionsStore() {
 			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
 			permissionGrid.setStructure(permissionsLayout);	
@@ -350,13 +412,13 @@
 			var escapedFilename = escapeFilename(""+value.name);
 			var escapedFileref = escape(""+value.name);
 			if (value.type == "top" ) // "... Parent Directory"
-				return '<a class="link" onclick="gotoParentDirectory(); return false" href="'+getCurrentDirectory()+'/..">'+escapedFilename+'</td>';
+				return '<a class="link" onclick="gotoParentDirectory(); return false" href="'+getCurrentDirectory()+'/..">'+escapedFilename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
 				return '<i>'+escapedFilename+'</i>';
 			if (value.type == "d") 
-				return '<a class="darklink" onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapedFileref+'\', true); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename;
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" style="onclick="gotoDirectory(getCurrentDirectory()+\'/'+escapedFileref+'\', true); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 			else 
-				return '<a class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapedFileref+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename;
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="window.open(getCurrentDirectory()+\'/'+escapedFileref+'\'); return false" href="'+getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 		}
 		
 		function gridFormatDate(value) {
@@ -369,6 +431,7 @@
 			if (value.type == "top" || value.type == "bottom" || value.type == "d") // Static row or directory?
 				return "";
 			return '<small><small>'+humanReadable(value.size)+'</small></small>';
+//			return new dijit.form.TextBox({value:"blah blah blah blah blah blah", onClick:"alert('click');"});
 		}
 		
 		function gridFormatMetadata(value) {
@@ -399,68 +462,6 @@
 				}
 			}		
 			return '<small><small>'+html+'</small></small>';
-		}
-		
-		function initConnects() {
-			// I've seen strange behaviour for IE8 where it's like two key presses register so the second causes a failure
-			// saying dir already exists. Disabling the following fixed it, but then later hitting Enter didn't cause
-			// createDir to be called. So I'm not sure whether IE8 does or doesn't already have an onKeyPress action!
-			dojo.connect(directoryInputBox, 'onKeyPress', function(e) { 
-				if (e.keyCode == dojo.keys.ENTER) {
-					createDirectory();
-				}
-			});
-			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
-				if (e.keyCode == dojo.keys.ENTER) {
-					rename(getFirstCheckedItem(), escape(dojo.byId('renameInputBox').value));
-				}
-			});
-			dojo.connect(listingGrid, 'onClick', function(e) {refreshDisplay(false)});
-    		dojo.connect(listingGrid, 'onHeaderClick', function(e){
-    			checkAll(false); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
-    		});
-		}
-		
-		function initWidgets() {
-    		if ("<parameter servertype/>" == 'srb') {
-            	addOption('formPerm', 'all', 'all', 'all');
-            	addOption('formPerm', 'w', 'write', 'write');
-            	addOption('formPerm', 'r', 'read', 'read');
-            	addOption('formPerm', 'n', 'null', 'null');
-            	addOption('formPerm', 'c', 'curate', 'curate');
-            	addOption('formPerm', 't', 'annotate', 'annotate');
-        	} else {
-            	addOption('formPerm', 'all', 'read and write', 'own');
-            	addOption('formPerm', 'w', 'write only', 'modify object');
-            	addOption('formPerm', 'r', 'read only', 'read object');
-            	addOption('formPerm', 'n', 'no access', 'null');
-        	}
-    		listingGrid.setSortIndex(0, true);
-    		listingGrid.onCanSelect = function(inRowIndex){
-    			if (!listingStore)
-    				return false;
-    			if (inRowIndex == 0) // Can't select ... Parent Directory row
-    				return false;
-				if (inRowIndex == listingStore._numRows-1) { // If last row
-					if (listingStore._numRows > 2)  // Can select last row if dir is definitely not empty - there won't be a "dir empty" row
-						return true;
-				 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
-					// dir listing with more than a page's worth of items. 
-					// If 0 or 1 item, should be safe to call getValue to check the row's type.
-    				var name = listingStore.getValue(listingGrid.getItem(inRowIndex), "name"); 
-    				if (/*name.type == "top" ||*/ name.type == "bottom")
-    					return false;
-    				return true;
-				}
-    		};
-    		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
-    		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
-    		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
-    		columnMenu.oldUnReplace = columnMenu.unReplace;
-    		columnMenu.unReplace = function(destroy) {
-    			if (this.domNode != null)
-    				columnMenu.oldUnReplace(destroy);
-    		}
 		}
 		
 		function displayMetadataIsDefined(location) {
@@ -1741,8 +1742,7 @@
 	    </table>
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="center" style="border: 0px solid blue;">
-	<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" headerMenu="gridMenu"></div> 
-	<!--	<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" ></div>--> 
+		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" singleClickEdit="true"></div> 
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
 		<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
