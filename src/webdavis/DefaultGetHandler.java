@@ -271,9 +271,7 @@ public class DefaultGetHandler extends AbstractHandler {
         RemoteFile file = getRemoteFile(request, davisSession);
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         
-        if (!file.exists() 
-   || file.getName().equals("noaccess")     		
-        ) { // File doesn't exist
+        if (!file.exists() || file.getName().equals("noaccess")) { // File doesn't exist
             Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost.");
             try {
             	response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
@@ -687,7 +685,7 @@ public class DefaultGetHandler extends AbstractHandler {
         else if (bufferSize > 5242880)
             bufferSize = 5242880;
         byte[] buf = new byte[bufferSize];
-        int count;
+        int count = 0;
         ServletOutputStream output = response.getOutputStream();
         int interval=request.getSession().getMaxInactiveInterval();
         long startTime=new Date().getTime();
@@ -719,17 +717,29 @@ public class DefaultGetHandler extends AbstractHandler {
             }
             if (input != null)
             	input.close();
-        }else{
+        } else {
             RemoteFileInputStream input = null;
             try {
-            if (file.getFileSystem() instanceof SRBFileSystem) {
-            	input = new SRBFileInputStream((SRBFile)file);
-            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-            	Log.log(Log.DEBUG, "file can read?:"+file.canRead());
-            	input = new IRODSFileInputStream((IRODSFile)file);
-            }
-//            try{
-                while ((count = input.read(buf)) >0) {
+            	if (file.getFileSystem() instanceof SRBFileSystem) 
+            		input = new SRBFileInputStream((SRBFile)file);
+            	else 
+            		if (file.getFileSystem() instanceof IRODSFileSystem) {
+            			Log.log(Log.DEBUG, "file can read?:"+file.canRead());
+            			input = new IRODSFileInputStream((IRODSFile)file);
+            		}
+                while (true) {
+                	try {
+                		count = input.read(buf);
+                	} catch (IOException e) {
+                		if (e.getMessage().endsWith("-19000")) { // Quick way to detect IRODS permission failed
+                			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "You do not have permission to access this resource.");
+                			response.flushBuffer();
+                			return;
+                		}
+                		throw(e);
+                	}
+                	if (count <= 0)
+                		break;
                 	//inactive interval - "idle" time < 1 min, increase inactive interval
                 	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
                 		//increase interval by 5 mins
@@ -740,7 +750,7 @@ public class DefaultGetHandler extends AbstractHandler {
                     output.write(buf, 0, count);
                 }
                 output.flush();
-            }catch (Exception e){
+            } catch (Exception e){
             	Log.log(Log.WARNING, "remote peer is closed: "+e.getMessage());
             }
             if (input != null)
