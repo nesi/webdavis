@@ -732,7 +732,7 @@ public class DefaultGetHandler extends AbstractHandler {
                 		count = input.read(buf);
                 	} catch (IOException e) {
                 		if (e.getMessage().endsWith("-19000")) { // Quick way to detect IRODS permission failed
-                			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "You do not have permission to access this resource.");
+                			response.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this resource.");
                 			response.flushBuffer();
                 			return;
                 		}
