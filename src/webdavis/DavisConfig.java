@@ -68,6 +68,7 @@ public class DavisConfig {
 	private String organisationName;
 	private String organisationLogo;
 	private String organisationLogoGeometry;
+	private String organisationSupport;
 	private String favicon;
 	
 	private String dojoroot;
@@ -254,6 +255,7 @@ public class DavisConfig {
 		organisationName = getInitParameter("organisation-name", "Davis");
 		organisationLogo = getInitParameter("organisation-logo", "");
 		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "");
+		organisationSupport = getInitParameter("organisation-support", "user support at your organisation");
 		favicon = getInitParameter("favicon", "");		
 		dojoroot = getInitParameter("dojoroot", "");
         String s = getInitParameter("maximumXmlRequest");
@@ -485,6 +487,10 @@ public class DavisConfig {
 	
 	public String getOrganisationLogo() {
 		return organisationLogo;
+	}
+	
+	public String getOrganisationSupport() {
+		return organisationSupport;
 	}
 	
 	public String getFavicon() {

@@ -530,12 +530,14 @@ public class FSUtilities {
 
 	public static RemoteFile[] getIRODSCollectionDetails(RemoteFile file){
 		
-		return getIRODSCollectionDetails(file, true);
+		return getIRODSCollectionDetails(file, true, false, false);
 	}
 
-	public static CachedFile[] getIRODSCollectionDetails(RemoteFile collection, boolean sort){
+	public static CachedFile[] getIRODSCollectionDetails(RemoteFile collection, boolean sort, boolean getFiles, boolean getMetadata){
 		
-		HashMap<String, FileMetadata> metadata = getIRODSCollectionMetadata(collection);
+		HashMap<String, FileMetadata> metadata = null;
+		if (getMetadata)
+			metadata = getIRODSCollectionMetadata(collection);
 		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
 		MetaDataCondition conditionsFile[] = {
 			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
@@ -573,7 +575,9 @@ public class FSUtilities {
 			}     			
 		};
 		try {
-			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, MAX_QUERY_NUM);
+			MetaDataRecordList[] fileDetails = null;
+			if (getFiles)
+				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, MAX_QUERY_NUM);
     		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, MAX_QUERY_NUM, Namespace.DIRECTORY);
 
     		if (fileDetails == null) fileDetails = new MetaDataRecordList[0];
@@ -582,37 +586,34 @@ public class FSUtilities {
     		CachedFile[] dirs = new CachedFile[dirDetails.length];
     		int i = 0;
     		Log.log(Log.DEBUG, "file num:"+fileDetails.length);
-    		for (MetaDataRecordList p:fileDetails) {
-    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
-    			files[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
-    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
-    			files[i].setDirFlag(false);
-    			if (metadata.containsKey(path)) 
-    				files[i].setMetadata(metadata.get(path).getMetadata());
-//    			int permission=Integer.parseInt((String)p.getValue(IRODSMetaDataSet.FILE_ACCESS_TYPE));
-//    			if (permission>=1120)
+    		if (getFiles)
+	    		for (MetaDataRecordList p:fileDetails) {
+	    			files[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+	    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
+	    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
+	    			files[i].setDirFlag(false);
     				files[i].setCanWriteFlag(true);
-//    			else
-//    				files[i].setCanWriteFlag(false);
-    			i++;
-    		}
+    				if (getMetadata) {
+    					String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+    					if (metadata.containsKey(path)) 
+    						files[i].setMetadata(metadata.get(path).getMetadata());
+    				}
+	    			i++;
+	    		}
     		if (sort)
     			Arrays.sort((Object[])files, comparator);
     		Log.log(Log.DEBUG, "collection num:"+dirDetails.length);
     		i = 0;
     		for (MetaDataRecordList p:dirDetails) {
-    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
     			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(),collection.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
     			dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
     			dirs[i].setDirFlag(true);
-    			if (metadata.containsKey(path)) 
-    				dirs[i].setMetadata(metadata.get(path).getMetadata());
-//    			int permission=Integer.parseInt((String)p.getValue(IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE));
-//    			if (permission>=1120)
     			dirs[i].setCanWriteFlag(true);
-//    			else
-//    				files[i].setCanWriteFlag(false);
+    			if (getMetadata) {
+    				String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+    				if (metadata.containsKey(path)) 
+    					dirs[i].setMetadata(metadata.get(path).getMetadata());
+    			}
     			i++;
     		}
     		if (sort)

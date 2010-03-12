@@ -312,7 +312,9 @@ public class DefaultGetHandler extends AbstractHandler {
     				Log.log(Log.ERROR, "dojoquery method not implemented for SRB");
     				return;
     			}
-
+        		boolean directoriesOnly = false;
+        		if (request.getParameter("directoriesonly") != null)
+        			directoriesOnly = true;
         		// Request is like ?method=dojoquery&name=*&start=0&count=30&sort=name
         		String sort = request.getParameter("sort");
         		if (sort != null) {
@@ -339,10 +341,11 @@ public class DefaultGetHandler extends AbstractHandler {
 
 //       			if (!requestSignature.equals(lastRequestSignature) || (sort == null || sort.equals(lastSortString))) {
 //       System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^loading");
-        			fileList = FSUtilities.getIRODSCollectionDetails(file, false); // Only fetch new listing if not sort request
+        			fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly); // Only fetch new listing if not sort request
 //       			}
 //        		lastRequestSignature = requestSignature;
 //        		lastSortString = sort;
+        			
         		boolean emptyDir = (fileList.length == 0);
         		if (!emptyDir)
         			Arrays.sort((Object[])fileList, comparator);
