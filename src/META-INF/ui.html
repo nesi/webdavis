@@ -355,6 +355,8 @@
     			if (this.domNode != null)
     				columnMenu.oldUnReplace(destroy);
     		}
+    		dialogMetadata.closeButtonNode.title = "Close";
+    		dialogPermissions.closeButtonNode.title = "Close";
 		}
 		
 		function resetPermissionsStore() {
@@ -1594,6 +1596,15 @@
 <body class="tundra">
 <script>dojo.back.init();</script>
 
+
+<!--<script src="http://www.java.com/js/deployJava.js"></script>
+<script> 
+    var attributes = { code:'HelloWorld.class', archive:'/applets.jar',  width:150, height:30} ; 
+    var parameters = {} ; 
+    deployJava.runApplet(attributes, parameters, '1.4'); 
+</script>-->
+
+
 <!-- -------------- Dialogs -------------- -->
 <div dojoType="dijit.Dialog" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
@@ -1604,7 +1615,7 @@
 		<button type="button" onclick="dialogCreateDir.hide()">Cancel</button>
 	</div>
 </div>		
-<div dojoType="dijit.Dialog" id="dialogUplaod" jsId="dialogUpload" title="Upload">
+<div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload">
  	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return validateUploadForm();">
    		File to upload:
    		<input id="uploadTextField" type="file" name="uploadFileName" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
@@ -1618,11 +1629,11 @@
 </div>					
 <div dojoType="dijit.Dialog" jsId="dialogDelete" title="Delete Items">
     <div id="dialogDeleteBulk"></div>
-    Are you sure you want to delete the selected items and their contents?
+    Are you sure you want to send the selected items and their contents to the trash folder?
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="deleteFiles(listingStore.getCurrentDirectory());">Delete</button>
-		<button type="button" onclick="dialogDelete.hide()">Cancel</button>
+		<button type="button" onclick="deleteFiles(listingStore.getCurrentDirectory());">Yes</button>
+		<button type="button" onclick="dialogDelete.hide()">No</button>
 	</div>
 </div>					
 <div dojoType="dijit.Dialog" jsId="dialogRename" title="Rename">
