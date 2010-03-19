@@ -622,7 +622,7 @@
 								case "delete": return message;
 								default: return "refused";
 						  	}
-				case 404:   return "This collection does not exist or you have no permission to access it.";
+				case 404:   return "This collection does not exist or you don't have permission to access it.";
 				case 405:	return "path already exists";
 				case 412: 	return "destination already exists";
 				default: 	return message;
@@ -1517,9 +1517,9 @@
 		
 		var enableDebugButton = false;
 		function debugButtonHandler() {
-			//gotoDirectory(listingStore.getCurrentDirectory()+"blah");
+			listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//logout();
-			alert("dojo version: "+dojo.version);
+			//alert("dojo version: "+dojo.version);
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -1552,14 +1552,18 @@
 				// (which is supplied to the ajax call by super._fetchItems) for a successful call. newErrorHandler is invoked by the 
 				// ajax call for a failure http code.
 				var oldErrorHandler = errorHandler;
+				var directory = this.directory;
+				var onFetchError = this.onFetchError;
+				var url = this.url;
+				var lastURL = this.lastURL;
 				var newErrorHandler = function(errorData, requestObject) {
-					alert("Failed to fetch directory details for "+this.directory+": "+errorMessage("get", errorData.status, ""));
+					alert("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, ""));
 					// revert store's url cos the request failed
 					// Only needed for dojo < 1.4.1
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete
-					if (this.onFetchError)
-						this.onFetchError();
-					this.url = this.lastURL;
+					if (onFetchError)
+						onFetchError();
+					url = lastURL;
 					cursorBusy(false);
 					if (oldErrorHandler) 
 						return oldErrorHandler(errorData, requestObject);
