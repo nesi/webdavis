@@ -467,7 +467,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		                		fileName = fileName.substring(j+1);
 	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 	                        boolean existsCurrently = file.exists();
-	                        if (existsCurrently && !file.isFile()) {
+	                        if (existsCurrently /*&& !file.isFile()*/) {
 	                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
 	            	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("File already exists")));
 	                        } else {	                        
