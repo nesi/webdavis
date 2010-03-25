@@ -256,7 +256,7 @@ public class AuthorizationProcessor {
 						if (gssCredential == null) {
 							return null;
 						}
-						Log.log(Log.DEBUG,"Got porxy from idp: "+gssCredential.getName().toString());
+						Log.log(Log.DEBUG,"Got proxy from idp: "+gssCredential.getName().toString());
 					}
 				} catch (GeneralSecurityException e) {
 					// TODO Auto-generated catch block
