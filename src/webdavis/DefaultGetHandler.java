@@ -264,7 +264,8 @@ public class DefaultGetHandler extends AbstractHandler {
                     throws ServletException, IOException {
  //System.err.println("======================================================request="+request);
     	String url=getRemoteURL(request,getRequestURL(request),getRequestURICharset());
-    	if (url.startsWith("/dojoroot")){
+    	if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")){
+    		Log.log(Log.DEBUG, "Returning contents of "+url);
     		writeFile(url,request,response);
     		return;
     	}
@@ -272,7 +273,7 @@ public class DefaultGetHandler extends AbstractHandler {
         Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
         
         if (!file.exists() || file.getName().equals("noaccess")) { // File doesn't exist
-            Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost.");
+            Log.log(Log.WARNING, "File "+file.getAbsolutePath()+" does not exist or server connection lost. "+(file.exists()?" Jargon says 'noaccess'":""));
             try {
             	response.sendError(HttpServletResponse.SC_NOT_FOUND,"File "+file.getAbsolutePath()+" does not exist.");
 //response.setStatus(HttpServletResponse.SC_NOT_FOUND, "File does not exist");
