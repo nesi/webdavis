@@ -7,6 +7,7 @@
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
   <property name="web.home"      value="${basedir}/WebContent"/>
+  <property name="test.home"     value="${basedir}/test"/>
 
   <property name="compile.debug"       value="true"/>
   <property name="compile.deprecation" value="false"/>
@@ -289,8 +290,13 @@
 	<delete file="${dist.home}/${app.name}-${app.version}-bin.tar"/>
   </target>
 	
-  <target name="test" depends="dist">
-  	 <move file="${dist.home}/${app.name}.war" tofile="${dist.home}/${app.name}test.war"/>
+  <!-- <target name="test" depends="dist">
+  	 <move file="${dist.home}/${app.name}.war" tofile="${dist.home}/${app.name}test.war"/> -->
+  <target name="test">
+	<exec executable="xterm"> <!-- Can't find another way to allow user input to stdin -->
+  	  <arg value="-e" />
+	  <arg value="${test.home}/litmus" />
+	</exec>
   </target>
 	
   <target name="snapshot" depends="dist">
