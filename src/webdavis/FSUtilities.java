@@ -530,7 +530,7 @@ public class FSUtilities {
 
 	public static RemoteFile[] getIRODSCollectionDetails(RemoteFile file){
 		
-		return getIRODSCollectionDetails(file, true, false, false);
+		return getIRODSCollectionDetails(file, true, true, false);
 	}
 
 	public static CachedFile[] getIRODSCollectionDetails(RemoteFile collection, boolean sort, boolean getFiles, boolean getMetadata){

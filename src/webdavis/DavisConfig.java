@@ -2,6 +2,8 @@ package webdavis;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
@@ -26,6 +28,9 @@ public class DavisConfig {
 	 * interpret request URIs.
 	 */
 	public static final String REQUEST_URI_CHARSET = "request-uri.charset";
+	
+	public static final String VERSION_FILE = "/WEB-INF/davis.version";
+	
 	private String defaultDomain;
 
 	private String realm;
@@ -77,6 +82,7 @@ public class DavisConfig {
     
     private String displayMetadata;
     private String authClass;
+    private String appVersion = "unknown";
 
 	public String getAuthClass() {
 		return authClass;
@@ -153,8 +159,20 @@ public class DavisConfig {
 		return s;
 	}
 	
+	public void readVersion(ServletConfig config) {
+
+	    try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(config.getServletContext().getResourceAsStream(VERSION_FILE)));
+			appVersion = reader.readLine();
+			reader.close();
+		} catch (IOException e) {
+        	System.err.println("WARNING: Failed to read application version file "+VERSION_FILE+": "+e);
+		}
+	}
+	
 	public void initConfig(ServletConfig config) {
 
+		readVersion(config);
 		String filesList = config.getInitParameter("config-files");
 		if (filesList != null) {
 			String[] configFileNames = filesList.split(" *, *");
@@ -515,5 +533,9 @@ public class DavisConfig {
 	
 	public String getDisplayMetadata() {
 		return displayMetadata;
+	}
+	
+	public String getAppVersion() {
+		return appVersion;
 	}
 }

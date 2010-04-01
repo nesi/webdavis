@@ -1,7 +1,7 @@
 <project name="DAVIS" default="dist" basedir=".">
 
   <property name="app.name"      value="davis"/>
-  <property name="app.version"   value="0.9.0"/>
+  <property name="app.version"   value="0.9.1"/>
   <property name="dojo.version"	 value="1.4.2"/>
   <property name="build.home"    value="${basedir}/build"/>
   <property name="dist.home"     value="${basedir}/dist"/>
@@ -238,6 +238,9 @@
   	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dijit"/>
   	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojox"/>
   	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}"/>
+  	
+  	<!-- Make davis.version -->
+  	<echo message="${app.version}" file="${web.home}/WEB-INF/davis.version"/>
   	
     <!-- Copy static content of this web application -->
     <copy todir="${build.home}">

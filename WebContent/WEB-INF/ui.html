@@ -63,6 +63,7 @@
     	dojo.require("dojo.data.ItemFileWriteStore");
     	dojo.require("dojox.data.QueryReadStore");
     	dojo.require("dijit.form.Button");
+    	dojo.require("dijit.Menu");
     	dojo.require("dijit.form.CheckBox");
     	dojo.require("dijit.Dialog");
 		dojo.require("dijit.form.TextBox");
@@ -453,6 +454,14 @@
 				'			<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>'+
 				'			<a title="Go to my home folder" onclick="listingStore.gotoDirectory(\'<parameter home/>\', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>'+
 				'			<a title="Go to my trash folder" onclick="listingStore.gotoDirectory(\'<parameter trash/>\', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>'+
+/*				'			<button dojoType="dijit.form.DropDownButton" iconClass="noteIcon">'+
+				'				<span>Drop Down</span>'+
+				'				<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">'+
+				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconCut" onClick="">Help</div>'+
+				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconCopy" onClick="">Report Bug</div>'+
+				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconPaste" onClick="">About</div>'+
+				'				</div>'+
+				'			</button>'+*/
 				'		</td>'+
 				'	</tr>'+
 				'</table>';
@@ -1517,9 +1526,9 @@
 		
 		var enableDebugButton = false;
 		function debugButtonHandler() {
-			listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
+			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//logout();
-			//alert("dojo version: "+dojo.version);
+			alert("app version: <parameter appversion/>");
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
