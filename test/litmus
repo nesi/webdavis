@@ -1,0 +1,9 @@
+#!/bin/bash 
+
+URL=https://data-dev.eresearchsa.edu.au/ARCSDEV/home/public
+
+LITMUS=/usr/local/bin/litmus
+
+read -r -p "username: " name
+read -p "password: " -s password
+$LITMUS "$URL" "$name" "$password"
