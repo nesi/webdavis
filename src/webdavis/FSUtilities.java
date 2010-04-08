@@ -40,28 +40,17 @@ public class FSUtilities {
 		MetaDataRecordList[] recordList = null;
 		Log.log(Log.DEBUG, "getiRODSUsernameByDN '"+dn+"' from "+fs);
 		try {
-			recordList = fs
-						.query(
-								new MetaDataCondition[] {
-										MetaDataSet
-										.newCondition(
-												IRODSMetaDataSet.USER_DN,
-												MetaDataCondition.EQUAL,
-												dn) 
-												},
-								new MetaDataSelect[] { MetaDataSet
-										.newSelection(IRODSMetaDataSet.USER_NAME) });
+			recordList = fs.query(new MetaDataCondition[]{MetaDataSet.newCondition(IRODSMetaDataSet.USER_DN, MetaDataCondition.EQUAL, dn)},
+								new MetaDataSelect[]{ MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME)});
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     	
-        if(recordList != null&&recordList.length>0) {
+        if(recordList != null&&recordList.length>0) 
             return (String)recordList[0].getValue(IRODSMetaDataSet.USER_NAME);
-        }
 
         return null;
-		
 	}
 	
 	 public static String[] getAvailableResource( SRBFileSystem fs ) throws IOException{
@@ -93,12 +82,12 @@ public class FSUtilities {
 	      };
 	      MetaDataSelect[] selects = {
 	        MetaDataSet.newSelection( SRBMetaDataSet.RESOURCE_NAME ) };
-	      rl = fs.query( conditions, selects );
+	      rl = fs.query(conditions, selects);
 
 	      if (rl == null) {
 	        //Same as above, just no zone
 	        //Metadata to determine available resources was added only after SRB3
-	        rl = fs.query( SRBMetaDataSet.RESOURCE_NAME );
+	        rl = fs.query(SRBMetaDataSet.RESOURCE_NAME);
 	        if ((rl == null) && (!userName.equals("public"))) {
 	          //if null then file does not exist (or is dir?)
 	          //public user never has resources, so can't commit files, so it doesn't matter.
@@ -224,26 +213,13 @@ public class FSUtilities {
     public static String[] convert(SRBFileSystem fs, String zoneName) {
 		MetaDataRecordList[] recordList = null;
 		try {
-			recordList = fs
-						.query(
-								new MetaDataCondition[] {
-								        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCESS_PRIVILEGE,
-								  	          MetaDataCondition.LIKE, "%write%" ),
-								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_NAME,
-								  	          MetaDataCondition.EQUAL, fs.getUserName()),
-								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_DOMAIN,
-								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
+			recordList = fs.query(new MetaDataCondition[]{MetaDataSet.newCondition(SRBMetaDataSet.RSRC_ACCESS_PRIVILEGE, MetaDataCondition.LIKE, "%write%" ),
+								  	    MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_NAME, MetaDataCondition.EQUAL, fs.getUserName()),
+								  	    MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_DOMAIN, MetaDataCondition.EQUAL, fs.getDomainName() ),
 //								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
-//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
-										
-										MetaDataSet
-										.newCondition(
-												SRBMetaDataSet.RSRC_OWNER_ZONE,
-												MetaDataCondition.EQUAL,
-												zoneName) 
-												},
-								new MetaDataSelect[] { MetaDataSet
-										.newSelection(SRBMetaDataSet.RESOURCE_NAME) });
+//								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),										
+										MetaDataSet.newCondition(SRBMetaDataSet.RSRC_OWNER_ZONE, MetaDataCondition.EQUAL, zoneName)},
+								new MetaDataSelect[]{MetaDataSet.newSelection(SRBMetaDataSet.RESOURCE_NAME)});
 			recordList = MetaDataRecordList.getAllResults(recordList);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -279,7 +255,7 @@ public class FSUtilities {
 		MetaDataSelect[] selects ={ MetaDataSet.newSelection( SRBMetaDataSet.USER_DOMAIN) };
 		MetaDataRecordList[] rl;
 		try {
-			rl = fs.query(conditions,selects);
+			rl = fs.query(conditions, selects);
 			if (rl != null) { 
 				for (int i=0;i<rl.length;i++) {
 					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
@@ -294,7 +270,7 @@ public class FSUtilities {
 										UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "public" ),
 		};
 		try {
-			rl = fs.query(conditions1,selects);
+			rl = fs.query(conditions1, selects);
 			if (rl != null) { 
 				for (int i=0;i<rl.length;i++) {
 					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
@@ -309,7 +285,7 @@ public class FSUtilities {
 						UserMetaData.USER_TYPE, MetaDataCondition.LIKE, "sysadmin" ),
 		};
 		try {
-			rl = fs.query(conditions1,selects);
+			rl = fs.query(conditions1, selects);
 			if (rl != null) { 
 				for (int i=0;i<rl.length;i++) {
 					if (!rl[i].getValue(SRBMetaDataSet.USER_DOMAIN).equals("home")&&!domains.contains(rl[i].getValue(SRBMetaDataSet.USER_DOMAIN))) domains.add((String) rl[i].getValue(SRBMetaDataSet.USER_DOMAIN));
@@ -345,7 +321,7 @@ public class FSUtilities {
 		};
 		MetaDataRecordList[] rl;
 		try {
-			rl = fs.query(conditions,selects);
+			rl = fs.query(conditions, selects);
 			if (rl != null) {
 				for (int i=0;i<rl.length;i++) {
 					usernames.add((String) rl[i].getValue(SRBMetaDataSet.USER_NAME));
@@ -371,11 +347,8 @@ public class FSUtilities {
 		MetaDataRecordList[] recordList = null;
 		Log.log(Log.DEBUG, "getUsernames  from "+fs);
 		try {
-			recordList = fs
-						.query(
-								new MetaDataSelect[] { MetaDataSet
-										.newSelection(IRODSMetaDataSet.USER_NAME),MetaDataSet
-										.newSelection(IRODSMetaDataSet.USER_ZONE) });
+			recordList = fs.query(new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME), 
+									MetaDataSet.newSelection(IRODSMetaDataSet.USER_ZONE)}, MAX_QUERY_NUM);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -384,18 +357,16 @@ public class FSUtilities {
     	String[] names;
         if(recordList != null) {
             names = new String[recordList.length];
-
-            for(int i=0; i<recordList.length; i++) {
+            for(int i = 0; i < recordList.length; i++) {
                 names[i] = (String)recordList[i].getValue(IRODSMetaDataSet.USER_NAME);
-                if (!recordList[i].getValue(IRODSMetaDataSet.USER_ZONE).equals(fs.getZone())) names[i] += "#"+(String)recordList[i].getValue(IRODSMetaDataSet.USER_ZONE);
+                if (!recordList[i].getValue(IRODSMetaDataSet.USER_ZONE).equals(fs.getZone())) 
+                	names[i] += "#"+(String)recordList[i].getValue(IRODSMetaDataSet.USER_ZONE);
             }
         } else {
             names = new String[]{};
         }
         Arrays.sort(names);
-
         return names;
-
 	}
 	
 	public static String[] getFilePermissions(IRODSFile file){
@@ -403,9 +374,7 @@ public class FSUtilities {
 		IRODSFileSystem fs=(IRODSFileSystem) file.getFileSystem();
 		Log.log(Log.DEBUG, "getFilePermissions for "+file+" from "+fs);
 		try {
-			recordList = fs
-						.query(
-								new MetaDataCondition[] {
+			recordList = fs.query(new MetaDataCondition[] {
 //								        MetaDataSet.newCondition( IRODSMetaDataSet.FILE_NAME,
 //								  	          MetaDataCondition.LIKE, file.getName() ),
 //								  	        MetaDataSet.newCondition( IRODSMetaDataSet.,
@@ -414,18 +383,9 @@ public class FSUtilities {
 //								  	          MetaDataCondition.EQUAL, fs.getDomainName() ),
 //								  	        MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE,
 //								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
-										
-										MetaDataSet
-										.newCondition(
-												IRODSMetaDataSet.FILE_NAME,
-												MetaDataCondition.LIKE,
-												file.getName()) 
-												},
-								new MetaDataSelect[] { MetaDataSet
-										.newSelection(IRODSMetaDataSet.USER_NAME),
-										MetaDataSet
-										.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)
-										});
+									MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, file.getName())},
+								new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME),
+												MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, MAX_QUERY_NUM);
 //			recordList = fs.query(MetaDataSet
 //					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
 
