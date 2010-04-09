@@ -54,6 +54,18 @@
 		#destinationGrid .dojoxGridRow {background: white;}
 		#destinationGrid .dojoxGridRowSelected {background: #C9D8E9;}
 		#destinationGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
+		.questionIcon {
+      		background-image: url('images/help.png'); 
+      		width: 32px;
+      		height: 32px;
+      	}
+      	.iconButton .dijitButtonNode {
+			background: white;
+			color: white;
+			padding: 0px;
+			border: 0px solid black;
+      	}
+      	.dijitArrowButtonInner {display:none;}
 	</style>	
 <!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
 	<!--<script type="text/javascript" src="http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js"></script>-->
@@ -74,6 +86,7 @@
 		dojo.require("dojo.back");
 		dojo.require("dijit.layout.BorderContainer");
 		dojo.require("dojox.widget.PlaceholderMenuItem");
+		dojo.require("dijit.form.DropDownButton");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -450,19 +463,11 @@
     			dynamicHTML;
 			if (enableDebugButton)
       			html += '<td><table class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="debugButtonHandler()"><tr><td>DEBUG</td></tr></table></td>';  			
-    		html += '	<td>&nbsp;'+
-				'			<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>'+
-				'			<a title="Go to my home folder" onclick="listingStore.gotoDirectory(\'<parameter home/>\', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>'+
-				'			<a title="Go to my trash folder" onclick="listingStore.gotoDirectory(\'<parameter trash/>\', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>'+
-/*				'			<button dojoType="dijit.form.DropDownButton" iconClass="noteIcon">'+
-				'				<span>Drop Down</span>'+
-				'				<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">'+
-				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconCut" onClick="">Help</div>'+
-				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconCopy" onClick="">Report Bug</div>'+
-				'					<div dojoType="dijit.MenuItem" iconClass="dijitEditorIcon dijitEditorIconPaste" onClick="">About</div>'+
-				'				</div>'+
-				'			</button>'+*/
-				'		</td>'+
+    		html += //'	<td>&nbsp;'+
+//				'			<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>'+
+//				'			<a title="Go to my home folder" onclick="listingStore.gotoDirectory(\'<parameter home/>\', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>'+
+//				'			<a title="Go to my trash folder" onclick="listingStore.gotoDirectory(\'<parameter trash/>\', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>'+
+//				'		</td>'+
 				'	</tr>'+
 				'</table>';
 			dojo.html.set(dojo.byId("sessionButtonsHTML"), html);
@@ -1761,6 +1766,23 @@
 		</tr>
 	</table>
 </div>
+<div dojoType="dijit.Dialog" jsId="dialogAbout" title="About" onCancel="setCursor(false, true)">
+	<table>
+		<tr>
+			<td width="300px">
+				<div autoHeight="10" structure="replicasLayout" dojoType="dojox.grid.DataGrid" jsId="replicasGrid" selectionMode="single" loadingMessage="loading" autoHeight="true" onClick="listingStore.refreshDisplay(false)"></div>
+			</td>
+			<td valign="top">
+				<button type="button" style="width:100%" onclick="dialogAbout.hide()">Close</button><br/>	
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div id="replicasStatusField" style="font-size:small"></div>
+			</td>
+		</tr>
+	</table>
+</div>
 <div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
 <div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
 </div>
@@ -1779,11 +1801,23 @@
 				<td align="right" valign="top">
 					<table border="0" cellspacing="0" cellpadding="0">
 						<tr class="text">
-	        				<td align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+	        				<td colspan="0" align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
 	        			</tr>
 	        			<tr>
 	        				<td id="sessionButtonsHTML" align="right"></td>
-	        			</tr>
+	        				<td>
+	        					<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>
+								<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>
+								<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>
+	        				</td>
+	        				<td>
+ 	        					<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
+									<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">
+										<div dojoType="dijit.MenuItem" onClick="window.open('http://projects.arcs.org.au/trac/davis/wiki/HowTo/Browser')">Help</div>
+										<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
+									</div>
+								</button>        				
+	        				</td>
 	        		</table>
 	        		<!-- <table id="mode_buttons" border="0" cellspacing="4" cellpadding="0">
 	        			<tr class="text">
