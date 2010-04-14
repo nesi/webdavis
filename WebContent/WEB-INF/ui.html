@@ -348,6 +348,9 @@
     				return true;
 				}
     		};
+    		// Re-enable the browser's native right click context menu in listingGrid's cells
+    		listingGrid.onRowContextMenu = function(e) {
+    		};
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
