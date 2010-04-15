@@ -43,7 +43,7 @@ public class DavisConfig {
 
 	private boolean acceptBasic;
 
-	private boolean enableBasic;
+//	private boolean enableBasic;
 
 	private boolean closeOnAuthenticate;
 
@@ -74,6 +74,7 @@ public class DavisConfig {
 	private String organisationLogo;
 	private String organisationLogoGeometry;
 	private String organisationSupport;
+	private String helpURL;
 	private String favicon;
 	
 	private String dojoroot;
@@ -102,10 +103,16 @@ public class DavisConfig {
 		return self;
 	}
 
-	public String getInitParameter(String key) {
-		
-		return getInitParameter(key, null);
+	public String getInitParameter(String key, boolean trim) {
+		String s = getInitParameter(key, null);
+		if (s != null && trim)
+			s = s.trim();
+		return s;
 	}
+//	public String getInitParameter(String key) {
+//		
+//		return getInitParameter(key, null);
+//	}
 	
 	public String getInitParameter(String key, String defaultValue) {
 		
@@ -208,79 +215,80 @@ public class DavisConfig {
 		}
 		findDynamicObjects();
 
-		String requestUriCharset = getInitParameter(REQUEST_URI_CHARSET, "UTF-8");
+		String requestUriCharset = getInitParameter(REQUEST_URI_CHARSET, "UTF-8").trim();
 //		if (requestUriCharset == null)
 //			requestUriCharset = "UTF-8";
 		
 		String logProviderName = Log.class.getName();
-		String logProvider = getInitParameter(logProviderName);
+		String logProvider = getInitParameter(logProviderName, true);
 		//System.out.println(logProviderName);
 		//System.out.println(logProvider);
 		if (logProvider != null) 
 			try {
 				System.setProperty(logProviderName, logProvider);
 			} catch (Exception ignore) {}
-		String logThreshold = getInitParameter(logProviderName+ ".threshold");
+		String logThreshold = getInitParameter(logProviderName+ ".threshold", true);
 		if (logThreshold != null) 
 			try {
 				System.setProperty(logProviderName + ".threshold", logThreshold);
 			} catch (Exception ignore) {}
 		
 		// requestUriCharset = "ISO-8859-1";
-		contextBase = getInitParameter("contextBase");
-		contextBaseHeader = getInitParameter("contextBaseHeader");
+		contextBase = getInitParameter("contextBase", true);
+		contextBaseHeader = getInitParameter("contextBaseHeader", true);
 		config.getServletContext().setAttribute(REQUEST_URI_CHARSET, requestUriCharset);
-		String acceptBasic = getInitParameter("acceptBasic");
+		String acceptBasic = getInitParameter("acceptBasic", true);
 		this.acceptBasic = Boolean.valueOf(acceptBasic).booleanValue();
-		String enableBasic = "true";
-		this.enableBasic = (enableBasic == null) || Boolean.valueOf(enableBasic).booleanValue();
-		String closeOnAuthenticate = getInitParameter("closeOnAuthenticate");
+//		String enableBasic = "true";
+//		this.enableBasic = (enableBasic == null) || Boolean.valueOf(enableBasic).booleanValue();
+		String closeOnAuthenticate = getInitParameter("closeOnAuthenticate", true);
 		this.closeOnAuthenticate = Boolean.valueOf(closeOnAuthenticate).booleanValue();
-		String alwaysAuthenticate = getInitParameter("alwaysAuthenticate");
+		String alwaysAuthenticate = getInitParameter("alwaysAuthenticate", true);
 		this.alwaysAuthenticate = (alwaysAuthenticate == null) || Boolean.valueOf(alwaysAuthenticate).booleanValue();
-		insecureConnection = getInitParameter("insecureConnection", "block");
+		insecureConnection = getInitParameter("insecureConnection", "block").trim();
 
-		defaultIdp = getInitParameter("default-idp");
-		serverType = getInitParameter("server-type");
-		myproxyServer = getInitParameter("myproxy-server");
-		defaultDomain = getInitParameter("default-domain");
+		defaultIdp = getInitParameter("default-idp", true);
+		serverType = getInitParameter("server-type", true);
+		myproxyServer = getInitParameter("myproxy-server", true);
+		defaultDomain = getInitParameter("default-domain", true);
 		serverPort = 1247;
 		try {
-			serverPort = Integer.parseInt(getInitParameter("server-port"));
+			serverPort = Integer.parseInt(getInitParameter("server-port", true));
 		} catch (Exception _e) {}
-		jargonDebug = getInitParameter("jargon.debug", "0");
-		serverName = getInitParameter("server-name");
-		defaultResource = getInitParameter("default-resource");
-		zoneName = getInitParameter("zone-name");
-		proxyHost = getInitParameter("proxy-host");
-		proxyPort = getInitParameter("proxy-port");
-		proxyUsername = getInitParameter("proxy-username");
-		proxyPassword = getInitParameter("proxy-password");
+		jargonDebug = getInitParameter("jargon.debug", "0").trim();
+		serverName = getInitParameter("server-name", true);
+		defaultResource = getInitParameter("default-resource", true);
+		zoneName = getInitParameter("zone-name", true);
+		proxyHost = getInitParameter("proxy-host", true);
+		proxyPort = getInitParameter("proxy-port", true);
+		proxyUsername = getInitParameter("proxy-username", true);
+		proxyPassword = getInitParameter("proxy-password", false);
 
-		sharedTokenHeaderName = getInitParameter("shared-token-header-name");
-		commonNameHeaderName = getInitParameter("cn-header-name");
-		adminCertFile = getInitParameter("admin-cert-file");
-		adminKeyFile = getInitParameter("admin-key-file");
-		String anonymousCredentials = getInitParameter("anonymousCredentials");
+		sharedTokenHeaderName = getInitParameter("shared-token-header-name", true);
+		commonNameHeaderName = getInitParameter("cn-header-name", true);
+		adminCertFile = getInitParameter("admin-cert-file", true);
+		adminKeyFile = getInitParameter("admin-key-file", true);
+		String anonymousCredentials = getInitParameter("anonymousCredentials", true);
 		if (anonymousCredentials != null && anonymousCredentials.length() > 0 && anonymousCredentials.indexOf(":") > 0) {
 			anonymousUsername = anonymousCredentials.split(":")[0];
 			anonymousPassword = anonymousCredentials.split(":")[1];
 		}
-		String anonymousCollectionString = getInitParameter("anonymousCollections");
+		String anonymousCollectionString = getInitParameter("anonymousCollections", true);
 		if (anonymousCollectionString != null && anonymousCollectionString.length() > 0) 
 			anonymousCollections = Arrays.asList(anonymousCollectionString.split(","));
-		realm = getInitParameter("authentication-realm", "Davis");
-		organisationName = getInitParameter("organisation-name", "Davis");
-		organisationLogo = getInitParameter("organisation-logo", "");
-		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "");
-		organisationSupport = getInitParameter("organisation-support", "user support at your organisation");
-		favicon = getInitParameter("favicon", "");		
-		dojoroot = getInitParameter("dojoroot", "");
-        String s = getInitParameter("maximumXmlRequest");
+		realm = getInitParameter("authentication-realm", "Davis").trim();
+		organisationName = getInitParameter("organisation-name", "Davis").trim();
+		organisationLogo = getInitParameter("organisation-logo", "").trim();
+		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "").trim();
+		organisationSupport = getInitParameter("organisation-support", "user support at your organisation").trim();
+		helpURL = getInitParameter("helpURL", "For help, please contact user support at your organisation").trim();
+		favicon = getInitParameter("favicon", "").trim();		
+		dojoroot = getInitParameter("dojoroot", "").trim();
+        String s = getInitParameter("maximumXmlRequest", true);
         maximumXmlRequest = (s != null) ? Long.parseLong(s) : 20000l;
         
-        displayMetadata = getInitParameter("displayMetadata", "");
-        authClass = getInitParameter("authClass");
+        displayMetadata = getInitParameter("displayMetadata", "").trim();
+        authClass = getInitParameter("authClass", true);
 	}
 
 	public String getDefaultDomain() {
@@ -331,13 +339,13 @@ public class DavisConfig {
 		this.acceptBasic = acceptBasic;
 	}
 
-	public boolean isEnableBasic() {
-		return enableBasic;
-	}
-
-	public void setEnableBasic(boolean enableBasic) {
-		this.enableBasic = enableBasic;
-	}
+//	public boolean isEnableBasic() {
+//		return enableBasic;
+//	}
+//
+//	public void setEnableBasic(boolean enableBasic) {
+//		this.enableBasic = enableBasic;
+//	}
 
 	public boolean isCloseOnAuthenticate() {
 		return closeOnAuthenticate;
@@ -509,6 +517,10 @@ public class DavisConfig {
 	
 	public String getOrganisationSupport() {
 		return organisationSupport;
+	}
+	
+	public String getHelpURL() {
+		return helpURL;
 	}
 	
 	public String getFavicon() {

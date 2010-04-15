@@ -164,7 +164,12 @@ public class DefaultDeleteHandler extends AbstractHandler {
 				result = result & ((IRODSFile)file).delete(true); 
 			} else {
 				Log.log(Log.DEBUG, "deleting - force:"+inTrash);
-				result = result & ((IRODSFile)file).delete(inTrash);
+				try {
+					result = result & ((IRODSFile)file).delete(inTrash);
+				} catch (NullPointerException e) { // Catch jargon bugs
+					Log.log(Log.WARNING,"Jargon threw a NullPointerException during delete: "+e);
+					result = false;
+				}
 			}
 		}
 		if (!result) Log.log(Log.WARNING,"Failed to delete file: "+file);

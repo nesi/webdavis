@@ -18,7 +18,7 @@ public class ARCSAuthorizationProcessor extends AuthorizationProcessor {
 			String user, char[] password, String domain, String serverName,
 			String defaultResource) {
 		if ("arcs".equalsIgnoreCase(schemeName)) {
-			return myproxyLogin(user, password, DavisConfig.getInstance().getInitParameter("arcs-myproxy-server"));
+			return myproxyLogin(user, password, DavisConfig.getInstance().getInitParameter("arcs-myproxy-server", true));
 		}
 		return super.processExtendedAuthScheme(schemeName, user, password, domain, serverName, defaultResource);
 	}
