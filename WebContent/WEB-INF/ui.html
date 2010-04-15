@@ -42,7 +42,7 @@
 		.linkImage{text-decoration:underline; color:#04E;}
    		.dojoxGrid-row-odd td {background:#e8f2ff;}
     	#metadataGrid {border: 1px solid #333; width: 400px; height: 300px;}
-		#permissionGrid {border: 1px solid #333; width: 600px; height: 200px;}
+		#permissionsGrid {border: 1px solid #333; width: 600px; height: 200px;}
 		#listingGrid .dojoxGridHeader .dojoxGridCell {background: #E8E8E8; font-size: 120%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
 		#listingGrid .dojoxGridRow {background: white;}
 		#listingGrid .dojoxGridRowSelected {background: #C9D8E9;}
@@ -197,7 +197,8 @@
 	    			{field: "resource", width: "150px", name: "Resource"},
 	     			{field: "number", width: "auto", name: "Replica Number"}
 	    		];
-	    
+
+		    listingLayoutMetadataField = 3; // This MUST be the layout row for "metadata" below
 	    	listingLayout = [
 	    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
 	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
@@ -208,8 +209,8 @@
 	    	        {field: "name", width: "50%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
 	    	    ];	
 
-	    	resetMetadataStore();
-			resetPermissionsStore();
+	    	resetMetadataStore(false);
+			resetPermissionsStore(false);
 			resetDomainsStore();
 			resetUsersStore();
 			resetReplicasStore();
@@ -361,6 +362,9 @@
     				return true;
 				}
     		};
+    		// Re-enable the browser's native right click context menu in listingGrid's cells
+    		listingGrid.onRowContextMenu = function(e) {
+    		};
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
@@ -373,13 +377,27 @@
     		dialogPermissions.closeButtonNode.title = "Close";
 		}
 		
-		function resetPermissionsStore() {
+		function resetPermissionsStore(fast) {
+			if (fast) {
+				if (permissionsGrid.rowCount == 0) 
+					return;
+				permissionsGrid.selection.selectRange(0, permissionsGrid.rowCount-1);
+				permissionsGrid.removeSelectedRows();
+				return;
+			}
 			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
-			permissionGrid.setStructure(permissionsLayout);	
-			permissionGrid.setStore(permissionsStore);	
+			permissionsGrid.setStructure(permissionsLayout);	
+			permissionsGrid.setStore(permissionsStore);	
 		}
 		
-		function resetMetadataStore() {
+		function resetMetadataStore(fast) {
+			if (fast) {
+				if (metadataGrid.rowCount == 0) 
+					return;
+				metadataGrid.selection.selectRange(0, metadataGrid.rowCount-1);
+				metadataGrid.removeSelectedRows();
+				return;
+			}
 			metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
 			metadataGrid.setStructure(metadataLayout);
 			metadataGrid.setStore(metadataStore);
@@ -571,9 +589,9 @@
   				}
 			}
 			if (title == null) 
-				listingLayout[3].hidden = true;
+				listingLayout[listingLayoutMetadataField].hidden = true;
 			else
-  				listingLayout[3].name = title;
+  				listingLayout[listingLayoutMetadataField].name = title;
 			listingGrid.setStructure(listingLayout);
 		}
 		
@@ -858,6 +876,7 @@
 		}
 		
 		function enableButton(button, enable) {
+			button = dojo.byId(button);
 			if (button != null)
 				button.disabled = !enable;
 		}
@@ -1121,7 +1140,7 @@
 
 		function rename(newName){
 			dialogRename.hide();
-			moveFiles(listingStore.getCurrentDirectory()+'/'+getFirstCheckedItem(), listingStore.getCurrentDirectory()+'/'+newName, true);
+			moveFiles(listingStore.getCurrentDirectory()+'/'+escape(getFirstCheckedItem()), listingStore.getCurrentDirectory()+'/'+newName, true);
 		}
 
 		function restoreFiles() {
@@ -1166,7 +1185,7 @@
 		function loadMetadataFromServer(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url,
+	    		url: url+"?method=metadata",
 	    		load: function(responseObject, ioArgs){	  
 		  				cursorBusy(false);
 						metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1184,11 +1203,10 @@
 
 		function getMetadata(batch){
 			var metadataURL = "";
-			if (batch) {
-//				loadMetadataFromServer(listingStore.getCurrentDirectory()+"?method=metadata");	// Default metadata is taken from current directory
-				resetMetadataStore();
-			} else {
-				metadataURL = listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=metadata";
+			if (batch) 
+				resetMetadataStore(true);
+			else {
+				metadataURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem());
 				loadMetadataFromServer(metadataURL);
 			}
 			dialogMetadata.attr("url", metadataURL);
@@ -1343,7 +1361,7 @@
 
 		function populatePermission(permissions){
 			permissionsStore = new dojo.data.ItemFileWriteStore({data: permissions});
-			permissionGrid.setStore(permissionsStore);
+			permissionsGrid.setStore(permissionsStore);
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
 					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset</button>");
@@ -1357,7 +1375,7 @@
 		function getPermissions(batch){
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
-				sourceURL = listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem(); 
+				sourceURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem()); 
 			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
@@ -1366,7 +1384,7 @@
 	        if (!batch)
 				getPermission(sourceURL+"?method=permission");
 			else 
-				resetPermissionsStore();
+				resetPermissionsStore(true);
 			dialogPermissions.show();
 		}
 
@@ -1408,11 +1426,11 @@
 		}
 
 		function getSelectedPermission(e){
-			formUsername.attr('displayedValue', ''+permissionGrid.getItem(e.rowIndex).username);
+			formUsername.attr('displayedValue', ''+permissionsGrid.getItem(e.rowIndex).username);
 	        if ("<parameter servertype/>" == 'srb') 
-	        	dojo.byId("formDomain").value = permissionGrid.getItem(e.rowIndex).domain;
+	        	dojo.byId("formDomain").value = permissionsGrid.getItem(e.rowIndex).domain;
 			for (var i = 0; i < dojo.byId("formPerm").options.length; i++){
-				if (dojo.byId("formPerm").options[i].title == permissionGrid.getItem(e.rowIndex).permission) 
+				if (dojo.byId("formPerm").options[i].title == permissionsGrid.getItem(e.rowIndex).permission) 
 					dojo.byId("formPerm").options[i].selected = true;
 				else
 					dojo.byId("formPerm").options[i].selected = false;
@@ -1423,6 +1441,7 @@
 			var checkedCount = checkedItemsCount();
 			if (checkedCount == 0)
 				return;
+			refreshButtons();
 			getPermissions(checkedCount > 1);				
 		}
 
@@ -1527,6 +1546,14 @@
 	  //  		handleAs: "json"
 	  		});
 
+		}
+
+		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
+		function getColumnMenu() {
+			result = listingGrid.inherited("getColumnTogglingItems", arguments);
+			if (listingLayout[listingLayoutMetadataField].hidden == true)
+				result.splice(listingLayoutMetadataField, 1);
+			return result;
 		}
 		
 		var enableDebugButton = true;
@@ -1715,7 +1742,7 @@
 	<table>
 		<tr>
 			<td valign="top">
-				<div style="width: 350px;" autoHeight="7" structure="permissionsLayout" dojoType="dojox.grid.DataGrid" id="permissionGrid" jsId="permissionGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
+				<div style="width: 350px;" autoHeight="7" structure="permissionsLayout" dojoType="dojox.grid.DataGrid" id="permissionsGrid" jsId="permissionsGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
 			</td>
 			<td valign="top">
 				<table>
@@ -1784,7 +1811,7 @@
 	</table>
 </div>
 <div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
-<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
 </div>
 
 
@@ -1878,7 +1905,7 @@
 	    </table>
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="center" style="border: 0px solid blue;">
-		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" headerMenu="gridMenu"></div> 
+ 		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'></div> 
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
 		<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
