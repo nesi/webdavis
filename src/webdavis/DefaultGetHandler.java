@@ -137,9 +137,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	private static final Timer TIMER = new Timer(true);
 
 	private final Map<String, TemplateTracker> templateMap = new HashMap<String, TemplateTracker>();
-
 	private final Map<Locale, Templates> defaultTemplates = new HashMap<Locale, Templates>();
-
 	private final Map<Locale, byte[]> configurations = new HashMap<Locale, byte[]>();
 
 	private String stylesheetLocation;
@@ -148,8 +146,8 @@ public class DefaultGetHandler extends AbstractHandler {
 
 	private PropertiesBuilder propertiesBuilder;
 	private String defaultUIHTMLContent;
-	private SimpleDateFormat dateFormat = new SimpleDateFormat(
-			"E, dd MMM yyyy HH:mm:ss z");
+	private String uiLoadDate = "";
+	private SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 	private CachedFile[] fileList = null;
 
 	// private String lastRequestSignature = "";
@@ -160,19 +158,16 @@ public class DefaultGetHandler extends AbstractHandler {
 		propertiesBuilder = new DefaultPropertiesBuilder();
 		propertiesBuilder.init(config);
 		stylesheetLocation = config.getInitParameter("directory.xsl");
-		if (stylesheetLocation == null) {
+		if (stylesheetLocation == null) 
 			stylesheetLocation = "/META-INF/directory.xsl";
-		}
-		configurationLocation = config
-				.getInitParameter("directory.configuration");
-		if (configurationLocation == null) {
+		configurationLocation = config.getInitParameter("directory.configuration");
+		if (configurationLocation == null) 
 			configurationLocation = "/META-INF/configuration.html";
-		}
 		UIHTMLLocation = config.getInitParameter("ui.html");
-		if (UIHTMLLocation == null) {
+		if (UIHTMLLocation == null) 
 			// UIHTMLLocation = "/META-INF/ui.html";
 			UIHTMLLocation = "/WEB-INF/ui.html";
-		}
+		
 		// Load UI html into a string so that subsequent requests can use that
 		// directly
 		defaultUIHTMLContent = loadUI(UIHTMLLocation);
@@ -194,6 +189,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		} catch (IOException e) {
 			Log.log(Log.CRITICAL, "Failed to read UI html file: " + e);
 		}
+		uiLoadDate = dateFormat.format(new Date());
 		return result;
 	}
 
@@ -218,39 +214,19 @@ public class DefaultGetHandler extends AbstractHandler {
 		public int compare(Object file1, Object file2) {
 
 			if (sortField.equals("name")) { // File name column
-				if (((GeneralFile) file1).isDirectory()
-						&& !((GeneralFile) file2).isDirectory()) // Keep
-																	// directories
-																	// separate
-																	// from
-																	// files
+				if (((GeneralFile) file1).isDirectory()	&& !((GeneralFile) file2).isDirectory()) // Keep directories separate from files
 					return -1 * (sortAscending ? 1 : -1);
-				if (!((GeneralFile) file1).isDirectory()
-						&& ((GeneralFile) file2).isDirectory())
+				if (!((GeneralFile) file1).isDirectory() && ((GeneralFile) file2).isDirectory())
 					return (sortAscending ? 1 : -1);
-				return (((GeneralFile) file1).getName().toLowerCase()
-						.compareTo(((GeneralFile) file2).getName()
-								.toLowerCase()))
-						* (sortAscending ? 1 : -1);
+				return (((GeneralFile) file1).getName().toLowerCase().compareTo(((GeneralFile) file2).getName().toLowerCase()))	* (sortAscending ? 1 : -1);
 			} else if (sortField.equals("size")) {
-				if (((GeneralFile) file1).isDirectory()
-						&& !((GeneralFile) file2).isDirectory()) // Keep
-																	// directories
-																	// separate
-																	// from
-																	// files
+				if (((GeneralFile) file1).isDirectory()	&& !((GeneralFile) file2).isDirectory()) // Keep directories separate from files
 					return -1 * (sortAscending ? 1 : -1);
-				if (!((GeneralFile) file1).isDirectory()
-						&& ((GeneralFile) file2).isDirectory())
+				if (!((GeneralFile) file1).isDirectory() && ((GeneralFile) file2).isDirectory())
 					return (sortAscending ? 1 : -1);
-				return (new Long(((GeneralFile) file1).length())
-						.compareTo(new Long(((GeneralFile) file2).length())))
-						* (sortAscending ? 1 : -1);
+				return (new Long(((GeneralFile) file1).length()).compareTo(new Long(((GeneralFile) file2).length()))) * (sortAscending ? 1 : -1);
 			} else if (sortField.equals("date")) {
-				return (new Long(((GeneralFile) file1).lastModified())
-						.compareTo(new Long(((GeneralFile) file2)
-								.lastModified())))
-						* (sortAscending ? 1 : -1);
+				return (new Long(((GeneralFile) file1).lastModified()).compareTo(new Long(((GeneralFile) file2).lastModified()))) * (sortAscending ? 1 : -1);
 			}
 
 			return 0; // ###TBD comparator for metadata
@@ -260,14 +236,11 @@ public class DefaultGetHandler extends AbstractHandler {
 	public void internalError(HttpServletResponse response, String message) {
 
 		try {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-					message);
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
 			response.flushBuffer();
 		} catch (IOException e) {
 			if (e.getMessage().equals("Closed"))
-				Log
-						.log(Log.WARNING,
-								"DefaultGetHandler.internalError: connection to server may have been lost.");
+				Log .log(Log.WARNING, "DefaultGetHandler.internalError: connection to server may have been lost.");
 		}
 		return;
 	}
@@ -294,14 +267,11 @@ public class DefaultGetHandler extends AbstractHandler {
 	 *             If an IO error occurs while handling the request.
 	 * 
 	 */
-	public void service(HttpServletRequest request,
-			HttpServletResponse response, DavisSession davisSession)
-			throws ServletException, IOException {
+	public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
 		// System.err.println(
 		// "======================================================request="
 		// +request);
-		String url = getRemoteURL(request, getRequestURL(request),
-				getRequestURICharset());
+		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
 			writeFile(url, request, response);
@@ -311,25 +281,18 @@ public class DefaultGetHandler extends AbstractHandler {
 		try {
 			file = getRemoteFile(request, davisSession);
 		} catch (NullPointerException e) {
-			Log.log(Log.CRITICAL,
-					"Caught a NullPointerException in DefaultGethandler.service. request="
-							+ request + " session=" + davisSession
+			Log.log(Log.CRITICAL, "Caught a NullPointerException in DefaultGethandler.service. request=" + request + " session=" + davisSession
 							+ "\nAborting request.");
 			internalError(response, "Jargon error in DefaultGethandler.service");
 			return;
 		}
-		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file
-				.getAbsolutePath());
+		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
 
-		if (!file.exists() || file.getName().equals("noaccess")) { // File
-																	// doesn't
-																	// exist
-			Log.log(Log.WARNING, "File " + file.getAbsolutePath()
-					+ " does not exist or server connection lost. "
+		if (!file.exists() || file.getName().equals("noaccess")) { // File doesn't exist
+			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or server connection lost. "
 					+ (file.exists() ? " Jargon says 'noaccess'" : ""));
 			try {
-				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File "
-						+ file.getAbsolutePath() + " does not exist.");
+				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " does not exist.");
 				// response.setStatus(HttpServletResponse.SC_NOT_FOUND,
 				// "File does not exist");
 				// ServletOutputStream output = response.getOutputStream();
@@ -339,8 +302,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				response.flushBuffer();
 			} catch (IOException e) {
 				if (e.getMessage().equals("Closed"))
-					Log.log(Log.WARNING, file.getAbsolutePath()
-							+ ": connection to server may have been lost.");
+					Log.log(Log.WARNING, file.getAbsolutePath() + ": connection to server may have been lost.");
 				throw (e);
 			}
 			return;
@@ -364,18 +326,11 @@ public class DefaultGetHandler extends AbstractHandler {
 			return;
 		}
 		if (!file.isFile()) { // Directory
-			Log.log(Log.DEBUG, "#### Time before creating dynamic html: "
-					+ (new Date().getTime() - Davis.profilingTimer.getTime()));
+			Log.log(Log.DEBUG, "#### Time before creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 			String method = request.getParameter("method");
-			if (method != null && method.equals("dojoquery")) { // Dojo
-																// QueryReadStore
-																// request (ie
-																// ajax
-																// directory
-																// listing)
+			if (method != null && method.equals("dojoquery")) { // Dojo QueryReadStore request (ie ajax directory listing)
 				if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem) {
-					Log.log(Log.ERROR,
-							"dojoquery method not implemented for SRB");
+					Log.log(Log.ERROR, "dojoquery method not implemented for SRB");
 					return;
 				}
 				boolean directoriesOnly = false;
@@ -400,29 +355,15 @@ public class DefaultGetHandler extends AbstractHandler {
 				int count = 0;
 				if (s != null)
 					count = Integer.parseInt(s);
-				// String requestSignature =
-				// "name="+file.getPath()+"method="+method
-				// +"start="+start+"count="+count;
-				// System.err.println(
-				// "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^request="
-				// +requestSignature);
-				// System.err.println(
-				// "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastrequest="
-				// +lastRequestSignature);
-				//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^sort="
-				// +sort);
-				// System.err.println(
-				// "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastsort="
-				// +lastSortString);
+				// String requestSignature = "name="+file.getPath()+"method="+method+"start="+start+"count="+count;
+				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^request="+requestSignature);
+				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastrequest="+lastRequestSignature);
+				//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^sort="+sort);
+				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastsort="+lastSortString);
 
-				// if (!requestSignature.equals(lastRequestSignature) || (sort
-				// == null || sort.equals(lastSortString))) {
+				// if (!requestSignature.equals(lastRequestSignature) || (sort == null || sort.equals(lastSortString))) {
 				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^loading");
-				fileList = FSUtilities.getIRODSCollectionDetails(file, false,
-						!directoriesOnly, !directoriesOnly); // Only fetch new
-																// listing if
-																// not sort
-																// request
+				fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly); // Only fetch new listing if not sort request
 				// }
 				// lastRequestSignature = requestSignature;
 				// lastSortString = sort;
@@ -431,47 +372,29 @@ public class DefaultGetHandler extends AbstractHandler {
 				if (!emptyDir)
 					Arrays.sort((Object[]) fileList, comparator);
 
-				json.append("{\n"
-						+ escapeJSONArg("numRows")
-						+ ":"
-						+ escapeJSONArg(""
-								+ (fileList.length + 1 + (emptyDir ? 1 : 0)))
-						+ ",");
+				json.append("{\n" + escapeJSONArg("numRows") + ":" + escapeJSONArg("" + (fileList.length + 1 + (emptyDir ? 1 : 0)))	+ ",");
 				json.append(escapeJSONArg("items") + ":[\n");
 				for (int i = start; i < start + count; i++) {
 					if (i >= fileList.length + 1)
 						break;
 					if (i > start)
 						json.append(",\n");
-					if (i == 0) {
-						json
-								.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
+					if (i == 0) {json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
 										+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
 										+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
 										+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
 						continue;
 					}
 					String type = fileList[i - 1].isDirectory() ? "d" : "f";
-					json.append("{\"name\":{\"name\":"
-							+ escapeJSONArg(fileList[i - 1].getName())
-							+ ",\"type\":"
-							+ escapeJSONArg(type)
-							+ "},"
-							+ "\"date\":{\"value\":"
-							+ escapeJSONArg(dateFormat.format(fileList[i - 1]
-									.lastModified())) + ",\"type\":"
-							+ escapeJSONArg(type) + "},"
-							+ "\"size\":{\"size\":"
-							+ escapeJSONArg("" + fileList[i - 1].length())
-							+ ",\"type\":" + escapeJSONArg(type) + "},"
+					json.append("{\"name\":{\"name\":" + escapeJSONArg(fileList[i - 1].getName()) + ",\"type\":" + escapeJSONArg(type) + "}"
+							+ ",\"date\":{\"value\":" + escapeJSONArg(dateFormat.format(fileList[i - 1].lastModified())) + ",\"type\":" + escapeJSONArg(type) + "},"
+							+ "\"size\":{\"size\":"	+ escapeJSONArg("" + fileList[i - 1].length()) + ",\"type\":" + escapeJSONArg(type) + "},"
 							+ "\"metadata\":{\"values\":[");
 
-					HashMap<String, ArrayList<String>> metadata = fileList[i - 1]
-							.getMetadata();
+					HashMap<String, ArrayList<String>> metadata = fileList[i - 1].getMetadata();
 					if (metadata != null) {
 						json.append("\n");
-						String[] names = metadata.keySet().toArray(
-								new String[0]);
+						String[] names = metadata.keySet().toArray(new String[0]);
 						for (int j = 0; j < names.length; j++) {
 							if (j > 0)
 								json.append(",\n");
@@ -480,9 +403,7 @@ public class DefaultGetHandler extends AbstractHandler {
 							for (int k = 0; k < values.size(); k++) {
 								if (k > 0)
 									json.append(",\n");
-								json.append("    {" + escapeJSONArg("name")
-										+ ":" + escapeJSONArg(name) + ","
-										+ escapeJSONArg("value") + ":"
+								json.append("    {" + escapeJSONArg("name") + ":" + escapeJSONArg(name) + "," + escapeJSONArg("value") + ":"
 										+ escapeJSONArg(values.get(k)) + "}");
 							}
 						}
@@ -494,12 +415,8 @@ public class DefaultGetHandler extends AbstractHandler {
 				}
 				if (emptyDir) {
 					boolean filtered = false;
-					json
-							.append(",\n{\"name\":{\"name\":\""
-									+ (filtered ? "(No matches)"
-											: "(Directory is empty)")
-									+ "\",\"type\":\"bottom\"},"
-									+ "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
+					json.append(",\n{\"name\":{\"name\":\""	+ (filtered ? "(No matches)" : "(Directory is empty)")
+									+ "\",\"type\":\"bottom\"}," + "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
 									+ "\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
 									+ "\"metadata\":{\"value\":\"\",\"type\":\"bottom\"}}");
 				}
@@ -508,10 +425,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				try {
 					op = response.getOutputStream();
 				} catch (EOFException e) {
-					Log
-							.log(
-									Log.WARNING,
-									"EOFException when preparing to send servlet response - client probably disconnected");
+					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 					return;
 				}
 				byte[] buf = json.toString().getBytes();
@@ -521,8 +435,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				response.setHeader("Cache-Control", "no-cache");
 				response.addHeader("Cache-Control", "must-revalidate");
 				response.setDateHeader("Expires", -1);
-				response
-						.addHeader("Cache-Control", "post-check=0, pre-check=0");
+				response.addHeader("Cache-Control", "post-check=0, pre-check=0");
 				response.addHeader("Cache-Control", "private");
 				response.addHeader("Cache-Control", "no-store");
 				response.addHeader("Cache-Control", "max-stale=0");
@@ -530,57 +443,28 @@ public class DefaultGetHandler extends AbstractHandler {
 				op.flush();
 				op.close();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic json: "
-						+ (new Date().getTime() - Davis.profilingTimer
-								.getTime()));
+				Log.log(Log.DEBUG, "#### Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 				return;
 			}
 			String format = request.getParameter("format");
-			if (format != null && format.equals("json")) { // List directory
-															// contents as JSON
-				// GeneralFile[] fileList = file.listFiles();
-				RemoteFile[] fileList = FSUtilities
-						.getIRODSCollectionDetails(file);
-				// Comparator<Object> comparator = new Comparator<Object>() {
-				// public int compare(Object file1, Object file2) {
-				// return
-				// (((GeneralFile)file1).getName().toLowerCase().compareTo
-				// (((GeneralFile)file2).getName().toLowerCase()));
-				// }
-				// };
-				// Arrays.sort((Object[])fileList, comparator);
+			if (format != null && format.equals("json")) { // List directory contents as JSON
+				RemoteFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
 				json.append("{\n" + escapeJSONArg("items") + ":[\n");
 				for (int i = 0; i < fileList.length; i++) {
 					if (i > 0)
 						json.append(",\n");
 					String type = fileList[i].isDirectory() ? "d" : "f";
-					json.append("{"
-							+ escapeJSONArg("name")
-							+ ":"
-							+ escapeJSONArg(fileList[i].getName())
-							+ ","
-							+ escapeJSONArg("type")
-							+ ":"
-							+ escapeJSONArg(type)
-							+ ","
-							+ escapeJSONArg("size")
-							+ ":"
-							+ escapeJSONArg("" + fileList[i].length())
-							+ ","
-							+ escapeJSONArg("date")
-							+ ":"
-							+ escapeJSONArg(dateFormat.format(fileList[i]
-									.lastModified())) + "}");
+					json.append("{"	+ escapeJSONArg("name")	+ ":" + escapeJSONArg(fileList[i].getName()) + ","
+							+ escapeJSONArg("type")	+ ":" + escapeJSONArg(type)	+ "," + escapeJSONArg("size") + ":"
+							+ escapeJSONArg("" + fileList[i].length()) + "," + escapeJSONArg("date") + ":"
+							+ escapeJSONArg(dateFormat.format(fileList[i].lastModified())) + "}");
 				}
 				json.append("\n]}");
 				ServletOutputStream op = null;
 				try {
 					op = response.getOutputStream();
 				} catch (EOFException e) {
-					Log
-							.log(
-									Log.WARNING,
-									"EOFException when preparing to send servlet response - client probably disconnected");
+					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 					return;
 				}
 				byte[] buf = json.toString().getBytes();
@@ -590,9 +474,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				op.flush();
 				op.close();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic json: "
-						+ (new Date().getTime() - Davis.profilingTimer
-								.getTime()));
+				Log.log(Log.DEBUG, "#### Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 				return;
 			}
 			if (request.getParameter("oldui") == null) { // Use new UI
@@ -603,22 +485,15 @@ public class DefaultGetHandler extends AbstractHandler {
 				}
 				String uiHTMLContent = defaultUIHTMLContent;
 				if (request.getParameter("uidev") != null) {
-					// Simple hack to allow loading of a development ui every
-					// time a request is received.
-					// To use this, add '?uidev' to url and place a link in
-					// davis/webapps/root/WEB-INF called uidev.html pointing
-					// to a ui.htlm being worked on. The big advantage of this
-					// is that if the only file being modified is ui.html
-					// then Davis doesn't need to be rebuilt or reinstalled or
-					// the server restarted.
+					// Simple hack to allow loading of a development ui every time a request is received.
+					// To use this, add '?uidev' to url and place a link in davis/webapps/root/WEB-INF called uidev.html pointing
+					// to a ui.htlm being worked on. The big advantage of this is that if the only file being modified is ui.html
+					// then Davis doesn't need to be rebuilt or reinstalled or the server restarted.
 					String s = "/WEB-INF/uidev.html";
 					Log.log(Log.DEBUG, "loading ui from " + s);
 					uiHTMLContent = loadUI(s);
 				}
-				String dojoroot = /*
-								 * this.getServletConfig().getInitParameter("dojoroot"
-								 * )
-								 */DavisConfig.getInstance().getDojoroot();
+				String dojoroot = DavisConfig.getInstance().getDojoroot();
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot = request.getContextPath() + "/" + dojoroot;
 				Log.log(Log.DEBUG, "dojoroot:" + dojoroot);
@@ -631,23 +506,16 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("servertype", getServerType());
 				substitutions.put("appversion", config.getAppVersion());
 				substitutions.put("href", requestUrl);
-				substitutions.put("url", file.getAbsolutePath().replace("\\",
-						"\\\\").replace("\"", "\\\"")); // Escape " chars - ui
-														// uses this string
-														// inside double quotes
+				substitutions.put("url", file.getAbsolutePath().replace("\\", "\\\\").replace("\"", "\\\"")); // Escape " chars - ui uses this string inside double quotes
 				substitutions.put("unc", file.toString());
-				substitutions.put("parent", request.getContextPath()
-						+ file.getParent());
+				substitutions.put("parent", request.getContextPath()+file.getParent());
 				substitutions.put("home", davisSession.getHomeDirectory());
 				substitutions.put("trash", davisSession.getTrashDirectory());
 				substitutions.put("authenticationrealm", config.getRealm());
-				substitutions.put("organisationname", config
-						.getOrganisationName());
-				substitutions.put("organisationlogo", config
-						.getOrganisationLogo());
+				substitutions.put("organisationname", config.getOrganisationName());
+				substitutions.put("organisationlogo", config.getOrganisationLogo());
 				substitutions.put("favicon", config.getFavicon());
-				substitutions.put("displayMetadata", config
-						.getDisplayMetadata());
+				substitutions.put("displayMetadata", config.getDisplayMetadata());
 				String s = config.getAnonymousUsername();
 				if (s == null)
 					s = "";
@@ -661,26 +529,26 @@ public class DefaultGetHandler extends AbstractHandler {
 						geom = geomString.split("x");
 						w = geom[0];
 						h = geom[1];
-					} catch (Exception e) {
-					}
+					} catch (Exception e) {}
 				}
 				substitutions.put("organisationlogowidth", w);
 				substitutions.put("organisationlogoheight", h);
 				substitutions.put("account", davisSession.getAccount());
+				substitutions.put("uiloaddate", uiLoadDate);
+				substitutions.put("organisationsupport", config.getOrganisationSupport());
+				substitutions.put("helpurl", config.getHelpURL());
+				
 				String uiContent = new String(uiHTMLContent);
 				// Make substitutions in UI HTML file
-				for (Enumeration<String> keys = substitutions.keys(); keys
-						.hasMoreElements();) {
+				for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements();) {
 					String key = keys.nextElement();
 					String replacement = substitutions.get(key);
 					if (replacement == null)
 						replacement = "";
-					uiContent = uiContent.replace("<parameter " + key + "/>",
-							replacement);
+					uiContent = uiContent.replace("<parameter " + key + "/>", replacement);
 				}
 				response.setContentType("text/html; charset=\"utf-8\"");
-				OutputStreamWriter out = new OutputStreamWriter(response
-						.getOutputStream());
+				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
 				out.write(uiContent, 0, uiContent.length());
 				out.flush();
 				response.flushBuffer();
@@ -731,15 +599,13 @@ public class DefaultGetHandler extends AbstractHandler {
 					}
 					if (templates == null) {
 						Source source = getStylesheet(view, false, locale);
-						templates = TransformerFactory.newInstance()
-								.newTemplates(source);
+						templates = TransformerFactory.newInstance().newTemplates(source);
 						if (session == null)
 							session = request.getSession(true);
 						setTemplates(session, templates);
 					}
 				} catch (Exception ex) {
-					Log.log(Log.WARNING, "Unable to install stylesheet: {0}",
-							ex);
+					Log.log(Log.WARNING, "Unable to install stylesheet: {0}", ex);
 					HttpSession session = request.getSession(false);
 					if (session != null)
 						clearTemplates(session);
@@ -747,17 +613,13 @@ public class DefaultGetHandler extends AbstractHandler {
 					return;
 				}
 			}
-			PropertiesDirector director = new PropertiesDirector(
-					getPropertiesBuilder());
+			PropertiesDirector director = new PropertiesDirector(getPropertiesBuilder());
 			Document properties = null;
 			properties = director.getAllProperties(file, requestUrl, 1);
 
 			try {
 				Transformer transformer = templates.newTransformer();
-				String dojoroot = /*
-								 * this.getServletConfig().getInitParameter("dojoroot"
-								 * )
-								 */DavisConfig.getInstance().getDojoroot();
+				String dojoroot = DavisConfig.getInstance().getDojoroot();
 				if (dojoroot.indexOf("/") < 0) {
 					// System.out.println(request.getPathInfo());
 					// System.out.println(request.getRequestURI());
@@ -770,12 +632,9 @@ public class DefaultGetHandler extends AbstractHandler {
 				transformer.setParameter("href", requestUrl);
 				transformer.setParameter("url", file.getAbsolutePath());
 				transformer.setParameter("unc", file.toString());
-				transformer.setParameter("parent", request.getContextPath()
-						+ file.getParent());
-				transformer.setParameter("home", davisSession
-						.getHomeDirectory());
-				transformer.setParameter("trash", davisSession
-						.getTrashDirectory());
+				transformer.setParameter("parent", request.getContextPath()	+ file.getParent());
+				transformer.setParameter("home", davisSession.getHomeDirectory());
+				transformer.setParameter("trash", davisSession.getTrashDirectory());
 				// String type;
 				// switch (file.getType()) {
 				// case SmbFile.TYPE_WORKGROUP:
@@ -805,15 +664,12 @@ public class DefaultGetHandler extends AbstractHandler {
 				// transformer.setParameter("type", type);
 				transformer.setOutputProperty("encoding", "UTF-8");
 				ByteArrayOutputStream collector = new ByteArrayOutputStream();
-				transformer.transform(new DOMSource(properties),
-						new StreamResult(collector));
+				transformer.transform(new DOMSource(properties), new StreamResult(collector));
 				response.setContentType("text/html; charset=\"utf-8\"");
 				collector.writeTo(response.getOutputStream());
 				response.flushBuffer();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic html: "
-						+ (new Date().getTime() - Davis.profilingTimer
-								.getTime()));
+				Log.log(Log.DEBUG, "#### Time after creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 
 			} catch (TransformerException ex) {
 				throw new IOException(ex.getMessage());
@@ -826,8 +682,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			response.setHeader("ETag", etag);
 		long modified = file.lastModified();
 		if (modified != 0) {
-			response.setHeader("Last-Modified", DavisUtilities
-					.formatGetLastModified(modified));
+			response.setHeader("Last-Modified", DavisUtilities.formatGetLastModified(modified));
 		}
 		int result = checkConditionalRequest(request, file);
 		if (result != HttpServletResponse.SC_OK) {
@@ -835,11 +690,9 @@ public class DefaultGetHandler extends AbstractHandler {
 			response.flushBuffer();
 			return;
 		}
-		String contentType = getServletConfig().getServletContext()
-				.getMimeType(file.getName());
+		String contentType = getServletConfig().getServletContext().getMimeType(file.getName());
 		response.setHeader("Content-Length", String.valueOf(file.length()));
-		response.setContentType((contentType != null) ? contentType
-				: "application/octet-stream");
+		response.setContentType((contentType != null) ? contentType	: "application/octet-stream");
 		response.setContentLength((int) file.length());
 		// RemoteFileInputStream input = null;
 		String startingPoint = request.getHeader("Content-Range");
@@ -848,14 +701,11 @@ public class DefaultGetHandler extends AbstractHandler {
 			startingPoint = request.getHeader("Range");
 		if (startingPoint != null) {
 			try {
-				String offsetString = startingPoint.substring(startingPoint
-						.indexOf("bytes") + 6, startingPoint.indexOf("-"));
+				String offsetString = startingPoint.substring(startingPoint.indexOf("bytes") + 6, startingPoint.indexOf("-"));
 				Log.log(Log.DEBUG, "offset:" + offsetString);
 				offset = Long.parseLong(offsetString);
 				response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-				response.setHeader("Content-Range", startingPoint.substring(0,
-						6)
-						+ offset + "-" + file.length() + "/" + file.length());
+				response.setHeader("Content-Range", startingPoint.substring(0,6) + offset + "-" + file.length() + "/" + file.length());
 				response.setContentLength((int) (file.length() - offset));
 			} catch (Exception _e) {
 			}
@@ -874,9 +724,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		ServletOutputStream output = response.getOutputStream();
 		int interval = request.getSession().getMaxInactiveInterval();
 		long startTime = new Date().getTime();
-		Log.log(Log.DEBUG, "Downloading file from " + offset
-				+ " max inactive interval:" + interval + " starting at:"
-				+ new Date(startTime));
+		Log.log(Log.DEBUG, "Downloading file from " + offset + " max inactive interval:" + interval + " starting at:" + new Date(startTime));
 		if (offset > 0) {
 			RemoteRandomAccessFile input = null;
 			try {
@@ -891,26 +739,16 @@ public class DefaultGetHandler extends AbstractHandler {
 				// try{
 				while ((count = input.read(buf)) > 0) {
 					// Log.log(Log.DEBUG, "read "+count);
-					if (request.getSession().getMaxInactiveInterval()
-							- (new Date().getTime() - startTime) / 1000 < 60) {
+					if (request.getSession().getMaxInactiveInterval() - (new Date().getTime() - startTime) / 1000 < 60) {
 						// increase interval by 5 mins
-						request
-								.getSession()
-								.setMaxInactiveInterval(
-										request.getSession()
-												.getMaxInactiveInterval() + 300);
-						Log
-								.log(Log.DEBUG, "session time is extended to:"
-										+ request.getSession()
-												.getMaxInactiveInterval());
+						request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval() + 300);
+						Log.log(Log.DEBUG, "session time is extended to:" + request.getSession().getMaxInactiveInterval());
 					}
 					output.write(buf, 0, count);
 				}
 				output.flush();
 			} catch (Exception e) {
-				Log
-						.log(Log.WARNING, "remote peer is closed: "
-								+ e.getMessage());
+				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
 			}
 			if (input != null)
 				input.close();
@@ -927,15 +765,8 @@ public class DefaultGetHandler extends AbstractHandler {
 					try {
 						count = input.read(buf);
 					} catch (IOException e) {
-						if (e.getMessage().endsWith("-19000")) { // Quick way to
-																	// detect
-																	// IRODS
-																	// permission
-																	// failed
-							response
-									.sendError(
-											HttpServletResponse.SC_FORBIDDEN,
-											"You do not have permission to access this resource.");
+						if (e.getMessage().endsWith("-19000")) { // Quick way to detect IRODS permission failed
+							response.sendError(HttpServletResponse.SC_FORBIDDEN, "You do not have permission to access this resource.");
 							response.flushBuffer();
 							return;
 						}
@@ -945,27 +776,17 @@ public class DefaultGetHandler extends AbstractHandler {
 						break;
 					// inactive interval - "idle" time < 1 min, increase
 					// inactive interval
-					if (request.getSession().getMaxInactiveInterval()
-							- (new Date().getTime() - startTime) / 1000 < 60) {
+					if (request.getSession().getMaxInactiveInterval() - (new Date().getTime() - startTime) / 1000 < 60) {
 						// increase interval by 5 mins
-						request
-								.getSession()
-								.setMaxInactiveInterval(
-										request.getSession()
-												.getMaxInactiveInterval() + 300);
-						Log
-								.log(Log.DEBUG, "session time is extended to:"
-										+ request.getSession()
-												.getMaxInactiveInterval());
+						request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval() + 300);
+						Log.log(Log.DEBUG, "session time is extended to:" + request.getSession().getMaxInactiveInterval());
 					}
 					// Log.log(Log.DEBUG, "read "+count);
 					output.write(buf, 0, count);
 				}
 				output.flush();
 			} catch (Exception e) {
-				Log
-						.log(Log.WARNING, "remote peer is closed: "
-								+ e.getMessage());
+				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
 			}
 			if (input != null)
 				input.close();
@@ -974,12 +795,10 @@ public class DefaultGetHandler extends AbstractHandler {
 		output.close();
 	}
 
-	private void writeFile(String url, HttpServletRequest request,
-			HttpServletResponse response) throws IOException {
+	private void writeFile(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
 		// URL u=request.getSession().getServletContext().getResource(url);
 		// u.get?
-		InputStream in = request.getSession().getServletContext()
-				.getResourceAsStream(url);
+		InputStream in = request.getSession().getServletContext().getResourceAsStream(url);
 		// response.setContentType ("application/pdf");
 		ServletOutputStream op = response.getOutputStream();
 		int length;
@@ -1005,26 +824,21 @@ public class DefaultGetHandler extends AbstractHandler {
 		return propertiesBuilder;
 	}
 
-	private void showConfiguration(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException {
+	private void showConfiguration(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("text/html");
 		OutputStream output = response.getOutputStream();
 		output.write(getConfiguration(request.getLocale()));
 		response.flushBuffer();
 	}
 
-	private byte[] getConfiguration(Locale locale) throws ServletException,
-			IOException {
+	private byte[] getConfiguration(Locale locale) throws ServletException,	IOException {
 		synchronized (configurations) {
 			byte[] configuration = configurations.get(locale);
 			if (configuration != null)
 				return configuration;
-			InputStream stream = getResourceAsStream(configurationLocation,
-					locale);
+			InputStream stream = getResourceAsStream(configurationLocation, locale);
 			if (stream == null) {
-				throw new ServletException(DavisUtilities.getResource(
-						DefaultGetHandler.class, "configurationPageError",
-						null, null));
+				throw new ServletException(DavisUtilities.getResource(DefaultGetHandler.class, "configurationPageError", null, null));
 			}
 			ByteArrayOutputStream collector = new ByteArrayOutputStream();
 			byte[] buffer = new byte[2048];
@@ -1071,21 +885,18 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 	}
 
-	private Templates getDefaultTemplates(Locale locale)
-			throws ServletException {
+	private Templates getDefaultTemplates(Locale locale) throws ServletException {
 		synchronized (defaultTemplates) {
 			Templates templates = defaultTemplates.get(locale);
 			if (templates != null)
 				return templates;
 			try {
 				Source source = getStylesheet(stylesheetLocation, true, locale);
-				templates = TransformerFactory.newInstance().newTemplates(
-						source);
+				templates = TransformerFactory.newInstance().newTemplates(source);
 				defaultTemplates.put(locale, templates);
 				return templates;
 			} catch (Exception ex) {
-				throw new ServletException(DavisUtilities.getResource(
-						DefaultGetHandler.class, "stylesheetError", null, null));
+				throw new ServletException(DavisUtilities.getResource(DefaultGetHandler.class, "stylesheetError", null, null));
 			}
 		}
 	}
@@ -1099,14 +910,12 @@ public class DefaultGetHandler extends AbstractHandler {
 		String variant = locale.getVariant();
 		InputStream stream = null;
 		if (!variant.equals("")) {
-			stream = getResourceAsStream(prefix + '_' + language + '_'
-					+ country + '_' + variant + suffix);
+			stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
 			if (stream != null)
 				return stream;
 		}
 		if (!country.equals("")) {
-			stream = getResourceAsStream(prefix + '_' + language + '_'
-					+ country + suffix);
+			stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
 			if (stream != null)
 				return stream;
 		}
@@ -1119,14 +928,12 @@ public class DefaultGetHandler extends AbstractHandler {
 			country = secondary.getCountry();
 			variant = secondary.getVariant();
 			if (!variant.equals("")) {
-				stream = getResourceAsStream(prefix + '_' + language + '_'
-						+ country + '_' + variant + suffix);
+				stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
 				if (stream != null)
 					return stream;
 			}
 			if (!country.equals("")) {
-				stream = getResourceAsStream(prefix + '_' + language + '_'
-						+ country + suffix);
+				stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
 				if (stream != null)
 					return stream;
 			}
@@ -1140,48 +947,40 @@ public class DefaultGetHandler extends AbstractHandler {
 	private InputStream getResourceAsStream(String location) {
 		InputStream stream = null;
 		try {
-			stream = getServletConfig().getServletContext()
-					.getResourceAsStream(location);
+			stream = getServletConfig().getServletContext().getResourceAsStream(location);
 			if (stream != null)
 				return stream;
-		} catch (Exception ex) {
-		}
+		} catch (Exception ex) {}
 		try {
 			stream = getClass().getResourceAsStream(location);
 			if (stream != null)
 				return stream;
-		} catch (Exception ex) {
-		}
+		} catch (Exception ex) {}
 		try {
 			ClassLoader loader = Thread.currentThread().getContextClassLoader();
 			if (loader != null)
 				stream = loader.getResourceAsStream(location);
 			if (stream != null)
 				return stream;
-		} catch (Exception ex) {
-		}
+		} catch (Exception ex) {}
 		try {
 			ClassLoader loader = ClassLoader.getSystemClassLoader();
 			if (loader != null)
 				stream = loader.getResourceAsStream(location);
 			if (stream != null)
 				return stream;
-		} catch (Exception ex) {
-		}
+		} catch (Exception ex) {}
 		return null;
 	}
 
-	private Source getStylesheet(String location, boolean allowExternal,
-			Locale locale) throws Exception {
+	private Source getStylesheet(String location, boolean allowExternal, Locale locale) throws Exception {
 		InputStream stream = getResourceAsStream(location, locale);
 		if (stream != null) {
 			Log.log(Log.DEBUG, "Obtained stylesheet for \"{0}\".", location);
 			return new StreamSource(stream);
 		}
 		if (!allowExternal) {
-			throw new IllegalArgumentException(DavisUtilities.getResource(
-					DefaultGetHandler.class, "stylesheetNotFound",
-					new Object[] { location }, null));
+			throw new IllegalArgumentException(DavisUtilities.getResource(DefaultGetHandler.class, "stylesheetNotFound", new Object[] { location }, null));
 		}
 		Log.log(Log.DEBUG, "Using external stylesheet at \"{0}\".", location);
 		return new StreamSource(location);
@@ -1190,7 +989,6 @@ public class DefaultGetHandler extends AbstractHandler {
 	private class TemplateTracker extends TimerTask {
 
 		private final Templates templates;
-
 		private final String id;
 
 		public TemplateTracker(String id, Templates templates, long cacheTime) {
@@ -1200,9 +998,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 
 		public void run() {
-			Log
-					.log(Log.DEBUG,
-							"Removing cached stylesheet for session {0}", id);
+			Log.log(Log.DEBUG, "Removing cached stylesheet for session {0}", id);
 			synchronized (templateMap) {
 				templateMap.remove(id);
 			}

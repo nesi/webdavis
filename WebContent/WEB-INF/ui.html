@@ -90,8 +90,6 @@
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
-//		var currentDirectory = "";
-//		var currentDestinationDirectory = ""; 
 		
 		dojo.addOnLoad(function() {
 //			showDebug();
@@ -375,6 +373,8 @@
     		}
     		dialogMetadata.closeButtonNode.title = "Close";
     		dialogPermissions.closeButtonNode.title = "Close";
+    		dojo.html.set(dojo.byId('aboutDojoVersion'), ""+dojo.version);
+    		dojo.html.set(dojo.byId('aboutBrowser'), navigator.userAgent);
 		}
 		
 		function resetPermissionsStore(fast) {
@@ -1555,8 +1555,18 @@
 				result.splice(listingLayoutMetadataField, 1);
 			return result;
 		}
+
+		function doHelp() {
+			var helpURL = "<parameter helpurl/>";
+	        if (helpURL.match('^(https?):\/\/')) {
+				window.open(helpURL);
+	        } else {
+	        	dojo.html.set(dojo.byId('helpMessage'), helpURL);
+				dialogHelp.show();
+	        }	
+		}
 		
-		var enableDebugButton = true;
+		var enableDebugButton = false;
 		function debugButtonHandler() {
 			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//logout();
@@ -1796,20 +1806,27 @@
 <div dojoType="dijit.Dialog" jsId="dialogAbout" title="About" onCancel="setCursor(false, true)">
 	<table>
 		<tr>
-			<td width="300px">
-				<div autoHeight="10" structure="replicasLayout" dojoType="dojox.grid.DataGrid" jsId="replicasGrid" selectionMode="single" loadingMessage="loading" autoHeight="true" onClick="listingStore.refreshDisplay(false)"></div>
-			</td>
-			<td valign="top">
-				<button type="button" style="width:100%" onclick="dialogAbout.hide()">Close</button><br/>	
+			<td align="center">Davis version: <parameter appversion/><br><br><small>
+			    Using Dojo version: <span id="aboutDojoVersion"></span><br>
+			    Davis UI last loaded <parameter uiloaddate/><br>
+			    Browser: <span id="aboutBrowser"></span><br><br>
+			    Support contact: <parameter organisationsupport/></br></small>
 			</td>
 		</tr>
 		<tr>
-			<td>
-				<div id="replicasStatusField" style="font-size:small"></div>
+			<td align="right">
+				<button type="button" onclick="dialogAbout.hide()">Close</button><br/>	
 			</td>
 		</tr>
 	</table>
 </div>
+<div dojoType="dijit.Dialog" jsId="dialogHelp" title="Help">
+	<div id="helpMessage"></div>
+	<br/><br/>
+	<div style="text-align: right;">
+		<button type="button" onclick="dialogHelp.hide()">Close</button>
+	</div>
+</div>					
 <div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
 	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
 </div>
@@ -1840,7 +1857,7 @@
 	        				<td>
  	        					<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
 									<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">
-										<div dojoType="dijit.MenuItem" onClick="window.open('http://projects.arcs.org.au/trac/davis/wiki/HowTo/Browser')">Help</div>
+										<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
 										<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
 									</div>
 								</button>        				
