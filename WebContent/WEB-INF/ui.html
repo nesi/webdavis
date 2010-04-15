@@ -1848,13 +1848,13 @@
 	        				<td colspan="0" align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
 	        			</tr>
 	        			<tr>
-	        				<td id="sessionButtonsHTML" align="right"></td>
-	        				<td>
+	        				<td id="sessionButtonsHTML" align="right" valign="top"></td>
+	        				<td align="right" valign="top">
 	        					<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>
 								<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>
 								<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>
 	        				</td>
-	        				<td>
+	        				<td width="1px">
  	        					<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
 									<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">
 										<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
