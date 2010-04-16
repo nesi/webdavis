@@ -74,9 +74,7 @@ import org.apache.commons.fileupload.servlet.*;
 public class DefaultPostHandler extends AbstractHandler {
 
 	/**
-	 * Services requests which use the HTTP POST method. This may, at some
-	 * point, implement some sort of useful behavior. Right now it doesn't do
-	 * anything.
+	 * Services requests which use the HTTP POST method. 
 	 * 
 	 * @param request
 	 *            The request being serviced.
