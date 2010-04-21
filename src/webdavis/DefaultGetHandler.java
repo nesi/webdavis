@@ -268,9 +268,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	 * 
 	 */
 	public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
-		// System.err.println(
-		// "======================================================request="
-		// +request);
+//		System.err.println("======================================================request="+request);
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);

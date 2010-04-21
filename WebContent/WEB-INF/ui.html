@@ -253,11 +253,11 @@
 						items = listingStore._numRows;
 					if (items >= 0) {
 						items--; // Don't count ... Parent Directory, which is always present
-						if (items <= 2) { // If less than 3 items there might be a "dir empty" row
+						if (listingGrid._isLoaded && items <= 2) { // If less than 3 items there might be a "dir empty" row
 						 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
 							// dir listing with more than a page's worth of items. 
 							// If 0 or 1 item, should be safe to call getValue to check the row's type.
-							var name = listingStore.getValue(listingGrid.getItem(items), "name"); 
+							var name = listingStore.getValue(listingGrid.getItem(items), "name");
 							if (name.type == "bottom")
 								items--;
 						}
@@ -320,7 +320,7 @@
 					rename(escape(dojo.byId('renameInputBox').value));
 				}
 			});
-			dojo.connect(listingGrid, 'onClick', function(e) {if (listingGrid._isLoaded) listingStore.refreshDisplay(false)});
+			dojo.connect(listingGrid, 'onClick', function(e) {listingStore.refreshDisplay(false)});
 			dojo.connect(destinationGrid, 'onClick', function(e) {/*destinationStore.refreshDisplay(false)*/refreshButtons()});
     		dojo.connect(listingGrid, 'onHeaderClick', function(e){
     			checkAll(false); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
@@ -816,6 +816,8 @@
 		
 		function listCheckedItems() {
 			var list = "";
+			if (!listingGrid._isLoaded)
+				return "";
 			var selected = listingGrid.selection.getSelected();
 			for (var i = 0; i < selected.length; i++) 
 				list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
@@ -836,10 +838,14 @@
 		}
 		
 		function checkedItemsCount() {
+			if (!listingGrid._isLoaded)
+				return 0;
 			return listingGrid.selection.getSelectedCount();
 		}
 		
 		function directoryIsChecked() {
+			if (!listingGrid._isLoaded)
+				return false;
 			var selected = listingGrid.selection.getSelected();
 			for (var i = 0; i < selected.length; i++) 
 				if (listingGrid.store.getValue(selected[i], "name").type == "d")
@@ -854,10 +860,12 @@
 		}
 		
 		function checkAll(state) {
-			if (state) 
-				listingGrid.selection.selectRange(0, listingGrid.rowCount-1);
-			else
-				listingGrid.selection.deselectAll();
+			if (listingGrid._isLoaded) {
+				if (state) 
+					listingGrid.selection.selectRange(0, listingGrid.rowCount-1);
+				else
+					listingGrid.selection.deselectAll();
+			}
 			setToggleButtonState(!state);
 			listingStore.refreshDisplay(false);
 		}

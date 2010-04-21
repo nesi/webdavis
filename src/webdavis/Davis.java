@@ -166,7 +166,7 @@ public class Davis extends HttpServlet {
 		Log.log(Log.INFORMATION, "queryString:"+queryString);
 		if (pathInfo == null || "".equals(pathInfo))
 			pathInfo = "/";
-//System.err.println("request="+request.toString());		
+//		System.err.println("request="+request.toString());		
 		profilingTimer = new Date();		
 		Log.log(Log.DEBUG, "#### Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
 		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".",
