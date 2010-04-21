@@ -363,7 +363,7 @@ public class DefaultGetHandler extends AbstractHandler {
 
 				// if (!requestSignature.equals(lastRequestSignature) || (sort == null || sort.equals(lastSortString))) {
 				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^loading");
-				fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly); // Only fetch new listing if not sort request
+				fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly); // // Only fetch new listing if not sort request
 				// }
 				// lastRequestSignature = requestSignature;
 				// lastSortString = sort;

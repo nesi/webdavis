@@ -235,8 +235,11 @@
 				gotoDirectory: function(dir, addToHistory) {
 					listingStore.inherited("gotoDirectory", arguments);
 					listingStore.url = dir+"?method=dojoquery";
-					listingGrid.items = null; // Force store load
-					listingGrid._fetch(0, true); // Update grid by initiating a store load from new url
+					// This method works but causes a "loading" message to appear
+					listingGrid._refresh(true);	// Update grid by forcing a store load from new url
+					// This method doesn't work because the grid will still contain byIndex lists etc.					
+//					listingGrid.items = null; // Force store load
+//					listingGrid._fetch(0, true);
 				},
 				refreshDisplay: function(doMetadata) {
 					dojo.html.set(dojo.byId("listingBreadcrumb"), toBreadcrumb(listingStore.getCurrentDirectory(), "listingStore", true));
@@ -315,7 +318,7 @@
 					rename(escape(dojo.byId('renameInputBox').value));
 				}
 			});
-			dojo.connect(listingGrid, 'onClick', function(e) {listingStore.refreshDisplay(false)});
+			dojo.connect(listingGrid, 'onClick', function(e) {if (listingGrid._isLoaded) listingStore.refreshDisplay(false)});
 			dojo.connect(destinationGrid, 'onClick', function(e) {/*destinationStore.refreshDisplay(false)*/refreshButtons()});
     		dojo.connect(listingGrid, 'onHeaderClick', function(e){
     			checkAll(false); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
@@ -363,6 +366,10 @@
     		// Re-enable the browser's native right click context menu in listingGrid's cells
     		listingGrid.onRowContextMenu = function(e) {
     		};
+    		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
+        		if (listingGrid.focus._colHeadNode)
+      				listingGrid.focus.inherited("blurHeader", arguments);
+    		}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
