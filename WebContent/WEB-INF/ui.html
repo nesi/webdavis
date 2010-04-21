@@ -234,6 +234,8 @@
 				},
 				gotoDirectory: function(dir, addToHistory) {
 					listingStore.inherited("gotoDirectory", arguments);
+//					if (cursorBusy())
+//						return;
 					listingStore.url = dir+"?method=dojoquery";
 					// This method works but causes a "loading" message to appear
 					listingGrid._refresh(true);	// Update grid by forcing a store load from new url
@@ -628,13 +630,16 @@
 			        "content-type": "text/x-json"
 			    },
 			    putData: data, 
+			    currentDirectory: listingStore.getCurrentDirectory(),
 	    		load: function(responseObject, ioArgs){
 					cursorBusy(false);
 					var notice = responseObject.notice;
 					if (notice != undefined)
 						alert(notice);
-					refreshCurrentDirectory();
-					listingStore.refreshDisplay(true);
+					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+						refreshCurrentDirectory();
+						listingStore.refreshDisplay(true);
+					}
 	       			return responseObject;
 	    		},
 	    		error: function(response, ioArgs){
@@ -1019,7 +1024,7 @@
 //			debug("addtohistory:"+url);
 			dojo.back.addToHistory(newBackState(url));
 		}
-		
+
 		function refreshCurrentDirectory() {
 			listingStore.gotoDirectory(listingStore.getCurrentDirectory(), false);
 		}
@@ -1035,16 +1040,21 @@
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
 				url: listingStore.getCurrentDirectory()+"/"+escape(dirName),
+			    currentDirectory: listingStore.getCurrentDirectory(),
 			    load: function(responseObject, ioArgs){
 						cursorBusy(false);
-			      		refreshCurrentDirectory();
-			      		listingStore.refreshDisplay(false);
+						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+				      		refreshCurrentDirectory();
+			      			listingStore.refreshDisplay(false);
+						}
 			      		return responseObject;
 			   		},
 	    		error: function(response, ioArgs){
 						cursorBusy(false);
 	      				alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", ioArgs.xhr.status, ioArgs.xhr.statusText));
-	      				listingStore.refreshDisplay(false);
+						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+		      				listingStore.refreshDisplay(false);
+						}
 	      				return response;
 	    			}
 			});
@@ -1121,19 +1131,24 @@
 			        "content-type": "text/x-json"
 			    },
 			    putData: data, 
+			    currentDirectory: listingStore.getCurrentDirectory(),
 			    load: function(responseObject, ioArgs){
 			    		emptyTrashInProgress = false;
 			    		cursorBusy(false);
-			      		refreshCurrentDirectory();
-			      		listingStore.refreshDisplay(false);
+						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+							refreshCurrentDirectory();
+			      			listingStore.refreshDisplay(false);
+						}
 			      		return responseObject;
 			   		},
 	    		error: function(response, ioArgs){
 			   			emptyTrashInProgress = false;
 			   			cursorBusy(false);
 	      				alert(errorMessage("delete", ioArgs.xhr.status, ioArgs.xhr.statusText));
-	      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
-			      		listingStore.refreshDisplay(false);
+						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+		      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
+			      			listingStore.refreshDisplay(false);
+						}
 	      				return response;
 	    			}
 			}, true);
@@ -1172,17 +1187,22 @@
 			        "Destination": destination
 			    },
 			    putData: data, 
+			    currentDirectory: listingStore.getCurrentDirectory(),
 			    load: function(responseObject, ioArgs){
 					cursorBusy(false);
-			      	refreshCurrentDirectory();
-		      		listingStore.refreshDisplay(false);
+					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+			      		refreshCurrentDirectory();
+		      			listingStore.refreshDisplay(false);
+					}
 			      	return responseObject;
 			    },
 	    		error: function(response, ioArgs){
 					cursorBusy(false);
 	      			alert("Failed to move one or more items: "+errorMessage("move", ioArgs.xhr.status, ioArgs.xhr.statusText));
-	      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
-		      		listingStore.refreshDisplay(false);
+					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+		      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
+		      			listingStore.refreshDisplay(false);
+					}
 	      			return response;
 	    		}
 			}, true);
@@ -1593,8 +1613,8 @@
 				return this.currentDirectory;
 			},
 			gotoDirectory: function (dir, addToHistory) {
-				if (isCursorBusy())
-					return;
+//				if (isCursorBusy())
+//					return;
 				this.directory = dir;
 				this.addToHistory = addToHistory;
 			},
