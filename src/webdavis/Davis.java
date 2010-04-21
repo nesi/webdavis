@@ -235,6 +235,7 @@ public class Davis extends HttpServlet {
 			reset=true;
 		}
 
+		String errorMsg=null;
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
 			Cookie[] cookies=request.getCookies();
@@ -247,34 +248,32 @@ public class Davis extends HttpServlet {
 				String commonName=request.getHeader(config.getCommonNameHeaderName());
 				String shibSessionID=request.getHeader("Shib-Session-ID");
 				if (sharedToken==null||sharedToken.length()==0) {
-					response.sendError(HttpServletResponse.SC_FORBIDDEN, "Shared token is not found in HTTP header.");
-					response.flushBuffer();
-					return;
-				}
-				if (commonName==null||commonName.length()==0) {
-					response.sendError(HttpServletResponse.SC_FORBIDDEN, "Common name is not found in HTTP header.");
-					response.flushBuffer();
-					return;
-				}
-				if (shibCookieNum>0) davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
+					errorMsg = "Shared token is not found in HTTP header.";
+				} else if (commonName==null||commonName.length()==0) {
+					errorMsg = "Common name is not found in HTTP header.";
+				} else if (shibCookieNum>0) 
+					davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
 			}
-			if (davisSession==null){
-				response.sendError(HttpServletResponse.SC_FORBIDDEN, "Shibboleth login failed.");
-				response.flushBuffer();
-				return;
+			if (davisSession==null&&errorMsg==null){
+				errorMsg = "Shibboleth login failed.";
 			}
 		}else if (authorization != null){
 			davisSession=authorizationProcessor.getDavisSession(authorization, reset);
-		}else if (isAnonymousPath(pathInfo)){
+		}
+		if (davisSession==null&&isAnonymousPath(pathInfo)){
 			String authString="Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
 			davisSession=authorizationProcessor.getDavisSession(authString, reset);
-		}else{
-			fail(request, response);
-			return;
+			errorMsg=null;
 		}
 		if (davisSession==null){
-			fail(request, response);
-			return;
+			if (errorMsg!=null){
+				response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
+				response.flushBuffer();
+				return;
+			}else{
+				fail(request, response);
+				return;
+			}
 		}
 		HttpSession session = request.getSession(false);
 		if (session == null || reset) {
