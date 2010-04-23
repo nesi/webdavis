@@ -214,13 +214,16 @@
 			resetReplicasStore();
 
 			listingStore = new ListingStore({url:escape("<parameter url/>")+"?method=dojoquery",
+				grid: listingGrid,
 				directory: escape("<parameter url/>"),
 				lastURL: escape("<parameter url/>")+"?method=dojoquery",
 				addToHistory: false,
 				onFetchError: function() {
 					if (listingStore.lastURL != listingStore.url) // If directory changed, clear selections
 						checkAll(false);
-					listingStore.url = listingStore.lastURL;
+					listingStore.invalidate = false;
+					listingStore.directory = listingStore.getCurrentDirectory(); // Put directory back to last successful one
+					listingStore.url = listingStore.lastURL; // Put url back to last successful one
 					listingStore.refreshDisplay(false);
 				},
 				onFetchSuccess: function() {
@@ -238,10 +241,10 @@
 //						return;
 					listingStore.url = dir+"?method=dojoquery";
 					// This method works but causes a "loading" message to appear
-					listingGrid._refresh(true);	// Update grid by forcing a store load from new url
-					// This method doesn't work because the grid will still contain byIndex lists etc.					
-//					listingGrid.items = null; // Force store load
-//					listingGrid._fetch(0, true);
+//					listingStore.grid._refresh(true);	// Update grid by forcing a store load from new url
+					// This method does everything we want. Needs thorough testing
+					listingStore.invalidate = true;
+					listingStore.grid._fetch(0, true);
 				},
 				refreshDisplay: function(doMetadata) {
 					dojo.html.set(dojo.byId("listingBreadcrumb"), toBreadcrumb(listingStore.getCurrentDirectory(), "listingStore", true));
@@ -253,11 +256,11 @@
 						items = listingStore._numRows;
 					if (items >= 0) {
 						items--; // Don't count ... Parent Directory, which is always present
-						if (listingGrid._isLoaded && items <= 2) { // If less than 3 items there might be a "dir empty" row
+						if (listingStore.grid._isLoaded && items <= 2) { // If less than 3 items there might be a "dir empty" row
 						 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
 							// dir listing with more than a page's worth of items. 
 							// If 0 or 1 item, should be safe to call getValue to check the row's type.
-							var name = listingStore.getValue(listingGrid.getItem(items), "name");
+							var name = listingStore.getValue(listingStore.grid.getItem(items), "name");
 							if (name.type == "bottom")
 								items--;
 						}
@@ -270,19 +273,20 @@
 			listingGrid.setStore(listingStore);
 	    		    	
 			destinationStore = new ListingStore({url:escape("<parameter url/>")+"?method=dojoquery&directoriesonly",
+				grid: destinationGrid,
 				directory:escape("<parameter url/>"),
 				lastURL:escape("<parameter url/>")+"?method=dojoquery&directoriesonly",
 				onFetchError: function() {
 					destinationStore.url = destinationStore.lastURL;
 					destinationStore.refreshDisplay();
-					destinationGrid.selection.deselectAll();
+					destinationStore.grid.selection.deselectAll();
 					refreshButtons();
 					destinationStore.show(true);
 				},
 				onFetchSuccess: function() {
 					destinationStore.lastURL = destinationStore.url;
 					destinationStore.refreshDisplay(); 
-					destinationGrid.selection.deselectAll();
+					destinationStore.grid.selection.deselectAll();
 					refreshButtons();
 					destinationStore.show(true);
 				},
@@ -292,8 +296,8 @@
 					destinationStore.directory = dir;
 					destinationStore.addToHistory = false;
 					destinationStore.url = dir+"?method=dojoquery&directoriesonly";
-		    		destinationGrid.items = null; // Force store load
-					destinationGrid._fetch(0, true); // Update grid by initiating a store load from new url
+		    		destinationStore.grid.items = null; // Force store load
+					destinationStore.grid._fetch(0, true); // Update grid by initiating a store load from new url
 				},
 				show: function(show) {
 					dojo.style("destinationGrid", "visibility", show ? "visible" : "hidden");
@@ -372,6 +376,12 @@
         		if (listingGrid.focus._colHeadNode)
       				listingGrid.focus.inherited("blurHeader", arguments);
     		}
+    		listingGrid.fastScroll = false;
+    		// This stops the column select menu from popping up when right clicking anywhere other than the header bar
+  			gridMenu._openMyself= function(e, cn, iframe){ 
+				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
+	 				gridMenu.inherited("_openMyself", arguments);
+  			}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
@@ -846,10 +856,12 @@
 		function directoryIsChecked() {
 			if (!listingGrid._isLoaded)
 				return false;
-			var selected = listingGrid.selection.getSelected();
-			for (var i = 0; i < selected.length; i++) 
-				if (listingGrid.store.getValue(selected[i], "name").type == "d")
-					return true;
+//			try {
+				var selected = listingGrid.selection.getSelected();
+				for (var i = 0; i < selected.length; i++) 
+					if (listingGrid.store.getValue(selected[i], "name").type == "d")
+						return true;
+//			} catch (e) {} // Ignore invalid item errors - indicates grid is not fully rendered
 			return false;
 		}
 		
@@ -1605,13 +1617,14 @@
 		function debugButtonHandler() {
 			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//logout();
-			alert("app version: <parameter appversion/>");
+			//alert("app version: <parameter appversion/>");
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
 			directory:"",
 			lastURL:"",
 			grid:null,
+			invalidate:false,
 			addToHistory:false,
 			currentDirectory:"",
 			setCurrentDirectory: function(dir) {
@@ -1640,8 +1653,8 @@
 				var oldErrorHandler = errorHandler;
 				var directory = this.directory;
 				var onFetchError = this.onFetchError;
-				var url = this.url;
-				var lastURL = this.lastURL;
+//				var url = this.url;
+//				var lastURL = this.lastURL;
 				var newErrorHandler = function(errorData, requestObject) {
 					alert("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, ""));
 					// revert store's url cos the request failed
@@ -1649,7 +1662,7 @@
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete
 					if (onFetchError)
 						onFetchError();
-					url = lastURL;
+//					url = lastURL;
 					cursorBusy(false);
 					if (oldErrorHandler) 
 						return oldErrorHandler(errorData, requestObject);
@@ -1666,6 +1679,18 @@
 				return this.inherited("_fetchItems", arguments);
 			},
 			_xhrFetchHandler:function(data, request, fetchHandler, errorHandler) {
+				// If invalidate is true, mark all internal grid items as empty to force refetching. Also invalidate scroller
+				// nodes - otherwise scrolling may display stuff cached from previous directories.
+				if (this.invalidate) {
+					this.invalidate = false;
+					this.grid.items = null; // Force store load
+					this.grid._by_idx = [];
+					this.grid._by_idty = {};
+					this.grid._bop = -1;
+					this.grid._eop = -1;
+					this.grid._pages = [];
+					this.grid.scroller.invalidateNodes();
+				}
 				// This is only called by a successful ajax call
 //				alert("_xhrFetchHandler: data="+ data);
 				this.setCurrentDirectory(this.directory);
@@ -1675,6 +1700,10 @@
 				// Not necessary? Also - causes problem in Chrome!
 				//this.grid.focus.focusHeader(); 
 				var result = this.inherited("_xhrFetchHandler", arguments);
+				try {
+					listingGrid.focus.focusHeader();  	// For IE: when changing to a new dir that needs scrollbar, this stops
+														// scrollbar knob jumping back to top during scroll.
+				} catch (e) {} // Ignore errors if table is not fully rendered
 				if (this.onFetchSuccess)
 					this.onFetchSuccess();
 				return result;
