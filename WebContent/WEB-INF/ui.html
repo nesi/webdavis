@@ -87,6 +87,7 @@
 		dojo.require("dijit.layout.BorderContainer");
 		dojo.require("dojox.widget.PlaceholderMenuItem");
 		dojo.require("dijit.form.DropDownButton");
+		dojo.require("dijit.form.Form");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -475,7 +476,7 @@
           		'		<td>'+
 				'			<table id="uploadButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
              	'				<tr>'+
-                '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); dojo.html.set(dojo.byId(\'uploadStatusField\'), \'\'); dialogUpload.show()"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
+                '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); dojo.html.set(dojo.byId(\'uploadStatusField\'), \'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
@@ -988,6 +989,8 @@
 
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
+
+			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 		}
 		
 		function setStatusPanel(html) {
@@ -1100,7 +1103,7 @@
 				form: "uploadForm",
 				handleAs: "json",
 				handle: function(response, ioArgs){
-							dialogUpload.hide();
+							showUploadDialog(false);
 							if (response.status == "success") {
 								//alert("Successfully transferred "+response.message+" bytes");
 								window.status="Successfully transferred "+response.message+" bytes";
@@ -1112,7 +1115,7 @@
 							return response;
 						},
 				error: function(response, ioArgs) {
-							dialogUpload.hide();
+							showUploadDialog(false);
 							alert("Failed to upload file: "+response);
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
@@ -1123,7 +1126,7 @@
 
 		function uploadCancel() {
 			if (!uploadInProgress)  
-				dialogUpload.hide();
+				showUploadDialog(false);
 			else {
 				uploadInProgress = false;
 				dojo.html.set(dojo.byId('uploadStatusField'), "Cancelling...");
@@ -1578,6 +1581,14 @@
 			dialogReplicas.show();
 			getReplicas("");
 		}
+
+		function showUploadDialog(show) {
+			if (show) {
+				dialogUpload.show();
+				refreshButtons();
+			} else
+				dialogUpload.hide();
+		}
 		
 		function logout() {
 			cursorBusy(true);	
@@ -1739,9 +1750,9 @@
 	</div>
 </div>		
 <div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload">
- 	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return validateUploadForm();">
+ 	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return /*validateUploadForm()*/ false;">
    		File to upload:
-   		<input id="uploadTextField" type="file" name="uploadFileName" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
+   		<input id="uploadTextField" type="file" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
  	</form>
 	<div id="uploadStatusField"></div>
 	<br/>
