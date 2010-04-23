@@ -909,7 +909,7 @@
 		
 		function enableButton(button, enable) {
 			button = dojo.byId(button);
-			if (button != null)
+			if (button)
 				button.disabled = !enable;
 		}
 
@@ -985,6 +985,9 @@
 			
 			setToggleButtonState(getToggleButtonState());
 			dojo.byId("destinationMoveButton").disabled = (destinationStore.getCurrentDirectory() == listingStore.getCurrentDirectory());
+
+			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
+			enableButton('addMetadataButton', true); 
 		}
 		
 		function setStatusPanel(html) {
@@ -1253,6 +1256,7 @@
 			if (batch) 
 				resetMetadataStore(true);
 			else {
+				resetMetadataStore(true);
 				metadataURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem());
 				loadMetadataFromServer(metadataURL);
 			}
@@ -1799,7 +1803,7 @@
 		<tr>
 			<td>
 	        	<button type="button" id="refreshMetadataButton" onclick="refreshMetadata(dialogMetadata.attr('url'))">Refresh</button>
-	    		<button type="button" onclick="addMetadata()">Add Metadata</button>
+	    		<button type="button" id="addMetadataButton" onclick="addMetadata()" >Add Metadata</button>
 	    		<button type="button" onclick="metadataGrid.removeSelectedRows()">Remove Metadata</button>
 	    		<button type="button" id="saveMetadataButton" onclick="saveMetadata()">Save</button>
 	    		<button type="button" onclick="dialogMetadata.hide()">Close</button>
