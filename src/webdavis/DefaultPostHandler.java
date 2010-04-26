@@ -23,7 +23,6 @@ import javax.servlet.ServletOutputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -109,7 +108,6 @@ public class DefaultPostHandler extends AbstractHandler {
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
 		//StringBuffer str = new StringBuffer();
 		StringBuffer json = new StringBuffer();
-        response.setContentType("text/json; charset=\"utf-8\"");
 		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
@@ -467,7 +465,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		                		fileName = fileName.substring(j+1);
 	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 	                        boolean existsCurrently = file.exists();
-	                        if (existsCurrently /*&& !file.isFile()*/) {
+	                        if (existsCurrently && !file.isFile()) {
 	                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
 	            	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("File already exists")));
 	                        } else {	                        
@@ -703,13 +701,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("\n]}");
-		} else if (method.equalsIgnoreCase("logout")) { 
-			// Not useful at the moment because the browser caches username/password and establishes a new session automatically.
-			HttpSession session = request.getSession(true);
-			session.invalidate(); 
-			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
 		}
-		
 		ServletOutputStream op = null;
 		try {
 			 op = response.getOutputStream();

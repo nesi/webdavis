@@ -2,7 +2,6 @@
 
   <property name="app.name"      value="davis"/>
   <property name="app.version"   value="0.8.4"/>
-  <property name="dojo.version"	 value="1.4.2"/>
   <property name="build.home"    value="${basedir}/build"/>
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
@@ -137,7 +136,6 @@
 
   </target>
 	
-  <!-- Not used anymore? -->
   <target name="jetty5" depends="clean,compile"
 	description="Create tar ball distribution">
     <mkdir   dir="${dist.home}"/>
@@ -180,7 +178,7 @@
 	</tar>
 	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
 	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
-  </target> 
+  </target>
 	
   <target name="dist" depends="clean,compile" description="Create tar ball distribution">
 	<mkdir   dir="${dist.home}"/>
@@ -230,15 +228,6 @@
     <mkdir  dir="${build.home}/WEB-INF"/>
     <mkdir  dir="${build.home}/WEB-INF/classes"/>
 
-  	<!-- Extract required version of dojo -->
-  	<delete dir="${web.home}/dojoroot"/>
-  	<mkdir dir="${web.home}/dojoroot"/>
-  	<untar src="${basedir}/ext/dojo-release-${dojo.version}.tar.gz" dest="${web.home}/dojoroot" compression="gzip"/>
-  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojo"/>
-  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dijit"/>
-  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojox"/>
-  	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}"/>
-  	
     <!-- Copy static content of this web application -->
     <copy todir="${build.home}">
       <fileset dir="${web.home}"/>

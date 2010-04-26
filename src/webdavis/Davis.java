@@ -292,7 +292,6 @@ public class Davis extends HttpServlet {
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
 				Log.log(Log.INFORMATION, "Unhandled error: {0}", throwable);
-				throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\n"+throwable.getMessage(), throwable.getCause());
 				if (throwable instanceof ServletException) {
 					throw (ServletException) throwable;
 				} else if (throwable instanceof IOException) {
@@ -306,7 +305,8 @@ public class Davis extends HttpServlet {
 				}
 			}
 		} else {
-			Log.log(Log.INFORMATION, "Unrecognized method: " + request.getMethod());
+			Log.log(Log.INFORMATION, "Unrecognized method: "
+					+ request.getMethod());
 			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 		}
 		Log.log(Log.DEBUG, "#### Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
