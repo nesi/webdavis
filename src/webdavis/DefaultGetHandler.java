@@ -135,6 +135,7 @@ import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
 public class DefaultGetHandler extends AbstractHandler {
 
 	private static final Timer TIMER = new Timer(true);
+	private final long instanceID = new Date().getTime(); // ID for this servlet instance (its creation date) - for debugging
 
 	private final Map<String, TemplateTracker> templateMap = new HashMap<String, TemplateTracker>();
 	private final Map<Locale, Templates> defaultTemplates = new HashMap<Locale, Templates>();
@@ -148,10 +149,10 @@ public class DefaultGetHandler extends AbstractHandler {
 	private String defaultUIHTMLContent;
 	private String uiLoadDate = "";
 	private SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
-	private CachedFile[] fileList = null;
+	private Hashtable <String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
+	private boolean sortAscending = true;
+	private String sortField = "name";
 
-	// private String lastRequestSignature = "";
-	// private String lastSortString = "";
 
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -206,9 +207,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		super.destroy();
 	}
-
-	private boolean sortAscending = true;
-	private String sortField = "name";
 
 	Comparator<Object> comparator = new Comparator<Object>() {
 		public int compare(Object file1, Object file2) {
@@ -268,7 +266,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	 * 
 	 */
 	public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
-//		System.err.println("======================================================request="+request);
+		Log.log(Log.DEBUG, ("=============== id="+instanceID+" request="+request));
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
@@ -311,7 +309,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		// return;
 		// }
 		String requestUrl = getRequestURL(request);
-		// StringBuffer str = new StringBuffer();
 		StringBuffer json = new StringBuffer();
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
 		if (file.getName().endsWith("/") && !requestUrl.endsWith("/")) { // Redirect
@@ -331,11 +328,22 @@ public class DefaultGetHandler extends AbstractHandler {
 					Log.log(Log.ERROR, "dojoquery method not implemented for SRB");
 					return;
 				}
+				boolean noCache = false;
+				if (request.getParameter("nocache") != null)
+					noCache = true;				
 				boolean directoriesOnly = false;
 				if (request.getParameter("directoriesonly") != null)
 					directoriesOnly = true;
-				// Request is like
-				// ?method=dojoquery&name=*&start=0&count=30&sort=name
+				String requestUIHandle = null;
+				if (request.getParameter("uihandle") != null) {
+					requestUIHandle = request.getParameter("uihandle");//+(directoriesOnly?"dir":""); // Use separate cache for directoriesOnly query
+					if (requestUIHandle.equals("null"))
+						requestUIHandle = null;
+				}
+				if (requestUIHandle == null)
+					requestUIHandle = ""+new Date().getTime();//+(directoriesOnly?"dir":""); // Use separate cache for directoriesOnly query
+				
+				// Request is like ?method=dojoquery&name=*&start=0&count=30&sort=name
 				String sort = request.getParameter("sort");
 				if (sort != null) {
 					sortField = sort;
@@ -353,25 +361,22 @@ public class DefaultGetHandler extends AbstractHandler {
 				int count = 0;
 				if (s != null)
 					count = Integer.parseInt(s);
-				// String requestSignature = "name="+file.getPath()+"method="+method+"start="+start+"count="+count;
-				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^request="+requestSignature);
-				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastrequest="+lastRequestSignature);
-				//System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^sort="+sort);
-				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^lastsort="+lastSortString);
 
-				// if (!requestSignature.equals(lastRequestSignature) || (sort == null || sort.equals(lastSortString))) {
-				// System.err.println("^^^^^^^^^^^^^^^^^^^^^^^^^loading");
-				fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly); // // Only fetch new listing if not sort request
-				// }
-				// lastRequestSignature = requestSignature;
-				// lastSortString = sort;
+				CachedFile[] fileList = fileListCache.get(requestUIHandle);
+				if (noCache || fileList == null) {
+					Log.log(Log.DEBUG, "Fetching directory contents from irods");
+					fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly);
+					fileListCache.put(requestUIHandle, fileList);
+				} else
+					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 
 				boolean emptyDir = (fileList.length == 0);
 				if (!emptyDir)
 					Arrays.sort((Object[]) fileList, comparator);
 
-				json.append("{\n" + escapeJSONArg("numRows") + ":" + escapeJSONArg("" + (fileList.length + 1 + (emptyDir ? 1 : 0)))	+ ",");
-				json.append(escapeJSONArg("items") + ":[\n");
+				json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+1+(emptyDir ? 1 : 0)))+",");
+				json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
+				json.append(escapeJSONArg("items")+":[\n");
 				for (int i = start; i < start + count; i++) {
 					if (i >= fileList.length + 1)
 						break;
@@ -383,13 +388,13 @@ public class DefaultGetHandler extends AbstractHandler {
 										+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
 						continue;
 					}
-					String type = fileList[i - 1].isDirectory() ? "d" : "f";
-					json.append("{\"name\":{\"name\":" + escapeJSONArg(fileList[i - 1].getName()) + ",\"type\":" + escapeJSONArg(type) + "}"
-							+ ",\"date\":{\"value\":" + escapeJSONArg(dateFormat.format(fileList[i - 1].lastModified())) + ",\"type\":" + escapeJSONArg(type) + "},"
-							+ "\"size\":{\"size\":"	+ escapeJSONArg("" + fileList[i - 1].length()) + ",\"type\":" + escapeJSONArg(type) + "},"
-							+ "\"metadata\":{\"values\":[");
+					String type = fileList[i-1].isDirectory() ? "d" : "f";
+					json.append("{\"name\":{\"name\":"+escapeJSONArg(fileList[i-1].getName())+",\"type\":"+escapeJSONArg(type)+"}"
+							+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
+							+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
+							+"\"metadata\":{\"values\":[");
 
-					HashMap<String, ArrayList<String>> metadata = fileList[i - 1].getMetadata();
+					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
 					if (metadata != null) {
 						json.append("\n");
 						String[] names = metadata.keySet().toArray(new String[0]);

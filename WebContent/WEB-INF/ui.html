@@ -214,23 +214,35 @@
 			resetUsersStore();
 			resetReplicasStore();
 
-			listingStore = new ListingStore({url:escape("<parameter url/>")+"?method=dojoquery",
+			listingStore = new ListingStore({
+				id: "listingStore", // For debugging
 				grid: listingGrid,
+				lastSort : null,
 				directory: escape("<parameter url/>"),
-				lastURL: escape("<parameter url/>")+"?method=dojoquery",
 				addToHistory: false,
+				_fetchItems: function(request) {
+					if (request.sort == null) {
+						if (listingStore.lastSort == null)
+							listingStore.lastSort = [{attribute:"name", descending: false}];
+						request.sort = listingStore.lastSort;
+					}
+//				alert("sort="+dojo.toJson(request.sort, true));
+					listingStore.lastSort = request.sort;
+					listingStore.inherited("_fetchItems", arguments);
+				},
 				onFetchError: function() {
-					if (listingStore.lastURL != listingStore.url) // If directory changed, clear selections
+					listingStore.setURL(listingStore.urlFields.dir, false, listingStore.urlFields.postfix); // Force reading from servlet cache until instructed otherwise
+					if (listingStore.urlChanged())
 						checkAll(false);
 					listingStore.invalidate = false;
 					listingStore.directory = listingStore.getCurrentDirectory(); // Put directory back to last successful one
-					listingStore.url = listingStore.lastURL; // Put url back to last successful one
+					listingStore.setURL(listingStore.lastURL.dir, listingStore.lastURL.noCache, listingStore.lastURL.postfix); // Put url back to last successful one
 					listingStore.refreshDisplay(false);
 				},
 				onFetchSuccess: function() {
-					if (listingStore.lastURL != listingStore.url || firstRender) { // If directory changed, clear selections
-						checkAll(false);
-						listingStore.lastURL = listingStore.url;
+					if (listingStore.urlChanged() || firstRender) { // If directory changed, clear selections
+//						checkAll(false);
+						listingStore.setLastURL(listingStore.urlFields);
 						listingStore.refreshDisplay(true);
 						firstRender = false;
 					} else
@@ -240,7 +252,7 @@
 					listingStore.inherited("gotoDirectory", arguments);
 //					if (cursorBusy())
 //						return;
-					listingStore.url = dir+"?method=dojoquery";
+					listingStore.setURL(dir, true);
 					// This method works but causes a "loading" message to appear
 //					listingStore.grid._refresh(true);	// Update grid by forcing a store load from new url
 					// This method does everything we want. Needs thorough testing
@@ -252,6 +264,7 @@
 					refreshButtons();
 					dojo.html.set(dojo.byId("dialogDeleteBulk"), warnBulk(true));
 					dojo.html.set(dojo.byId("dialogRestoreBulk"), warnBulk(true));
+		    		dojo.html.set(dojo.byId('aboutUIHandle'), listingStore.uiHandle);
 					var items = -1;
 					if (listingStore != null)
 						items = listingStore._numRows;
@@ -271,21 +284,28 @@
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
 				}
 			});
+			listingStore.setURL(escape("<parameter url/>"), false),
+			listingStore.setLastURL(listingStore.urlFields);
 			listingGrid.setStore(listingStore);
 	    		    	
-			destinationStore = new ListingStore({url:escape("<parameter url/>")+"?method=dojoquery&directoriesonly",
+			destinationStore = new ListingStore({
+				id: "destinationStore", // For debugging
 				grid: destinationGrid,
 				directory:escape("<parameter url/>"),
-				lastURL:escape("<parameter url/>")+"?method=dojoquery&directoriesonly",
+				_fetchItems: function(request) {
+					request.sort = [{attribute:"name", descending: false}];
+					destinationStore.inherited("_fetchItems", arguments);
+				},
 				onFetchError: function() {
-					destinationStore.url = destinationStore.lastURL;
+					destinationStore.setURL(destinationStore.urlFields.dir, false, destinationStore.urlFields.postfix); // Force reading from servlet cache until instructed otherwise
+					destinationStore.setURL(destinationStore.lastURL.dir, destinationStore.lastURL.noCache, destinationStore.lastURL.postfix);
 					destinationStore.refreshDisplay();
 					destinationStore.grid.selection.deselectAll();
 					refreshButtons();
 					destinationStore.show(true);
 				},
 				onFetchSuccess: function() {
-					destinationStore.lastURL = destinationStore.url;
+					destinationStore.setLastURL(destinationStore.urlFields);
 					destinationStore.refreshDisplay(); 
 					destinationStore.grid.selection.deselectAll();
 					refreshButtons();
@@ -296,7 +316,7 @@
 						return;
 					destinationStore.directory = dir;
 					destinationStore.addToHistory = false;
-					destinationStore.url = dir+"?method=dojoquery&directoriesonly";
+					destinationStore.setURL(dir, true, "&directoriesonly");
 		    		destinationStore.grid.items = null; // Force store load
 					destinationStore.grid._fetch(0, true); // Update grid by initiating a store load from new url
 				},
@@ -307,6 +327,8 @@
 					dojo.html.set(dojo.byId("destinationBreadcrumb"), toBreadcrumb(destinationStore.getCurrentDirectory(), "destinationStore", false));
 				}
 			});
+			destinationStore.setURL(escape("<parameter url/>"), false, "&directoriesonly");
+			destinationStore.setLastURL(destinationStore.urlFields);
 			destinationGrid.setStructure(destinationLayout);
 			destinationGrid.setStore(destinationStore);
 		}
@@ -393,8 +415,11 @@
     		}
     		dialogMetadata.closeButtonNode.title = "Close";
     		dialogPermissions.closeButtonNode.title = "Close";
-    		dojo.html.set(dojo.byId('aboutDojoVersion'), ""+dojo.version);
-    		dojo.html.set(dojo.byId('aboutBrowser'), navigator.userAgent);
+
+    		var buttons = document.body.getElementsByTagName('BUTTON');
+    		// The following seems to be necessary for mozilla based browsers on linux. Some buttons start disabled for some reason.
+    		for (var i = 0; i < buttons.length; i++) 
+    			buttons[i].disabled = false;
 		}
 		
 		function resetPermissionsStore(fast) {
@@ -501,11 +526,7 @@
     			dynamicHTML;
 			if (enableDebugButton)
       			html += '<td><table class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="debugButtonHandler()"><tr><td>DEBUG</td></tr></table></td>';  			
-    		html += //'	<td>&nbsp;'+
-//				'			<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>'+
-//				'			<a title="Go to my home folder" onclick="listingStore.gotoDirectory(\'<parameter home/>\', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>'+
-//				'			<a title="Go to my trash folder" onclick="listingStore.gotoDirectory(\'<parameter trash/>\', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>'+
-//				'		</td>'+
+    		html += 
 				'	</tr>'+
 				'</table>';
 			dojo.html.set(dojo.byId("sessionButtonsHTML"), html);
@@ -541,7 +562,6 @@
 			if (value.type == "top" || value.type == "bottom" || value.type == "d") // Static row or directory?
 				return "";
 			return '<small><small>'+humanReadable(value.size)+'</small></small>';
-//			return new dijit.form.TextBox({value:"blah blah blah blah blah blah", onClick:"alert('click');"});
 		}
 		
 		function gridFormatMetadata(value) {
@@ -824,12 +844,17 @@
 		function escapeJSON(s) {
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 		}
-		
+
+		function getSelected(grid) {
+			return grid.selection.getSelected();
+		}
+
 		function listCheckedItems() {
 			var list = "";
 			if (!listingGrid._isLoaded)
 				return "";
-			var selected = listingGrid.selection.getSelected();
+			var selected = getSelected(listingGrid);
+			if (selected != null)
 			for (var i = 0; i < selected.length; i++) 
 				list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
 			if (list.length > 0)
@@ -857,12 +882,11 @@
 		function directoryIsChecked() {
 			if (!listingGrid._isLoaded)
 				return false;
-//			try {
-				var selected = listingGrid.selection.getSelected();
+			var selected = getSelected(listingGrid);
+			if (selected != null)
 				for (var i = 0; i < selected.length; i++) 
 					if (listingGrid.store.getValue(selected[i], "name").type == "d")
 						return true;
-//			} catch (e) {} // Ignore invalid item errors - indicates grid is not fully rendered
 			return false;
 		}
 		
@@ -873,12 +897,11 @@
 		}
 		
 		function checkAll(state) {
-			if (listingGrid._isLoaded) {
-				if (state) 
+			if (state) {
+				if (listingGrid._isLoaded) 
 					listingGrid.selection.selectRange(0, listingGrid.rowCount-1);
-				else
-					listingGrid.selection.deselectAll();
-			}
+			} else
+				listingGrid.selection.deselectAll();
 			setToggleButtonState(!state);
 			listingStore.refreshDisplay(false);
 		}
@@ -909,9 +932,10 @@
 		}
 		
 		function enableButton(button, enable) {
-			button = dojo.byId(button);
-			if (button)
-				button.disabled = !enable;
+			var b = dojo.byId(button);
+			if (b) { // Firefox/firebug seems to require these braces for when b is null!
+				b.disabled = !enable;
+			}
 		}
 
 		function isTrash(url) {
@@ -989,7 +1013,6 @@
 
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
-
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 		}
 		
@@ -1637,11 +1660,28 @@
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
 			directory:"",
-			lastURL:"",
+			lastURL:null,
+			uiHandle:null,
 			grid:null,
 			invalidate:false,
 			addToHistory:false,
 			currentDirectory:"",
+			urlFields:null,
+			setURL: function(dir, noCache, postfix) {
+				this.urlFields = {dir:dir, noCache:noCache, postfix:postfix};
+				this.buildURL();
+			},
+			urlChanged: function() {
+				if (!this.lastURL)
+					return true;
+				return (this.lastURL.dir == this.urlFields.dir) && (this.lastURL.noCache == this.urlFields.noCache) && (this.lastURL.postfix == this.urlFields.postfix);
+			},
+			setLastURL: function(urlFields) {
+				this.lastURL = {dir:urlFields.dir, noCache:urlFields.noCache, postfix:urlFields.postfix};
+			},
+			buildURL: function() {
+				this.url = this.urlFields.dir+"?method=dojoquery&uihandle="+this.uiHandle+(this.urlFields.noCache?"&nocache":"")+(this.urlFields.postfix ? this.urlFields.postfix:"");
+			},
 			setCurrentDirectory: function(dir) {
 				this.currentDirectory = dir;
 			},
@@ -1649,8 +1689,6 @@
 				return this.currentDirectory;
 			},
 			gotoDirectory: function (dir, addToHistory) {
-//				if (isCursorBusy())
-//					return;
 				this.directory = dir;
 				this.addToHistory = addToHistory;
 			},
@@ -1664,20 +1702,16 @@
 			_fetchItems:function(request, fetchHandler, errorHandler) {
 				// Assign custom handlers for store's ajax call to Davis server. newFetchHandler is invoked by _xhrFetchHandler
 				// (which is supplied to the ajax call by super._fetchItems) for a successful call. newErrorHandler is invoked by the 
-				// ajax call for a failure http code.
+				// ajax call for a failure http code.					
 				var oldErrorHandler = errorHandler;
 				var directory = this.directory;
 				var onFetchError = this.onFetchError;
-//				var url = this.url;
-//				var lastURL = this.lastURL;
 				var newErrorHandler = function(errorData, requestObject) {
-					alert("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, ""));
-					// revert store's url cos the request failed
-					// Only needed for dojo < 1.4.1
-					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete
+					if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
+						alert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete - only needed for dojo < 1.4.1
 					if (onFetchError)
 						onFetchError();
-//					url = lastURL;
 					cursorBusy(false);
 					if (oldErrorHandler) 
 						return oldErrorHandler(errorData, requestObject);
@@ -1694,6 +1728,12 @@
 				return this.inherited("_fetchItems", arguments);
 			},
 			_xhrFetchHandler:function(data, request, fetchHandler, errorHandler) {
+				// This is only called by a successful ajax call
+//				alert("_xhrFetchHandler: data="+ data);
+				this.uiHandle = data.uiHandle;
+				this.buildURL();
+				this.url = this.url.replace("&nocache", ""); // Force reading from servlet cache until instructed otherwise
+				
 				// If invalidate is true, mark all internal grid items as empty to force refetching. Also invalidate scroller
 				// nodes - otherwise scrolling may display stuff cached from previous directories.
 				if (this.invalidate) {
@@ -1706,8 +1746,7 @@
 					this.grid._pages = [];
 					this.grid.scroller.invalidateNodes();
 				}
-				// This is only called by a successful ajax call
-//				alert("_xhrFetchHandler: data="+ data);
+				this.grid.selection.deselectAll();
 				this.setCurrentDirectory(this.directory);
 				if (this.addToHistory)
 					addToHistory(this.directory);
@@ -1716,8 +1755,9 @@
 				//this.grid.focus.focusHeader(); 
 				var result = this.inherited("_xhrFetchHandler", arguments);
 				try {
-					listingGrid.focus.focusHeader();  	// For IE: when changing to a new dir that needs scrollbar, this stops
-														// scrollbar knob jumping back to top during scroll.
+					if (dojo.isIE)
+						listingGrid.focus.focusHeader();  	// For IE: when changing to a new dir that needs scrollbar, this stops
+															// scrollbar knob jumping back to top during scroll.
 				} catch (e) {} // Ignore errors if table is not fully rendered
 				if (this.onFetchSuccess)
 					this.onFetchSuccess();
@@ -1886,9 +1926,9 @@
 	<table>
 		<tr>
 			<td align="center">Davis version: <parameter appversion/><br><br><small>
-			    Using Dojo version: <span id="aboutDojoVersion"></span><br>
-			    Davis UI last loaded <parameter uiloaddate/><br>
-			    Browser: <span id="aboutBrowser"></span><br><br>
+			    Using Dojo version: <script>document.write(dojo.version)</script><br><br>
+			    Davis UI last loaded <parameter uiloaddate/>&nbsp;&nbsp;&nbsp;&nbsp;UI handle: <span id="aboutUIHandle"></span><br>
+			    Browser: <script>document.write(navigator.userAgent)</script><br><br>
 			    Support contact: <parameter organisationsupport/></br></small>
 			</td>
 		</tr>
