@@ -153,6 +153,9 @@ public class DefaultGetHandler extends AbstractHandler {
 	private boolean sortAscending = true;
 	private String sortField = "name";
 
+    public DefaultGetHandler(Davis davis) {
+		super(davis);
+	}
 
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -173,6 +176,11 @@ public class DefaultGetHandler extends AbstractHandler {
 		// directly
 		defaultUIHTMLContent = loadUI(UIHTMLLocation);
 		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+	}
+	
+	public CachedFile[] getCache(String cacheID) {
+		
+		return fileListCache.get(cacheID);
 	}
 
 	private String loadUI(String fileName) {

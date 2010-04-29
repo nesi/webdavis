@@ -32,6 +32,10 @@ public class DefaultDeleteHandler extends AbstractHandler {
 
 	boolean inTrash;
 
+    public DefaultDeleteHandler(Davis davis) {
+		super(davis);
+	}
+
     /**
      * Services requests which use the HTTP DELETE method.
      * This implementation deletes the specified file
@@ -50,8 +54,9 @@ public class DefaultDeleteHandler extends AbstractHandler {
     	   	
         response.setContentType("text/html; charset=\"utf-8\"");
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-    	boolean batch = getFileList(request, davisSession, fileList);
+    	boolean batch = getFileList(request, davisSession, fileList, getJSONContent(request));
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
+    	
 //    	boolean batch = false;  	
 //    	RemoteFile uriFile = getRemoteFile(request, davisSession);
 //        if (request.getContentLength() <= 0) {

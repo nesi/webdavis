@@ -613,7 +613,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when fetching dynamic objects list: "+response);
+	      			alert("Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    		sync: true,
@@ -638,7 +638,8 @@
 		function sendDynamicButton(buttonNum) {
 //	alert("sending dynamic button "+buttonNum+": "+dynamicObjects[buttonNum].name);
 			// Get args as json
-			var data='[{"files":['+listCheckedItems()+'], "args":[';
+//			var data='[{"files":['+listCheckedItems()+'], "args":[';
+			var data='[{"indices":['+listCheckedItems(true)+'], "args":['; 
 			if (dynamicObjects[buttonNum].inputs.args != undefined) {
 				var firstTime = true;
 				for (var i = 0; i < dynamicObjects[buttonNum].inputs.args.length; i++) {
@@ -655,7 +656,7 @@
 			data += ']}]'; 		
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: listingStore.getCurrentDirectory()+"?method=execbutton&button="+dynamicObjects[buttonNum].name,
+	    		url: listingStore.getCurrentDirectory()+"?method=execbutton&button="+dynamicObjects[buttonNum].name+"&uihandle="+listingStore.uiHandle,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -675,7 +676,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when executing dynamic button action: "+response);
+	      			alert("Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    //		sync: true,
@@ -845,18 +846,28 @@
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 		}
 
-		function getSelected(grid) {
-			return grid.selection.getSelected();
+		function getSelected(grid, indices) {
+			if (indices) {
+			    var result = [];
+			    for (var i = 0; i < grid.selection.selected.length; i++) 
+			        if (grid.selection.selected[i]) 
+			            result.push(i-1);
+			    return result;
+			} else
+				return grid.selection.getSelected();
 		}
 
-		function listCheckedItems() {
+		function listCheckedItems(indices) {
 			var list = "";
 			if (!listingGrid._isLoaded)
 				return "";
-			var selected = getSelected(listingGrid);
+			var selected = getSelected(listingGrid, indices);
 			if (selected != null)
 			for (var i = 0; i < selected.length; i++) 
-				list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
+				if (indices)
+					list = list+"\""+selected[i]+"\",";
+				else
+					list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
 			if (list.length > 0)
 				list = list.substring(0, list.length-1);  // remove trailing ','
 			return list;
@@ -864,7 +875,8 @@
 		
 		function listToJSON() {
 			//json format is: [{"files":["file1","file2"...]}]
-			return "[{\"files\":["+listCheckedItems()+"]}]";
+//			return "[{\"files\":["+listCheckedItems()+"]}]";
+			return "[{\"indices\":["+listCheckedItems(true)+"]}]";
 		}
 
 		function getFirstCheckedItem() {
@@ -1062,7 +1074,7 @@
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
 		  				borderContainer.layout();
-	      				alert("Error when loading collection metadata.");
+	      				alert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1100,7 +1112,7 @@
 			   		},
 	    		error: function(response, ioArgs){
 						cursorBusy(false);
-	      				alert("Failed to create directory "+dirName+": "+errorMessage("mkcol", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				alert("Failed to create directory "+dirName+":\n\n"+errorMessage("mkcol", ioArgs.xhr.status, ioArgs.xhr.statusText));
 						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
 		      				listingStore.refreshDisplay(false);
 						}
@@ -1139,7 +1151,7 @@
 						},
 				error: function(response, ioArgs) {
 							showUploadDialog(false);
-							alert("Failed to upload file: "+response);
+							alert("Failed to upload file:\n\n"+ioArgs.xhr.statusText);
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							return response;
@@ -1168,12 +1180,13 @@
 				alert("Please wait for trash to finish emptying.");
 				return;
 			}
-			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+//			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+			var data='[{"indices":['+listCheckedItems(true)+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			if (isTrash(url))
 				emptyTrashInProgress = true;
 			cursorBusy(true);
 			dojo.xhr("DELETE", {
-				url: url,
+				url: url+"?uihandle="+listingStore.uiHandle,
 //				sync: isTrash(url),
 				headers: {
 			        "content-length": data.length,
@@ -1227,9 +1240,11 @@
 			cursorBusy(true);
 			var data = "";
 			if (!rename)
-				data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+//				data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+				data='[{"indices":['+listCheckedItems(true)+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			dojo.xhr("MOVE", {
-				url: url,
+//				url: url,
+				url: url+"?uihandle="+listingStore.uiHandle,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json",
@@ -1270,7 +1285,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading metadata.");
+	      				alert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1323,7 +1338,7 @@
 			if (checkedItemsCount() == 0)
 				return;
 
-			//json format is: [{"files":["file1","file2"...],"metadata":[{"name":"foo","value":"bar"},{"name":"foo2","value":"bar2"}...]}]
+			//json format is: [{"indices":["fileindex1","fileindex2"...],"metadata":[{"name":"foo","value":"bar"},{"name":"foo2","value":"bar2"}...]}]
 			var data=listToJSON();
 			data = data.substring(0, data.length-2);	// Trim '}]' off end 
 			data += ",\"metadata\":[";
@@ -1340,7 +1355,7 @@
 //			alert("data:"+data);
 			cursorBusy(true);
 		  	dojo.rawXhrPost({
-	    		url: listingStore.getCurrentDirectory()+"?method=metadata",
+	    		url: listingStore.getCurrentDirectory()+"?method=metadata"+"&uihandle="+listingStore.uiHandle,
 			    headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -1354,7 +1369,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading metadata.");
+	      				alert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1386,7 +1401,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Error when loading domain list.");
+	      			alert("Error when loading domain list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    		handleAs: "json"
@@ -1404,7 +1419,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading user list: "+response);
+	      				alert("Error when loading user list:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1416,20 +1431,20 @@
 				data = "";
 			cursorBusy(true);
 		  	dojo.rawXhrPost({
-	    		url: url,
+	    		url: url+"&uihandle="+listingStore.uiHandle,
 	 		    headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
 			    },
 	 		    postData: data,
-	    		load: function(responseObject, ioArgs){
+	    		load: function(response, ioArgs){
 						cursorBusy(false);
-	       				populatePermission(responseObject);	      			
-	       				return responseObject;
+	       				populatePermission(response);	      			
+	       				return response;
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading permissions.");
+	      				alert("Error when loading permissions:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1441,9 +1456,9 @@
 			permissionsGrid.setStore(permissionsStore);
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
-					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"unsetSticky(dojo.byId('recursive').checked)\">Unset</button>");
+					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(false, dojo.byId('recursive').checked)\">Unset</button>");
 				else
-					dojo.html.set(dojo.byId("stickyControl"), "This directory is not sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(dojo.byId('recursive').checked)\">Set</button>");
+					dojo.html.set(dojo.byId("stickyControl"), "This directory is not sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(true, dojo.byId('recursive').checked)\">Set</button>");
 			} else
 				dojo.html.set(dojo.byId("stickyControl"), "");
 			listingStore.refreshDisplay(false);
@@ -1492,15 +1507,15 @@
 			getPermission(form_url, listToJSON());
 		}
 
-		function setSticky(recursive){
-			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=true";
+		function setSticky(state, recursive){
+			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky="+(state?"true":"false");
 			getPermission(form_url, listToJSON());
 		}
 
-		function unsetSticky(recursive){
-			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=false";
-			getPermission(form_url, listToJSON());
-		}
+//		function unsetSticky(recursive){
+//			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=false";
+//			getPermission(form_url, listToJSON());
+//		}
 
 		function getSelectedPermission(e){
 			formUsername.attr('displayedValue', ''+permissionsGrid.getItem(e.rowIndex).username);
@@ -1623,7 +1638,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("logout failed:"+response+ioArgs);
+	      				alert("logout failed:\n\n"+ioArgs.xhr.statusText);
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1745,8 +1760,8 @@
 					this.grid._eop = -1;
 					this.grid._pages = [];
 					this.grid.scroller.invalidateNodes();
+					this.grid.selection.deselectAll();
 				}
-				this.grid.selection.deselectAll();
 				this.setCurrentDirectory(this.directory);
 				if (this.addToHistory)
 					addToHistory(this.directory);

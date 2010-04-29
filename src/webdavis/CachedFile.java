@@ -17,10 +17,12 @@ public class CachedFile extends RemoteFile {
 	private HashMap<String, ArrayList<String>> metadata;
 	
 	
-	public CachedFile(RemoteFileSystem rfs, String path, String filename)
-			throws NullPointerException {
+	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
 		super(rfs, path, filename);
-		// TODO Auto-generated constructor stub
+	}
+
+	public CachedFile(RemoteFileSystem rfs, String filePath) throws NullPointerException {
+		super(rfs, filePath);
 	}
 
 	@Override

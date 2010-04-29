@@ -53,6 +53,10 @@ public class DefaultPropfindHandler extends AbstractHandler {
 
     private long maximumXmlRequest;
 
+    public DefaultPropfindHandler(Davis davis) {
+		super(davis);
+	}
+
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         propertiesBuilder = new DefaultPropertiesBuilder();

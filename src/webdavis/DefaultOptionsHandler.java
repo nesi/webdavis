@@ -18,7 +18,11 @@ import edu.sdsc.grid.io.RemoteFileSystem;
  */
 public class DefaultOptionsHandler extends AbstractHandler {
 
-    /**
+    public DefaultOptionsHandler(Davis davis) {
+		super(davis);
+	}
+
+	/**
      * Services requests which use the HTTP OPTIONS method.
      * This implementation provides the list of supported methods for
      * the target resource.

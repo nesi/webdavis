@@ -47,7 +47,15 @@ public abstract class AbstractHandler implements MethodHandler {
             Collections.synchronizedSet(new HashSet());
 
     private ServletConfig config;
+    
+    protected Davis davis = null;
 
+//    public AbstractHandler() {
+//    }
+    public AbstractHandler(Davis davis) {
+    	this.davis = davis;
+    }
+    
     /**
      * Initializes the method handler.  This implementation stores the
      * provided <code>ServletConfig</code> object and makes it available
@@ -326,8 +334,7 @@ public abstract class AbstractHandler implements MethodHandler {
      * @throws IOException If the <code>SmbFile</code> targeted by
      * the specified request could not be created.
      */
-    protected RemoteFile getRemoteFile(HttpServletRequest request,
-    		DavisSession davisSession) throws IOException {
+    protected RemoteFile getRemoteFile(HttpServletRequest request, DavisSession davisSession) throws IOException {
         String url = getRequestURL(request);
         RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
         Log.log(Log.DEBUG, "url:"+url);
@@ -394,8 +401,7 @@ public abstract class AbstractHandler implements MethodHandler {
         Log.log(Log.WARNING, "Returning null RemoteFile (shouldn't happen).");
         return null;
     }
-    protected RemoteFile getRemoteFile(String path,
-    		DavisSession davisSession) throws IOException {
+    protected RemoteFile getRemoteFile(String path,	DavisSession davisSession) throws IOException {
         Log.log(Log.DEBUG, "path:"+path);
         RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
 		if (path.startsWith("/~")) {
@@ -1022,10 +1028,10 @@ public abstract class AbstractHandler implements MethodHandler {
 		return (JSONArray)JSONValue.parse(s);
     }
 
-    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
-    	
-    	return getFileList(request, davisSession, fileList, getJSONContent(request));
-    }
+//    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
+//    	
+//    	return getFileList(request, davisSession, fileList, getJSONContent(request));
+//    }
     
     protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList, JSONArray jsonArray) throws IOException, ServletException {
     
@@ -1046,17 +1052,51 @@ public abstract class AbstractHandler implements MethodHandler {
 			if (jsonArray != null) {	
 				jsonObject = (JSONObject)jsonArray.get(0);
 				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
-				for (int i = 0; i < fileNamesArray.size(); i++) {
-					String name = (String)fileNamesArray.get(i);
-					if (name.trim().length() == 0)
-						continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
-					fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
-				}
+				if (fileNamesArray != null)
+					for (int i = 0; i < fileNamesArray.size(); i++) {
+						String name = (String)fileNamesArray.get(i);
+						if (name.trim().length() == 0)
+							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
+						fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
+					}			
 			} else
 				throw new ServletException("Internal error reading file list: error parsing JSON");
 		}
+    	if (batch && fileList.size() == 0) {
+    		String cacheID = request.getParameter("uihandle");
+    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
+    		CachedFile[] files = getHandler.getCache(cacheID);
+    		ArrayList<Integer> indicesList = new ArrayList<Integer>();
+    	    getIndicesList(indicesList, jsonArray);
+    		for (int i = 0; i < indicesList.size(); i++) {
+    			RemoteFile file = files[indicesList.get(i).intValue()];
+    			fileList.add(getRemoteFile(file.getAbsolutePath(), davisSession));
+    		}
+    	}
+    	Log.log(Log.DEBUG, "file list is: "+fileList);
         return batch;
     }
+    
+    protected void getIndicesList(ArrayList<Integer> indicesList, JSONArray jsonArray) throws ServletException {
+        
+		JSONObject jsonObject = null;
+		if (jsonArray != null) {	
+			jsonObject = (JSONObject)jsonArray.get(0);
+			JSONArray indicesArray = (JSONArray)jsonObject.get("indices");
+			if (indicesArray != null)
+				for (int i = 0; i < indicesArray.size(); i++) {
+					Integer index = null;
+					try {
+						index = Integer.valueOf((String)indicesArray.get(i));
+					} catch (NumberFormatException e) {
+						Log.log(Log.ERROR, "Internal error parsing index string: "+(String)indicesArray.get(i));
+						continue;
+					}
+					indicesList.add(index);
+				}			
+		} else
+			throw new ServletException("Internal error reading indices list: error parsing JSON");
+   }
     
     public String escapeJSONArg(String s) {
     	

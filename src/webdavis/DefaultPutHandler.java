@@ -30,6 +30,10 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  */
 public class DefaultPutHandler extends AbstractHandler {
 
+    public DefaultPutHandler(Davis davis) {
+		super(davis);
+	}
+
     /**
      * Services requests which use the HTTP PUT method.
      * This implementation uploads the content to the specified location.

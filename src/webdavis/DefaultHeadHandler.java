@@ -17,6 +17,10 @@ import edu.sdsc.grid.io.RemoteFile;
  */
 public class DefaultHeadHandler extends AbstractHandler {
 
+    public DefaultHeadHandler(Davis davis) {
+		super(davis);
+	}
+
     /**
      *
      * Services requests which use the HTTP HEAD method.

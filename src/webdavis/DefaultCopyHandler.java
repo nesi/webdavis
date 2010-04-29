@@ -26,7 +26,11 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  */
 public class DefaultCopyHandler extends AbstractHandler {
 
-    /**
+	public DefaultCopyHandler(Davis davis) {
+		super(davis);
+	}
+
+	/**
      * Services requests which use the WebDAV COPY method.
      * This implementation copies the source file to the destination.
      * <br>
