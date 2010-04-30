@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 
 import edu.sdsc.grid.io.GeneralFile;
@@ -35,6 +36,18 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 public class FSUtilities {
 	
 	private static final int MAX_QUERY_NUM = 100000;
+
+	private static Hashtable<String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
+
+	public static CachedFile[] getCacheByID(String cacheID) {
+		
+		return fileListCache.get(cacheID);
+	}
+	
+	public static Hashtable<String, CachedFile[]> getCache() {
+
+		return fileListCache;
+	}
 
 	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){
 		MetaDataRecordList[] recordList = null;

@@ -18,10 +18,6 @@ import edu.sdsc.grid.io.RemoteFileSystem;
  */
 public class DefaultProppatchHandler extends AbstractHandler {
 
-    public DefaultProppatchHandler(Davis davis) {
-		super(davis);
-	}
-
     /**
      * Services requests which use the WebDAV PROPPATCH method.
      * This implementation doesn't currently do anything.

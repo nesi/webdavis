@@ -19,10 +19,6 @@ import edu.sdsc.grid.io.RemoteFile;
  */
 public class DefaultUnlockHandler extends AbstractHandler {
 
-    public DefaultUnlockHandler(Davis davis) {
-		super(davis);
-	}
-
     /**
      * Services requests which use the WebDAV UNLOCK method.
      *

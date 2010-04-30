@@ -27,10 +27,6 @@ import edu.sdsc.grid.io.srb.SRBFileSystem;
  */
 public class DefaultMoveHandler extends AbstractHandler {
 
-    public DefaultMoveHandler(Davis davis) {
-		super(davis);
-	}
-
     /**
      * Services requests which use the WebDAV MOVE method.
      * This implementation moves the source file to the destination location.

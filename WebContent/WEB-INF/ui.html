@@ -639,7 +639,7 @@
 //	alert("sending dynamic button "+buttonNum+": "+dynamicObjects[buttonNum].name);
 			// Get args as json
 //			var data='[{"files":['+listCheckedItems()+'], "args":[';
-			var data='[{"indices":['+listCheckedItems(true)+'], "args":['; 
+			var data='[{"indices":['+listCheckedItems()+'], "args":['; 
 			if (dynamicObjects[buttonNum].inputs.args != undefined) {
 				var firstTime = true;
 				for (var i = 0; i < dynamicObjects[buttonNum].inputs.args.length; i++) {
@@ -846,28 +846,24 @@
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 		}
 
-		function getSelected(grid, indices) {
-			if (indices) {
-			    var result = [];
-			    for (var i = 0; i < grid.selection.selected.length; i++) 
-			        if (grid.selection.selected[i]) 
-			            result.push(i-1);
-			    return result;
-			} else
-				return grid.selection.getSelected();
+		function getSelected(grid) {
+		    var result = [];
+		    for (var i = 0; i < grid.selection.selected.length; i++) 
+		        if (grid.selection.selected[i]) 
+		            result.push(i-1);
+		    return result;
+//			return grid.selection.getSelected();
 		}
 
-		function listCheckedItems(indices) {
+		function listCheckedItems() {
 			var list = "";
 			if (!listingGrid._isLoaded)
 				return "";
-			var selected = getSelected(listingGrid, indices);
+			var selected = getSelected(listingGrid);
 			if (selected != null)
 			for (var i = 0; i < selected.length; i++) 
-				if (indices)
-					list = list+"\""+selected[i]+"\",";
-				else
-					list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
+				list = list+"\""+selected[i]+"\",";
+//				list = list+"\""+escapeJSON(unescape(listingGrid.store.getValue(selected[i], "name").name))+"\",";
 			if (list.length > 0)
 				list = list.substring(0, list.length-1);  // remove trailing ','
 			return list;
@@ -876,7 +872,7 @@
 		function listToJSON() {
 			//json format is: [{"files":["file1","file2"...]}]
 //			return "[{\"files\":["+listCheckedItems()+"]}]";
-			return "[{\"indices\":["+listCheckedItems(true)+"]}]";
+			return "[{\"indices\":["+listCheckedItems()+"]}]";
 		}
 
 		function getFirstCheckedItem() {
@@ -890,8 +886,9 @@
 				return 0;
 			return listingGrid.selection.getSelectedCount();
 		}
-		
-		function directoryIsChecked() {
+
+// TBD: need to find a way to do this with queryreadstore
+/*		function directoryIsChecked() {
 			if (!listingGrid._isLoaded)
 				return false;
 			var selected = getSelected(listingGrid);
@@ -900,7 +897,7 @@
 					if (listingGrid.store.getValue(selected[i], "name").type == "d")
 						return true;
 			return false;
-		}
+		}*/
 		
 		function toggleAll() {
 			var allChecked = !getToggleButtonState();
@@ -975,7 +972,7 @@
 			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash);
 			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous() && !inTrash);
 			enableActiveItem('moveButton', checkedItemsCount() != 0 && !isAnonymous() && !inTrash);
-			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
+//			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
 			enableActiveItem('deleteButton', checkedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
@@ -1181,7 +1178,7 @@
 				return;
 			}
 //			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
-			var data='[{"indices":['+listCheckedItems(true)+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
+			var data='[{"indices":['+listCheckedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			if (isTrash(url))
 				emptyTrashInProgress = true;
 			cursorBusy(true);
@@ -1241,7 +1238,7 @@
 			var data = "";
 			if (!rename)
 //				data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
-				data='[{"indices":['+listCheckedItems(true)+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
+				data='[{"indices":['+listCheckedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			dojo.xhr("MOVE", {
 //				url: url,
 				url: url+"?uihandle="+listingStore.uiHandle,
@@ -1468,7 +1465,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem()); 
-			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
+//			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
 	        else

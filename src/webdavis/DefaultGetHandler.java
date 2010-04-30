@@ -149,13 +149,8 @@ public class DefaultGetHandler extends AbstractHandler {
 	private String defaultUIHTMLContent;
 	private String uiLoadDate = "";
 	private SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
-	private Hashtable <String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
 	private boolean sortAscending = true;
 	private String sortField = "name";
-
-    public DefaultGetHandler(Davis davis) {
-		super(davis);
-	}
 
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -178,11 +173,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
-	public CachedFile[] getCache(String cacheID) {
-		
-		return fileListCache.get(cacheID);
-	}
-
 	private String loadUI(String fileName) {
 
 		String result = "";
@@ -370,11 +360,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				if (s != null)
 					count = Integer.parseInt(s);
 
-				CachedFile[] fileList = fileListCache.get(requestUIHandle);
+				CachedFile[] fileList = FSUtilities.getCacheByID(requestUIHandle);
 				if (noCache || fileList == null) {
 					Log.log(Log.DEBUG, "Fetching directory contents from irods");
 					fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly);
-					fileListCache.put(requestUIHandle, fileList);
+					FSUtilities.getCache().put(requestUIHandle, fileList);
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 

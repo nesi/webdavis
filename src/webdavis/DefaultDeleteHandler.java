@@ -32,10 +32,6 @@ public class DefaultDeleteHandler extends AbstractHandler {
 
 	boolean inTrash;
 
-    public DefaultDeleteHandler(Davis davis) {
-		super(davis);
-	}
-
     /**
      * Services requests which use the HTTP DELETE method.
      * This implementation deletes the specified file

@@ -19,10 +19,6 @@ import edu.sdsc.grid.io.RemoteFileSystem;
  */
 public class DefaultMkcolHandler extends AbstractHandler {
 
-    public DefaultMkcolHandler(Davis davis) {
-		super(davis);
-	}
-
     /**
      * Services requests which use the WebDAV MKCOL method.
      * This implementation creates a directory at the specified location.

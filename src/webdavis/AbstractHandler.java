@@ -48,14 +48,7 @@ public abstract class AbstractHandler implements MethodHandler {
 
     private ServletConfig config;
     
-    protected Davis davis = null;
-
-//    public AbstractHandler() {
-//    }
-    public AbstractHandler(Davis davis) {
-    	this.davis = davis;
-    }
-    
+   
     /**
      * Initializes the method handler.  This implementation stores the
      * provided <code>ServletConfig</code> object and makes it available
@@ -1064,8 +1057,8 @@ public abstract class AbstractHandler implements MethodHandler {
 		}
     	if (batch && fileList.size() == 0) {
     		String cacheID = request.getParameter("uihandle");
-    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
-    		CachedFile[] files = getHandler.getCache(cacheID);
+//    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
+    		CachedFile[] files = FSUtilities.getCacheByID(cacheID);
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {

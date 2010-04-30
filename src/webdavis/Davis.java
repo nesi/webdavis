@@ -383,20 +383,20 @@ public class Davis extends HttpServlet {
 
 	private void initHandlers(ServletConfig config) throws ServletException {
 		handlers.clear();
-		handlers.put("OPTIONS", new DefaultOptionsHandler(this));
-		handlers.put("HEAD", new DefaultHeadHandler(this));
-		handlers.put("GET", new DefaultGetHandler(this));
-		handlers.put("POST", new DefaultPostHandler(this));
-		handlers.put("DELETE", new DefaultDeleteHandler(this));
-		handlers.put("PROPFIND", new DefaultPropfindHandler(this));
-		handlers.put("PROPPATCH", new DefaultProppatchHandler(this));
-		handlers.put("COPY", new DefaultCopyHandler(this));
-		handlers.put("MOVE", new DefaultMoveHandler(this));
-		handlers.put("PUT", new DefaultPutHandler(this));
-		handlers.put("MKCOL", new DefaultMkcolHandler(this));
+		handlers.put("OPTIONS", new DefaultOptionsHandler());
+		handlers.put("HEAD", new DefaultHeadHandler());
+		handlers.put("GET", new DefaultGetHandler());
+		handlers.put("POST", new DefaultPostHandler());
+		handlers.put("DELETE", new DefaultDeleteHandler());
+		handlers.put("PROPFIND", new DefaultPropfindHandler());
+		handlers.put("PROPPATCH", new DefaultProppatchHandler());
+		handlers.put("COPY", new DefaultCopyHandler());
+		handlers.put("MOVE", new DefaultMoveHandler());
+		handlers.put("PUT", new DefaultPutHandler());
+		handlers.put("MKCOL", new DefaultMkcolHandler());
 		if (config.getServletContext().getAttribute(LOCK_MANAGER) != null) {
-			handlers.put("LOCK", new DefaultLockHandler(this));
-			handlers.put("UNLOCK", new DefaultUnlockHandler(this));
+			handlers.put("LOCK", new DefaultLockHandler());
+			handlers.put("UNLOCK", new DefaultUnlockHandler());
 		}
 //@TBD move these to davis config file?
 		Enumeration parameters = config.getInitParameterNames();

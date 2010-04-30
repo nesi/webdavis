@@ -73,10 +73,6 @@ import org.apache.commons.fileupload.servlet.*;
  */
 public class DefaultPostHandler extends AbstractHandler {
 
-    public DefaultPostHandler(Davis davis) {
-		super(davis);
-	}
-
 	/**
 	 * Services requests which use the HTTP POST method. 
 	 * 
