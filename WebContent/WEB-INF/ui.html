@@ -50,6 +50,7 @@
 		#listingGrid {border-bottom:solid; border-width:1px; border-color:lightgrey;}
 		#listingGrid .dojoxGridMasterHeader {background:white;} /* These 2 are to make the left listingTable border disappear */
 		#listingGrid .dojoxGridMasterView {background:white;}
+		.tundra .dojoxGridCellFocus {border: 0px !important;}		/* Hide focus border in grid */
 		#destinationGrid .dojoxGridHeader .dojoxGridCell {display:none;}
 		#destinationGrid .dojoxGridRow {background: white;}
 		#destinationGrid .dojoxGridRowSelected {background: #C9D8E9;}
@@ -64,7 +65,7 @@
 			color: white;
 			padding: 0px;
 			border: 0px solid black;
-      	}
+     	}
       	.dijitArrowButtonInner {display:none;}
 	</style>	
 <!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
@@ -1977,44 +1978,48 @@
 				</td>
 				<td align="right" valign="top">
 					<table border="0" cellspacing="0" cellpadding="0">
-						<tr class="text">
-	        				<td colspan="0" align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
-	        			</tr>
-	        			<tr>
-	        				<td id="sessionButtonsHTML" align="right" valign="top"></td>
-	        				<td align="right" valign="top">
-	        					<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>
-								<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>
-								<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>
-	        				</td>
-	        				<td width="1px">
- 	        					<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
-									<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">
-										<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
-										<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
-									</div>
-								</button>        				
-	        				</td>
-	        		</table>
-	        		<!-- <table id="mode_buttons" border="0" cellspacing="4" cellpadding="0">
-	        			<tr class="text">
-	          				<td>Choose mode&nbsp;</td>
-	          				<td bgcolor="#CCCCCC">
-	          					<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
-	          						<tr>
-	              						<td> Basic</td>
-	              					</tr>
-	              				</table>
-	              			</td>
-	              			<td bgcolor="#EEEEEE">
-	              				<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
-	              					<tr>
-	              						<td> Advanced</td>
-	              					</tr>
-	              				</table>
-	              			</td>
-	              		</tr>
-	             	</table> -->
+						<tr><td>
+							<table border="0" cellspacing="0" cellpadding="0">
+								<tr class="text">
+		        					<td colspan="100" align="right">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+		        				</tr>
+		        				<tr>
+		        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
+		        					<td align="right" style="width:100%;" valign="top">
+		        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="42" height="42"/></a>
+										<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="40" height="40"/></a>
+										<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="36" height="36"/></a>
+		        					</td>
+		        					<td align="left" style="width:1px;" >
+	 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
+											<div dojoType="dijit.Menu" id="editMenu1" style="display: none;">
+												<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
+												<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
+											</div>
+										</button>        				
+		        					</td>
+			        		</table>
+			        		<!-- <table id="mode_buttons" border="0" cellspacing="4" cellpadding="0">
+		    	    			<tr class="text">
+		        	  				<td>Choose mode&nbsp;</td>
+		          					<td bgcolor="#CCCCCC">
+		          						<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
+		          							<tr>
+		              							<td> Basic</td>
+		              						</tr>
+			              				</table>
+			              			</td>
+		    	          			<td bgcolor="#EEEEEE">
+		        	      				<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
+		            	  					<tr>
+		              							<td> Advanced</td>
+		              						</tr>
+		              					</table>
+			              			</td>
+			              		</tr>
+		    	         	</table> -->
+		        	    </td></tr>
+		            </table>
 	            </td>
 	        </tr>
 	    </table>

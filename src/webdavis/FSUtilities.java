@@ -37,18 +37,6 @@ public class FSUtilities {
 	
 	private static final int MAX_QUERY_NUM = 100000;
 
-	private static Hashtable<String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
-
-	public static CachedFile[] getCacheByID(String cacheID) {
-		
-		return fileListCache.get(cacheID);
-	}
-	
-	public static Hashtable<String, CachedFile[]> getCache() {
-
-		return fileListCache;
-	}
-
 	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){
 		MetaDataRecordList[] recordList = null;
 		Log.log(Log.DEBUG, "getiRODSUsernameByDN '"+dn+"' from "+fs);

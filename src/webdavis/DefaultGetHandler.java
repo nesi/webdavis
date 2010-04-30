@@ -360,11 +360,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				if (s != null)
 					count = Integer.parseInt(s);
 
-				CachedFile[] fileList = FSUtilities.getCacheByID(requestUIHandle);
+				CachedFile[] fileList = davisSession.getCacheByID(requestUIHandle);
 				if (noCache || fileList == null) {
 					Log.log(Log.DEBUG, "Fetching directory contents from irods");
 					fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly);
-					FSUtilities.getCache().put(requestUIHandle, fileList);
+					davisSession.getCache().put(requestUIHandle, fileList);
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 

@@ -2,6 +2,7 @@ package webdavis;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Hashtable;
 
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
@@ -26,6 +27,19 @@ public class DavisSession implements Serializable{
 	private String currentRoot;
 	private String currentResource;
 	private int sharedSessionNumber;
+
+	private Hashtable<String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
+
+	public CachedFile[] getCacheByID(String cacheID) {
+		
+		return fileListCache.get(cacheID);
+	}
+	
+	public Hashtable<String, CachedFile[]> getCache() {
+
+		return fileListCache;
+	}
+
 	public void disconnect(){
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){

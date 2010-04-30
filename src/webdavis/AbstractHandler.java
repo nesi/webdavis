@@ -1058,7 +1058,7 @@ public abstract class AbstractHandler implements MethodHandler {
     	if (batch && fileList.size() == 0) {
     		String cacheID = request.getParameter("uihandle");
 //    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
-    		CachedFile[] files = FSUtilities.getCacheByID(cacheID);
+    		CachedFile[] files = davisSession.getCacheByID(cacheID);
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {
