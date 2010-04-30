@@ -240,6 +240,8 @@
 					listingStore.refreshDisplay(false);
 				},
 				onFetchSuccess: function() {
+					if (firstRender)
+			    		listingGrid.setSortIndex(0, true);
 					if (listingStore.urlChanged() || firstRender) { // If directory changed, clear selections
 //						checkAll(false);
 						listingStore.setLastURL(listingStore.urlFields);
@@ -368,7 +370,7 @@
             	addOption('formPerm', 'r', 'read only', 'read object');
             	addOption('formPerm', 'n', 'no access', 'null');
         	}
-    		listingGrid.setSortIndex(0, true);
+//    		listingGrid.setSortIndex(0, true);
     		listingGrid.onCanSelect = function(inRowIndex) {
     			return canSelect(inRowIndex, listingStore, listingGrid);
     		};
