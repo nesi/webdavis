@@ -147,26 +147,35 @@ public class DefaultPostHandler extends AbstractHandler {
 //					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
 					if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 						file = selectedFile;
-					if (username != null) {
-						if (fileSystem instanceof SRBFileSystem) {
-							Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
-							((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
-						} else if (fileSystem instanceof IRODSFileSystem) {
-							Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
-							if (recursive) 
-								iRODSSetPermission((IRODSFile)selectedFile, permission, username);
-							else
-								((IRODSFile)selectedFile).changePermissions(permission, username, recursive);
+					try {
+						if (username != null) {
+							if (fileSystem instanceof SRBFileSystem) {
+								Log.log(Log.DEBUG, "change permission for "+username+"."+domain+" to "+permission+" (recursive="+recursive+")");
+								((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
+							} else if (fileSystem instanceof IRODSFileSystem) {
+								Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
+								if (recursive) 
+									iRODSSetPermission((IRODSFile)selectedFile, permission, username);
+								else
+									((IRODSFile)selectedFile).changePermissions(permission, username, recursive);
+							}
 						}
-					}
-					if (sticky!=null) {
-						Log.log(Log.DEBUG, "set "+selectedFile.getAbsolutePath()+" -- sticky:"+sticky);
-						boolean flag=false;
-						try {
-							flag = Boolean.parseBoolean(sticky);
-						} catch (Exception _e) {
+						if (sticky!=null) {
+							Log.log(Log.DEBUG, "set "+selectedFile.getAbsolutePath()+" -- sticky:"+sticky);
+							boolean flag=false;
+							try {
+								flag = Boolean.parseBoolean(sticky);
+							} catch (Exception _e) {
+							}
+							this.setSticky(selectedFile, flag, recursive);
 						}
-						this.setSticky(selectedFile, flag, recursive);
+					} catch (IOException e){
+			        	Log.log(Log.DEBUG, "Set permissions failed: "+e);
+			        	String s = e.getMessage();
+			        	if (s.endsWith("-818000") || s.endsWith("-816000")) 
+			        		s = "you don't have permission"; // irods error -818000 or -816000
+	        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+	        			return;
 					}
 				}
 			}
@@ -282,46 +291,54 @@ public class DefaultPostHandler extends AbstractHandler {
 							file = selectedFile;
 
 						MetaDataTable metaDataTable = null;
-	
-						if (fileSystem instanceof SRBFileSystem) {
-							String[][] definableMetaDataValues = new String[metadataArray.size()][2];
-	
-	    					for (int i = 0; i < metadataArray.size(); i++) {
-	    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
-	    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
-	    					}
-	
-	    					int[] operators = new int[definableMetaDataValues.length];
-							MetaDataRecordList rl;
-							MetaDataField mdf=null;
-							if (!selectedFile.isDirectory()){
-								mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
-							}else{
-								mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+						try {
+							if (fileSystem instanceof SRBFileSystem) {
+								String[][] definableMetaDataValues = new String[metadataArray.size()][2];
+		
+		    					for (int i = 0; i < metadataArray.size(); i++) {
+		    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
+		    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
+		    					}
+		
+		    					int[] operators = new int[definableMetaDataValues.length];
+								MetaDataRecordList rl;
+								MetaDataField mdf=null;
+								if (!selectedFile.isDirectory()){
+									mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES);
+								}else{
+									mdf=SRBMetaDataSet.getField(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
+								}
+								if (mdf!=null){
+									rl = new SRBMetaDataRecordList(mdf,(MetaDataTable) null);
+									selectedFile.modifyMetaData(rl);
+									metaDataTable = new MetaDataTable(operators, definableMetaDataValues);
+									rl = new SRBMetaDataRecordList(mdf,metaDataTable);
+									selectedFile.modifyMetaData(rl);
+								}
+		
+							}else if (fileSystem instanceof IRODSFileSystem) {
+								//delete all metadata, uses wildcards
+		//						try{
+								((IRODSFile)selectedFile).deleteMetaData(new String[]{"%","%","%"});
+		//						}catch (Exception _e){}
+								
+								String[][] definableMetaDataValues = new String[metadataArray.size()][3];
+		
+		    					for (int i = 0; i < metadataArray.size(); i++) {
+		    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
+		    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
+		    						definableMetaDataValues[i][2] = (String) ((JSONObject) metadataArray.get(i)).get("unit");
+		    					}
+		    					for (String[] metadata:definableMetaDataValues)
+		    						((IRODSFile)selectedFile).modifyMetaData(metadata);
 							}
-							if (mdf!=null){
-								rl = new SRBMetaDataRecordList(mdf,(MetaDataTable) null);
-								selectedFile.modifyMetaData(rl);
-								metaDataTable = new MetaDataTable(operators, definableMetaDataValues);
-								rl = new SRBMetaDataRecordList(mdf,metaDataTable);
-								selectedFile.modifyMetaData(rl);
-							}
-	
-						}else if (fileSystem instanceof IRODSFileSystem) {
-							//delete all metadata, uses wildcards
-	//						try{
-							((IRODSFile)selectedFile).deleteMetaData(new String[]{"%","%","%"});
-	//						}catch (Exception _e){}
-							
-							String[][] definableMetaDataValues = new String[metadataArray.size()][3];
-	
-	    					for (int i = 0; i < metadataArray.size(); i++) {
-	    						definableMetaDataValues[i][0] = (String) ((JSONObject) metadataArray.get(i)).get("name");
-	    						definableMetaDataValues[i][1] = (String) ((JSONObject) metadataArray.get(i)).get("value");
-	    						definableMetaDataValues[i][2] = (String) ((JSONObject) metadataArray.get(i)).get("unit");
-	    					}
-	    					for (String[] metadata:definableMetaDataValues)
-	    						((IRODSFile)selectedFile).modifyMetaData(metadata);
+						} catch (IOException e){
+				        	Log.log(Log.DEBUG, "Set permissions failed: "+e);
+				        	String s = e.getMessage();
+				        	if (s.endsWith("-818000")) 
+				        		s = "you don't have permission"; // irods error -818000 
+		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+		        			return;
 						}
 					}
 				}
@@ -517,8 +534,13 @@ public class DefaultPostHandler extends AbstractHandler {
 		        } catch (EOFException e) {
                     json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Unexpected end of file")));
 		        } catch (IOException e) {
-                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
+		        	Log.log(Log.DEBUG, "Upload failed: "+e);
+		        	String s = e.getMessage();
+		        	if (s.equals("IRODS error occured msg")) //sic
+		        		s = "you don't have permission to upload here"; // Assume it's irods error -818000
+                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(s)));
 		        } catch (FileUploadException e) {
+		        	Log.log(Log.DEBUG, "Upload failed: "+e);
 	                json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
 		        }
 	        }

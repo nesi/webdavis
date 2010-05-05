@@ -698,11 +698,12 @@
 				case 403:	switch(method) {
 								//case "move": 
 								//case "copy": return "source and destination URI are the same";
-								case "delete": return message;
+								case "delete": return message+": you don't have permission";
 								default: return "refused";
 						  	}
 				case 404:   return "This collection does not exist or you don't have permission to access it.";
 				case 405:	return "path already exists";
+				case 409:	return "You cannot put items here"; 
 				case 412: 	return "destination already exists";
 				default: 	return message;
 			}
@@ -1151,7 +1152,7 @@
 						},
 				error: function(response, ioArgs) {
 							showUploadDialog(false);
-							alert("Failed to upload file:\n\n"+ioArgs.xhr.statusText);
+							alert("Failed to upload file: "+ioArgs.xhr.statusText);
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							return response;
