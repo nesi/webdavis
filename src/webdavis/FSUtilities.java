@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 
 import edu.sdsc.grid.io.GeneralFile;
@@ -565,7 +566,8 @@ public class FSUtilities {
     		Log.log(Log.DEBUG, "collection num:"+dirDetails.length);
     		i = 0;
     		for (MetaDataRecordList p:dirDetails) {
-    			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(),collection.getAbsolutePath(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+    			//String dir = ((String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)).substring(collection.getAbsolutePath().length());
+    			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), /*collection.getAbsolutePath(), dir*/(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
     			dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
     			dirs[i].setDirFlag(true);
     			dirs[i].setCanWriteFlag(true);

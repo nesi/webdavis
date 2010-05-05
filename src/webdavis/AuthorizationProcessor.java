@@ -94,14 +94,13 @@ public class AuthorizationProcessor {
         if (host==null||host.equals("")){
             return null;
         }
-        MyProxy mp = new MyProxy(host, 7512);
-        GetParams getRequest = new GetParams();
-        getRequest.setCredentialName(null);
-        getRequest.setLifetime(3600);
-        getRequest.setPassphrase(new String(password));
-        getRequest.setUserName(user);
-        try
-        {
+        try{
+            MyProxy mp = new MyProxy(host, 7512);
+            GetParams getRequest = new GetParams();
+            getRequest.setCredentialName(null);
+            getRequest.setLifetime(3600);
+            getRequest.setPassphrase(new String(password));
+            getRequest.setUserName(user);
             GSSCredential gssCredential = mp.get(null,getRequest);
             if (gssCredential == null) {
             	Log.log(Log.DEBUG,"can't get gssCredential from myproxy: "+ host);
@@ -115,9 +114,11 @@ public class AuthorizationProcessor {
 			}
             return gssCredential;
         }
-        catch(MyProxyException mpe)
-        {
+        catch(MyProxyException mpe){
             return null;
+        }
+        catch(Exception e){
+        	return null;
         }
     }
 	

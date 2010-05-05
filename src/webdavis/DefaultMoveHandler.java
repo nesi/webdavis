@@ -55,9 +55,9 @@ public class DefaultMoveHandler extends AbstractHandler {
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
     		throws ServletException, IOException {
  
-        response.setContentType("text/html; charset=\"utf-8\"");
+    	response.setContentType("text/html; charset=\"utf-8\"");
         ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-    	boolean batch = getFileList(request, davisSession, fileList); 
+    	boolean batch = getFileList(request, davisSession, fileList, getJSONContent(request)); 
     	String destinationField = request.getHeader("Destination");
     	if (destinationField.indexOf("://") < 0)	// If destination field is a relative path, prepend a protocol for getRemoteURL()
     		destinationField = "http://"+destinationField;

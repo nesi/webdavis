@@ -74,9 +74,7 @@ import org.apache.commons.fileupload.servlet.*;
 public class DefaultPostHandler extends AbstractHandler {
 
 	/**
-	 * Services requests which use the HTTP POST method. This may, at some
-	 * point, implement some sort of useful behavior. Right now it doesn't do
-	 * anything.
+	 * Services requests which use the HTTP POST method. 
 	 * 
 	 * @param request
 	 *            The request being serviced.
@@ -124,8 +122,11 @@ public class DefaultPostHandler extends AbstractHandler {
 			
 			// Write permissions for given items
 			if (jsonArray != null) {	
+		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+		    	getFileList(request, davisSession, fileList, jsonArray);					
+
 				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-				JSONArray filesArray = (JSONArray)jsonObject.get("files");
+//				JSONArray filesArray = (JSONArray)jsonObject.get("files");
 				GeneralFileSystem fileSystem = file.getFileSystem();
 				String domain = null;
 				String permission = null;
@@ -138,10 +139,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				} catch (Exception _e) {}
 				Log.log(Log.DEBUG, "recursive="+recursive);
 				String sticky = request.getParameter("sticky");
-				for (int j = 0; j < filesArray.size(); j++) {
-					String fileName = (String)filesArray.get(j);
-					RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
-					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+//				for (int j = 0; j < filesArray.size(); j++) {
+				for (int j = 0; j < fileList.size(); j++) {
+//					String fileName = (String)filesArray.get(j);
+//					RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+					RemoteFile selectedFile = fileList.get(j);
+//					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+					if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 						file = selectedFile;
 					if (username != null) {
 						if (fileSystem instanceof SRBFileSystem) {
@@ -258,16 +262,23 @@ public class DefaultPostHandler extends AbstractHandler {
 //
 //				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 				if (jsonArray != null) {	
+
+			    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+			    	getFileList(request, davisSession, fileList, jsonArray);					
+					
 					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-					JSONArray filesArray = (JSONArray)jsonObject.get("files");
+//					JSONArray filesArray = (JSONArray)jsonObject.get("files");
 					JSONArray metadataArray = (JSONArray)jsonObject.get("metadata");
 					GeneralFileSystem fileSystem = file.getFileSystem();
 					
-					for (int j = 0; j < filesArray.size(); j++) {
-						String fileName = (String)filesArray.get(j);
-						RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+//					for (int j = 0; j < filesArray.size(); j++) {
+					for (int j = 0; j < fileList.size(); j++) {
+//						String fileName = (String)filesArray.get(j);
+//						RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+						RemoteFile selectedFile = fileList.get(j);
 						Log.log(Log.DEBUG, "changing metadata for: "+selectedFile);
-						if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+//						if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
+						if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 							file = selectedFile;
 
 						MetaDataTable metaDataTable = null;
@@ -641,7 +652,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			String deleteResource = request.getParameter("delete");
 			String replicateResource = request.getParameter("replicate");
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-	    	/*boolean batch = */getFileList(request, davisSession, fileList); 
+	    	/*boolean batch = */getFileList(request, davisSession, fileList, getJSONContent(request)); 
 	        Iterator<RemoteFile> iterator = fileList.iterator();
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 	        while (iterator.hasNext()) {

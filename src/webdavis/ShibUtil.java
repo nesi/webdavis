@@ -233,6 +233,7 @@ public class ShibUtil {
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
 	        if (config.getServerType().equalsIgnoreCase("irods")){
 		        IRODSAccount adminAccount=new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
+		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
 		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
 		        
 		        password=getRandomPassword(12);
