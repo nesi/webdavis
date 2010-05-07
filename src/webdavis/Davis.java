@@ -59,6 +59,10 @@ public class Davis extends HttpServlet {
 
 	// private ResourceFilter filter;
 	
+	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
+	static long lastLogTime = 0;  // Used to log memory usage on a regular basis
+	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
+
 	public void init() throws ServletException {
 		ServletConfig config = getServletConfig();
 		DavisConfig.getInstance().initConfig(config);
@@ -142,7 +146,11 @@ public class Davis extends HttpServlet {
 		Log.log(Log.DEBUG, "Davis finished destroy.");
 	}
 
-	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
+	protected String getMemoryUsage() {
+		
+		return "free memory: "+Runtime.getRuntime().freeMemory()+" bytes   total memory: "
+				+Runtime.getRuntime().totalMemory()+" bytes   max memory: "+Runtime.getRuntime().maxMemory()+" bytes";
+	}
 	
 	/**
 	 * Authenticates the user against a domain before forwarding the request to
@@ -157,8 +165,8 @@ public class Davis extends HttpServlet {
 	 * @throws ServletException
 	 *             If an application error occurs.
 	 */
-	protected void service(HttpServletRequest request,
-			HttpServletResponse response) throws IOException, ServletException {
+	protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+		
 		String pathInfo = request.getPathInfo();
 		String uri=request.getRequestURI();
 		String queryString = request.getQueryString();
@@ -282,8 +290,12 @@ public class Davis extends HttpServlet {
 			davisSession.increaseSharedNumber();
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
-		Log.log(Log.DEBUG, "#### Time after establishing session: "+(new Date().getTime()-profilingTimer.getTime()));
-
+		long currentTime = new Date().getTime();
+		Log.log(Log.DEBUG, "#### Time after establishing session: "+(currentTime-profilingTimer.getTime()));
+		if (currentTime - lastLogTime >= MEMORYLOGPERIOD) {
+			lastLogTime = currentTime;
+			Log.log(Log.INFORMATION, getMemoryUsage());
+		}
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
 			try {
