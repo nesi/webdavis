@@ -106,7 +106,6 @@ public class Davis extends HttpServlet {
 			System.setProperty("jargon.debug", jargonDebug);
 		else
 			System.setProperty("jargon.debug", "0");
-
 		
 		initLockManager(config);
 		// initFilter(config);
