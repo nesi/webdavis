@@ -20,6 +20,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 import org.apache.commons.codec.binary.Base64;
 
 /**
@@ -101,11 +104,15 @@ public class Davis extends HttpServlet {
 //			Log.log(Log.DEBUG, "Davis init parameters: {0}", stream);
 			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
 		}
-		String jargonDebug= /*config.*/DavisConfig.getInstance().getJargonDebug();
-		if (jargonDebug!=null)
-			System.setProperty("jargon.debug", jargonDebug);
-		else
-			System.setProperty("jargon.debug", "0");
+		String jargonDebug= DavisConfig.getInstance().getJargonDebug();
+		if (jargonDebug!=null) {
+//			System.setProperty("jargon.debug", jargonDebug);
+			Level level = Level.toLevel(jargonDebug, Level.WARN);
+			Logger.getRootLogger().setLevel(level);
+			Log.log(Log.INFORMATION, "Jargon logging level set to "+level);
+		}
+//		else
+//			System.setProperty("jargon.debug", "0");
 		
 		initLockManager(config);
 		// initFilter(config);

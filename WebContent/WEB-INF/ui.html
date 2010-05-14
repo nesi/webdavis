@@ -92,8 +92,10 @@
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
+		var pageLoaded = false;
 		
 		dojo.addOnLoad(function() {
+			pageLoaded = true;
 //			showDebug();
 			initVariables();
 			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
@@ -107,6 +109,15 @@
 			listingStore.refreshDisplay(true);
 		});
 
+		dojo.addOnUnload(function() {
+			pageLoaded = false;
+		});
+
+		function loadedAlert(args) {
+			if (pageLoaded)
+				alert(args);
+		}
+		
 		// Show the debug window
 		function showDebug() {
 		    window.top.debugWindow = window.open("", "Debug", "left=0,top=0,width=300,height=700,scrollbars=yes,"+"status=yes,resizable=yes");
@@ -616,7 +627,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert("Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    		sync: true,
@@ -679,7 +690,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert("Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    //		sync: true,
@@ -1075,7 +1086,7 @@
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
 		  				borderContainer.layout();
-	      				alert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1113,7 +1124,7 @@
 			   		},
 	    		error: function(response, ioArgs){
 						cursorBusy(false);
-	      				alert("Failed to create directory "+dirName+":\n\n"+errorMessage("mkcol", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				loadedAlert("Failed to create directory "+dirName+":\n\n"+errorMessage("mkcol", ioArgs.xhr.status, ioArgs.xhr.statusText));
 						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
 		      				listingStore.refreshDisplay(false);
 						}
@@ -1178,7 +1189,7 @@
 			if (checkedItemsCount() == 0)
 				return;
 			if (emptyTrashInProgress) {
-				alert("Please wait for trash to finish emptying.");
+				alert("Please wait for trash to finish emptying before deleting more.");
 				return;
 			}
 //			var data='[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
@@ -1207,7 +1218,7 @@
 	    		error: function(response, ioArgs){
 			   			emptyTrashInProgress = false;
 			   			cursorBusy(false);
-	      				alert(errorMessage("delete", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				loadedAlert(errorMessage("delete", ioArgs.xhr.status, ioArgs.xhr.statusText));
 						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
 		      				refreshCurrentDirectory(); // Reload on error in case some files were deleted
 			      			listingStore.refreshDisplay(false);
@@ -1263,7 +1274,7 @@
 			    },
 	    		error: function(response, ioArgs){
 					cursorBusy(false);
-	      			alert("Failed to move one or more items: "+errorMessage("move", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      			loadedAlert("Failed to move one or more items: "+errorMessage("move", ioArgs.xhr.status, ioArgs.xhr.statusText));
 					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
 		      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
 		      			listingStore.refreshDisplay(false);
@@ -1286,7 +1297,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1370,7 +1381,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when updating metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("Error when updating metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1402,7 +1413,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			alert("Error when loading domain list:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert("Error when loading domain list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
 	    		handleAs: "json"
@@ -1420,7 +1431,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading user list:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("Error when loading user list:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1445,7 +1456,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				alert("Error when loading permissions:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("Error when loading permissions:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
 	    		handleAs: "json"
@@ -1491,12 +1502,12 @@
 	        if ("<parameter servertype/>" == 'srb') {
 				domainValue = dojo.byId("formDomain").value;
 				if (!dijit.byId("formDomain").isValid() || domainValue == ""){
-					alert("Please enter a valid domain.");
+					loadedAlert("Please enter a valid domain.");
 					return;
 				}
 	        }
 			if (!formUsername.isValid() || usernameValue == ""){
-				alert("Please enter a valid username.");
+				loadedAlert("Please enter a valid username.");
 				return;
 			}
 			if (dojo.byId("recursive").disabled == false)
@@ -1550,7 +1561,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("Error while fetching replicas: "+errorMessage("replicas", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				loadedAlert("Error while fetching replicas: "+errorMessage("replicas", ioArgs.xhr.status, ioArgs.xhr.statusText));
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1591,7 +1602,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("Error while fetching resources: "+errorMessage("resources", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				loadedAlert("Error while fetching resources: "+errorMessage("resources", ioArgs.xhr.status, ioArgs.xhr.statusText));
 	      				cursorBusy(false);
 	      				dojo.html.set(dojo.byId('replicasStatusField'), '');
 	      				return response;
@@ -1639,7 +1650,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				alert("logout failed:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert("logout failed:\n\n"+ioArgs.xhr.statusText);
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1723,8 +1734,9 @@
 				var directory = this.directory;
 				var onFetchError = this.onFetchError;
 				var newErrorHandler = function(errorData, requestObject) {
-					if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
-						alert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+					if (pageLoaded)
+						if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
+							loadedAlert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete - only needed for dojo < 1.4.1
 					if (onFetchError)
 						onFetchError();
@@ -2061,7 +2073,9 @@
 	    </table>
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="center" style="border: 0px solid blue;">
- 		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'></div> 
+ 		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" 
+ 				rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'
+ 				errorMessage="No Items Loaded"></div> 
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
 		<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">

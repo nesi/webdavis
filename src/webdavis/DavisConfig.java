@@ -255,7 +255,7 @@ public class DavisConfig {
 		try {
 			serverPort = Integer.parseInt(getInitParameter("server-port", true));
 		} catch (Exception _e) {}
-		jargonDebug = getInitParameter("jargon.debug", "0").trim();
+		jargonDebug = getInitParameter("jargon.debug", "WARN").trim();
 		serverName = getInitParameter("server-name", true);
 		defaultResource = getInitParameter("default-resource", true);
 		zoneName = getInitParameter("zone-name", true);
