@@ -511,6 +511,12 @@ public class FSUtilities {
 				IRODSMetaDataSet.CREATION_DATE,
 				IRODSMetaDataSet.MODIFICATION_DATE,
 				IRODSMetaDataSet.SIZE,
+//IRODSMetaDataSet.FILE_REPLICA_NUM,
+//IRODSMetaDataSet.FILE_REPLICA_STATUS,
+//IRODSMetaDataSet.CREATION_DATE,
+//IRODSMetaDataSet.RESOURCE_INFO,
+//IRODSMetaDataSet.RESOURCE_LOCATION,
+//IRODSMetaDataSet.RESOURCE_NAME
 
 //				IRODSMetaDataSet.META_DATA_ATTR_NAME,
 //				IRODSMetaDataSet.META_DATA_ATTR_VALUE,
@@ -550,11 +556,19 @@ public class FSUtilities {
     		if (getFiles)
 	    		for (MetaDataRecordList p:fileDetails) {
 	    			files[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+//System.err.println("***files[i] before="+files[i]+" length="+files[i].length()+" mod="+files[i].lastModified());
 	    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
 	    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
 	    			files[i].setDirFlag(false);
     				files[i].setCanWriteFlag(true);
-    				if (getMetadata) {
+//RemoteFile file=new IRODSFile((IRODSFileSystem) (RemoteFileSystem)collection.getFileSystem(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+//System.err.println("***files[i]="+files[i]+" length="+files[i].length()+" mod="+files[i].lastModified());
+//System.err.println("***file="+file+" length="+file.length()+" mod="+file.lastModified());
+//System.err.println("***repnum="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" repstat="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)+
+//		" creationdate="+p.getValue(IRODSMetaDataSet.CREATION_DATE)+" res info="+p.getValue(IRODSMetaDataSet.RESOURCE_INFO)+
+//		" res location="+p.getValue(IRODSMetaDataSet.RESOURCE_LOCATION)+" res name="+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+
+					if (getMetadata) {
     					String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
     					if (metadata.containsKey(path)) 
     						files[i].setMetadata(metadata.get(path).getMetadata());
