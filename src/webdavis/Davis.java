@@ -119,10 +119,6 @@ public class Davis extends HttpServlet {
 		initHandlers(config);
 		// initErrorHandlers(config);
 	}
-	
-	public void setJargonDebug(String level) {
-		
-	}
 
 	public void destroy() {
 		Iterator iterator = handlers.entrySet().iterator();
