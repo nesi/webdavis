@@ -46,14 +46,18 @@ import javax.xml.transform.stream.StreamSource;
 import org.w3c.dom.Document;
 
 import edu.sdsc.grid.io.GeneralFile;
+import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
+import edu.sdsc.grid.io.Namespace;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileInputStream;
 import edu.sdsc.grid.io.RemoteRandomAccessFile;
+import edu.sdsc.grid.io.ResourceMetaData;
+import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
@@ -296,6 +300,33 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
 
+		
+		
+		
+		
+		
+		
+//		 System.err.println("****************doing query");
+// 	    MetaDataRecordList[] rl = ((IRODSFileSystem)(davisSession.getRemoteFileSystem())).query(
+//// 	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1")},
+//// 	    		new MetaDataCondition[] {MetaDataSet.newCondition(ResourceMetaData.RESOURCE_NAME, MetaDataCondition.EQUAL, (String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME))},
+//// 	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, "/ARCS/home")},
+// 	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, currentZone)},
+//// 	    		new MetaDataCondition[] {MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()), MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())},
+// 	    		new MetaDataSelect[] {MetaDataSet.newSelection(ResourceMetaData.RESOURCE_NAME)}, Namespace.RESOURCE);
+//System.err.println("***************done query - result list= "+((rl == null)?"null":rl.length));
+//if (rl != null)
+//	 System.err.println("results length="+rl.length);
+
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		if (!file.exists() || file.getName().equals("noaccess")) { // File doesn't exist
 			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or server connection lost. "
 					+ (file.exists() ? " Jargon says 'noaccess'" : ""));
@@ -693,138 +724,52 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		
 		
-		
-		
-		
 		MetaDataCondition conditionsFile[] = {
-			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, /*collection*/file.getParent()),
-			MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, /*collection*/file.getName()),
-		//	MetaDataSet.newCondition(FileMetaData.PATH_NAME, MetaDataCondition.EQUAL, file.getAbsolutePath()),
-//			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_NUM,	MetaDataCondition.EQUAL, 0),
+			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+			MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
 			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
 		};
 		MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
-				IRODSMetaDataSet.FILE_NAME,
-				IRODSMetaDataSet.DIRECTORY_NAME,
-				IRODSMetaDataSet.CREATION_DATE,
-				IRODSMetaDataSet.MODIFICATION_DATE,
-				IRODSMetaDataSet.SIZE,
-IRODSMetaDataSet.FILE_REPLICA_NUM,
-IRODSMetaDataSet.FILE_REPLICA_STATUS,
-IRODSMetaDataSet.CREATION_DATE,
-IRODSMetaDataSet.RESOURCE_INFO,
-IRODSMetaDataSet.RESOURCE_LOCATION,
-IRODSMetaDataSet.RESOURCE_NAME
-
+//				IRODSMetaDataSet.FILE_NAME,
+//				IRODSMetaDataSet.DIRECTORY_NAME,
+//				IRODSMetaDataSet.CREATION_DATE,
+//				IRODSMetaDataSet.MODIFICATION_DATE,
+//				IRODSMetaDataSet.SIZE,
+//IRODSMetaDataSet.FILE_REPLICA_NUM,
+//IRODSMetaDataSet.FILE_REPLICA_STATUS,
+//IRODSMetaDataSet.CREATION_DATE,
+//IRODSMetaDataSet.RESOURCE_INFO,
+//IRODSMetaDataSet.RESOURCE_LOCATION,
+				IRODSMetaDataSet.RESOURCE_NAME
 			});
-		try {
 			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile);
-
-    		if (fileDetails == null) {
-    			String s= "Internal request error - file not found";
+    		if (fileDetails == null || fileDetails.length < 1) {
+    			String s= "Internal get request error - no clean replicas found: "+file.getAbsolutePath();
     			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
     			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
     			response.flushBuffer();
     			return;
     		}
-//    		CachedFile[] files = new CachedFile[fileDetails.length];
-    		boolean clean = false;
-     		int i = 0;
-//System.err.println("results="+fileDetails);
-     		for (MetaDataRecordList p:fileDetails) {
-   System.err.println("result="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" "+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS));
-    			if (((String)p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)).equals("1")) {
-    				clean = true;
-    //				break;
-    			}
-    			i++;
-    		}
-    		if (!clean) {
-    			Log.log(Log.ERROR, "Internal request error - no clean copy found: "+file.getAbsolutePath()+". Using first found copy.");
-   				i = 0; // Take first replica
-    		}
-    		MetaDataRecordList p = fileDetails[i];
- System.err.println("***p repnum="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" repstat="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)+
-    		" creationdate="+p.getValue(IRODSMetaDataSet.CREATION_DATE)+" res info="+p.getValue(IRODSMetaDataSet.RESOURCE_INFO)+
-    		" res location="+p.getValue(IRODSMetaDataSet.RESOURCE_LOCATION)+" res name="+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-//			file = new IRODSFile((IRODSFileSystem)davisSession.getRemoteFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME));
- 
- System.err.println("here0");
-
- String resourceName=(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME);
- System.err.println("here1");
- if (resourceName == null) {
-     throw new IllegalArgumentException("resourceName is null");
-   }
- System.err.println("here2");
-//   if (resourceName != null) {
-//     // Make sure valid resource
-//	   System.err.println("here3");
-//
-//System.err.println("filesystem="+davisSession.getRemoteFileSystem());
-//System.err.println("filesystem="+davisSession.getRemoteFileSystem().getHomeDirectory());
-//System.err.println("filesystem="+davisSession.getRemoteFileSystem().getAccount());
-//System.err.println("filesystem="+davisSession.getRemoteFileSystem().getRootDirectories());
-//System.err.println("filesystem="+davisSession.getRemoteFileSystem().isConnected());
-//System.err.println("filesystem="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).getDefaultStorageResource());
-//System.err.println("filesystem="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).getServerDN());
-//System.err.println("filesystem="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).getVersion());
-//System.err.println("filesystem="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).getZone());
-//		MetaDataRecordList[] rl = davisSession.getRemoteFileSystem().query(new MetaDataCondition[]{MetaDataSet.newCondition(ResourceMetaData.RESOURCE_NAME, MetaDataCondition.EQUAL, resourceName)}, MetaDataSet.newSelection(new String[]{ResourceMetaData.RESOURCE_NAME}));
-//     System.err.println("here4");
-//
-//     if (rl == null) {
-// System.err.println("no resources returned from query, accept the given resource:"+ resourceName);
-//  //     resource = resourceName;
-//   //    return;
-//     }
-//     System.err.println("here5");
-//
-//     for (int ii = rl.length - 1; ii >= 0; ii--) {
-//       if (resourceName.equals(rl[ii].getStringValue(0))) {
-//  System.err.println("accepting resourceName");
-//  //       resource = resourceName;
-//  //       return;
-//       }
-//     }
-//   }
-
- 
-   System.err.println("herea");
+    		MetaDataRecordList p = fileDetails[0]; // Use first clean copy found
+// System.err.println("***p repnum="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" repstat="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)+
+//    		" creationdate="+p.getValue(IRODSMetaDataSet.CREATION_DATE)+" res info="+p.getValue(IRODSMetaDataSet.RESOURCE_INFO)+
+//    		" res location="+p.getValue(IRODSMetaDataSet.RESOURCE_LOCATION)+" res name="+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+ System.err.println("***************************doing query");
+    	    MetaDataRecordList[] rl = ((IRODSFileSystem)(davisSession.getRemoteFileSystem())).query(
+//    	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1")},
+//    	    		new MetaDataCondition[] {MetaDataSet.newCondition(ResourceMetaData.RESOURCE_NAME, MetaDataCondition.EQUAL, (String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME))},
+//    	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, "/ARCS/home")},
+//     	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, ((IRODSAccount)((IRODSFileSystem)(davisSession.getRemoteFileSystem())).getAccount()).getZone())},
+    	    		null,
+//    	    		new MetaDataCondition[] {MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()), MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())},
+    	    		new MetaDataSelect[] {MetaDataSet.newSelection(ResourceMetaData.RESOURCE_NAME)}, Namespace.RESOURCE);
+ System.err.println("***************done query - result list= "+((rl == null)?"null":rl.length));
+		
 System.err.println("file length="+file.length()+"  file date="+file.lastModified());
  System.err.println("setting resource to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
- ((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+ 			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
  System.err.println("file resource is "+((IRODSFile)file).getResource());
  System.err.println("file length="+file.length()+"  file date="+file.lastModified());
- System.err.println("hereb");
- //System.err.println("***f resource="+((IRODSFile)file).getResource()+" all res="+((IRODSFile)file).getAllResourcesForFile()+
-//		 " last mod="+((IRODSFile)file).lastModified()+" length="+((IRODSFile)file).length());
-
- //			f.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
-//			f.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
-//			f.setDirFlag(false);
-//			f.setCanWriteFlag(true);
-//System.err.println("***files[i] before="+files[i]+" length="+files[i].length()+" mod="+files[i].lastModified()+" stat="+(String)p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS));
-//RemoteFile file=new IRODSFile((IRODSFileSystem) (RemoteFileSystem)collection.getFileSystem(),(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-//System.err.println("***files[i]="+files[i]+" length="+files[i].length()+" mod="+files[i].lastModified());
-//System.err.println("***file="+file+" length="+file.length()+" mod="+file.lastModified());
-//System.err.println("***repnum="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" repstat="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)+
-//	" creationdate="+p.getValue(IRODSMetaDataSet.CREATION_DATE)+" res info="+p.getValue(IRODSMetaDataSet.RESOURCE_INFO)+
-//	" res location="+p.getValue(IRODSMetaDataSet.RESOURCE_LOCATION)+" res name="+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-
-
-		} catch (NullPointerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		
-		
-		
-		
 
 		String etag = DavisUtilities.getETag(file);
 		if (etag != null)
