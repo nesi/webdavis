@@ -59,7 +59,7 @@ public class AuthorizationProcessor {
 		return self;
 	}
 	public DavisSession getDavisSession(String authorization, boolean reset){
-		String sessionID=SimpleMD5.MD5(authorization) + "*basic";
+		String sessionID=getUsername(authorization)+"|"+SimpleMD5.MD5(authorization) + "*basic|";
 		Log.log(Log.DEBUG, "trying to get session for basic auth(https). sessionID:"+sessionID);
 		DavisSession davisSession=connectionPool.get(sessionID);
 		if (davisSession!=null&&reset) {
@@ -74,7 +74,7 @@ public class AuthorizationProcessor {
 		
 	}
 	public DavisSession getDavisSession(String sharedToken, String commonName, String shibSessionID, boolean reset){
-		String sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
+		String sessionID = "|"+SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib|";
 		Log.log(Log.DEBUG, "trying to get session for shib auth(http). sessionID:"+sessionID);
 		DavisSession davisSession=connectionPool.get(sessionID);
 		if (davisSession!=null&&reset) {
@@ -86,6 +86,39 @@ public class AuthorizationProcessor {
 			return davisSession;
 		}
 		return login(null, sharedToken, commonName, shibSessionID);
+	}
+	
+	private String getUsername(String authorization){
+		if (authorization.startsWith("Basic ")){
+			String authInfo;
+			try {
+				authInfo = new String(Base64.decodeBase64(authorization
+						.substring(6).getBytes()), "ISO-8859-1");
+				// System.out.println("authInfo:"+authInfo);
+				int index = authInfo.indexOf(':');
+				return (index != -1) ? authInfo.substring(0, index) : authInfo;
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				return null;
+			}
+		}else{
+			return null;
+		}
+	}
+	private void clearOldSessionForTheSameUser(String user){
+		String sessionID=null;
+		for (String key:connectionPool.keySet()){
+			if (key.startsWith(user+"|")){
+				sessionID=key;
+				break;
+			}
+		}
+		if (sessionID!=null){
+			connectionPool.get(sessionID).disconnect();
+			connectionPool.remove(sessionID);
+			Log.log(Log.INFORMATION,"removed old session from pool:"+sessionID);
+		}
 	}
 
     protected GSSCredential myproxyLogin(String user, char[] password, String host)
@@ -126,6 +159,7 @@ public class AuthorizationProcessor {
 		
 		String idpName = null;
 		String user = null;
+		String authUser = null;
 		char[] password = null;
 		String domain = davisConfig.getDefaultDomain();
 		String defaultResource=davisConfig.getDefaultResource();
@@ -133,7 +167,7 @@ public class AuthorizationProcessor {
 		GSSCredential gssCredential=null;
 		String sessionID=null;
 		if (sharedToken!=null&&commonName!=null&&sharedToken.length()>0&&commonName.length()>0){
-			sessionID = SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib";
+			sessionID = "|"+SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib|";
 			ShibUtil shibUtil=new ShibUtil();
 			Map result;
 			if (sharedToken!=null&&commonName!=null&&(result=shibUtil.passInShibSession(sharedToken,commonName))!=null){  //found shib session, get username/password
@@ -142,7 +176,6 @@ public class AuthorizationProcessor {
 				Log.log(Log.DEBUG,"shibUtil got user "+user+" and generated a new password.");
 			}
 		}else if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) {
-			sessionID=SimpleMD5.MD5(authorization) + "*basic";
 			String authInfo=null;
 			try {
 				authInfo = new String(Base64.decodeBase64(authorization
@@ -156,6 +189,8 @@ public class AuthorizationProcessor {
 			int index = authInfo.indexOf(':');
 			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
 			password = (index != -1) ? authInfo.substring(index + 1).toCharArray() : "".toCharArray();
+			sessionID=user+"|"+SimpleMD5.MD5(authorization) + "*basic|";
+			authUser=user;
 
 			idpName=davisConfig.getDefaultIdp();
 			if ((index = user.indexOf('\\')) != -1
@@ -403,7 +438,7 @@ public class AuthorizationProcessor {
 					if (user==null||user.equals("")){
 						return null;
 					}
-					Log.log(Log.DEBUG, "Found user '"+user+"' for GSI");
+					Log.log(Log.DEBUG, "Found iRODS user '"+user+"' for GSI");
 					davisSession.setAccount(user);
 					homeDir = "/" + davisConfig.getZoneName() + "/home/" + davisSession.getAccount();
 				}
@@ -456,6 +491,9 @@ public class AuthorizationProcessor {
 		}
 		if (davisSession!=null){
 			davisSession.setSessionID(sessionID);
+			if (authUser!=null) {
+				clearOldSessionForTheSameUser(authUser);
+			}
 			connectionPool.put(sessionID, davisSession);
 		}
 		return davisSession;

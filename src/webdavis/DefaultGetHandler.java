@@ -264,7 +264,15 @@ public class DefaultGetHandler extends AbstractHandler {
 	 * 
 	 */
 	public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
-		Log.log(Log.DEBUG, ("=============== id="+instanceID+" request="+request));
+		if (Log.getThreshold() <= Log.DEBUG) { // Skip the request.toString below if not debugging cos jetty 6 throws an exception sometimes
+			String r = "";
+			try {
+				r = request.toString();
+			} catch (Exception e) {
+				r = "jetty error: "+e.getMessage();
+			}
+			Log.log(Log.DEBUG, ("=============== id="+instanceID+" request="+r));
+		}
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
