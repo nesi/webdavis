@@ -762,7 +762,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //     	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, ((IRODSAccount)((IRODSFileSystem)(davisSession.getRemoteFileSystem())).getAccount()).getZone())},
     	    		null,
 //    	    		new MetaDataCondition[] {MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()), MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())},
-    	    		new MetaDataSelect[] {MetaDataSet.newSelection(ResourceMetaData.RESOURCE_NAME)}, Namespace.RESOURCE);
+    	    		new MetaDataSelect[] {MetaDataSet.newSelection(ResourceMetaData.COLL_RESOURCE_NAME/*RESOURCE_NAME*/)});
  System.err.println("***************done query - result list= "+((rl == null)?"null":rl.length));
 		
 System.err.println("file length="+file.length()+"  file date="+file.lastModified());
