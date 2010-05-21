@@ -902,17 +902,22 @@
 			return listingGrid.selection.getSelectedCount();
 		}
 
-// TBD: need to find a way to do this with queryreadstore
-/*		function directoryIsChecked() {
+		// This is a compromise. To do this accurately, we'd need to give the server a list of all selected items
+		// and ask it whether any are dirs, or we'd have to load all items so the ui could check.
+		// Instead, the algorithm is if not all selected items are loaded, return true (just in case), else check selected items.
+		function directoryIsChecked() {
 			if (!listingGrid._isLoaded)
 				return false;
 			var selected = getSelected(listingGrid);
 			if (selected != null)
-				for (var i = 0; i < selected.length; i++) 
-					if (listingGrid.store.getValue(selected[i], "name").type == "d")
+				for (var i = 0; i < selected.length; i++) {
+					if (selected[i]+1 >= listingGrid.store._items.length)
+						return true; // If not all selected items are loaded, must return true in case some are dirs
+					if (listingGrid.store._items[selected[i]+1].i.name.type == "d")
 						return true;
+				}
 			return false;
-		}*/
+		}
 		
 		function toggleAll() {
 			var allChecked = !getToggleButtonState();
@@ -1131,6 +1136,7 @@
 	      				return response;
 	    			}
 			});
+			checkAll(false);
 		}
 
 		function validateUploadForm() {
@@ -1480,7 +1486,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem()); 
-//			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
+			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
 	        else
