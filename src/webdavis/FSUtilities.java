@@ -19,6 +19,7 @@ import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.Namespace;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
+import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFile;
@@ -122,7 +123,7 @@ public class FSUtilities {
 //						MetaDataSet.newCondition( IRODSMetaDataSet.RSRC_ACCS_USER_DOMAIN, MetaDataCondition.EQUAL, fs.getDomainName()),
 //						MetaDataSet.newCondition( SRBMetaDataSet.RSRC_ACCS_USER_ZONE, MetaDataCondition.EQUAL, fs.getMcatZone()),											
 						MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, currentZone)},		
-				new MetaDataSelect[] {MetaDataSet.newSelection(IRODSMetaDataSet.RESOURCE_NAME)});
+				new MetaDataSelect[] {MetaDataSet.newSelection(/*IRODSMetaDataSet.RESOURCE_NAME*/ResourceMetaData.COLL_RESOURCE_NAME)});
 //			recordList = fs.query(MetaDataSet.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
 //			recordList = MetaDataRecordList.getAllResults(recordList);
 		} catch (IOException e) {
