@@ -16,7 +16,6 @@ import org.globus.myproxy.MyProxy;
 import org.globus.myproxy.MyProxyException;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
-import org.irods.jargon.core.exception.JargonException;
 
 import au.org.arcs.jshib.IdP;
 import au.org.arcs.jshib.slcs.SLCSClient;
@@ -65,11 +64,7 @@ public class AuthorizationProcessor {
 		DavisSession davisSession=connectionPool.get(sessionID);
 		if (davisSession!=null&&reset) {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
-			try {
-				davisSession.disconnect();
-			} catch (JargonException e) {
-				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
-			}
+			davisSession.disconnect();
 			connectionPool.remove(sessionID);
 		}else if (davisSession!=null&&davisSession.isConnected()){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
@@ -84,11 +79,7 @@ public class AuthorizationProcessor {
 		DavisSession davisSession=connectionPool.get(sessionID);
 		if (davisSession!=null&&reset) {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
-			try {
-				davisSession.disconnect();
-			} catch (JargonException e) {
-				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
-			}
+			davisSession.disconnect();
 			connectionPool.remove(sessionID);
 		}else if (davisSession!=null&&davisSession.isConnected()){
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
@@ -124,11 +115,7 @@ public class AuthorizationProcessor {
 			}
 		}
 		if (sessionID!=null){
-			try {
-				connectionPool.get(sessionID).disconnect();
-			} catch (JargonException e) {
-				Log.log(Log.WARNING, "Jargon failed to close session: "+e.getMessage());
-			}
+			connectionPool.get(sessionID).disconnect();
 			connectionPool.remove(sessionID);
 			Log.log(Log.INFORMATION,"removed old session from pool:"+sessionID);
 		}
@@ -590,11 +577,7 @@ public class AuthorizationProcessor {
     }
 	public void destroyConnectionPool() {
 		for (DavisSession session:connectionPool.values()){
-			try {
-				session.disconnect();
-			} catch (JargonException e) {
-				Log.log(Log.WARNING, "Jargon failed to close session: "+session+" - "+e.getMessage());
-			}
+			session.disconnect();
 		}
 		connectionPool=null;
 		
@@ -605,11 +588,7 @@ public class AuthorizationProcessor {
 			session.descreaseSharedNumber();
 			if (!session.isShared()){
 				Log.log(Log.DEBUG,"destroying:"+session);
-				try {
-					session.disconnect();
-				} catch (JargonException e) {
-					Log.log(Log.WARNING, "Jargon failed to close session: "+session+" - "+e.getMessage());
-				}
+				session.disconnect();
 				connectionPool.remove(sessionID);
 				Log.log(Log.INFORMATION,"num of connections in pool:"+connectionPool.size());
 			}else{

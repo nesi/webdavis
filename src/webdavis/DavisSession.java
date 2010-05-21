@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Hashtable;
 
-import org.irods.jargon.core.exception.JargonException;
-
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
@@ -42,7 +40,7 @@ public class DavisSession implements Serializable{
 		return fileListCache;
 	}
 
-	public void disconnect()throws JargonException {
+	public void disconnect(){
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
 				try {
