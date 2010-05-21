@@ -1902,7 +1902,7 @@
 				<div style="width: 350px;" autoHeight="7" structure="permissionsLayout" dojoType="dojox.grid.DataGrid" id="permissionsGrid" jsId="permissionsGrid" selectionMode="single" onRowClick="getSelectedPermission"></div>
 			</td>
 			<td valign="top">
-				<table>
+				<table >
 					<tr>
 						<td colspan="2"><span id="stickyControl"></span><div id="domainRow"></div></td>					
 					</tr>
@@ -1920,13 +1920,13 @@
 						<td>Recursive</td>
 						<td><input type="checkbox" name="recursive" id="recursive" dojoType="dijit.form.CheckBox"/></td>
 					</tr>
-					<tr>
-						<td rowspan="2" align="center">
-							<button type="button" id="applyPermissionsButton" onclick="savePermission()">Apply</button>
-							<button type="button" onclick="dijit.byId('recursive').setAttribute('checked', false); dialogPermissions.hide()">Close</button>
-						</td>
-					</tr>
 				</table>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="right" valign="bottom">
+				<button type="button" id="applyPermissionsButton" onclick="savePermission()">Apply</button>
+				<button type="button" onclick="dijit.byId('recursive').setAttribute('checked', false); dialogPermissions.hide()">Close</button>
 			</td>
 		</tr>
 	</table>
