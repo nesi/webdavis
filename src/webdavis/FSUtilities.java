@@ -520,7 +520,7 @@ public class FSUtilities {
 			});
 		MetaDataCondition conditionsDir[] = {
 			MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
+//##			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
 //			MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_USER_NAME, MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName()),
 		};
 		MetaDataSelect selectsDir[] = MetaDataSet.newSelection(new String[]{
@@ -528,7 +528,7 @@ public class FSUtilities {
 				IRODSMetaDataSet.DIRECTORY_TYPE,
 				IRODSMetaDataSet.DIRECTORY_CREATE_DATE,
 				IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
-				IRODSMetaDataSet.RESOURCE_NAME,
+//##				IRODSMetaDataSet.RESOURCE_NAME,
 //				IRODSMetaDataSet.META_COLL_ATTR_NAME,
 //				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
 //				IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
@@ -546,8 +546,10 @@ public class FSUtilities {
 
     		if (fileDetails == null) fileDetails = new MetaDataRecordList[0];
     		if (dirDetails == null) dirDetails = new MetaDataRecordList[0];
-    		Vector <CachedFile> fileList = new Vector()/*CachedFile[fileDetails.length]*/;
-    		Vector <CachedFile> dirList = new Vector()/*CachedFile[dirDetails.length]*/;
+    		Vector <CachedFile> fileList = new Vector();
+//    		Vector <CachedFile> dirList = new Vector();
+//    		CachedFile[] files = new CachedFile[fileDetails.length];
+    		CachedFile[] dirs = new CachedFile[dirDetails.length];
     		int i = 0;
     		Log.log(Log.DEBUG, "file num:"+fileDetails.length);
     		String lastName = null;
@@ -557,15 +559,21 @@ public class FSUtilities {
 	    			if (file.getName().equals(lastName))
 	    				continue;
 	    			lastName = file.getName();
-	    			fileList.add/*[i] =*/(file);
-	    			file/*s[i]*/.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
-	    			file/*s[i]*/.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
-	    			file/*s[i]*/.setDirFlag(false);
-    				file/*s[i]*/.setCanWriteFlag(true);
+	    			fileList.add(file);
+	    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
+	    			file.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
+	    			file.setDirFlag(false);
+    				file.setCanWriteFlag(true);
+//	    			files[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+//	    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
+//	    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
+//	    			files[i].setDirFlag(false);
+//    				files[i].setCanWriteFlag(true);
     				if (getMetadata) {
     					String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
     					if (metadata.containsKey(path)) 
-    						file/*s[i]*/.setMetadata(metadata.get(path).getMetadata());
+    						file.setMetadata(metadata.get(path).getMetadata());
+//    						files[i].setMetadata(metadata.get(path).getMetadata());
     				}
 	    			i++;
 	    		}
@@ -577,23 +585,27 @@ public class FSUtilities {
     		i = 0;
     		lastName = null;
     		for (MetaDataRecordList p:dirDetails) {
-    			//String dir = ((String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)).substring(collection.getAbsolutePath().length());
-    			CachedFile dir = new CachedFile((RemoteFileSystem)collection.getFileSystem(), /*collection.getAbsolutePath(), dir*/(String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-    			if (dir.getName().equals(lastName))
-    				continue;
-    			lastName = dir.getName();
-    			dirList.add/*[i] =*/(dir);
-    			dir/*s[i]*/.setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
-    			dir/*s[i]*/.setDirFlag(true);
-    			dir/*s[i]*/.setCanWriteFlag(true);
+//    			CachedFile dir = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+//    			if (dir.getName().equals(lastName))
+//    				continue;
+//    			lastName = dir.getName();
+//    			dirList.add(dir);
+//    			dir.setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+//    			dir.setDirFlag(true);
+//    			dir.setCanWriteFlag(true);
+    			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+    			dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+    			dirs[i].setDirFlag(true);
+    			dirs[i].setCanWriteFlag(true);
     			if (getMetadata) {
     				String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
     				if (metadata.containsKey(path)) 
-    					dir/*s[i]*/.setMetadata(metadata.get(path).getMetadata());
+//    					dir.setMetadata(metadata.get(path).getMetadata());
+    					dirs[i].setMetadata(metadata.get(path).getMetadata());
     			}
     			i++;
     		}
-    		CachedFile[] dirs = dirList.toArray(new CachedFile[0]);
+//    		CachedFile[] dirs = dirList.toArray(new CachedFile[0]);
     		if (sort)
     			Arrays.sort((Object[])dirs, comparator);
     		
