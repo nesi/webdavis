@@ -297,9 +297,11 @@ public class AuthorizationProcessor {
 				} catch (GeneralSecurityException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return null;
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return null;
 				}
 			}
 		}else if (authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
