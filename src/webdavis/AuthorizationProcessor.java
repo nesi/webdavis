@@ -237,6 +237,7 @@ public class AuthorizationProcessor {
                         if(gssCredential == null)
                             return null;
 					}else{
+						if (davisConfig.getInitParameter("disableSLCSAuthentication", "true").equalsIgnoreCase("true")) return null;
 						IdP idp = null;
 						SLCSClient client;
 						if (davisConfig.getProxyHost() != null && davisConfig.getProxyHost().toString().length() > 0) {
