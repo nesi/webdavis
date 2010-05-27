@@ -1097,8 +1097,8 @@ public abstract class AbstractHandler implements MethodHandler {
     }
     
     protected String escapeJSON(String s) {
-    	
-    	return s.replace("\\", "\\\\").replace("\"", "\\\"");
+
+    	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
     }
     
     public String wrapJSONInHTML(String s) {

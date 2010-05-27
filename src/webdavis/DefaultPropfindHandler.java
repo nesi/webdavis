@@ -107,9 +107,9 @@ public class DefaultPropfindHandler extends AbstractHandler {
     			String[] resList=null;
     			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
     				resList=FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem(), root.substring(1));
-    			}else if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
+    			}/*else if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
     				resList=FSUtilities.getIRODSResources((IRODSFileSystem)file.getFileSystem(), root.substring(1));
-    			}
+    			}*/
 				if (resList==null||resList.length==0){
 		        	davisSession.setCurrentResource(davisSession.getDefaultResource());
 				}else{

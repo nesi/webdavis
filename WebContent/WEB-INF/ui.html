@@ -861,6 +861,15 @@
 			return event && event.which == 13
 		}
 
+		function isValidFileName(name, warn) {
+			if (name.indexOf('/') > -1) {
+				if (warn)
+					alert("Invalid file name. File names can't contain '/'.");
+				return false;
+			}
+			return true;
+		}
+
 		function escapeJSON(s) {
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 		}
@@ -1119,8 +1128,10 @@
 		}
 
 		function createDirectory(){	
-			dialogCreateDir.hide();
 			var dirName = directoryInputBox.getValue();
+			if (!isValidFileName(dirName, true))
+				return;
+			dialogCreateDir.hide();
 //	debug("createdir: "+dirName);
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
@@ -1147,7 +1158,7 @@
 		}
 
 		function validateUploadForm() {
-			if (dojo.byId("uploadTextField").value.length == 0) 
+			if ((dojo.byId("uploadTextField").value.length == 0) || !isValidFileName(dojo.byId("uploadTextField").value, true)) 
 				return false;
 			return true;
 		}
@@ -1248,6 +1259,8 @@
 		}
 
 		function rename(newName){
+			if (!isValidFileName(newName, true))
+				return;
 			dialogRename.hide();
 			moveFiles(listingStore.getCurrentDirectory()+'/'+escape(getFirstCheckedItem()), listingStore.getCurrentDirectory()+'/'+newName, true);
 		}
