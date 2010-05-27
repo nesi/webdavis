@@ -696,25 +696,16 @@ public class DefaultGetHandler extends AbstractHandler {
 			return;
 		}
 		
-		// Find first clean replica of file for download
-		MetaDataCondition conditionsFile[] = {
-			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
-			MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
-			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
-		};
-		MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
-//				IRODSMetaDataSet.FILE_NAME,
-//				IRODSMetaDataSet.DIRECTORY_NAME,
-//				IRODSMetaDataSet.CREATION_DATE,
-//				IRODSMetaDataSet.MODIFICATION_DATE,
-//				IRODSMetaDataSet.SIZE,
-//IRODSMetaDataSet.FILE_REPLICA_NUM,
-//IRODSMetaDataSet.FILE_REPLICA_STATUS,
-//IRODSMetaDataSet.CREATION_DATE,
-//IRODSMetaDataSet.RESOURCE_INFO,
-//IRODSMetaDataSet.RESOURCE_LOCATION,
-				IRODSMetaDataSet.RESOURCE_NAME
-			});
+		if (file.getFileSystem() instanceof IRODSFileSystem) {	
+			// Find first clean replica of file for download
+			MetaDataCondition conditionsFile[] = {
+				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+				MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
+				MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
+			};
+			MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
+					IRODSMetaDataSet.RESOURCE_NAME
+				});
 			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile);
     		if (fileDetails == null || fileDetails.length < 1) {
     			String s= "Internal get request error - no clean replicas found: "+file.getAbsolutePath();
@@ -724,26 +715,12 @@ public class DefaultGetHandler extends AbstractHandler {
     			return;
     		}
     		MetaDataRecordList p = fileDetails[0]; // Use first clean copy found
-//// System.err.println("***p repnum="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_NUM)+" repstat="+p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS)+
-////    		" creationdate="+p.getValue(IRODSMetaDataSet.CREATION_DATE)+" res info="+p.getValue(IRODSMetaDataSet.RESOURCE_INFO)+
-////    		" res location="+p.getValue(IRODSMetaDataSet.RESOURCE_LOCATION)+" res name="+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
 // System.err.println("***************************doing query");
-//    	    MetaDataRecordList[] rl = ((IRODSFileSystem)(davisSession.getRemoteFileSystem())).query(
-////    	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1")},
-////    	    		new MetaDataCondition[] {MetaDataSet.newCondition(ResourceMetaData.RESOURCE_NAME, MetaDataCondition.EQUAL, (String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME))},
-////    	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, "/ARCS/home")},
-////     	    		new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.RESOURCE_ZONE, MetaDataCondition.EQUAL, ((IRODSAccount)((IRODSFileSystem)(davisSession.getRemoteFileSystem())).getAccount()).getZone())},
-//    	    		null,
-////    	    		new MetaDataCondition[] {MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()), MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())},
-//    	    		new MetaDataSelect[] {MetaDataSet.newSelection(ResourceMetaData.COLL_RESOURCE_NAME/*RESOURCE_NAME*/)});
-// System.err.println("***************done query - result list= "+((rl == null)?"null":rl.length));
-//		
-//System.err.println("file length="+file.length()+"  file date="+file.lastModified());
 // System.err.println("setting resource to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
     		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
  			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
 // System.err.println("file resource is "+((IRODSFile)file).getResource());
-// System.err.println("file length="+file.length()+"  file date="+file.lastModified());
+		}
 
 		String etag = DavisUtilities.getETag(file);
 		if (etag != null)

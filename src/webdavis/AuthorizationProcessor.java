@@ -237,6 +237,7 @@ public class AuthorizationProcessor {
                         if(gssCredential == null)
                             return null;
 					}else{
+						if (davisConfig.getInitParameter("disableSLCSAuthentication", "true").equalsIgnoreCase("true")) return null;
 						IdP idp = null;
 						SLCSClient client;
 						if (davisConfig.getProxyHost() != null && davisConfig.getProxyHost().toString().length() > 0) {
@@ -297,9 +298,11 @@ public class AuthorizationProcessor {
 				} catch (GeneralSecurityException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return null;
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					return null;
 				}
 			}
 		}else if (authorization.regionMatches(true, 0, "Digest ", 0, 6)) {
