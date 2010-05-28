@@ -862,6 +862,11 @@
 		}
 
 		function isValidFileName(name, warn) {
+			if (name.length == 0) {
+				if (warn)
+					alert("Invalid file name. File names can't be empty.");
+				return false;
+			}
 			if (name.indexOf('/') > -1) {
 				if (warn)
 					alert("Invalid file name. File names can't contain '/'.");
