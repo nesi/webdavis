@@ -308,8 +308,8 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
-				Log.log(Log.INFORMATION, "Unhandled error: {0}", throwable);
-				throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\n"+throwable.getMessage(), throwable.getCause());
+				Log.log(Log.WARNING, "Unhandled error: {0}", throwable);
+				throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
 				if (throwable instanceof ServletException) {
 					throw (ServletException) throwable;
 				} else if (throwable instanceof IOException) {

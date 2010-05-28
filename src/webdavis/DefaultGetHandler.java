@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.SocketException;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -300,17 +301,10 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file.getAbsolutePath());
 
-		if (!file.exists() || file.getName().equals("noaccess")) { // File doesn't exist
-			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or server connection lost. "
-					+ (file.exists() ? " Jargon says 'noaccess'" : ""));
+		if (file.getName().equals("noaccess")) { 
+			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error - Jargon says 'noaccess'");
 			try {
-				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " does not exist.");
-				// response.setStatus(HttpServletResponse.SC_NOT_FOUND,
-				// "File does not exist");
-				// ServletOutputStream output = response.getOutputStream();
-				// String s = "Path can't be accessed.";
-				// output.print(s);
-				// response.setContentLength(s.length());
+				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " provides no access.");
 				response.flushBuffer();
 			} catch (IOException e) {
 				if (e.getMessage().equals("Closed"))
@@ -319,6 +313,28 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			return;
 		}
+		
+		if (!file.exists()) { // File doesn't exist
+			try {
+				try {
+					file.getPermissions(); // Test server connection
+				} catch (SocketException e) {
+					Log.log(Log.ERROR, "Davis appears to have lost its connection with the server.");
+					response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "The server has dropped its connection.");
+					response.flushBuffer();
+					return;
+				}
+				Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error.");					
+				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " does not exist.");
+				response.flushBuffer();
+			} catch (IOException e) {
+				if (e.getMessage().equals("Closed"))
+					Log.log(Log.WARNING, file.getAbsolutePath() + ": connection to server may have been lost.");
+				throw (e);
+			}
+			return;
+		}
+		
 		// if (!file.canRead()){
 		// response.sendError(HttpServletResponse.SC_FORBIDDEN,
 		// "Resource not accessible.");

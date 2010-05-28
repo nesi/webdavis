@@ -42,7 +42,7 @@ public class DavisSession implements Serializable{
 		return fileListCache;
 	}
 
-	public void disconnect()throws JargonException {
+	public void disconnect() throws RuntimeException {
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
 				try {
@@ -59,10 +59,9 @@ public class DavisSession implements Serializable{
 					e.printStackTrace();
 				}
 			}
-
 		}
-
 	}
+	
 	public String getSessionID() {
 		return sessionID;
 	}

@@ -149,7 +149,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
 			result = result & ((SRBFile)file).delete(true); 
 		}else if (file.getFileSystem() instanceof IRODSFileSystem){
 			//iRODS does support recursive deletion now
-			if (inTrash/*false*/) { // But not in trash for now
+			if (/*inTrash*/false) { // But not in trash for now
 		    	if (file.isDirectory()){
 		    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
 		    		String[] fileList=file.list();
@@ -167,8 +167,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
 				Log.log(Log.DEBUG, "deleting - force:"+inTrash);
 				try {
 					result = result & ((IRODSFile)file).delete(inTrash);
-				} catch (NullPointerException e) { // Catch jargon bugs
-					Log.log(Log.WARNING,"Jargon threw a NullPointerException during delete: "+e);
+				} catch (/*RuntimeException*/NullPointerException e) { // Catch jargon bugs
+					Log.log(Log.WARNING,"Jargon threw a RuntimeException during delete: "+e);
 					result = false;
 				}
 			}

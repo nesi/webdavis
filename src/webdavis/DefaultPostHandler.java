@@ -693,13 +693,16 @@ public class DefaultPostHandler extends AbstractHandler {
 	        			Log.log(Log.DEBUG, "Replicating to "+replicateResource);
                         if (file.getFileSystem() instanceof SRBFileSystem) {
  //   	        			Log.log(Log.DEBUG, "Not currently supported by Jargon");
-                     ((SRBFile)file).replicate(replicateResource);	
+                        	((SRBFile)file).replicate(replicateResource);	
                         } else if (file.getFileSystem() instanceof IRODSFileSystem) {
                         	try {
                         		((IRODSFile)file).replicate(replicateResource);
                         	} catch (IRODSException e) {
-                    			Log.log(Log.DEBUG, "Replicate failed: "+e.getMessage());
-                    			response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    			String s = e.getMessage();
+                    			if (s.contains("IRODS error occured -303002"))
+                    				s = "Unknown host";
+                    			Log.log(Log.DEBUG, "Replication failed: "+e.getMessage());
+                    			response.sendError(HttpServletResponse.SC_FORBIDDEN, "replication failed: "+s);
                     			return;
                         	}
                         	//   	        			Log.log(Log.DEBUG, "Not currently working in Jargon");

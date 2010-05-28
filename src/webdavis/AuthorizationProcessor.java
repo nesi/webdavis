@@ -67,7 +67,7 @@ public class AuthorizationProcessor {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			try {
 				davisSession.disconnect();
-			} catch (JargonException e) {
+			} catch (RuntimeException e) {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
 			}
 			connectionPool.remove(sessionID);
@@ -86,7 +86,7 @@ public class AuthorizationProcessor {
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			try {
 				davisSession.disconnect();
-			} catch (JargonException e) {
+			} catch (RuntimeException e) {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
 			}
 			connectionPool.remove(sessionID);
@@ -126,7 +126,7 @@ public class AuthorizationProcessor {
 		if (sessionID!=null){
 			try {
 				connectionPool.get(sessionID).disconnect();
-			} catch (JargonException e) {
+			} catch (RuntimeException e) {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+e.getMessage());
 			}
 			connectionPool.remove(sessionID);
@@ -595,7 +595,7 @@ public class AuthorizationProcessor {
 		for (DavisSession session:connectionPool.values()){
 			try {
 				session.disconnect();
-			} catch (JargonException e) {
+			} catch (RuntimeException e) {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+session+" - "+e.getMessage());
 			}
 		}
@@ -610,7 +610,7 @@ public class AuthorizationProcessor {
 				Log.log(Log.DEBUG,"destroying:"+session);
 				try {
 					session.disconnect();
-				} catch (JargonException e) {
+				} catch (RuntimeException e) {
 					Log.log(Log.WARNING, "Jargon failed to close session: "+session+" - "+e.getMessage());
 				}
 				connectionPool.remove(sessionID);

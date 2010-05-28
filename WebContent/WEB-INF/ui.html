@@ -1587,7 +1587,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				loadedAlert("Error while fetching replicas: "+errorMessage("replicas", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				loadedAlert("Error while fetching replicas: "+/*errorMessage("replicas", ioArgs.xhr.status,*/ ioArgs.xhr.statusText/*)*/);
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1665,6 +1665,17 @@
 			} else
 				dialogUpload.hide();
 		}
+
+		function resetConnection() {
+			var url = window.location.href;
+			url = url.replace(/#.*/, ""); 		// Trim anchor
+			url = url.replace(/[&?]reset/, "");	// Trim reset
+			if (url.indexOf("?") > -1)
+				url += "&reset";
+			else
+				url += "?reset";
+			window.location.replace(url);	
+		}
 		
 		function logout() {
 			cursorBusy(true);	
@@ -1683,7 +1694,6 @@
 	    		sync: true//,
 	  //  		handleAs: "json"
 	  		});
-
 		}
 
 		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
@@ -1764,9 +1774,14 @@
 				var directory = this.directory;
 				var onFetchError = this.onFetchError;
 				var newErrorHandler = function(errorData, requestObject) {
-					if (pageLoaded)
-						if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
-							loadedAlert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+					if (pageLoaded) {
+						if (errorData.status == 502) { // Server connection lost
+							alert("The server has dropped your connection and will now be reset.");
+							resetConnection();
+						} else
+							if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
+								loadedAlert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+					}
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete - only needed for dojo < 1.4.1
 					if (onFetchError)
 						onFetchError();
@@ -2128,10 +2143,10 @@
 	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
-<!-- 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+ 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
 	    		<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
-	    	</tr>-->
+	    	</tr>
 	    </table>	
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
