@@ -699,8 +699,12 @@ public class DefaultPostHandler extends AbstractHandler {
                         		((IRODSFile)file).replicate(replicateResource);
                         	} catch (IRODSException e) {
                     			String s = e.getMessage();
-                    			if (s.contains("IRODS error occured -303002"))
+                    			if (s.contains("IRODS error occured -303"))
                     				s = "Unknown host";
+                    			if (s.contains("IRODS error occured -305"))
+                    				s = "Can't connect to host";
+                    			if (s.contains("IRODS error occured -347"))
+                    				s = "Can't connect to host";
                     			Log.log(Log.DEBUG, "Replication failed: "+e.getMessage());
                     			response.sendError(HttpServletResponse.SC_FORBIDDEN, "replication failed: "+s);
                     			return;

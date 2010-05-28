@@ -1001,6 +1001,25 @@
 						&& ((widget.location != "selection") || ((!singleOnly && (checkedItemsCount() != 0)) || (singleOnly && (checkedItemsCount() == 1))));
 			enableActiveItem(widget.name, enable);			
 		}
+
+		function refreshReplicasButtons() {
+			if (replicasGrid.selection.getSelectedCount() == 0) {
+				enableButton('replicasDeleteButton', false);	// Nothing selected
+				enableButton('replicasReplicateButton', false);
+			} else {
+				var rows = replicasStore._getItemsArray();
+				var replicas = 0;
+				for (var i = 0; i < rows.length; i++)
+					if (rows[i].number[0])
+						replicas++;
+				var item = replicasGrid.selection.getFirstSelected();
+				if (!item)
+					return;
+				var isReplica = replicasStore.getValue(item, "number") != null;	// Selection already is a replica?
+				enableButton('replicasDeleteButton', isReplica && !isAnonymous() && replicas > 2);
+				enableButton('replicasReplicateButton', !isReplica && !isAnonymous());			
+			}
+		}
 		
 		function refreshButtons() {
 			var inTrash = isTrash(listingStore.getCurrentDirectory());
@@ -1017,15 +1036,8 @@
 				if (dynamicObjects[i].objectType == "button")
 					enableDynamicWidget(dynamicObjects[i]);
 
-			if (replicasGrid.selection.getSelectedCount() == 0) {
-				enableButton('replicasDeleteButton', false);
-				enableButton('replicasReplicateButton', false);
-			} else {
-				var item = replicasGrid.selection.getFirstSelected();
-				var isReplica = replicasStore.getValue(item, "number") != null;
-				enableButton('replicasDeleteButton', isReplica && !isAnonymous());
-				enableButton('replicasReplicateButton', !isReplica && !isAnonymous());			
-			}
+			refreshReplicasButtons();
+
 			var trashEmpty = dojo.byId("trashEmpty");
 			if (inTrash) {
 				if (trashEmpty)
@@ -1575,7 +1587,7 @@
 			getPermissions(checkedCount > 1);				
 		}
 
-		function getReplicas(action){
+		function getReplicas(action, refresh){
 			cursorBusy(true);	
 		  	dojo.xhrPost({
 	    		url: listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action,
@@ -1583,11 +1595,17 @@
 						replicasStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						replicasGrid.setStore(replicasStore);  
 						loadResourcesFromServer();
+						replicasGrid.selection.deselectAll();
+						if (refresh)
+							refreshReplicasButtons();
 	 					cursorBusy(false);
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
 	      				loadedAlert("Error while fetching replicas: "+/*errorMessage("replicas", ioArgs.xhr.status,*/ ioArgs.xhr.statusText/*)*/);
+						replicasGrid.selection.deselectAll();
+						if (refresh)
+							refreshReplicasButtons();
 	       				cursorBusy(false);
 	      				return response;
 	    			},
@@ -1640,7 +1658,7 @@
 		
 		function deleteReplica() {
 			var resource = replicasStore.getValue(replicasGrid.selection.getFirstSelected(), "resource");
-			getReplicas("&delete="+resource);
+			getReplicas("&delete="+resource, true);
 		}
 		
 		function replicate() {
@@ -1991,6 +2009,7 @@
 		<tr>
 			<td>
 				<div id="replicasStatusField" style="font-size:small"></div>
+				<small><br>Note: Replicas can't be deleted if 2 or less remain</small>
 			</td>
 		</tr>
 	</table>
