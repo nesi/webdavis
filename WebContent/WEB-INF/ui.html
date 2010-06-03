@@ -145,7 +145,11 @@
 		}
 		// Dump fields of object
 		function dump(message, object) {
-			debug(message+" "+dojo.toJson(object, true));
+			try {
+				debug(message+" "+dojo.toJson(object, true));
+			} catch(e) {
+				debug("dump: error dumping: "+object+" - "+e);
+			}
 		}
 		
 		function newBackState(url) {
@@ -361,7 +365,7 @@
 			});
 			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
 				if (e.keyCode == dojo.keys.ENTER) {
-					rename(escape(dojo.byId('renameInputBox').value));
+					rename(/*escape*/encodeURI(dojo.byId('renameInputBox').value));
 				}
 			});
 			dojo.connect(listingGrid, 'onClick', function(e) {listingStore.refreshDisplay(false)});
@@ -558,8 +562,8 @@
 		}
 
 		function gridFormatFile(value, store, storeName, addToHistory) {
-			var escapedFilename = escapeFilename(""+value.name);
-			var escapedFileref = escape(""+value.name);
+			var escapedFilename = /*escapeFilename(""+*/decodeURI(value.name);
+			var escapedFileref = /*escape(""+*//*decodeURI(*/value.name/*)*/;
 			if (value.type == "top" ) // "... Parent Directory"
 				return '<a class="link" onclick="'+storeName+'.gotoParentDirectory(); return false" href="'+store.getCurrentDirectory()+'/..">'+escapedFilename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
@@ -772,6 +776,7 @@
     	}
 
 		function toBreadcrumb(path, storeName, addToHistory) {
+			path = decodeURI(path);
 			var result = "";
 			var subpath = "";
 			var dirs = path.split('/');
@@ -779,7 +784,7 @@
 				subpath = subpath+'/'+dirs[i];
 				if (i > 1)
 					result = result + " > ";
-				result = result+'<a class="link" onclick="'+storeName+'.gotoDirectory(\''+subpath+'\','+addToHistory+'); return false" href="'+subpath+'">'+escapeFilename(unescape(dirs[i]))+'</a>';
+				result = result+'<a class="link" onclick="'+storeName+'.gotoDirectory(\''+subpath+'\','+addToHistory+'); return false" href="'+subpath+'">'+/*escapeFilename(*/unescape(dirs[i])/*)*/+'</a>';
 			}
 			return result;
 		}
@@ -1149,10 +1154,9 @@
 			if (!isValidFileName(dirName, true))
 				return;
 			dialogCreateDir.hide();
-//	debug("createdir: "+dirName);
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
-				url: listingStore.getCurrentDirectory()+"/"+escape(dirName),
+				url: listingStore.getCurrentDirectory()+"/"+/*escape(*/dirName/*)*/,
 			    currentDirectory: listingStore.getCurrentDirectory(),
 			    load: function(responseObject, ioArgs){
 						cursorBusy(false);
@@ -1279,7 +1283,7 @@
 			if (!isValidFileName(newName, true))
 				return;
 			dialogRename.hide();
-			moveFiles(listingStore.getCurrentDirectory()+'/'+escape(getFirstCheckedItem()), listingStore.getCurrentDirectory()+'/'+newName, true);
+			moveFiles(listingStore.getCurrentDirectory()+'/'+/*escape(*/getFirstCheckedItem()/*)*/, listingStore.getCurrentDirectory()+'/'+newName, true);
 		}
 
 		function restoreFiles() {
@@ -1353,7 +1357,7 @@
 				resetMetadataStore(true);
 			else {
 				resetMetadataStore(true);
-				metadataURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem());
+				metadataURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstCheckedItem()/*)*/;
 				loadMetadataFromServer(metadataURL);
 			}
 			dialogMetadata.attr("url", metadataURL);
@@ -1406,8 +1410,6 @@
 					data += "{\"name\":\""+escapeJSON(metadataGrid.getItem(i).name)+"\", \"value\":\""+escapeJSON(metadataGrid.getItem(i).value)+"\", \"unit\":\""+escapeJSON(metadataGrid.getItem(i).unit)+"\"}";
 			}
 			data += "]}]";
-//			alert(dijit.byId('metadataGrid').getItem(0).name);
-//			alert("data:"+data);
 			cursorBusy(true);
 		  	dojo.rawXhrPost({
 	    		url: listingStore.getCurrentDirectory()+"?method=metadata"+"&uihandle="+listingStore.uiHandle,
@@ -1522,7 +1524,7 @@
 		function getPermissions(batch){
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
-				sourceURL = listingStore.getCurrentDirectory()+"/"+escape(getFirstCheckedItem()); 
+				sourceURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstCheckedItem()/*)*/; 
 			enableButton('recursive', directoryIsChecked());	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
@@ -1566,11 +1568,6 @@
 			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky="+(state?"true":"false");
 			getPermission(form_url, listToJSON());
 		}
-
-//		function unsetSticky(recursive){
-//			var form_url = listingStore.getCurrentDirectory()+"?method=permission"+"&recursive="+recursive+"&sticky=false";
-//			getPermission(form_url, listToJSON());
-//		}
 
 		function getSelectedPermission(e){
 			formUsername.attr('displayedValue', ''+permissionsGrid.getItem(e.rowIndex).username);
@@ -1911,7 +1908,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="rename(escape(dojo.byId('renameInputBox').value))">Rename</button>
+		<button type="button" onclick="rename(/*escape(*/encodeURI(dojo.byId('renameInputBox').value)/*)*/)">Rename</button>
 		<button type="button" onclick="dialogRename.hide()">Cancel</button>
 	</div>
 </div>					
@@ -2174,7 +2171,7 @@
 	    </table>	
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
-	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=unescape(getFirstCheckedItem()); dialogRename.show()">Rename</td>         				
+	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURI(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
 	    	</tr>
 	    </table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">

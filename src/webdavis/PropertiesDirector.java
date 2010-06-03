@@ -35,39 +35,6 @@ public class PropertiesDirector {
 	
     private static final int INFINITY = 3;
 
-    private static final boolean[] ESCAPED;
-
-    static {
-        ESCAPED = new boolean[128];
-        for (int i = 0; i < 128; i++) {
-            ESCAPED[i] = true;
-        }
-        for (int i = 'A'; i <= 'Z'; i++) {
-            ESCAPED[i] = false;
-        }
-        for (int i = 'a'; i <= 'z'; i++) {
-            ESCAPED[i] = false;
-        }
-        for (int i = '0'; i <= '9'; i++) {
-            ESCAPED[i] = false;
-        }
-        ESCAPED['+'] = false;
-        ESCAPED['-'] = false;
-        ESCAPED['='] = false;
-        ESCAPED['.'] = false;
-        ESCAPED['_'] = false;
-        ESCAPED['*'] = false;
-        ESCAPED['('] = false;
-        ESCAPED[')'] = false;
-        ESCAPED[','] = false;
-        ESCAPED['@'] = false;
-        ESCAPED['\''] = false;
-        ESCAPED['$'] = false;
-        ESCAPED[':'] = false;
-        ESCAPED['&'] = false;
-        ESCAPED['!'] = false;
-    }
-
     private final PropertiesBuilder builder;
 
     /**
@@ -192,7 +159,7 @@ public class PropertiesDirector {
 //            }
             for (int i = 0; i < count; i++) {
                 addPropertyNames(document, children[i],
-                        href + escape(children[i].getName()), depth);
+                        href + FSUtilities.escape(children[i].getName()), depth);
             }
         }
     }
@@ -219,7 +186,7 @@ public class PropertiesDirector {
 //            }
             for (int i = 0; i < count; i++) {
                 addAllProperties(document, children[i],
-                        href + escape(children[i].getName()), depth);
+                        href + FSUtilities.escape(children[i].getName()), depth);
             }
         }
     }
@@ -246,31 +213,9 @@ public class PropertiesDirector {
 //            }
             for (int i = 0; i < count; i++) {
                 addProperties(document, children[i],
-                        href + escape(children[i].getName()), props, depth);
+                        href + FSUtilities.escape(children[i].getName()), props, depth);
             }
         }
-    }
-
-    private String escape(String name) throws IOException {
-        boolean dir = name.endsWith("/");
-        if (dir) name = name.substring(0, name.length() - 1);
-        StringBuffer buffer = new StringBuffer();
-        char[] chars = name.toCharArray();
-        int count = chars.length;
-        for (int i = 0; i < chars.length; i++) {
-            if (chars[i] > 0x7f || ESCAPED[chars[i]]) {
-                byte[] bytes = new String(chars, i, 1).getBytes("UTF-8");
-                for (int j = 0; j < bytes.length; j++) {
-                    buffer.append("%");
-                    buffer.append(Integer.toHexString((bytes[j] >> 4) & 0x0f));
-                    buffer.append(Integer.toHexString(bytes[j] & 0x0f));
-                }
-            } else {
-                buffer.append(chars[i]);
-            }
-        }
-        if (dir) buffer.append("/");
-        return buffer.toString();
     }
 
     private RemoteFile[] getChildren(RemoteFile file){

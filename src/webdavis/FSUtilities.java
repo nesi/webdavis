@@ -38,6 +38,61 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 public class FSUtilities {
 	
 	private static final int MAX_QUERY_NUM = 100000;
+	
+    private static final boolean[] ESCAPED;
+
+    static {
+        ESCAPED = new boolean[128];
+        for (int i = 0; i < 128; i++) {
+            ESCAPED[i] = true;
+        }
+        for (int i = 'A'; i <= 'Z'; i++) {
+            ESCAPED[i] = false;
+        }
+        for (int i = 'a'; i <= 'z'; i++) {
+            ESCAPED[i] = false;
+        }
+        for (int i = '0'; i <= '9'; i++) {
+            ESCAPED[i] = false;
+        }
+        ESCAPED['+'] = false;
+        ESCAPED['-'] = false;
+        ESCAPED['='] = false;
+        ESCAPED['.'] = false;
+        ESCAPED['_'] = false;
+        ESCAPED['*'] = false;
+        ESCAPED['('] = false;
+        ESCAPED[')'] = false;
+        ESCAPED[','] = false;
+        ESCAPED['@'] = false;
+        ESCAPED['\''] = false;
+        ESCAPED['$'] = false;
+        ESCAPED[':'] = false;
+        ESCAPED['&'] = false;
+        ESCAPED['!'] = false;
+    }
+
+    public static String escape(String name) throws IOException {
+        boolean dir = name.endsWith("/");
+        if (dir) name = name.substring(0, name.length() - 1);
+        StringBuffer buffer = new StringBuffer();
+        char[] chars = name.toCharArray();
+        int count = chars.length;
+        for (int i = 0; i < chars.length; i++) {
+            if (chars[i] > 0x7f || ESCAPED[chars[i]]) {
+                byte[] bytes = new String(chars, i, 1).getBytes("UTF-8");
+                for (int j = 0; j < bytes.length; j++) {
+                    buffer.append("%");
+                    buffer.append(Integer.toHexString((bytes[j] >> 4) & 0x0f));
+                    buffer.append(Integer.toHexString(bytes[j] & 0x0f));
+                }
+            } else {
+                buffer.append(chars[i]);
+            }
+        }
+        if (dir) buffer.append("/");
+        return buffer.toString();
+    }
 
 	public static String getiRODSUsernameByDN(IRODSFileSystem fs, String dn){
 		MetaDataRecordList[] recordList = null;
@@ -582,7 +637,7 @@ public class FSUtilities {
     		if (sort)
     			Arrays.sort((Object[])files, comparator);
     		
-    		Log.log(Log.DEBUG, "collection num:"+dirDetails.length);
+    		Log.log(Log.DEBUG, "number of collections:"+dirDetails.length);
     		i = 0;
     		lastName = null;
     		for (MetaDataRecordList p:dirDetails) {

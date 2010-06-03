@@ -110,12 +110,13 @@
     			<xsl:text disable-output-escaping="yes">&lt;script type="text/javascript" src="</xsl:text><xsl:value-of select="$dojoroot"/><xsl:text disable-output-escaping="yes">dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true">&lt;/script></xsl:text>
     			<script type="text/javascript">
     // Load Dojo's code relating to the Button widget
-    dojo.require("dojox.grid.compat.Grid");
+//    dojo.require("dojox.grid.compat.Grid");
     dojo.require("dojox.grid.DataGrid");
-	dojo.require("dojox.grid.compat._grid.edit");
+//	dojo.require("dojox.grid.compat._grid.edit");
     dojo.require("dojo.data.ItemFileWriteStore");
     dojo.require("dojo.data.ItemFileReadStore");
     dojo.require("dijit.form.Button");
+    dojo.require("dijit.form.CheckBox");
     dojo.require("dijit.Dialog");
 	dojo.require("dijit.form.TextBox");
 	dojo.require("dojo.parser");

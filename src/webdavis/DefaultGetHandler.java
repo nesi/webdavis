@@ -421,7 +421,7 @@ public class DefaultGetHandler extends AbstractHandler {
 						continue;
 					}
 					String type = fileList[i-1].isDirectory() ? "d" : "f";
-					json.append("{\"name\":{\"name\":"+escapeJSONArg(fileList[i-1].getName())+",\"type\":"+escapeJSONArg(type)+"}"
+					json.append("{\"name\":{\"name\":"+/*escapeJSONArg(*/ "\""+FSUtilities.escape(fileList[i-1].getName())/*)*/+"\""+",\"type\":"+escapeJSONArg(type)+"}"
 							+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"metadata\":{\"values\":[");
@@ -512,7 +512,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				Log.log(Log.DEBUG, "#### Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 				return;
 			}
-			if (request.getParameter("oldui") == null) { // Use new UI
+			if (request.getParameter("uiold") == null) { // Use new UI
 				if (request.getParameter("reload-ui") != null) {
 					// If ?reload-ui is added to url, then ui.html will be reloaded.
 					Log.log(Log.INFORMATION, "Reloading ui from "+UIHTMLLocation);
