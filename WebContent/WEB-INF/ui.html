@@ -571,7 +571,7 @@
 			if (value.type == "d") 
 				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="'+storeName+'.gotoDirectory('+storeName+'.getCurrentDirectory()+\'/'+escapedFileref+'\','+addToHistory+'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 			else 
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapedFileref+'\'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(escapedFileref)+'\'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 		}
 		
 		function gridFormatDate(value) {
@@ -882,6 +882,10 @@
 
 		function escapeJSON(s) {
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+		}
+
+		function escapeString(s) {
+			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, '\\\'');
 		}
 
 		function getSelected(grid) {
