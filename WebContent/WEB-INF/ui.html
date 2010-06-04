@@ -119,29 +119,41 @@
 			if (pageLoaded)
 				alert(args);
 		}
+
+		var firstDebug = true;
 		
 		// Show the debug window
 		function showDebug() {
-		    window.top.debugWindow = window.open("", "Debug", "left=0,top=0,width=300,height=700,scrollbars=yes,"+"status=yes,resizable=yes");
-		    window.top.debugWindow.opener = self;
-		    // open the document for writing
-		    window.top.debugWindow.document.close(); // Clear window
-		    window.top.debugWindow.document.open();
-		    window.top.debugWindow.document.write("<HTML><HEAD><TITLE>Debug Window</TITLE></HEAD><BODY><PRE>\n");
+			try {
+		    	window.top.debugWindow = window.open("", "Debug", "left=0,top=0,width=300,height=700,scrollbars=yes,"+"status=yes,resizable=yes");	
+		    	window.top.debugWindow.opener = self;
+		    	// open the document for writing
+		    	window.top.debugWindow.document.close(); // Clear window
+		    	window.top.debugWindow.document.open();
+		    	window.top.debugWindow.document.write("<HTML><HEAD><TITLE>Debug Window</TITLE></HEAD><BODY><PRE>\n");
+			} catch(e) {
+				if (firstDebug)
+					alert("can't open debug window:"+e+"  Popups might be blocked");
+				firstDebug = false;
+			}
 		}
 		// If the debug window exists, then write to it
 		function debug(text) {
-			if (!window.top.debugWindow)
-				showDebug();
-		    if (window.top.debugWindow && ! window.top.debugWindow.closed) 
-		        window.top.debugWindow.document.write(text+"\n");
+			try {
+				if (!window.top.debugWindow)
+					showDebug();
+		    	if (window.top.debugWindow && ! window.top.debugWindow.closed) 
+		        	window.top.debugWindow.document.write(text+"\n");
+			} catch(e) {}
 		}
 		// If the debug window exists, then close it
 		function hideDebug() {
-		    if (window.top.debugWindow && ! window.top.debugWindow.closed) {
-		        window.top.debugWindow.close();
-		        window.top.debugWindow = null;
-		    }
+			try {
+		    	if (window.top.debugWindow && ! window.top.debugWindow.closed) {
+		        	window.top.debugWindow.close();
+		      	  window.top.debugWindow = null;
+		    	}
+			} catch(e) {}
 		}
 		// Dump fields of object
 		function dump(message, object) {
@@ -562,14 +574,14 @@
 		}
 
 		function gridFormatFile(value, store, storeName, addToHistory) {
-			var escapedFilename = /*escapeFilename(""+*/decodeURI(value.name);
+			var escapedFilename = /*escapeFilename(""+*/decodeURIComponent(value.name);
 			var escapedFileref = /*escape(""+*//*decodeURI(*/value.name/*)*/;
 			if (value.type == "top" ) // "... Parent Directory"
 				return '<a class="link" onclick="'+storeName+'.gotoParentDirectory(); return false" href="'+store.getCurrentDirectory()+'/..">'+escapedFilename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
 				return '<i>'+escapedFilename+'</i>';
 			if (value.type == "d") 
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="'+storeName+'.gotoDirectory('+storeName+'.getCurrentDirectory()+\'/'+escapedFileref+'\','+addToHistory+'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="'+storeName+'.gotoDirectory('+storeName+'.getCurrentDirectory()+\'/'+escapeString(escapedFileref)+'\','+addToHistory+'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 			else 
 				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(escapedFileref)+'\'); return false" href="'+store.getCurrentDirectory()+'/'+escapedFileref+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+escapedFilename+'</a>';
 		}
@@ -775,8 +787,16 @@
 	   		return Math.round(n)+multipliers[multiplier];
     	}
 
+
+     	function escapeChars(s) {
+   			map = {' ':'%20', '!':'%21' , '"':'%22', '#':'%23', '$':'%24', '%':'%25', "&":'%26', "'":'%27', '(':'%28', ')':'%29', '*':'%2A',
+    	     		'+':'%2B', ',':'%2C', '-':'%2D', '.':'%2E', ':':'%3A', ';':'%3B', '<':'%3C', '=':'%3D', '>':'%3E', '?':'%3F', '@':'%40',
+     	     		'[':'%5B', '\\':'%5C', ']':'%5D', '^':'%5E', '_':'%5F', '`':'%60', '{':'%7B', '|':'%7C', '}':'%7D', '~':'%7E'};
+     		return s.replace(/[ !"#$%&'()*+,-.:;<=>?@[\\\]^_`{|}~]/g, function(s) {return map[s];});
+   		}
+     		     	
 		function toBreadcrumb(path, storeName, addToHistory) {
-			path = decodeURI(path);
+			path = decodeURIComponent(path);
 			var result = "";
 			var subpath = "";
 			var dirs = path.split('/');
@@ -784,7 +804,8 @@
 				subpath = subpath+'/'+dirs[i];
 				if (i > 1)
 					result = result + " > ";
-				result = result+'<a class="link" onclick="'+storeName+'.gotoDirectory(\''+subpath+'\','+addToHistory+'); return false" href="'+subpath+'">'+/*escapeFilename(*/unescape(dirs[i])/*)*/+'</a>';
+				var s = escapeChars(subpath);
+				result = result+'<a class="link" onclick="'+storeName+'.gotoDirectory(\''+/*escape(subpath)*/s+'\','+addToHistory+'); return false" href="'+/*subpath*/s+'">'+/*escapeFilename(*/unescape(dirs[i])/*)*/+'</a>';
 			}
 			return result;
 		}
@@ -1154,7 +1175,7 @@
 		}
 
 		function createDirectory(){	
-			var dirName = directoryInputBox.getValue();
+			var dirName = encodeURIComponent(directoryInputBox.getValue());
 			if (!isValidFileName(dirName, true))
 				return;
 			dialogCreateDir.hide();
@@ -1912,7 +1933,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="rename(/*escape(*/encodeURI(dojo.byId('renameInputBox').value)/*)*/)">Rename</button>
+		<button type="button" onclick="rename(/*escape(*/encodeURIComponent(dojo.byId('renameInputBox').value)/*)*/)">Rename</button>
 		<button type="button" onclick="dialogRename.hide()">Cancel</button>
 	</div>
 </div>					
@@ -2175,7 +2196,7 @@
 	    </table>	
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
-	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURI(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
+	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURIComponent(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
 	    	</tr>
 	    </table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
