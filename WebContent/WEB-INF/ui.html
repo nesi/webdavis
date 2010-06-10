@@ -282,6 +282,7 @@
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
 				},
 				gotoDirectory: function(dir, addToHistory) {
+					dir = unescapePath(dir); // Seems to be necessary when apache is in front of jetty - restores forward slashes in path
 					listingStore.inherited("gotoDirectory", arguments);
 //					if (cursorBusy())
 //						return;
@@ -347,6 +348,7 @@
 				gotoDirectory: function(dir) {			
 					if (isCursorBusy())
 						return;
+					dir = unescapePath(dir); // Seems to be necessary when apache is in front of jetty - restores forward slashes in path
 					destinationStore.directory = dir;
 					destinationStore.addToHistory = false;
 					destinationStore.setURL(dir, true, "&directoriesonly");
@@ -911,6 +913,10 @@
 
 		function escapeString(s) {
 			return (""+s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, '\\\'');
+		}
+
+		function unescapePath(s) {
+			return (""+s).replace(/%2[Ff]/g, '/');
 		}
 
 		function getSelected(grid) {
