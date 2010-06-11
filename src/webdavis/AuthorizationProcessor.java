@@ -59,11 +59,13 @@ public class AuthorizationProcessor {
 		}
 		return self;
 	}
-	public DavisSession getDavisSession(String authorization, boolean reset){
+	
+	// For basic auth
+	public DavisSession getDavisSession(String authorization, boolean reset) {
 		String sessionID=getUsername(authorization)+"|"+SimpleMD5.MD5(authorization) + "*basic|";
 		Log.log(Log.DEBUG, "trying to get session for basic auth(https). sessionID:"+sessionID);
-		DavisSession davisSession=connectionPool.get(sessionID);
-		if (davisSession!=null&&reset) {
+		DavisSession davisSession=connectionPool.get(sessionID); // Look for existing Davis session
+		if (davisSession != null && reset) { // Session exists and reset requested
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			try {
 				davisSession.disconnect();
@@ -71,18 +73,21 @@ public class AuthorizationProcessor {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
 			}
 			connectionPool.remove(sessionID);
-		}else if (davisSession!=null&&davisSession.isConnected()){
+		}else 
+		if (davisSession !=null && davisSession.isConnected()) { // Session exists and is alive
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
-		return login(authorization, null, null, null);
-		
+		// No session found, or reset requested - create new session.
+		return login(authorization, null, null, null);	
 	}
+	
+	// For shib
 	public DavisSession getDavisSession(String sharedToken, String commonName, String shibSessionID, boolean reset){
 		String sessionID = "|"+SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib|";
 		Log.log(Log.DEBUG, "trying to get session for shib auth(http). sessionID:"+sessionID);
-		DavisSession davisSession=connectionPool.get(sessionID);
-		if (davisSession!=null&&reset) {
+		DavisSession davisSession=connectionPool.get(sessionID); // Look for existing Davis session
+		if (davisSession !=null && reset) { // Session exists and reset requested
 			Log.log(Log.INFORMATION, "reset session "+sessionID);
 			try {
 				davisSession.disconnect();
@@ -90,10 +95,12 @@ public class AuthorizationProcessor {
 				Log.log(Log.WARNING, "Jargon failed to close session: "+davisSession+" - "+e.getMessage());
 			}
 			connectionPool.remove(sessionID);
-		}else if (davisSession!=null&&davisSession.isConnected()){
+		}else 
+		if (davisSession != null && davisSession.isConnected()){ // Session exists and is alive
 			Log.log(Log.DEBUG, "Got existing davisSession: "+davisSession);
 			return davisSession;
 		}
+		// No session found, or reset requested
 		return login(null, sharedToken, commonName, shibSessionID);
 	}
 	
@@ -179,55 +186,57 @@ public class AuthorizationProcessor {
 		String serverName=davisConfig.getServerName();
 		GSSCredential gssCredential=null;
 		String sessionID=null;
-		if (sharedToken!=null&&commonName!=null&&sharedToken.length()>0&&commonName.length()>0){
+		
+		if (sharedToken !=null && commonName !=null && sharedToken.length() > 0 && commonName.length() > 0){ // Shib session?
 			sessionID = "|"+SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib|";
 			ShibUtil shibUtil=new ShibUtil();
 			Map result;
-			if (sharedToken!=null&&commonName!=null&&(result=shibUtil.passInShibSession(sharedToken,commonName))!=null){  //found shib session, get username/password
+			if (sharedToken !=null && commonName !=null && (result=shibUtil.passInShibSession(sharedToken,commonName)) != null){  //found shib session, get username/password
 				user=(String) result.get("username");
 				password=(char[]) result.get("password");
 				Log.log(Log.DEBUG,"shibUtil got user "+user+" and generated a new password.");
 			}
-		}else if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) {
+		}else 
+		if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) { // Basic
 			String authInfo=null;
 			try {
-				authInfo = new String(Base64.decodeBase64(authorization
-						.substring(6).getBytes()), "ISO-8859-1");
+				authInfo = new String(Base64.decodeBase64(authorization.substring(6).getBytes()), "ISO-8859-1");
 			} catch (UnsupportedEncodingException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 				return null;
 			}
-			// System.out.println("authInfo:"+authInfo);
+			// authInfo is user:password
+//System.err.println("authInfo:"+authInfo);
 			int index = authInfo.indexOf(':');
 			user = (index != -1) ? authInfo.substring(0, index) : authInfo;
 			password = (index != -1) ? authInfo.substring(index + 1).toCharArray() : "".toCharArray();
+			// sessionID is user|MD5(authorization)*basic|
 			sessionID=user+"|"+SimpleMD5.MD5(authorization) + "*basic|";
 			authUser=user;
 
 			idpName=davisConfig.getDefaultIdp();
-			if ((index = user.indexOf('\\')) != -1
-					|| (index = user.indexOf('/')) != -1) {
+			if ((index = user.indexOf('\\')) != -1 || (index = user.indexOf('/')) != -1) { // If user is something \ user
 				if (index==0){
 					// do nothing
 				}else
 					idpName = user.substring(0, index);
 				user = user.substring(index + 1);
 			}
-			boolean hasResource = false;
-			if ((index = user.indexOf('#')) != -1) {
+//			boolean hasResource = false;
+			if ((index = user.indexOf('#')) != -1) { // If user is user#resource
 				defaultResource = user.substring(index + 1);
 				user = user.substring(0, index);
-				hasResource = true;
+//				hasResource = true;
 			}
-			if ((index = user.indexOf('@')) != -1) {
+			if ((index = user.indexOf('@')) != -1) { // If user is user@server
 				serverName = user.substring(index + 1);
 				user = user.substring(0, index);
 				domain = serverName;
 //				if (!hasResource)
 //					davisConfig.getDefaultResource() = "";
 			}
-			if ((index = user.indexOf('%')) != -1) {
+			if ((index = user.indexOf('%')) != -1) { // If user is user%domain
 				domain = user.substring(index + 1);
 				user = user.substring(0, index);
 			}
@@ -236,21 +245,25 @@ public class AuthorizationProcessor {
 			if (idpName != null) {
 				// auth with idp
 				try {
+					// myproxy \ user
 					if (idpName.equalsIgnoreCase("myproxy")){
 					    gssCredential = myproxyLogin(user, password, davisConfig.getMyproxyServer());
                         if(gssCredential == null)
                             return null;
 					}
+					// irods|srb \ user
                     else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
 						// using irods/srb users to login
 						gssCredential = null;
-					}else if (isExtendedAuthScheme(idpName)){
-						// use extenede authe scheme, need to return gssCredential
+					}
+                    else if (isExtendedAuthScheme(idpName)){
+						// use extended auth scheme, need to return gssCredential
 						gssCredential = this.processExtendedAuthScheme(idpName, user, password, domain, serverName, defaultResource);
                         if(gssCredential == null)
                             return null;
-					}else{
-						if (davisConfig.getInitParameter("disableSLCSAuthentication", "true").equalsIgnoreCase("true")) return null;
+					}else{ // SLCS auth
+						if (davisConfig.getInitParameter("disableSLCSAuthentication", "true").equalsIgnoreCase("true")) 
+							return null;
 						IdP idp = null;
 						SLCSClient client;
 						if (davisConfig.getProxyHost() != null && davisConfig.getProxyHost().toString().length() > 0) {

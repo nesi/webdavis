@@ -227,8 +227,8 @@ public class Davis extends HttpServlet {
 			Log.log(Log.DEBUG, "Using context base: " + contextBase);
 		}
 		
-		// check if non-secure connection is allowed
-		if (config.getInsecureConnection().equalsIgnoreCase("block")&&!request.isSecure()){
+		// Check if non-secure (http) connection is allowed
+		if (config.getInsecureConnection().equalsIgnoreCase("block") && !request.isSecure()){
 			Log.log(Log.DEBUG, "Davis is configured to not allow insecure connections.");
 			try {
 				response.reset();
@@ -242,6 +242,7 @@ public class Davis extends HttpServlet {
 		
 
 		DavisSession davisSession = null;
+		// Reset connection was requested?
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor=AuthorizationProcessor.getInstance();
 		String authorization = request.getHeader("Authorization");
@@ -250,6 +251,7 @@ public class Davis extends HttpServlet {
 		}
 
 		String errorMsg=null;
+		// If no auth info in header and http and insecure connection should be shib
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
 			Cookie[] cookies=request.getCookies();
@@ -268,17 +270,21 @@ public class Davis extends HttpServlet {
 				} else if (shibCookieNum>0) 
 					davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
 			}
-			if (davisSession==null&&errorMsg==null){
+			if (davisSession==null && errorMsg==null){
 				errorMsg = "Shibboleth login failed.";
 			}
-		}else if (authorization != null){
+		}else
+		// If auth info in header but not shib (http or https)
+		if (authorization != null){
 			davisSession=authorizationProcessor.getDavisSession(authorization, reset);
 		}
-		if (davisSession==null&&isAnonymousPath(pathInfo)){
+		// Anonymous access
+		if (davisSession==null && isAnonymousPath(pathInfo)){
 			String authString="Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
 			davisSession=authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg=null;
 		}
+		// Error if no session established by now
 		if (davisSession==null){
 			if (errorMsg!=null){
 				response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);

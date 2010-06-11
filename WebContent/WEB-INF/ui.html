@@ -1737,8 +1737,10 @@
 		  	dojo.xhrPost({
 	    		url: "?method=logout",
 	    		load: function(responseObject, ioArgs){    
-		  alert("logout successful");
+		//  alert("logout successful");
 	 					cursorBusy(false);
+	 					if (responseObject.redirect)
+		 					window.location.replace(responseObject.redirect);
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
@@ -1746,8 +1748,8 @@
 	       				cursorBusy(false);
 	      				return response;
 	    			},
-	    		sync: true//,
-	  //  		handleAs: "json"
+	    		sync: true,
+	    		handleAs: "json"
 	  		});
 		}
 
@@ -1772,7 +1774,7 @@
 		var enableDebugButton = false;
 		function debugButtonHandler() {
 			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
-			//logout();
+			logout();
 			//alert("app version: <parameter appversion/>");
 		}
 		

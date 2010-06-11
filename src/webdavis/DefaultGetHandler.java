@@ -188,7 +188,10 @@ public class DefaultGetHandler extends AbstractHandler {
 
 		String result = "";
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(getResourceAsStream(fileName)));
+			InputStream stream = getResourceAsStream(fileName);
+			if (stream == null)
+				throw new IOException("can't open file");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
 			char[] buffer = new char[1024];
 			int numRead = 0;
 			while ((numRead = reader.read(buffer)) != -1) {

@@ -746,8 +746,14 @@ public class DefaultPostHandler extends AbstractHandler {
 		} else if (method.equalsIgnoreCase("logout")) { 
 			// Not useful at the moment because the browser caches username/password and establishes a new session automatically.
 			HttpSession session = request.getSession(true);
-			session.invalidate(); 
+			session.invalidate();
+			//if (shib)
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
+//			json.append("{\n"+escapeJSONArg("items")+":[\n");
+			String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg("https://"+request.getServerName()+"/Shibboleth.sso/Logout"
+					+(returnURL != null ? "?return="+returnURL : ""))+"}");
+//			json.append("\n]}");
 		}
 		
 		ServletOutputStream op = null;

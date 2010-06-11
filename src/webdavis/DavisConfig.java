@@ -32,23 +32,14 @@ public class DavisConfig {
 	public static final String VERSION_FILE = "/WEB-INF/davis.version";
 	
 	private String defaultDomain;
-
 	private String realm;
-
 	private String contextBase;
-
 	private String contextBaseHeader;
-
 	private boolean alwaysAuthenticate;
-
 	private boolean acceptBasic;
-
 //	private boolean enableBasic;
-
 	private boolean closeOnAuthenticate;
-
 	private String insecureConnection;
-
 	private String serverName;
 	private int serverPort;
 	private String defaultResource;
@@ -60,30 +51,26 @@ public class DavisConfig {
 	private String proxyPort;
 	private String proxyUsername;
 	private String proxyPassword;
-
 	private String anonymousUsername;
 	private String anonymousPassword;
 	private List<String> anonymousCollections;
-
 	private String sharedTokenHeaderName;
 	private String commonNameHeaderName;
 	private String adminCertFile;
 	private String adminKeyFile;
-	
 	private String organisationName;
 	private String organisationLogo;
 	private String organisationLogoGeometry;
 	private String organisationSupport;
 	private String helpURL;
 	private String favicon;
-	
 	private String dojoroot;
 	private String jargonDebug;
     private long maximumXmlRequest;
-    
     private String displayMetadata;
     private String authClass;
     private String appVersion = "unknown";
+    private String logoutReturnURL;
 
 	public String getAuthClass() {
 		return authClass;
@@ -281,6 +268,7 @@ public class DavisConfig {
 		organisationLogo = getInitParameter("organisation-logo", "").trim();
 		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "").trim();
 		organisationSupport = getInitParameter("organisation-support", "user support at your organisation").trim();
+		logoutReturnURL = getInitParameter("logout-return-url", "").trim();
 		helpURL = getInitParameter("helpURL", "For help, please contact user support at your organisation").trim();
 		favicon = getInitParameter("favicon", "").trim();		
 		dojoroot = getInitParameter("dojoroot", "").trim();
@@ -517,6 +505,10 @@ public class DavisConfig {
 	
 	public String getOrganisationSupport() {
 		return organisationSupport;
+	}
+	
+	public String getLogoutReturnURL() {
+		return logoutReturnURL;
 	}
 	
 	public String getHelpURL() {
