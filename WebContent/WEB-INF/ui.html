@@ -96,6 +96,8 @@
 		var pageLoaded = false;
 		
 		dojo.addOnLoad(function() {
+			if (!(""+dojo.version).indexOf("<parameter requireddojoversion/>") == 0)
+				alert("Internal error: dojo version is "+dojo.version+" - required version is <parameter requireddojoversion/>");
 			pageLoaded = true;
 //			showDebug();
 			initVariables();

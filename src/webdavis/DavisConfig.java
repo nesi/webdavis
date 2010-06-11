@@ -70,6 +70,7 @@ public class DavisConfig {
     private String displayMetadata;
     private String authClass;
     private String appVersion = "unknown";
+    private String requiredDojoVersion = "unknown";
     private String logoutReturnURL;
 
 	public String getAuthClass() {
@@ -156,9 +157,15 @@ public class DavisConfig {
 	public void readVersion(ServletConfig config) {
 
 	    try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(config.getServletContext().getResourceAsStream(VERSION_FILE)));
-			appVersion = reader.readLine();
-			reader.close();
+//			BufferedReader reader = new BufferedReader(new InputStreamReader(config.getServletContext().getResourceAsStream(VERSION_FILE)));
+			Properties properties = new Properties();
+			InputStream stream = config.getServletContext().getResourceAsStream(VERSION_FILE);
+			properties.load(stream);
+//			appVersion = reader.readLine();
+			appVersion = properties.getProperty("appVersion");
+			requiredDojoVersion = properties.getProperty("requiredDojoVersion");
+//			reader.close();
+			stream.close();
 		} catch (IOException e) {
         	System.err.println("WARNING: Failed to read application version file "+VERSION_FILE+": "+e);
 		}
@@ -541,5 +548,9 @@ public class DavisConfig {
 	
 	public String getAppVersion() {
 		return appVersion;
+	}
+	
+	public String getRequiredDojoVersion() {
+		return requiredDojoVersion;
 	}
 }

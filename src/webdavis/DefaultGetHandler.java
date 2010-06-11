@@ -575,6 +575,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("uiloaddate", uiLoadDate);
 				substitutions.put("organisationsupport", config.getOrganisationSupport());
 				substitutions.put("helpurl", config.getHelpURL());
+				substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
 				
 				String uiContent = new String(uiHTMLContent);
 				// Make substitutions in UI HTML file
