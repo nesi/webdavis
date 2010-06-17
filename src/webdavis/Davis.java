@@ -251,7 +251,7 @@ public class Davis extends HttpServlet {
 		}
 
 		String errorMsg=null;
-		// If no auth info in header and http and insecure connection should be shib
+		// If no auth info in header and http connection should be shib
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
 			Cookie[] cookies=request.getCookies();

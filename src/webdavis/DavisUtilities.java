@@ -106,6 +106,8 @@ public class DavisUtilities {
                     "md5Unavailable", null, null));
         }
     }
+    
+	public static final int JARGON_MAX_QUERY_NUM = 100000;
 
     private DavisUtilities() { }
 

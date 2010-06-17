@@ -37,9 +37,7 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  */
 public class FSUtilities {
 	
-	private static final int MAX_QUERY_NUM = 100000;
-	
-    private static final boolean[] ESCAPED;
+	private static final boolean[] ESCAPED;
 
     static {
         ESCAPED = new boolean[128];
@@ -406,7 +404,7 @@ public class FSUtilities {
 		Log.log(Log.DEBUG, "getUsernames  from "+fs);
 		try {
 			recordList = fs.query(new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME), 
-									MetaDataSet.newSelection(IRODSMetaDataSet.USER_ZONE)}, MAX_QUERY_NUM);
+									MetaDataSet.newSelection(IRODSMetaDataSet.USER_ZONE)}, DavisUtilities.JARGON_MAX_QUERY_NUM);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -443,7 +441,7 @@ public class FSUtilities {
 //								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
 									MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, file.getName())},
 								new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME),
-												MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, MAX_QUERY_NUM);
+												MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, DavisUtilities.JARGON_MAX_QUERY_NUM);
 //			recordList = fs.query(MetaDataSet
 //					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
 
@@ -511,8 +509,8 @@ public class FSUtilities {
 				IRODSMetaDataSet.DIRECTORY_NAME
 			});
 		try {
-			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, MAX_QUERY_NUM, Namespace.DIRECTORY);
+			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisUtilities.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
  			if (fileDetails == null) 
     			fileDetails = new MetaDataRecordList[0];
     		if (dirDetails == null) 
@@ -597,8 +595,8 @@ public class FSUtilities {
 		try {
 			MetaDataRecordList[] fileDetails = null;
 			if (getFiles)
-				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, MAX_QUERY_NUM, Namespace.DIRECTORY);
+				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisUtilities.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
 
     		if (fileDetails == null) fileDetails = new MetaDataRecordList[0];
     		if (dirDetails == null) dirDetails = new MetaDataRecordList[0];

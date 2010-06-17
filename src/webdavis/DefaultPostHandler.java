@@ -211,17 +211,37 @@ public class DefaultPostHandler extends AbstractHandler {
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
 				if (file.isDirectory()){
 					permissions = ((IRODSFile) file).query(new String[]{DirectoryMetaData.DIRECTORY_INHERITANCE});
-					boolean stickyBit=false;
-					if (permissions != null && permissions.length>0){
-						String stickBitStr=(String)permissions[0].getValue(DirectoryMetaData.DIRECTORY_INHERITANCE);
+					boolean stickyBit = false;
+					if (permissions != null && permissions.length > 0){
+						String stickBitStr = (String)permissions[0].getValue(DirectoryMetaData.DIRECTORY_INHERITANCE);
 						Log.log(Log.DEBUG, "stickBitStr: "+stickBitStr);
-						stickyBit=stickBitStr!=null&&stickBitStr.equals("1");
+						stickyBit = stickBitStr != null && stickBitStr.equals("1");
 					}
 					json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+stickyBit)+",\n");
-					permissions = ((IRODSFile) file).query(new String[]{IRODSMetaDataSet.DIRECTORY_USER_NAME, IRODSMetaDataSet.DIRECTORY_USER_ZONE,
-							IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT});
-				}else
-					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,	GeneralMetaData.ACCESS_CONSTRAINT});
+//					permissions = ((IRODSFile) file).query(new String[]{IRODSMetaDataSet.DIRECTORY_USER_NAME, IRODSMetaDataSet.DIRECTORY_USER_ZONE,
+//							IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT});
+					permissions = file.getFileSystem().query(
+							new MetaDataCondition[] {
+									MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getAbsolutePath())},
+							new MetaDataSelect[]{
+									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_USER_NAME),
+									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_USER_ZONE),
+									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT)}, 
+							DavisUtilities.JARGON_MAX_QUERY_NUM);
+				}else {
+//					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,	GeneralMetaData.ACCESS_CONSTRAINT});
+					permissions = file.getFileSystem().query( 
+							new MetaDataCondition[] {
+									MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+//									MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
+									MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.EQUAL, file.getName())},
+							new MetaDataSelect[]{
+//									MetaDataSet.newSelection(IRODSMetaDataSet.RESOURCE_NAME)});
+									MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME),
+									MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, 
+							DavisUtilities.JARGON_MAX_QUERY_NUM);
+				}
+
 				Log.log(Log.DEBUG, "irods permissions: "+permissions);
 				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
