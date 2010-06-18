@@ -1806,6 +1806,11 @@
 				dialogHelp.show();
 	        }	
 		}
+
+//		function styleGrid(inRow) {
+//			inRow.customStyles += ' font-family:"Courier New";';
+//			dojox.grid.DataGrid.prototype.onStyleRow.apply(this, arguments);
+//		}
 		
 		var enableDebugButton = false;
 		function debugButtonHandler() {
@@ -2032,6 +2037,7 @@
 		</tr>
 		<tr>
 			<td>
+				<!-- <div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="metadataLayout" autoHeight="10" style="width: 100%;" onStyleRow="styleGrid"></div>-->
 				<div id="metadataGrid" jsId="metadataGrid" dojoType="dojox.grid.DataGrid" structure="metadataLayout" autoHeight="10" style="width: 100%;"></div>
 			</td>
 		</tr>

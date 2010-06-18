@@ -254,6 +254,18 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		return;
 	}
+	
+	private void addNoCacheDirectives(HttpServletResponse response) {
+		
+		response.setHeader("Pragma", "no-cache");
+		response.setHeader("Cache-Control", "no-cache");
+		response.addHeader("Cache-Control", "must-revalidate");
+		response.setDateHeader("Expires", -1);
+		response.addHeader("Cache-Control", "post-check=0, pre-check=0");
+		response.addHeader("Cache-Control", "private");
+		response.addHeader("Cache-Control", "no-store");
+		response.addHeader("Cache-Control", "max-stale=0");
+	}
 
 	/**
 	 * Services requests which use the HTTP GET method. This implementation
@@ -470,14 +482,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				byte[] buf = json.toString().getBytes();
 				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
 				response.setContentType("text/json; charset=\"utf-8\"");
-				response.setHeader("Pragma", "no-cache");
-				response.setHeader("Cache-Control", "no-cache");
-				response.addHeader("Cache-Control", "must-revalidate");
-				response.setDateHeader("Expires", -1);
-				response.addHeader("Cache-Control", "post-check=0, pre-check=0");
-				response.addHeader("Cache-Control", "private");
-				response.addHeader("Cache-Control", "no-store");
-				response.addHeader("Cache-Control", "max-stale=0");
+				addNoCacheDirectives(response);
 				op.write(buf);
 				op.flush();
 				op.close();
@@ -760,6 +765,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		response.setHeader("Content-Length", String.valueOf(file.length()));
 		response.setContentType((contentType != null) ? contentType	: "application/octet-stream");
 		response.setContentLength((int) file.length());
+		addNoCacheDirectives(response);
 		// RemoteFileInputStream input = null;
 		String startingPoint = request.getHeader("Content-Range");
 		long offset = 0;
