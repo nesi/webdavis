@@ -411,6 +411,7 @@ public class DefaultGetHandler extends AbstractHandler {
 
 				json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+1+(emptyDir ? 1 : 0)))+",");
 				json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
+				json.append(escapeJSONArg("readOnly")+":"+escapeJSONArg(""+!file.canWrite())+",");
 				json.append(escapeJSONArg("items")+":[\n");
 				for (int i = start; i < start + count; i++) {
 					if (i >= fileList.length + 1)

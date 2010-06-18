@@ -118,6 +118,11 @@ public class Davis extends HttpServlet {
 		// initFilter(config);
 		initHandlers(config);
 		// initErrorHandlers(config);
+		
+//		FormAuthenticator formAuth = new FormAuthenticator();
+//		>>formAuth.setLoginPage("/login.html");
+//		>>formAuth.setErrorPage("/logfailed.html");
+//		>>webAppContext.setAuthenticator(formAuth);
 	}
 
 	public void destroy() {

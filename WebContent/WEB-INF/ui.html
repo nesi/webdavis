@@ -1105,8 +1105,9 @@
 		
 		function refreshButtons() {
 			var inTrash = isTrash(listingStore.getCurrentDirectory());
-			enableActiveItem('uploadButton', !isAnonymous() && ! inTrash);
-			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash);
+			var readOnly = listingStore.readOnly;
+			enableActiveItem('uploadButton', !isAnonymous() && ! inTrash && !readOnly);
+			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash && !readOnly);
 			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous() && !inTrash);
 			enableActiveItem('moveButton', checkedItemsCount() != 0 && !isAnonymous() && !inTrash);
 			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
@@ -1809,8 +1810,7 @@
 		var enableDebugButton = false;
 		function debugButtonHandler() {
 			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
-			logout();
-			//alert("app version: <parameter appversion/>");
+			alert("readonly:"+listingStore.readOnly);
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -1820,6 +1820,7 @@
 			grid:null,
 			invalid:/*false*/true,
 			addToHistory:false,
+			readOnly: true,
 			currentDirectory:"",
 			urlFields:null,
 			setURL: function(dir, noCache, postfix) {
@@ -1916,6 +1917,7 @@
 					this.grid.selection.deselectAll();
 				}
 				this.setCurrentDirectory(this.directory);
+				this.readOnly = (data.readOnly == "true");
 				if (this.addToHistory)
 					addToHistory(this.directory);
 				// Next line prevents a null node problem for Firefox in store._xhrFetchHandler - second last line
