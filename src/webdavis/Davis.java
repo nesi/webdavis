@@ -180,11 +180,12 @@ public class Davis extends HttpServlet {
 		Log.log(Log.INFORMATION, "queryString:"+queryString);
 		if (pathInfo == null || "".equals(pathInfo))
 			pathInfo = "/";
-//		System.err.println("request="+request.toString());		
+
 		profilingTimer = new Date();		
 		Log.log(Log.DEBUG, "#### Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
-		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".",
-				new Object[] { request.getMethod(), request.getRequestURL() });
+
+		// Log request + header
+		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
 		if (Log.getThreshold() < Log.INFORMATION) {
 			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
 			StringBuffer headers = new StringBuffer();
@@ -206,13 +207,14 @@ public class Davis extends HttpServlet {
 			}
 			Log.log(Log.DEBUG, "Headers:\n{0}", headers);
 			Log.log(Log.DEBUG, "isSecure:{0}", request.isSecure());
-			HttpSession session = request.getSession(false);
-			if (session != null) {
-				Log.log(Log.DEBUG, "Active session: {0}", session.getId());
+			HttpSession httpSession = request.getSession(false);
+			if (httpSession != null) {
+				Log.log(Log.DEBUG, "Active HTTP session: {0}", httpSession.getId()); // This is the JSESSIONID cookie
 			} else {
-				Log.log(Log.DEBUG, "Session not yet established.");
+				Log.log(Log.DEBUG, "HTTP session not yet established.");
 			}
 		}
+		
 		DavisConfig config=DavisConfig.getInstance();
 		String contextBase = config.getContextBase();
 		if (config.getContextBaseHeader() != null) {
@@ -244,22 +246,21 @@ public class Davis extends HttpServlet {
 		DavisSession davisSession = null;
 		// Reset connection was requested?
 		boolean reset=false;
-		AuthorizationProcessor authorizationProcessor=AuthorizationProcessor.getInstance();
+		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
 		String authorization = request.getHeader("Authorization");
-		if (request.getQueryString()!=null&&request.getQueryString().indexOf("reset")>-1){
+		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
-		}
 
-		String errorMsg=null;
-		// If no auth info in header and http connection should be shib
+		String errorMsg = null;
+		// If no auth info in header and http connection - should be shib
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
-			Cookie[] cookies=request.getCookies();
-			int shibCookieNum=0;
-			if (cookies!=null){
-				for (Cookie cookie:cookies){
-					if (cookie.getName().startsWith("_shibstate")||cookie.getName().startsWith("_shibsession")||cookie.getName().startsWith("_saml_idp")) shibCookieNum++;
-				}
+			Cookie[] cookies = request.getCookies();
+			int shibCookieNum = 0;
+			if (cookies != null){
+				for (Cookie cookie:cookies)
+					if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) 
+						shibCookieNum++;
 				String sharedToken=request.getHeader(config.getSharedTokenHeaderName());
 				String commonName=request.getHeader(config.getCommonNameHeaderName());
 				String shibSessionID=request.getHeader("Shib-Session-ID");
@@ -268,25 +269,26 @@ public class Davis extends HttpServlet {
 				} else if (commonName==null||commonName.length()==0) {
 					errorMsg = "Common name is not found in HTTP header.";
 				} else if (shibCookieNum>0) 
-					davisSession=authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
+					davisSession = authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
 			}
-			if (davisSession==null && errorMsg==null){
+			if (davisSession==null && errorMsg==null)
 				errorMsg = "Shibboleth login failed.";
-			}
 		}else
 		// If auth info in header but not shib (http or https)
 		if (authorization != null){
-			davisSession=authorizationProcessor.getDavisSession(authorization, reset);
+			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
 		}
+		
 		// Anonymous access
-		if (davisSession==null && isAnonymousPath(pathInfo)){
-			String authString="Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
-			davisSession=authorizationProcessor.getDavisSession(authString, reset);
-			errorMsg=null;
+		if (davisSession == null && isAnonymousPath(pathInfo)){
+			String authString = "Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
+			davisSession = authorizationProcessor.getDavisSession(authString, reset);
+			errorMsg = null;
 		}
-		// Error if no session established by now
-		if (davisSession==null){
-			if (errorMsg!=null){
+		
+		// Still no session established, check for error, else tell client with auth to try next
+		if (davisSession == null){
+			if (errorMsg != null){
 				response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
 				response.flushBuffer();
 				return;
@@ -295,10 +297,11 @@ public class Davis extends HttpServlet {
 				return;
 			}
 		}
-		HttpSession session = request.getSession(false);
-		if (session == null || reset) {
-			session = request.getSession();
-			session.setAttribute(SESSION_ID, davisSession.getSessionID());
+		
+		HttpSession httpSession = request.getSession(false);
+		if (httpSession == null || reset) {
+			httpSession = request.getSession();
+			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
 			davisSession.increaseSharedNumber();
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
@@ -448,8 +451,7 @@ public class Davis extends HttpServlet {
 		}
 	}
 
-	private void fail(HttpServletRequest request,
-			HttpServletResponse response) throws ServletException, IOException {
+	private void fail(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 //		if (server != null) {
 //			HttpSession session = request.getSession(false);
 //			if (session != null) {

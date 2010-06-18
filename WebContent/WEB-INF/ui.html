@@ -678,6 +678,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
+	    			checkOffline(response);
 	      			loadedAlert("Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
@@ -769,6 +770,12 @@
 				case 412: 	return "destination already exists";
 				default: 	return message;
 			}
+		}
+
+		function checkOffline(response) {
+			// For seamonkey
+			if ((""+response).indexOf("Deferred Cancelled") > -1) // If user used back button after shib logout, detect dead session 
+				window.location.reload();
 		}
 		
 		var cursorCount = 0;	// Depth of cursor busy requests
@@ -1189,6 +1196,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
+		    			checkOffline(response);
 		  				borderContainer.layout();
 	      				loadedAlert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
@@ -1770,6 +1778,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
+		    			checkOffline(response);
 	      				loadedAlert("logout failed:\n\n"+ioArgs.xhr.statusText);
 	       				cursorBusy(false);
 	      				return response;
