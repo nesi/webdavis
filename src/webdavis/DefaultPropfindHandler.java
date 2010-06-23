@@ -205,6 +205,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
                     new StreamResult(collector));
             response.setStatus(SC_MULTISTATUS);
             response.setContentType("text/xml; charset=\"utf-8\"");
+//			addNoCacheDirectives(response);  // Was added as an experiment to see whether webdrive would stop caching dir listings. Doesn't seem to help.
             collector.writeTo(response.getOutputStream());
 //            collector.writeTo(System.out);
             response.flushBuffer();

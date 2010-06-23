@@ -255,18 +255,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		return;
 	}
 	
-	private void addNoCacheDirectives(HttpServletResponse response) {
-		
-		response.setHeader("Pragma", "no-cache");
-		response.setHeader("Cache-Control", "no-cache");
-		response.addHeader("Cache-Control", "must-revalidate");
-		response.setDateHeader("Expires", -1);
-		response.addHeader("Cache-Control", "post-check=0, pre-check=0");
-		response.addHeader("Cache-Control", "private");
-		response.addHeader("Cache-Control", "no-store");
-		response.addHeader("Cache-Control", "max-stale=0");
-	}
-
 	/**
 	 * Services requests which use the HTTP GET method. This implementation
 	 * retrieves the content for non-collection resources, using the content
