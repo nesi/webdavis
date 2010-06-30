@@ -550,14 +550,14 @@ public class FSUtilities {
 	}
 
 	public static CachedFile[] getIRODSCollectionDetails(RemoteFile collection, boolean sort, boolean getFiles, boolean getMetadata){
-		
+		// For files with multiple replicas, a clean replica will be returned in the result. If only a dirty copy is found, then that will be used.
 		HashMap<String, FileMetadata> metadata = null;
 		if (getMetadata)
 			metadata = getIRODSCollectionMetadata(collection);
 		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
 		MetaDataCondition conditionsFile[] = {
 			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
+//			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
 //			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_NUM,	MetaDataCondition.EQUAL, 0),
 //			MetaDataSet.newCondition(IRODSMetaDataSet.USER_NAME, MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName()),
 		};
@@ -568,6 +568,7 @@ public class FSUtilities {
 				IRODSMetaDataSet.MODIFICATION_DATE,
 				IRODSMetaDataSet.SIZE,
 				IRODSMetaDataSet.RESOURCE_NAME,
+				IRODSMetaDataSet.FILE_REPLICA_STATUS,
 //				IRODSMetaDataSet.META_DATA_ATTR_NAME,
 //				IRODSMetaDataSet.META_DATA_ATTR_VALUE,
 //				IRODSMetaDataSet.FILE_ACCESS_TYPE 
@@ -610,8 +611,11 @@ public class FSUtilities {
     		if (getFiles)
 	    		for (MetaDataRecordList p:fileDetails) {
 	    			CachedFile file = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-	    			if (file.getName().equals(lastName))
-	    				continue;
+	    			if (file.getName().equals(lastName)) {
+	    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
+	    					fileList.remove(fileList.size());	// Delete last item so that this replica replaces it
+//	    				continue;
+	    			}	
 	    			lastName = file.getName();
 	    			fileList.add(file);
 	    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);

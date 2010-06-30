@@ -323,7 +323,10 @@ public class Davis extends HttpServlet {
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
 				Log.log(Log.WARNING, "Unhandled error: {0}", throwable);
-				throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
+				if (throwable.getCause().getMessage().contains("Broken pipe"))
+					throwable = new Throwable("Client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
+				else
+					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
 				if (throwable instanceof ServletException) {
 					throw (ServletException) throwable;
 				} else if (throwable instanceof IOException) {

@@ -85,13 +85,12 @@ public class DefaultPropfindHandler extends AbstractHandler {
      * @throws ServletException If an application error occurs.
      * @throws IOException If an IO error occurs while handling the request.
      */
-    public void service(HttpServletRequest request,
-            HttpServletResponse response, DavisSession davisSession)
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
         int depth = DavisUtilities.parseDepth(request.getHeader("Depth"));
         RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
-        	Log.log(Log.ERROR, file.getAbsolutePath()+" not exists!");
+        	Log.log(Log.WARNING, file.getAbsolutePath()+" doesn't exist!");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -121,16 +120,14 @@ public class DefaultPropfindHandler extends AbstractHandler {
 							currentRes=res;
 						}
 					}
-					if ((currentRes == null || currentRes.length() == 0)
-							&& resList.length > 0) {
+					if ((currentRes == null || currentRes.length() == 0) && resList.length > 0) {
 						for (String res : resList) {
 							if (res.startsWith(defaultResource)) {
 								currentRes=res;
 							}
 						}
 					}
-					if ((currentRes == null || currentRes.length() == 0)
-							&& resList.length > 0) {
+					if ((currentRes == null || currentRes.length() == 0) && resList.length > 0) {
 						currentRes=resList[0];
 					}
 					davisSession.setCurrentResource(currentRes);
@@ -140,12 +137,10 @@ public class DefaultPropfindHandler extends AbstractHandler {
         }
         String requestUrl = getRequestURL(request);
         Log.log(Log.DEBUG, "requestUrl: {0}", requestUrl);
-        PropertiesDirector director = new PropertiesDirector(
-                getPropertiesBuilder());
+        PropertiesDirector director = new PropertiesDirector(getPropertiesBuilder());
         Document properties = null;
         if (request.getContentLength() > 0) {
-            DocumentBuilderFactory builderFactory =
-                    DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             builderFactory.setNamespaceAware(true);
             builderFactory.setExpandEntityReferences(false);
             builderFactory.setIgnoringComments(true);
@@ -154,13 +149,9 @@ public class DefaultPropfindHandler extends AbstractHandler {
             try {
                 DocumentBuilder builder = builderFactory.newDocumentBuilder();
                 builder.setEntityResolver(BlockedEntityResolver.INSTANCE);
-                document = builder.parse(
-                        new LimitInputStream(request.getInputStream(),
-                                maximumXmlRequest));
+                document = builder.parse(new LimitInputStream(request.getInputStream(), maximumXmlRequest));
             } catch (Exception ex) {
-                throw new IOException(DavisUtilities.getResource(
-                        DefaultPropfindHandler.class, "parseError",
-                                new Object[] { ex }, request.getLocale()));
+                throw new IOException(DavisUtilities.getResource(DefaultPropfindHandler.class, "parseError", new Object[] { ex }, request.getLocale()));
             }
             Element propfind = document.getDocumentElement();
             Node child = null;
@@ -187,8 +178,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
                     if (node instanceof Element) propList.add(node);
                 }
                 Element[] props = (Element[]) propList.toArray(new Element[0]);
-                properties = director.getProperties(file, requestUrl, props,
-                        depth);
+                properties = director.getProperties(file, requestUrl, props, depth);
             } else  {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST);
                 return;
@@ -197,15 +187,16 @@ public class DefaultPropfindHandler extends AbstractHandler {
             properties = director.getAllProperties(file, requestUrl, depth);
         }
         try {
-            Transformer transformer =
-                    TransformerFactory.newInstance().newTransformer();
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty("encoding", "UTF-8");
             ByteArrayOutputStream collector = new ByteArrayOutputStream();
-            transformer.transform(new DOMSource(properties),
-                    new StreamResult(collector));
+            transformer.transform(new DOMSource(properties), new StreamResult(collector));
             response.setStatus(SC_MULTISTATUS);
             response.setContentType("text/xml; charset=\"utf-8\"");
 //			addNoCacheDirectives(response);  // Was added as an experiment to see whether webdrive would stop caching dir listings. Doesn't seem to help.
+//			System.err.print("response=");
+//			collector.writeTo(System.err);
+//			System.err.println("");
             collector.writeTo(response.getOutputStream());
 //            collector.writeTo(System.out);
             response.flushBuffer();

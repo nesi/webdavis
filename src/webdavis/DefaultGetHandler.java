@@ -709,25 +709,39 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			return;
 		}
-		
+
+		// For files with multiple replicas, a clean replica will be returned. If only a dirty copy is found, then that will be used.
 		if (file.getFileSystem() instanceof IRODSFileSystem) {	
 			// Find first clean replica of file for download
-			MetaDataCondition conditionsFile[] = {
+			MetaDataCondition conditions[] = {
 				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
 				MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
 				MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
 			};
-			MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
+			MetaDataSelect selects[] = MetaDataSet.newSelection(new String[]{
 					IRODSMetaDataSet.RESOURCE_NAME
 				});
-			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile);
+			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
     		if (fileDetails == null || fileDetails.length < 1) {
-    			String s= "Internal get request error - no clean replicas found: "+file.getAbsolutePath();
-    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
-    			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
-    			response.flushBuffer();
-    			return;
+    			Log.log(Log.WARNING, "No clean replicas found for "+file.getAbsolutePath());
+    		
+    			// No clean replicas, try *any* replicas
+    			conditions = new MetaDataCondition[] {
+    					MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+    					MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())
+    				};
+    			fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
+        		
+    			if (fileDetails == null || fileDetails.length < 1) {
+	    			String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
+	    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
+	    			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
+	    			response.flushBuffer();
+	    			return;
+    			}
+    			Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
     		}
+    		
     		MetaDataRecordList p = fileDetails[0]; // Use first clean copy found
 // System.err.println("***************************doing query");
 // System.err.println("setting resource to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
