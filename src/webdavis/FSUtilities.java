@@ -613,10 +613,12 @@ public class FSUtilities {
 	    			CachedFile file = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
 	    			if (file.getName().equals(lastName)) {
 	    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
-	    					fileList.remove(fileList.size()-1);	// Delete last item so that this replica replaces it
+	    					fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
 //	    				continue;
 	    			}	
 	    			lastName = file.getName();
+	    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0"))
+	    				Log.log(Log.WARNING, "Using dirty copy for "+file.getAbsolutePath());
 	    			fileList.add(file);
 	    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
 	    			file.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
