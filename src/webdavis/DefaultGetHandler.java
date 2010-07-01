@@ -767,7 +767,8 @@ public class DefaultGetHandler extends AbstractHandler {
 		response.setHeader("Content-Length", String.valueOf(file.length()));
 		response.setContentType((contentType != null) ? contentType	: "application/octet-stream");
 		response.setContentLength((int) file.length());
-		addNoCacheDirectives(response);
+		if (!request.getHeader("User-Agent").contains("MSIE "))
+			addNoCacheDirectives(response);
 		// RemoteFileInputStream input = null;
 		String startingPoint = request.getHeader("Content-Range");
 		long offset = 0;

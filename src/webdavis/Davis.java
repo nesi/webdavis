@@ -65,6 +65,9 @@ public class Davis extends HttpServlet {
 	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
 	static long lastLogTime = 0;  // Used to log memory usage on a regular basis
 	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
+	
+	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
+	
 
 	public void init() throws ServletException {
 		ServletConfig config = getServletConfig();
@@ -247,7 +250,6 @@ public class Davis extends HttpServlet {
 			return;
 		}
 		
-
 		DavisSession davisSession = null;
 		// Reset connection was requested?
 		boolean reset=false;
@@ -282,7 +284,27 @@ public class Davis extends HttpServlet {
 		// If auth info in header but not shib (http or https)
 		if (authorization != null){
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
-		}
+		} 
+//		else
+//		if (authorization == null && request.isSecure() /*&& not webdav ###TBD */) {
+//			System.err.println("##################### https and no auth - returning form");
+//			boolean browser = true;
+//		
+//			String method = request.getMethod();
+//			String protocol = request.getProtocol();
+//			String accept = request.getHeader("accept");
+//System.err.println("method="+method+" protocol="+protocol+" accept="+accept);
+//			if (Arrays.asList(WEBDAVMETHODS).contains(method))
+//				browser = false;
+//			else
+//			if (accept == null)
+//				browser = false;
+//			String s = "You are using "+(browser ? "a browser" : "webdav");
+//			Log.log(Log.DEBUG, s);
+//			response.sendError(HttpServletResponse.SC_HTTP_VERSION_NOT_SUPPORTED, s);
+//			response.flushBuffer();
+//			return;
+//		}
 		
 		// Anonymous access
 		if (davisSession == null && isAnonymousPath(pathInfo)){
