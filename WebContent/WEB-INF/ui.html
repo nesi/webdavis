@@ -1220,9 +1220,9 @@
 		}
 
 		function createDirectory(){	
-			var dirName = encodeURIComponent(directoryInputBox.getValue());
-			if (!isValidFileName(dirName, true))
+			if (!isValidFileName(directoryInputBox.getValue(), true))
 				return;
+			var dirName = encodeURIComponent(directoryInputBox.getValue());
 			dialogCreateDir.hide();
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
@@ -1879,9 +1879,11 @@
 						if (errorData.status == 502) { // Server connection lost
 							alert("The server has dropped your connection and will now be reset.");
 							resetConnection();
-						} else
-							if (confirm("Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\nWould you like further details?"))
-								loadedAlert((errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+						} else {
+							var s = "Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\n";
+							if (confirm(s+"Would you like further details?"))
+								loadedAlert(s+(errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+						}
 					}
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete - only needed for dojo < 1.4.1
 					if (onFetchError)
