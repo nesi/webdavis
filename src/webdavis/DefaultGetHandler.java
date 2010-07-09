@@ -59,6 +59,7 @@ import edu.sdsc.grid.io.RemoteFileInputStream;
 import edu.sdsc.grid.io.RemoteRandomAccessFile;
 import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
@@ -319,10 +320,20 @@ public class DefaultGetHandler extends AbstractHandler {
 		
 		if (!file.exists()) { // File doesn't exist
 			try {
+				boolean connected = true;
+				String message = "";
 				try {
 					file.getPermissions(); // Test server connection
 				} catch (SocketException e) {
-					Log.log(Log.ERROR, "Davis appears to have lost its connection with the server.");
+					connected = false;
+					message = e.getMessage();
+				} catch (IRODSException e) {
+					message = e.getMessage();
+           			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
+           				connected = false;
+				}
+				if (!connected) {
+					Log.log(Log.ERROR, "Davis appears to have lost its connection with the server: "+message);
 					response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "The server has dropped its connection.");
 					response.flushBuffer();
 					return;
