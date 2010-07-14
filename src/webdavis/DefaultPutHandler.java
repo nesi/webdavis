@@ -130,6 +130,7 @@ public class DefaultPutHandler extends AbstractHandler {
 	            long startTime=new Date().getTime();
 	//            Log.log(Log.DEBUG, "PUT method: "+outputStream);
 	            BufferedOutputStream output = new BufferedOutputStream(outputStream, 1024*256); //Buffersize of 256k seems to give max speed
+	            long total = 0;
 	            while ((count = input.read(buf)) != -1) {
                 	//inactive interval - "idle" time < 1 min, increase inactive interval
                 	if (request.getSession().getMaxInactiveInterval()-(new Date().getTime()-startTime)/1000<60){
@@ -137,11 +138,13 @@ public class DefaultPutHandler extends AbstractHandler {
                 		request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval()+300);
                 		Log.log(Log.DEBUG, "session time is extended to:"+request.getSession().getMaxInactiveInterval());
                 	}
-	//            	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
+//	            	Log.log(Log.DEBUG, "PUT method writing "+count+" bytes.");
 	                output.write(buf, 0, count);
+	                total += count;
 	            }
 	            output.flush();
 	            output.close();
+	            Log.log(Log.DEBUG, "PUT method wrote "+total+" bytes.");
 	            request.getSession().setMaxInactiveInterval(interval);
         	}
         	if (outputStream!=null) outputStream.close();
