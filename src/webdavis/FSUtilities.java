@@ -614,7 +614,8 @@ public class FSUtilities {
 	    			if (file.getName().equals(lastName)) {
 	    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
 	    					fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
-//	    				continue;
+	    				else
+	    					continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
 	    			}	
 	    			lastName = file.getName();
 	    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0"))
