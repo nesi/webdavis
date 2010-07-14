@@ -300,8 +300,8 @@
 				refreshDisplay: function(doMetadata) {
 					dojo.html.set(dojo.byId("listingBreadcrumb"), toBreadcrumb(listingStore.getCurrentDirectory(), "listingStore", true));
 					refreshButtons();
-					dojo.html.set(dojo.byId("dialogDeleteBulk"), warnBulk(true));
-					dojo.html.set(dojo.byId("dialogRestoreBulk"), warnBulk(true));
+//					dojo.html.set(dojo.byId("dialogDeleteBulk"), warnBulk(true));
+//					dojo.html.set(dojo.byId("dialogRestoreBulk"), warnBulk(/*true*/)+'<br>');
 		    		dojo.html.set(dojo.byId('aboutUIHandle'), listingStore.uiHandle);
 					var items = -1;
 					if (listingStore != null)
@@ -1127,12 +1127,12 @@
 					dojo.html.set(trashEmpty, 
 							'<table id="emptyTrashButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
 							'	<tr>'+
-							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; checkAll(true); /*setToggleButtonState(!getToggleButtonState());*/ dialogDelete.show()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
+							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; checkAll(true); /*dialogDelete.show()*/deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+
 							'</table>'
 					);
 				dojo.html.set(dojo.byId("trashRestoreRow"), 
-	            	'<td class="activeItem" id="trashRestoreButton" onclick="if (!activeItemIsEnabled(\'trashRestoreButton\')) return; if (checkedItemsCount() > 0) dialogRestore.show()"/>Restore</strong></td>');
+	            	'<td class="activeItem" id="trashRestoreButton" onclick="if (!activeItemIsEnabled(\'trashRestoreButton\')) return; if (checkedItemsCount() > 0) /*dialogRestore.show()*/restoreSelection()"/>Restore</strong></td>');
 				dojo.addClass('trashRestoreTable', 'hoverBorderSide');
 				dojo.removeClass('trashRestoreTable', 'invisible');
 			} else {
@@ -1160,10 +1160,10 @@
 			dojo.html.set(dojo.byId("statusPanelHTML"), html);
 		}
 		
-		function warnBulk(verbose) {
+		function warnBulk(/*verbose*/) {
 			if (checkedItemsCount() > 20)
 //				return "<br>"+checkedItemsCount()+" items are selected, so this might take a while."+(verbose ? " Click on the "+getDir(listingStore.getCurrentDirectory())+" link to refresh." : "");
-				return checkedItemsCount()+" items are selected, so this might take a while.<br>";
+				return checkedItemsCount()+" items are selected, so this might take a while.\n\n";
 			else
 				return "";
 		}
@@ -1298,9 +1298,17 @@
 		}
 
 		var emptyTrashInProgress = false;
+
+		function deleteSelection() {
+			var s = 'Are you sure you want to send the selected items and their contents to the trash folder?';
+				if (isTrash(listingStore.getCurrentDirectory()))
+					s = 'Are you sure you want to permanently delete the selected items and their contents?'
+		    if (confirm(warnBulk()+s))
+		    	deleteFiles(listingStore.getCurrentDirectory());
+		}
 		
 		function deleteFiles(url) {
-			dialogDelete.hide();
+//			dialogDelete.hide();
 			if (checkedItemsCount() == 0)
 				return;
 			if (emptyTrashInProgress) {
@@ -1356,8 +1364,13 @@
 			moveFiles(listingStore.getCurrentDirectory()+'/'+/*escape(*/getFirstCheckedItem()/*)*/, listingStore.getCurrentDirectory()+'/'+newName, true);
 		}
 
+		function restoreSelection() {
+		    if (confirm(warnBulk()+'Are you sure you want to restore the selected items and their contents?'))
+		    	restoreFiles();
+		}
+		
 		function restoreFiles() {
-			dialogRestore.hide();
+//			dialogRestore.hide();
 			var destination = "<parameter home/>"+listingStore.getCurrentDirectory().substr("<parameter trash/>".length, listingStore.getCurrentDirectory().length);
 			moveFiles(listingStore.getCurrentDirectory(), destination, false);
 		}
@@ -1978,7 +1991,7 @@
 		<button type="button" id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
 	</div>
 </div>					
-<div dojoType="dijit.Dialog" jsId="dialogDelete" title="Delete Items">
+<!-- <div dojoType="dijit.Dialog" jsId="dialogDelete" title="Delete Items">
     <div id="dialogDeleteBulk"></div>
     Are you sure you want to delete the selected items and their contents?
 	<br/><br/>
@@ -1986,7 +1999,7 @@
 		<button type="button" onclick="deleteFiles(listingStore.getCurrentDirectory());">Yes</button>
 		<button type="button" onclick="dialogDelete.hide()">No</button>
 	</div>
-</div>					
+</div> -->					
 <div dojoType="dijit.Dialog" jsId="dialogRename" title="Rename">
     New name:
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -2015,7 +2028,7 @@
 		</tr>
 	</table>
 </div>					
-<div dojoType="dijit.Dialog" jsId="dialogRestore" title="Restore Items">
+<!-- <div dojoType="dijit.Dialog" jsId="dialogRestore" title="Restore Items">
 	<div id="dialogRestoreBulk"></div>
     Are you sure you want to restore the selected items and their contents?
 	<br/><br/>
@@ -2023,7 +2036,7 @@
 		<button type="button" onclick="restoreFiles()">Restore</button>
 		<button type="button" onclick="dialogRestore.hide()">Cancel</button>
 	</div>
-</div>					
+</div> -->					
 <div dojoType="dijit.Dialog" jsId="dynamicDialog" style="width: 600px;">
 </div>					
 <div dojoType="dijit.Dialog" jsId="dialogMetadata" title="Metadata">
@@ -2267,7 +2280,7 @@
     	</table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
-	    		<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; dialogDelete.show()" >Delete</td>
+	    		<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; /*dialogDelete.show()*/ deleteSelection()" >Delete</td>
 	    	</tr>
 	    </table>
 	    <div id=dynamicSelectionButtonsHTML></div>
