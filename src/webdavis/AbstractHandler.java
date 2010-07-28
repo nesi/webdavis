@@ -1059,6 +1059,10 @@ public abstract class AbstractHandler implements MethodHandler {
     		String cacheID = request.getParameter("uihandle");
 //    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
     		CachedFile[] files = davisSession.getCacheByID(cacheID);
+    		if (files == null) {
+    			Log.log(Log.ERROR, "Internal error reading file list: files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getCache().keySet());
+    			throw new ServletException("Internal error reading file list: files cache for cacheID="+cacheID+" not found");
+    		}
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {
@@ -1116,6 +1120,13 @@ public abstract class AbstractHandler implements MethodHandler {
 		response.addHeader("Cache-Control", "private");
 		response.addHeader("Cache-Control", "no-store");
 		response.addHeader("Cache-Control", "max-stale=0");
+	}
+	
+	public void lostConnection(HttpServletResponse response, String message) throws IOException {
+		
+		Log.log(Log.ERROR, "Davis appears to have lost its connection with the server: "+message);
+		response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "The server has dropped its connection.");
+		response.flushBuffer();
 	}
 
     public abstract void service(HttpServletRequest request,
