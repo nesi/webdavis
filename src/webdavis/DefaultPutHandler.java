@@ -80,6 +80,10 @@ public class DefaultPutHandler extends AbstractHandler {
         }
         RemoteFile parent = getRemoteParentFile(request, davisSession);
         	//createRemoteFile(file.getParent(), rfs);
+        if (parent == null) {
+        	lostConnection(response, "in put handler");
+        	return;
+        }
         if (!(parent.exists() && parent.isDirectory())) {
             response.sendError(HttpServletResponse.SC_CONFLICT);
             return;
