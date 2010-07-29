@@ -78,10 +78,10 @@ public class DefaultDeleteHandler extends AbstractHandler {
 //			} else
 //				throw new ServletException("Internal error deleting file: error parsing JSON");
 //		}
-		
         Iterator<RemoteFile> iterator = fileList.iterator();
         while (iterator.hasNext()) {
         	RemoteFile condemnedFile = iterator.next();
+System.err.println("************Parent file exists="+condemnedFile.getParentFile());		
 			Log.log(Log.DEBUG, "deleting: "+condemnedFile);
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
@@ -94,7 +94,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
 		    		response.sendError(result, s);
 	    		}
 				return;
-			}
+			} 
+System.err.println("************Parent file exists="+condemnedFile.getParentFile().exists());					
         }
 		response.setStatus(HttpServletResponse.SC_NO_CONTENT);
 		response.flushBuffer();

@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+    	<title>doh.robot Test</title>
+        <!--  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.4.3/dojo/dojo.xd.js" djConfig="isDebug: true, parseOnLoad: true"></script>-->
+        <script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true"></script>
+            <script type="text/javascript">
+                    dojo.require("dijit.dijit"); // optimize: load dijit layer
+                    dojo.require("dijit.robotx"); // load the robot
+
+                    dojo.addOnLoad(function(){
+                            // declare variables but do not assign them values
+                            var deleteButton;
+                            var dialogCreateDir;
+                            var spin3;
+                            var safeClick;
+                            var delta=1; // redefine with doh.robot.mouseWheelSize when it is available
+
+                            // the initRobot call goes here
+                            doh.robot.initRobot('https://ngdata-dev.hpcu.uq.edu.au/ARCSDEV/home/rowan.mckenzie');
+
+                            doh.register("setUp",{
+                                    name: "setUp",
+                                    timeout: 15000,
+                                    setUp:function(){
+                                            // assign variables HERE
+                                            deleteButton=dojo.byId('deleteButton');
+                                       //     spin2=dijit.byId('integerspinner2');
+                                       //     spin3=dijit.byId('realspinner1');
+                                       //     safeClick=dojo.byId('form1');
+                                    },
+                                    runTest: function(){
+                                            // assert onChange not fired
+                              /*              doh.is("not fired yet!",dojo.byId('oc1').value);
+                                            doh.is(1,spin1.smallDelta);
+                                            var s=": 900\n"
+                                            +"integerspinner1: 900\n"
+                                            +": not fired yet!\n"
+                                            +": 1,000\n"
+                                            +"integerspinner2: 1000\n"
+                                            +": \n"
+                                            +"integertextbox3: NaN\n"
+                                            +": 1.0\n"
+                                            +"realspinner1: 1\n";
+                                            doh.is(s, dojo.doc.displayData().replace(/[a-zA-Z0-9_]*_displayed_/g, ""));*/
+                                    }
+                            });
+                            doh.register("arrowButton",{
+                                    name: "createDir",
+                                    timeout: 15000,
+                                    runTest: function(){
+                                            // assert invalid works
+                                            var d=new doh.Deferred();
+                                            doh.robot.mouseMoveAt(/*spin1.focusNode*/dojo.byId('createDirectoryButton'), 500);
+                                            doh.robot.mouseClick({left:true}, 500);
+                                            //alert("="+directoryInputBox);
+                                            var textBox = dojo.byId('dialogCreateDir').lastElementChild.firstElementChild;
+                                            doh.robot.mouseMoveAt(textBox, 500);
+                                    //       doh.robot.sequence(function(){
+                                      //              spin1.focusNode.value="";
+                                       //     },500);
+                                            doh.robot.typeKeys("fred", 500, 300);
+                                            doh.robot.sequence(function(){
+                                                    try{
+                                                          //  doh.is(false, textBox.);
+                                                            d.callback(true);
+                                                    }catch(e){
+                                                            d.errback(e);
+                                                    }
+                                            } ,500);
+                                            return d;
+                                    },
+
+                                    tearDown:function(){
+                                            //spin1.attr('value',1);
+                                    }
+                            });
+                            // ... some more tests
+                            // all tests registered; notify DOH
+                            doh.run();
+                    });
+            </script>
+    </head>
+</html>

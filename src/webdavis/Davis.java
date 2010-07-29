@@ -2,10 +2,13 @@ package webdavis;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -19,6 +22,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpUtils;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -67,6 +71,8 @@ public class Davis extends HttpServlet {
 	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
+	static final String FORMAUTHCOOKIENAME = "formauth";
+	private Cookie formAuthCookie = null;
 	
 
 	public void init() throws ServletException {
@@ -116,7 +122,7 @@ public class Davis extends HttpServlet {
 		}
 //		else
 //			System.setProperty("jargon.debug", "0");
-		
+		DavisUtilities.init(config);
 		initLockManager(config);
 		// initFilter(config);
 		initHandlers(config);
@@ -184,8 +190,40 @@ public class Davis extends HttpServlet {
 		String pathInfo = request.getPathInfo();
 		String uri=request.getRequestURI();
 		String queryString = request.getQueryString();
-		Log.log(Log.INFORMATION, "uri:"+uri);
-		Log.log(Log.INFORMATION, "queryString:"+queryString);
+		formAuthCookie = null;
+		
+		if (request.getParameter("loginform") != null) {
+System.err.println("********** got loginform");
+System.err.println("request="+request);
+			String referrer = request.getHeader("referrer");
+			if (referrer == null)
+				referrer = request.getHeader("referer");
+			if (referrer == null) {
+				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Your browser doesn't provide a referrer header field. \nPlease contact "+DavisConfig.getInstance().getOrganisationSupport());
+				response.flushBuffer();
+				return;
+			}
+//			Cookie cookie = null;
+//			if ((cookie = DavisUtilities.getCookie(request, FORMAUTHCOOKIENAME)) != null) {
+//				System.err.println("deleting cookie:"+FORMAUTHCOOKIENAME);
+//			}
+//			Enumeration names = request.getParameterNames();
+//			while (names.hasMoreElements()) {
+//				System.err.println("##### name="+names.nextElement());
+//			}
+			String authorization = "Basic "+new String(Base64.encodeBase64((request.getParameter("username").trim()+":"+request.getParameter("password")).getBytes()));
+			Cookie cookie = new Cookie(FORMAUTHCOOKIENAME, authorization);
+			cookie.setPath("/");
+			cookie.setMaxAge(-1);	// Not persistent
+			cookie.setSecure(true);	// May as well insist it's only for https (shouldn't be here if not)
+			response.addCookie(cookie);
+			
+			response.addHeader("Location", referrer);
+			response.sendError(HttpServletResponse.SC_SEE_OTHER);
+			response.flushBuffer();
+			return;
+		}
+			
 		if (pathInfo == null || "".equals(pathInfo))
 			pathInfo = "/";
 
@@ -193,7 +231,9 @@ public class Davis extends HttpServlet {
 		Log.log(Log.DEBUG, "#### Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
 
 		// Log request + header
-		Log.log(Log.INFORMATION, "Received {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
+		Log.log(Log.INFORMATION, "================ Received {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
+		Log.log(Log.INFORMATION, "uri:"+uri);
+		Log.log(Log.INFORMATION, "queryString:"+queryString);
 		if (Log.getThreshold() < Log.INFORMATION) {
 			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
 			StringBuffer headers = new StringBuffer();
@@ -255,15 +295,25 @@ public class Davis extends HttpServlet {
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
 		String authorization = request.getHeader("Authorization");
+System.err.println("###############authorization="+authorization);
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
-
+		
+		if (authorization == null) {
+			Cookie cookie = null;
+			if ((cookie = DavisUtilities.getCookie(request, FORMAUTHCOOKIENAME)) != null) {
+				formAuthCookie = cookie;
+				System.err.println("%%%%%%%%%%%%%%%% Found cookie:"+cookie.getValue());
+				authorization = cookie.getValue();
+			}
+		}
+					
 		String errorMsg = null;
 		// If no auth info in header and http connection - should be shib
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
-			Cookie[] cookies = request.getCookies();
 			int shibCookieNum = 0;
+			Cookie[] cookies = request.getCookies();
 			if (cookies != null){
 				for (Cookie cookie:cookies)
 					if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) 
@@ -285,26 +335,6 @@ public class Davis extends HttpServlet {
 		if (authorization != null){
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
 		} 
-//		else
-//		if (authorization == null && request.isSecure() /*&& not webdav ###TBD */) {
-//			System.err.println("##################### https and no auth - returning form");
-//			boolean browser = true;
-//		
-//			String method = request.getMethod();
-//			String protocol = request.getProtocol();
-//			String accept = request.getHeader("accept");
-//System.err.println("method="+method+" protocol="+protocol+" accept="+accept);
-//			if (Arrays.asList(WEBDAVMETHODS).contains(method))
-//				browser = false;
-//			else
-//			if (accept == null)
-//				browser = false;
-//			String s = "You are using "+(browser ? "a browser" : "webdav");
-//			Log.log(Log.DEBUG, s);
-//			response.sendError(HttpServletResponse.SC_HTTP_VERSION_NOT_SUPPORTED, s);
-//			response.flushBuffer();
-//			return;
-//		}
 		
 		// Anonymous access
 		if (davisSession == null && isAnonymousPath(pathInfo)){
@@ -312,7 +342,7 @@ public class Davis extends HttpServlet {
 			davisSession = authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg = null;
 		}
-		
+				
 		// Still no session established, check for error, else tell client with auth to try next
 		if (davisSession == null){
 			if (errorMsg != null){
@@ -503,6 +533,57 @@ public class Davis extends HttpServlet {
 		// boolean usingBasic = (acceptBasic || enableBasic) &&
 		// (insecureBasic || request.isSecure());
 		// if (usingBasic && enableBasic) {
+		
+		if (/*authorization == null &&*/ request.isSecure()) {
+System.err.println("##################### https - returning form");
+			boolean browser = true;		
+			String method = request.getMethod();
+			String accept = request.getHeader("accept");
+System.err.println("method="+method+" accept="+accept);
+			if (Arrays.asList(WEBDAVMETHODS).contains(method))
+				browser = false;
+			else
+			if (accept == null)
+				browser = false;
+			if (browser) {
+String s = "You are using "+(browser ? "a browser" : "webdav");
+Log.log(Log.DEBUG, s);
+System.err.println("request is"+request.getClass());
+				String form = DavisUtilities.loadResource("/WEB-INF/login.html");
+				form = DavisUtilities.preprocess(form, DavisUtilities.substitutions);	// Make general substitutions
+				Hashtable<String, String> substitutions = new Hashtable<String, String>();
+				String queryString = request.getQueryString();
+				if (queryString == null)
+					queryString = "";
+				else
+					queryString = "?"+queryString;
+				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
+				if (formAuthCookie != null) {	// Form has been submitted and auth failed
+					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");
+					substitutions.put("failedmessage", "<span style=\"color:red\">Authentication Failed</span><br><br><small>Please ensure your username and password are correct,<br>and that cookies are enabled in your browser.<br><br></small>");
+					formAuthCookie.setMaxAge(0); // Browser should delete this cookie
+					response.addCookie(formAuthCookie);
+				} else {
+					if ((request.getHeader("referrer") != null) || (request.getHeader("referer") != null)) // Cookies might be blocked for this site
+						substitutions.put("failedmessage", "<small>Please ensure cookies are enabled for this site.</small><br><br>");
+					else
+						substitutions.put("failedmessage", "");
+					Log.log(Log.DEBUG, "Returning form-based login page to client.");
+				}
+				form = DavisUtilities.preprocess(form, substitutions);
+
+System.err.println("form="+form);
+				response.setContentType("text/html; charset=\"utf-8\"");
+				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
+				out.write(form, 0, form.length());
+				out.flush();
+//				response.addHeader("Location", "http://www.csiro.au");
+//				response.sendError(HttpServletResponse.SC_SEE_OTHER);
+				response.flushBuffer();
+				return;
+			}
+		}
+
 		Log.log(Log.DEBUG, "Requesting Basic Authentication.");
 		response.addHeader("WWW-Authenticate", "Basic realm=\"" + DavisConfig.getInstance().getRealm() + "\"");
 //		response.addHeader("WWW-Authenticate", "Digest realm=\"" + realm + "\", algorithm=MD5, domain=\""+ "eResearchSA" +"\", nonce=\""+newNonce(request)+"\",qop=\"auth\"");

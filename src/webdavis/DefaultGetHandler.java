@@ -187,24 +187,24 @@ public class DefaultGetHandler extends AbstractHandler {
 	
 	private String loadUI(String fileName) {
 
-		String result = "";
-		try {
-			InputStream stream = getResourceAsStream(fileName);
-			if (stream == null)
-				throw new IOException("can't open file");
-			BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-			char[] buffer = new char[1024];
-			int numRead = 0;
-			while ((numRead = reader.read(buffer)) != -1) {
-				String readData = String.valueOf(buffer, 0, numRead);
-				result += (readData);
-			}
-			reader.close();
-		} catch (IOException e) {
-			Log.log(Log.CRITICAL, "Failed to read UI html file: " + e);
-		}
+//		String result = "";
+//		try {
+//			InputStream stream = DavisUtilities.getResourceAsStream(fileName);
+//			if (stream == null)
+//				throw new IOException("can't open file");
+//			BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+//			char[] buffer = new char[1024];
+//			int numRead = 0;
+//			while ((numRead = reader.read(buffer)) != -1) {
+//				String readData = String.valueOf(buffer, 0, numRead);
+//				result += (readData);
+//			}
+//			reader.close();
+//		} catch (IOException e) {
+//			Log.log(Log.CRITICAL, "Failed to read UI html file: " + e);
+//		}
 		uiLoadDate = dateFormat.format(new Date());
-		return result;
+		return /*result*/DavisUtilities.loadResource(fileName);
 	}
 
 	public void destroy() {
@@ -289,7 +289,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //			Log.log(Log.DEBUG, ("=============== id="+instanceID+" request="+r));
 //		}
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
-		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
+		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar") || url.startsWith("/test")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
 			writeFile(url, request, response);
 			return;
@@ -541,54 +541,62 @@ public class DefaultGetHandler extends AbstractHandler {
 
 				DavisConfig config = DavisConfig.getInstance();
 
-				// Define substitutions for UI HTML file
+				// Define request specific substitutions for UI HTML file
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				substitutions.put("dojoroot", dojoroot);
 				substitutions.put("servertype", getServerType());
-				substitutions.put("appversion", config.getAppVersion());
+//				substitutions.put("appversion", config.getAppVersion());
 				substitutions.put("href", requestUrl);
 				substitutions.put("url", file.getAbsolutePath().replace("\\", "\\\\").replace("\"", "\\\"")); // Escape " chars - ui uses this string inside double quotes
 				substitutions.put("unc", file.toString());
 				substitutions.put("parent", request.getContextPath()+file.getParent());
 				substitutions.put("home", davisSession.getHomeDirectory());
 				substitutions.put("trash", davisSession.getTrashDirectory());
-				substitutions.put("authenticationrealm", config.getRealm());
-				substitutions.put("organisationname", config.getOrganisationName());
-				substitutions.put("organisationlogo", config.getOrganisationLogo());
-				substitutions.put("favicon", config.getFavicon());
-				substitutions.put("displayMetadata", config.getDisplayMetadata());
-				String s = config.getAnonymousUsername();
-				if (s == null)
-					s = "";
-				substitutions.put("anonymoususer", s);
-				String[] geom = null;
-				String geomString = config.getOrganisationLogoGeometry();
-				String w = "";
-				String h = "";
-				if (geomString != null) {
-					try {
-						geom = geomString.split("x");
-						w = geom[0];
-						h = geom[1];
-					} catch (Exception e) {}
-				}
-				substitutions.put("organisationlogowidth", w);
-				substitutions.put("organisationlogoheight", h);
+//				substitutions.put("authenticationrealm", config.getRealm());
+//				substitutions.put("organisationname", config.getOrganisationName());
+//				substitutions.put("organisationlogo", config.getOrganisationLogo());
+//				substitutions.put("favicon", config.getFavicon());
+//				substitutions.put("displayMetadata", config.getDisplayMetadata());
+//				String s = config.getAnonymousUsername();
+//				if (s == null)
+//					s = "";
+//				substitutions.put("anonymoususer", s);
+//				String[] geom = null;
+//				String geomString = config.getOrganisationLogoGeometry();
+//				String w = "";
+//				String h = "";
+//				if (geomString != null) {
+//					try {
+//						geom = geomString.split("x");
+//						w = geom[0];
+//						h = geom[1];
+//					} catch (Exception e) {}
+//				}
+//				substitutions.put("organisationlogowidth", w);
+//				substitutions.put("organisationlogoheight", h);
 				substitutions.put("account", davisSession.getAccount());
 				substitutions.put("uiloaddate", uiLoadDate);
-				substitutions.put("organisationsupport", config.getOrganisationSupport());
-				substitutions.put("helpurl", config.getHelpURL());
-				substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
+				String version = "";
+				if (file.getFileSystem() instanceof IRODSFileSystem) 
+					version = ((IRODSFileSystem)file.getFileSystem()).getVersion();
+				else
+					version = ((SRBFileSystem)file.getFileSystem()).getVersion();
+				substitutions.put("jargonversion", version);
+//				substitutions.put("organisationsupport", config.getOrganisationSupport());
+//				substitutions.put("helpurl", config.getHelpURL());
+//				substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
 				
 				String uiContent = new String(uiHTMLContent);
-				// Make substitutions in UI HTML file
-				for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements();) {
-					String key = keys.nextElement();
-					String replacement = substitutions.get(key);
-					if (replacement == null)
-						replacement = "";
-					uiContent = uiContent.replace("<parameter " + key + "/>", replacement);
-				}
+				uiContent = DavisUtilities.preprocess(uiContent, DavisUtilities.substitutions);	// Make general substitutions
+				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions
+//				// Make substitutions in UI HTML file
+//				for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements();) {
+//					String key = keys.nextElement();
+//					String replacement = substitutions.get(key);
+//					if (replacement == null)
+//						replacement = "";
+//					uiContent = uiContent.replace("<parameter " + key + "/>", replacement);
+//				}
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
 				out.write(uiContent, 0, uiContent.length());
@@ -776,7 +784,9 @@ public class DefaultGetHandler extends AbstractHandler {
 		response.setHeader("Content-Length", String.valueOf(file.length()));
 		response.setContentType((contentType != null) ? contentType	: "application/octet-stream");
 		response.setContentLength((int) file.length());
-		if (!request.getHeader("User-Agent").contains("MSIE "))
+		// Don't send cache control stuff for IE. It has problems when 'getting'. 
+		// See http://www.experts-exchange.com/Web_Development/Web_Languages-Standards/ASP/Q_22780724.html
+		if (!request.getHeader("User-Agent").contains("MSIE ")) 
 			addNoCacheDirectives(response);
 		// RemoteFileInputStream input = null;
 		String startingPoint = request.getHeader("Content-Range");
@@ -920,7 +930,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			byte[] configuration = configurations.get(locale);
 			if (configuration != null)
 				return configuration;
-			InputStream stream = getResourceAsStream(configurationLocation, locale);
+			InputStream stream = DavisUtilities.getResourceAsStream(configurationLocation, locale);
 			if (stream == null) {
 				throw new ServletException(DavisUtilities.getResource(DefaultGetHandler.class, "configurationPageError", null, null));
 			}
@@ -985,80 +995,80 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 	}
 
-	private InputStream getResourceAsStream(String location, Locale locale) {
-		int index = location.indexOf('.');
-		String prefix = (index != -1) ? location.substring(0, index) : location;
-		String suffix = (index != -1) ? location.substring(index) : "";
-		String language = locale.getLanguage();
-		String country = locale.getCountry();
-		String variant = locale.getVariant();
-		InputStream stream = null;
-		if (!variant.equals("")) {
-			stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
-			if (stream != null)
-				return stream;
-		}
-		if (!country.equals("")) {
-			stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
-			if (stream != null)
-				return stream;
-		}
-		stream = getResourceAsStream(prefix + '_' + language + suffix);
-		if (stream != null)
-			return stream;
-		Locale secondary = Locale.getDefault();
-		if (!locale.equals(secondary)) {
-			language = secondary.getLanguage();
-			country = secondary.getCountry();
-			variant = secondary.getVariant();
-			if (!variant.equals("")) {
-				stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
-				if (stream != null)
-					return stream;
-			}
-			if (!country.equals("")) {
-				stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
-				if (stream != null)
-					return stream;
-			}
-			stream = getResourceAsStream(prefix + '_' + language + suffix);
-			if (stream != null)
-				return stream;
-		}
-		return getResourceAsStream(location);
-	}
-
-	private InputStream getResourceAsStream(String location) {
-		InputStream stream = null;
-		try {
-			stream = getServletConfig().getServletContext().getResourceAsStream(location);
-			if (stream != null)
-				return stream;
-		} catch (Exception ex) {}
-		try {
-			stream = getClass().getResourceAsStream(location);
-			if (stream != null)
-				return stream;
-		} catch (Exception ex) {}
-		try {
-			ClassLoader loader = Thread.currentThread().getContextClassLoader();
-			if (loader != null)
-				stream = loader.getResourceAsStream(location);
-			if (stream != null)
-				return stream;
-		} catch (Exception ex) {}
-		try {
-			ClassLoader loader = ClassLoader.getSystemClassLoader();
-			if (loader != null)
-				stream = loader.getResourceAsStream(location);
-			if (stream != null)
-				return stream;
-		} catch (Exception ex) {}
-		return null;
-	}
+//	private InputStream getResourceAsStream(String location, Locale locale) {
+//		int index = location.indexOf('.');
+//		String prefix = (index != -1) ? location.substring(0, index) : location;
+//		String suffix = (index != -1) ? location.substring(index) : "";
+//		String language = locale.getLanguage();
+//		String country = locale.getCountry();
+//		String variant = locale.getVariant();
+//		InputStream stream = null;
+//		if (!variant.equals("")) {
+//			stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
+//			if (stream != null)
+//				return stream;
+//		}
+//		if (!country.equals("")) {
+//			stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
+//			if (stream != null)
+//				return stream;
+//		}
+//		stream = getResourceAsStream(prefix + '_' + language + suffix);
+//		if (stream != null)
+//			return stream;
+//		Locale secondary = Locale.getDefault();
+//		if (!locale.equals(secondary)) {
+//			language = secondary.getLanguage();
+//			country = secondary.getCountry();
+//			variant = secondary.getVariant();
+//			if (!variant.equals("")) {
+//				stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
+//				if (stream != null)
+//					return stream;
+//			}
+//			if (!country.equals("")) {
+//				stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
+//				if (stream != null)
+//					return stream;
+//			}
+//			stream = getResourceAsStream(prefix + '_' + language + suffix);
+//			if (stream != null)
+//				return stream;
+//		}
+//		return getResourceAsStream(location);
+//	}
+//
+//	private InputStream getResourceAsStream(String location) {
+//		InputStream stream = null;
+//		try {
+//			stream = getServletConfig().getServletContext().getResourceAsStream(location);
+//			if (stream != null)
+//				return stream;
+//		} catch (Exception ex) {}
+//		try {
+//			stream = getClass().getResourceAsStream(location);
+//			if (stream != null)
+//				return stream;
+//		} catch (Exception ex) {}
+//		try {
+//			ClassLoader loader = Thread.currentThread().getContextClassLoader();
+//			if (loader != null)
+//				stream = loader.getResourceAsStream(location);
+//			if (stream != null)
+//				return stream;
+//		} catch (Exception ex) {}
+//		try {
+//			ClassLoader loader = ClassLoader.getSystemClassLoader();
+//			if (loader != null)
+//				stream = loader.getResourceAsStream(location);
+//			if (stream != null)
+//				return stream;
+//		} catch (Exception ex) {}
+//		return null;
+//	}
 
 	private Source getStylesheet(String location, boolean allowExternal, Locale locale) throws Exception {
-		InputStream stream = getResourceAsStream(location, locale);
+		InputStream stream = DavisUtilities.getResourceAsStream(location, locale); 
 		if (stream != null) {
 			Log.log(Log.DEBUG, "Obtained stylesheet for \"{0}\".", location);
 			return new StreamSource(stream);

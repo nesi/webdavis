@@ -1,0 +1,52 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+    	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    	<title><parameter authenticationrealm/> - Login</title>
+		<script type="text/javascript">
+			function testCookies() {
+				var cookieEnabled = navigator.cookieEnabled;
+				//if not IE4+ nor NS6+
+				if (typeof navigator.cookieEnabled == "undefined" && !cookieEnabled){ 
+					document.cookie = "testcookie"
+					cookieEnabled = (document.cookie.indexOf("testcookie") != -1);
+				}
+				if (!cookieEnabled) 
+					alert("Cookies don't appear to be enabled in your browser. Please enable them and try again.");
+			}
+		</script>
+  	</head>
+  	<body onLoad="testCookies()">
+     	<table height="100%" width="100%">
+      		<tbody>
+        		<tr>
+          			<td valign="middle" align="center"> 
+      	    			<img src="<parameter loginimage/>">
+        	  			<h2><parameter authenticationrealm/> Login</parameter></h2>
+        	  			<parameter failedmessage/>
+        	  			<form action="?loginform" method="POST">
+             				<input type="hidden" name="original_url" value="<parameter originalurl/>">
+              				<table>
+           	    				<tbody>
+                					<tr>
+                  						<td>Username:</td><td><input name="username" tabindex="1" type="text"></td>
+                					</tr>
+                					<tr>
+                  						<td>Password:</td><td><input name="password" tabindex="2" type="password"></td>
+                					</tr>
+                					<tr>
+                  						<td rowspan="2"><input value="Login" tabindex="3" type="submit"></td>
+                					</tr>
+                					<tr>
+                  						<td align="center"><small>Or log in <parameter insecureurl/>via HTTP</a></small></td>
+                  						<td align="center"><small><a href="<parameter loginhelp/>">Need help?</a></small></td>
+                					</tr>
+              					</tbody>
+            				</table>
+          				</form>
+        			</td>
+      			</tr>
+    		</tbody>
+  		</table>
+  	</body>
+</html>

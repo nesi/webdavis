@@ -72,6 +72,8 @@ public class DavisConfig {
     private String appVersion = "unknown";
     private String requiredDojoVersion = "unknown";
     private String logoutReturnURL;
+    private String loginImage;
+    private String loginHelp;
 
 	public String getAuthClass() {
 		return authClass;
@@ -276,6 +278,8 @@ public class DavisConfig {
 		organisationLogoGeometry = getInitParameter("organisation-logo-geometry", "").trim();
 		organisationSupport = getInitParameter("organisation-support", "user support at your organisation").trim();
 		logoutReturnURL = getInitParameter("logout-return-url", "").trim();
+		loginImage = getInitParameter("login-image", "").trim();
+	    loginHelp = getInitParameter("login-help", "/").trim();
 		helpURL = getInitParameter("helpURL", "For help, please contact user support at your organisation").trim();
 		favicon = getInitParameter("favicon", "").trim();		
 		dojoroot = getInitParameter("dojoroot", "").trim();
@@ -516,6 +520,14 @@ public class DavisConfig {
 	
 	public String getLogoutReturnURL() {
 		return logoutReturnURL;
+	}
+	
+	public String getLoginImage() {
+		return loginImage;
+	}
+	
+	public String getLoginHelp() {
+		return loginHelp;
 	}
 	
 	public String getHelpURL() {
