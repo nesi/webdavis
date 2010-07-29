@@ -251,7 +251,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			response.flushBuffer();
 		} catch (IOException e) {
 			if (e.getMessage().equals("Closed"))
-				Log .log(Log.WARNING, "DefaultGetHandler.internalError: connection to server may have been lost.");
+				Log.log(Log.WARNING, "DefaultGetHandler.internalError: connection to server may have been lost.");
 		}
 		return;
 	}
@@ -333,9 +333,7 @@ public class DefaultGetHandler extends AbstractHandler {
            				connected = false;
 				}
 				if (!connected) {
-					Log.log(Log.ERROR, "Davis appears to have lost its connection with the server: "+message);
-					response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "The server has dropped its connection.");
-					response.flushBuffer();
+					lostConnection(response, message);
 					return;
 				}
 				Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error.");					
