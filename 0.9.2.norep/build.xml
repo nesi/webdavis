@@ -1,0 +1,306 @@
+<project name="DAVIS" default="dist" basedir=".">
+
+  <property name="app.name"      value="davis"/>
+  <property name="app.version"   value="0.9.2.norep"/>
+  <property name="dojo.version"	 value="1.4.2"/>
+  <property name="build.home"    value="${basedir}/build"/>
+  <property name="dist.home"     value="${basedir}/dist"/>
+  <property name="src.home"      value="${basedir}/src"/>
+  <property name="web.home"      value="${basedir}/WebContent"/>
+  <property name="test.home"     value="${basedir}/test"/>
+
+  <property name="compile.debug"       value="true"/>
+  <property name="compile.deprecation" value="false"/>
+  <property name="compile.optimize"    value="true"/>
+  <property name="compile.target"    value="1.5"/>
+  <property name="compile.source"    value="1.5"/>
+  <tstamp><format property="current.time" pattern="yyyyMMddhhmmss"/></tstamp>
+
+  <path id="compile.classpath">
+
+    <!-- Include all JAR files that will be included in /WEB-INF/lib -->
+    <!-- *** CUSTOMIZE HERE AS REQUIRED BY YOUR APPLICATION *** -->
+<!--
+    <pathelement location="${foo.jar}"/>
+-->
+
+    <!-- Include all elements that Tomcat exposes to applications -->
+    <pathelement location="${catalina.home}/common/classes"/>
+    <fileset dir="lib">
+      <include name="*.jar"/>
+    </fileset>
+    <!-- <fileset dir="${catalina.home}/common/endorsed">
+      <include name="*.jar"/>
+    </fileset>
+    <fileset dir="${catalina.home}/common/lib">
+      <include name="*.jar"/>
+    </fileset>
+    <pathelement location="${catalina.home}/shared/classes"/>
+    <fileset dir="${catalina.home}/shared/lib">
+      <include name="*.jar"/>
+    </fileset> -->
+    <fileset dir="${web.home}/WEB-INF/lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
+<!-- ==================== All Target ====================================== -->
+
+<!--
+
+  The "all" target is a shortcut for running the "clean" target followed
+  by the "compile" target, to force a complete recompile.
+
+-->
+
+  <target name="all" depends="clean,dist,cleanbuild"
+   description="Clean build and dist directories, then compile"/>
+
+
+
+<!-- ==================== Clean Target ==================================== -->
+
+<!--
+
+  The "clean" target deletes any previous "build" and "dist" directory,
+  so that you can be ensured the application can be built from scratch.
+
+-->
+
+  <target name="clean"
+   description="Delete old build and dist directories">
+    <delete dir="${build.home}"/>
+    <delete dir="${dist.home}"/>
+  </target>
+
+  <target name="cleanbuild"
+   description="Delete old build and dist directories">
+    <delete dir="${build.home}"/>
+  </target>
+
+
+<!-- ==================== Compile Target ================================== -->
+
+<!--
+
+  The "compile" target transforms source files (from your "src" directory)
+  into object files in the appropriate location in the build directory.
+  This example assumes that you will be including your classes in an
+  unpacked directory hierarchy under "/WEB-INF/classes".
+
+-->
+
+  <target name="compile" depends="prepare" description="Compile Java sources">
+
+    <!-- Compile Java classes as necessary -->
+    <mkdir    dir="${build.home}/WEB-INF/classes"/>
+    <javac srcdir="${src.home}"
+          destdir="${build.home}/WEB-INF/classes"
+            debug="${compile.debug}"
+      deprecation="${compile.deprecation}"
+         optimize="${compile.optimize}"
+    	   target="${compile.target}"
+    	   source="${compile.source}">
+        <classpath refid="compile.classpath"/>
+    </javac>
+
+    <!-- Copy application resources -->
+    <copy  todir="${build.home}/WEB-INF/classes">
+      <fileset dir="${src.home}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+<!-- ==================== Dist Target ===================================== -->
+
+<!--
+
+  The "dist" target creates a binary distribution of your application
+  in a directory structure ready to be archived in a tar.gz or zip file.
+  Note that this target depends on two others:
+
+  * "compile" so that the entire web application (including external
+    dependencies) will have been assembled
+
+  * "javadoc" so that the application Javadocs will have been created
+
+-->
+
+  <target name="war" depends="compile"
+   description="Create binary distribution">
+
+    <mkdir   dir="${dist.home}"/>
+
+    <!-- Create application JAR file -->
+    <jar jarfile="${dist.home}/${app.name}.war"
+         basedir="${build.home}"/>
+
+    <!-- Copy additional files to ${dist.home} as necessary -->
+
+  </target>
+	
+  <!-- Not used anymore? -->
+  <target name="jetty5" depends="clean,compile"
+	description="Create tar ball distribution">
+    <mkdir   dir="${dist.home}"/>
+    <copy todir="${build.home}/bin">
+      <fileset dir="${basedir}/bin"/>
+    </copy>
+    <copy todir="${build.home}/conf">
+      <fileset dir="${basedir}/conf"/>
+    </copy>
+    <copy todir="${build.home}/etc">
+      <fileset dir="${basedir}/etc"/>
+    </copy>
+    <copy todir="${build.home}/ext">
+      <fileset dir="${basedir}/ext"/>
+    </copy>
+    <copy todir="${build.home}/lib">
+      <fileset dir="${basedir}/lib"/>
+    </copy>
+    <copy todir="${build.home}/ext">
+      <fileset dir="${basedir}/ext"/>
+    </copy>
+    <copy todir="${build.home}/webapps/root">
+      <fileset dir="${web.home}"/>
+    </copy>
+    <copy file="${basedir}/start.jar" todir="${build.home}"/>
+    <copy file="${basedir}/stop.jar" todir="${build.home}"/>
+  	<mkdir dir="${build.home}/logs"/>
+  	<mkdir dir="${build.home}/webapps/root/WEB-INF/classes"/>
+  	<copy todir="${build.home}/webapps/root/WEB-INF/classes/">
+  	  <fileset dir="${basedir}/resources"/>
+  	</copy>
+    <jar jarfile="${build.home}/webapps/root/WEB-INF/lib/${app.name}.jar">
+  	  <fileset dir="${build.home}/WEB-INF/classes/"/>
+    </jar>
+  	<delete dir="${build.home}/META-INF"/>
+  	<delete dir="${build.home}/WEB-INF"/>
+  	<delete dir="${build.home}/dojoroot"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
+	  <tarfileset dir="${build.home}" />
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
+  </target> 
+	
+  <target name="dist" depends="clean,compile" description="Create tar ball distribution">
+	<mkdir   dir="${dist.home}"/>
+	<mkdir   dir="${build.home}/${app.name}-${app.version}"/>
+    <mkdir   dir="${build.home}/${app.name}-${app.version}/logs"/>
+    <mkdir   dir="${build.home}/${app.name}-${app.version}/webapps"/>
+	<copy todir="${build.home}/${app.name}-${app.version}">
+	  <fileset dir="${basedir}/jetty6"/>
+	</copy>
+	<copy todir="${build.home}/${app.name}-${app.version}/bin">
+	  <fileset file="${basedir}/bin/davis-configure.sh"/>
+	</copy>
+
+	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root">
+	  <fileset dir="${web.home}"/>
+	</copy>
+  	<move file="${build.home}/${app.name}-${app.version}/webapps/root/images" todir="${build.home}/${app.name}-${app.version}/webapps"/>
+  	<move file="${build.home}/${app.name}-${app.version}/webapps/root/dojoroot" todir="${build.home}/${app.name}-${app.version}/webapps"/>
+  	<mkdir dir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes"/>
+ 	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes/">
+  	  <fileset dir="${basedir}/resources"/>
+  	</copy>
+    <jar jarfile="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/lib/${app.name}.jar">
+  	  <fileset dir="${build.home}/WEB-INF/classes/"/>
+    </jar>
+  	<delete dir="${build.home}/META-INF"/>
+  	<delete dir="${build.home}/WEB-INF"/>
+  	<delete dir="${build.home}/dojoroot"/>
+  	<delete dir="${build.home}/images"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
+	  <!--<tarfileset dir="${build.home}" filemode="755">
+	  	<include name="${app.name}-${app.version}/bin/davis-configure.sh"/>
+	  </tarfileset>-->
+	  <tarfileset dir="${build.home}">
+	  	<!--<exclude name="${app.name}-${app.version}/bin/davis-configure.sh"/>-->
+	  </tarfileset>
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}.tar.gz" src="${dist.home}/${app.name}-${app.version}.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}.tar"/>
+  </target>
+
+
+  <target name="prepare">
+
+    <!-- Create build directories as needed -->
+    <mkdir  dir="${build.home}"/>
+    <mkdir  dir="${build.home}/WEB-INF"/>
+    <mkdir  dir="${build.home}/WEB-INF/classes"/>
+
+  	<!-- Extract required version of dojo -->
+  	<delete dir="${web.home}/dojoroot"/>
+  	<mkdir dir="${web.home}/dojoroot"/>
+  	<untar src="${basedir}/ext/dojo-release-${dojo.version}.tar.gz" dest="${web.home}/dojoroot" compression="gzip"/>
+  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojo"/>
+  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dijit"/>
+  	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojox"/>
+  	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}"/>
+  	
+  	<!-- Make davis.version -->
+  	<echo message="appVersion=${app.version}${line.separator}requiredDojoVersion=${dojo.version}" file="${web.home}/WEB-INF/davis.version"/>
+  	
+    <!-- Copy static content of this web application -->
+    <copy todir="${build.home}">
+      <fileset dir="${web.home}"/>
+    </copy>
+
+    <mkdir  dir="${build.home}/WEB-INF/lib"/>
+    <copy todir="${build.home}/WEB-INF/lib">
+        <fileset dir="${web.home}/WEB-INF/lib">
+<!--           <exclude name="**/**/mail.jar"/>
+           <exclude name="**/**/activation.jar"/> -->
+	</fileset>
+    </copy>
+  </target>
+	
+  <target name="tarsrc">
+	<delete file="${dist.home}/${app.name}-${app.version}-src.tar.gz"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}-src.tar">
+	  <tarfileset dir="${basedir}">
+	    <include name="build.xml"/>
+	    <include name="JavaSource/**"/>
+    	<include name="WebContent/**"/>
+    	<include name="mapserver/**"/>
+    	<include name="db_scripts/**"/>
+    	<include name="docs/**"/>
+    	<include name="lib/**"/>
+	  </tarfileset>
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}-src.tar.gz" src="${dist.home}/${app.name}-${app.version}-src.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}-src.tar"/>
+  </target>
+
+  <target name="tarbin">
+	<delete file="${dist.home}/${app.name}-${app.version}-bin.tar.gz"/>
+	<tar destfile="${dist.home}/${app.name}-${app.version}-bin.tar">
+	  <tarfileset dir="${basedir}">
+    	<include name="mapserver/**"/>
+    	<include name="db_scripts/**"/>
+    	<include name="docs/**"/>
+	  </tarfileset>
+	  <tarfileset dir="${basedir}/dist">
+    	<include name="avh.war"/>
+	  </tarfileset>
+	</tar>
+	<gzip zipfile="${dist.home}/${app.name}-${app.version}-bin.tar.gz" src="${dist.home}/${app.name}-${app.version}-bin.tar"/>
+	<delete file="${dist.home}/${app.name}-${app.version}-bin.tar"/>
+  </target>
+	
+  <!-- <target name="test" depends="dist">
+  	 <move file="${dist.home}/${app.name}.war" tofile="${dist.home}/${app.name}test.war"/> -->
+  <target name="test">
+	<exec executable="xterm"> <!-- Can't find another way to allow user input to stdin -->
+  	  <arg value="-e" />
+	  <arg value="${test.home}/litmus" />
+	</exec>
+  </target>
+	
+  <target name="snapshot" depends="dist">
+  	<move file="${dist.home}/${app.name}-${app.version}.tar.gz" tofile="${dist.home}/${app.name}-snapshot${current.time}.tar.gz"/>
+  </target>
+
+</project>
