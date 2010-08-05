@@ -336,7 +336,7 @@ public class Davis extends HttpServlet {
 		Log.log(Log.DEBUG, "#### Time after establishing session: "+(currentTime-profilingTimer.getTime()));
 		if (currentTime - lastLogTime >= MEMORYLOGPERIOD) {
 			lastLogTime = currentTime;
-			Log.log(Log.INFORMATION, getMemoryUsage());
+			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
 		}
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
