@@ -1110,7 +1110,7 @@
 			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash && !readOnly);
 			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous() && !inTrash);
 			enableActiveItem('moveButton', checkedItemsCount() != 0 && !isAnonymous() && !inTrash);
-			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
+//			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
 			enableActiveItem('deleteButton', checkedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
 			enableActiveItem('accessControlButton', checkedItemsCount() != 0);
@@ -2263,11 +2263,11 @@
 	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
- 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+<!--  	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
 	    		<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
 	    	</tr>
-	    </table>	
+	    </table>	-->
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
 	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURIComponent(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
