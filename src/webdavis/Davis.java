@@ -71,8 +71,8 @@ public class Davis extends HttpServlet {
 	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
-	static final String FORMAUTHCOOKIENAME = "formauth";
-	private Cookie formAuthCookie = null;
+	static final String FORMAUTHATTRIBUTENAME = "formauth";
+	private Cookie formAuthAttribute = null;
 	
 
 	public void init() throws ServletException {
@@ -190,11 +190,11 @@ public class Davis extends HttpServlet {
 		String pathInfo = request.getPathInfo();
 		String uri=request.getRequestURI();
 		String queryString = request.getQueryString();
-		formAuthCookie = null;
+		formAuthAttribute = null;
 		
 		if (request.getParameter("loginform") != null) {
 System.err.println("********** got loginform");
-System.err.println("request="+request);
+//System.err.println("request="+request);
 			String referrer = request.getHeader("referrer");
 			if (referrer == null)
 				referrer = request.getHeader("referer");
@@ -212,11 +212,13 @@ System.err.println("request="+request);
 //				System.err.println("##### name="+names.nextElement());
 //			}
 			String authorization = "Basic "+new String(Base64.encodeBase64((request.getParameter("username").trim()+":"+request.getParameter("password")).getBytes()));
-			Cookie cookie = new Cookie(FORMAUTHCOOKIENAME, authorization);
-			cookie.setPath("/");
-			cookie.setMaxAge(-1);	// Not persistent
-			cookie.setSecure(true);	// May as well insist it's only for https (shouldn't be here if not)
-			response.addCookie(cookie);
+//			Cookie cookie = new Cookie(FORMAUTHCOOKIENAME, authorization);
+//			cookie.setPath("/");
+//			cookie.setMaxAge(-1);	// Not persistent
+//			cookie.setSecure(true);	// May as well insist it's only for https (shouldn't be here if not)
+//			response.addCookie(cookie);
+			
+			request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
 			
 			response.addHeader("Location", referrer);
 			response.sendError(HttpServletResponse.SC_SEE_OTHER);
@@ -294,17 +296,18 @@ System.err.println("request="+request);
 		// Reset connection was requested?
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
-		String authorization = request.getHeader("Authorization");
+		String authorization = request.getHeader("Authorization"); 
 System.err.println("###############authorization="+authorization);
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
 		
-		if (authorization == null) {
-			Cookie cookie = null;
-			if ((cookie = DavisUtilities.getCookie(request, FORMAUTHCOOKIENAME)) != null) {
-				formAuthCookie = cookie;
-				System.err.println("%%%%%%%%%%%%%%%% Found cookie:"+cookie.getValue());
-				authorization = cookie.getValue();
+		if (authorization == null && isBrowser(request)) { 
+			String auth = null;
+			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) { // Check if there's an auth attribute stored in httpsession (from form-based login page)
+//				formAuthAttribute = cookie;
+System.err.println("%%%%%%%%%%%%%%%% Found auth attribute:"+auth);
+				authorization = auth;
+//				request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME); // Remove auth attribute now that we've retrieved it
 			}
 		}
 					
@@ -355,6 +358,8 @@ System.err.println("###############authorization="+authorization);
 			}
 		}
 		
+		request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME); // Don't need auth attribute (if there is one) anymore
+
 		HttpSession httpSession = request.getSession(false);
 		if (httpSession == null || reset) {
 			httpSession = request.getSession();
@@ -509,6 +514,20 @@ System.err.println("###############authorization="+authorization);
 			((MethodHandler) iterator.next()).init(config);
 		}
 	}
+	
+	private boolean isBrowser(HttpServletRequest request) {
+		
+		boolean browser = true;		
+		String method = request.getMethod();
+		String accept = request.getHeader("accept");
+System.err.println("in isBrowser(): method="+method+" accept="+accept);
+		if (Arrays.asList(WEBDAVMETHODS).contains(method))
+			browser = false;
+		else
+		if (accept == null)
+			browser = false;
+		return browser;
+	}
 
 	private void fail(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 //		if (server != null) {
@@ -536,15 +555,7 @@ System.err.println("###############authorization="+authorization);
 		
 		if (/*authorization == null &&*/ request.isSecure()) {
 System.err.println("##################### https - returning form");
-			boolean browser = true;		
-			String method = request.getMethod();
-			String accept = request.getHeader("accept");
-System.err.println("method="+method+" accept="+accept);
-			if (Arrays.asList(WEBDAVMETHODS).contains(method))
-				browser = false;
-			else
-			if (accept == null)
-				browser = false;
+			boolean browser = isBrowser(request);
 			if (browser) {
 String s = "You are using "+(browser ? "a browser" : "webdav");
 Log.log(Log.DEBUG, s);
@@ -558,11 +569,12 @@ System.err.println("request is"+request.getClass());
 				else
 					queryString = "?"+queryString;
 				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
-				if (formAuthCookie != null) {	// Form has been submitted and auth failed
+				if (request.getSession().getAttribute(FORMAUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
 					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");
 					substitutions.put("failedmessage", "<span style=\"color:red\">Authentication Failed</span><br><br><small>Please ensure your username and password are correct,<br>and that cookies are enabled in your browser.<br><br></small>");
-					formAuthCookie.setMaxAge(0); // Browser should delete this cookie
-					response.addCookie(formAuthCookie);
+//					formAuthAttribute.setMaxAge(0); // Browser should delete this cookie
+//					response.addCookie(formAuthAttribute);
+					request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME);
 				} else {
 					if ((request.getHeader("referrer") != null) || (request.getHeader("referer") != null)) // Cookies might be blocked for this site
 						substitutions.put("failedmessage", "<small>Please ensure cookies are enabled for this site.</small><br><br>");
@@ -572,7 +584,7 @@ System.err.println("request is"+request.getClass());
 				}
 				form = DavisUtilities.preprocess(form, substitutions);
 
-System.err.println("form="+form);
+//System.err.println("form="+form);
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
 				out.write(form, 0, form.length());

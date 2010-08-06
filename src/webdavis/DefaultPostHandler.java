@@ -840,14 +840,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				e.printStackTrace();
 			}
 		} else if (method.equalsIgnoreCase("logout")) { 
-			// Not useful at the moment because the browser caches username/password and establishes a new session automatically.
 			HttpSession session = request.getSession(true);
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
-			Cookie cookie = new Cookie(Davis.FORMAUTHCOOKIENAME, "");
-			cookie.setPath("/");
-			cookie.setMaxAge(0);	// Browser should delete cookie
-			response.addCookie(cookie);
+//TBD change this to new attirbute method			Cookie cookie = new Cookie(Davis.FORMAUTHATTRIBUTENAME, "");
+//			cookie.setPath("/");
+//			cookie.setMaxAge(0);	// Browser should delete cookie
+//			response.addCookie(cookie);
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
 			String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
 			if (request.isSecure())
