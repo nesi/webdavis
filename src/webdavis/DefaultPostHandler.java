@@ -841,6 +841,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 		} else if (method.equalsIgnoreCase("logout")) { 
 			HttpSession session = request.getSession(true);
+			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
 //TBD change this to new attirbute method			Cookie cookie = new Cookie(Davis.FORMAUTHATTRIBUTENAME, "");
@@ -848,11 +849,13 @@ public class DefaultPostHandler extends AbstractHandler {
 //			cookie.setMaxAge(0);	// Browser should delete cookie
 //			response.addCookie(cookie);
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
-			String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
-			if (request.isSecure())
-				returnURL = request.getRequestURI();	// Return to login page for original url
-			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg("https://"+request.getServerName()+"/Shibboleth.sso/Logout"
-					+(returnURL != null ? "?return="+returnURL : ""))+"}");
+			String redirect = request.getRequestURI();	// Return to login page for original url
+			String returnURL = "";
+			if (!request.isSecure()) {
+				redirect = "https://"+request.getServerName()+"/Shibboleth.sso/Logout";
+				returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+			}
+			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(redirect+" "+returnURL)+"}");
 		}
 		
 		ServletOutputStream op = null;

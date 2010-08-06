@@ -358,7 +358,7 @@ System.err.println("%%%%%%%%%%%%%%%% Found auth attribute:"+auth);
 			}
 		}
 		
-		request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME); // Don't need auth attribute (if there is one) anymore
+//		request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME); // Don't need auth attribute (if there is one) anymore
 
 		HttpSession httpSession = request.getSession(false);
 		if (httpSession == null || reset) {
