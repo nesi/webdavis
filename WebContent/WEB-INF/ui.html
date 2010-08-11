@@ -69,9 +69,9 @@
      	}
       	.dijitArrowButtonInner {display:none;}
 	</style>	
-<!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
-	<!--<script type="text/javascript" src="http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js"></script>-->
-	<script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
+	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
+<!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
+<!--<script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script> -->
     <script type="text/javascript">
     	dojo.require("dojox.grid.DataGrid");
     	dojo.require("dojo.data.ItemFileWriteStore");
@@ -94,6 +94,7 @@
 		var dynamicObjects = new Array();
 		var firstRender = true;
 		var pageLoaded = false;
+		var synchronous = false/*true*/;
 		
 		dojo.addOnLoad(function() {
 			if (!(""+dojo.version).indexOf("<parameter requireddojoversion/>") == 0)
@@ -111,6 +112,13 @@
 			createDomainRow();
 			borderContainer.layout();
 			listingStore.refreshDisplay(true);
+
+			if (dojo.isMozilla)
+				HTMLElement.prototype.click = function() { // Add a click() method to all elements
+					var evt = this.ownerDocument.createEvent('MouseEvents');
+					evt.initMouseEvent('click', true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+					this.dispatchEvent(evt);
+				} 
 		});
 
 		dojo.addOnUnload(function() {
@@ -745,7 +753,7 @@
 	      			loadedAlert("Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
-	    //		sync: true,
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1202,6 +1210,7 @@
 	      				loadedAlert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1228,6 +1237,7 @@
 			dojo.xhr("MKCOL", {
 				url: listingStore.getCurrentDirectory()+"/"+/*escape(*/dirName/*)*/,
 			    currentDirectory: listingStore.getCurrentDirectory(),
+	    		sync: synchronous,
 			    load: function(responseObject, ioArgs){
 						cursorBusy(false);
 						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
@@ -1264,6 +1274,7 @@
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
+	    		sync: synchronous,
 				handle: function(response, ioArgs){
 							showUploadDialog(false);
 							if (response.status == "success") {
@@ -1322,7 +1333,7 @@
 			cursorBusy(true);
 			dojo.xhr("DELETE", {
 				url: url+"?uihandle="+listingStore.uiHandle,
-//				sync: isTrash(url),
+	    		sync: synchronous,
 				headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -1382,10 +1393,8 @@
 			cursorBusy(true);
 			var data = "";
 			if (!rename)
-//				data = '[{"files":['+listCheckedItems()+']}]'; //json format is: [{"files":["file1","file2"...]}]		
 				data='[{"indices":['+listCheckedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			dojo.xhr("MOVE", {
-//				url: url,
 				url: url+"?uihandle="+listingStore.uiHandle,
 				headers: {
 			        "content-length": data.length,
@@ -1394,6 +1403,7 @@
 			    },
 			    putData: data, 
 			    currentDirectory: listingStore.getCurrentDirectory(),
+	    		sync: synchronous,
 			    load: function(responseObject, ioArgs){
 					cursorBusy(false);
 					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
@@ -1430,6 +1440,7 @@
 	      				loadedAlert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
+		    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1511,6 +1522,7 @@
 	      				loadedAlert("Error when updating metadata:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1543,6 +1555,7 @@
 	      			loadedAlert("Error when loading domain list:\n\n"+ioArgs.xhr.statusText);
 	      			return response;
 	    		},
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1561,6 +1574,7 @@
 	      				loadedAlert("Error when loading user list:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1586,6 +1600,7 @@
 	      				loadedAlert("Error when loading permissions:\n\n"+ioArgs.xhr.statusText);
 	      				return response;
 	    			},
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});		
 		}
@@ -1694,7 +1709,7 @@
 	       				cursorBusy(false);
 	      				return response;
 	    			},
-	 //   		sync: true,
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1736,7 +1751,7 @@
 	      				dojo.html.set(dojo.byId('replicasStatusField'), '');
 	      				return response;
 	    			},
-//	    		sync: true,
+	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});
 		}
@@ -1825,10 +1840,30 @@
 //			dojox.grid.DataGrid.prototype.onStyleRow.apply(this, arguments);
 //		}
 		
-		var enableDebugButton = false;
+		function debug() {
+			cursorBusy(true);	
+		  	dojo.xhrPost({
+	    		url: "?method=debug",
+	    		load: function(responseObject, ioArgs){    
+//						alert("debug successful");
+	 					cursorBusy(false);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				alert("debug failed:\n\n"+ioArgs.xhr.statusText);
+	       				cursorBusy(false);
+	      				return response;
+	    			},
+	    		sync: /*true*/false,
+	    		handleAs: "json"
+	  		});
+		}
+
+		var enableDebugButton = true;
 		function debugButtonHandler() {
 			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
-			alert("readonly:"+listingStore.readOnly);
+//			unitTests();
+			//debug();
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -1970,12 +2005,12 @@
 
 
 <!-- -------------- Dialogs -------------- -->
-<div dojoType="dijit.Dialog" jsId="dialogCreateDir" title="Create Directory">
+<div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
-	<input name="directory" jsId="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
+	<input name="directory" id="directoryInputBox" jsId="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="createDirectory()">Create</button> 
+		<button type="button" id="createDirCreateButton" onclick="createDirectory()">Create</button> 
 		<button type="button" onclick="dialogCreateDir.hide()">Cancel</button>
 	</div>
 </div>		
@@ -2118,7 +2153,8 @@
 	<table>
 		<tr>
 			<td align="center">Davis version: <parameter appversion/><br><br><small>
-			    Using Dojo version: <script>document.write(dojo.version)</script><br><br>
+			    Using Dojo version: <script>document.write(dojo.version)</script><br>
+			    Server type: <parameter servertype/>&nbsp;&nbsp;&nbsp;&nbsp;Jargon version string: <parameter jargonversion/><br><br>
 			    Davis UI last loaded <parameter uiloaddate/>&nbsp;&nbsp;&nbsp;&nbsp;UI handle: <span id="aboutUIHandle"></span><br>
 			    Browser: <script>document.write(navigator.userAgent)</script><br><br>
 			    Support contact: <parameter organisationsupport/></br></small>
@@ -2166,7 +2202,7 @@
 		        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
 										<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a>
 										<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a>
-										<!-- <a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a> -->
+										<a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a>
 		        					</td>
 		        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 	 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">

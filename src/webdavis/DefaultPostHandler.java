@@ -1,69 +1,71 @@
 package webdavis;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.Properties;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
-
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+//import junit.framework.TestCase;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
 
 import edu.sdsc.grid.io.DirectoryMetaData;
 import edu.sdsc.grid.io.FileMetaData;
 import edu.sdsc.grid.io.GeneralFileSystem;
 import edu.sdsc.grid.io.GeneralMetaData;
 import edu.sdsc.grid.io.MetaDataCondition;
+import edu.sdsc.grid.io.MetaDataField;
 import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.MetaDataTable;
+import edu.sdsc.grid.io.Namespace;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileOutputStream;
-import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileInputStream;
 import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.irods.IRODSMetaDataRecordList;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileInputStream;
 import edu.sdsc.grid.io.srb.SRBFileOutputStream;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 import edu.sdsc.grid.io.srb.SRBMetaDataRecordList;
 import edu.sdsc.grid.io.srb.SRBMetaDataSet;
-import edu.sdsc.grid.io.MetaDataField;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.fileupload.*;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.*;
+//import edu.sdsc.grid.io.irods.IRODSCommandsDeleteTest;
+//import edu.sdsc.jargon.testutils.AssertionHelper;
+//import edu.sdsc.jargon.testutils.TestingPropertiesHelper;
+//import edu.sdsc.jargon.testutils.filemanip.FileGenerator;
+//import edu.sdsc.jargon.testutils.icommandinvoke.IcommandInvoker;
+//import edu.sdsc.jargon.testutils.icommandinvoke.IrodsInvocationContext;
+//import edu.sdsc.jargon.testutils.icommandinvoke.icommands.ImkdirCommand;
+//import edu.sdsc.jargon.testutils.icommandinvoke.icommands.IputCommand;
+//import static edu.sdsc.jargon.testutils.TestingPropertiesHelper.GENERATED_FILE_DIRECTORY_KEY;
 
 /**
  * Default implementation of a handler for requests using the HTTP POST method.
@@ -763,17 +765,97 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("\n]}");
+		} else if (method.equalsIgnoreCase("debug")) { 
+			try {
+//				TestingPropertiesHelper testingPropertiesHelper = new TestingPropertiesHelper();
+//				Properties testingProperties = testingPropertiesHelper.getTestProperties();
+//				AssertionHelper assertionHelper = new AssertionHelper();
+//				String IRODS_TEST_SUBDIR_PATH = "DeleteTest";
+//				// test tuning variables
+//				String testFileNamePrefix = "del1200filethenquery";
+//				String testFileExtension = ".txt";
+//				String deleteCollectionSubdir = IRODS_TEST_SUBDIR_PATH + "/del1200noforcethenquerydir";
+//				int numberOfTestFiles = 1600;
+//
+//				System.err.println("properties="+testingProperties.toString());
+//				// create collection to zap, this is all just setup
+//				String deleteCollectionAbsPath = testingPropertiesHelper.buildIRODSCollectionAbsolutePathFromTestProperties(testingProperties, deleteCollectionSubdir);
+//				IrodsInvocationContext invocationContext = testingPropertiesHelper.buildIRODSInvocationContextFromTestProperties(testingProperties);
+//				IcommandInvoker invoker = new IcommandInvoker(invocationContext);
+//				ImkdirCommand imkdrCommand = new ImkdirCommand();
+//				imkdrCommand.setCollectionName(deleteCollectionAbsPath);
+//				System.err.println("user home="+System.getProperty("user.home"));
+//				System.err.println("deleteCollectionAbsPath="+deleteCollectionAbsPath);
+//				invoker.invokeCommandAndGetResultAsString(imkdrCommand);
+//
+//				IputCommand iputCommand = new IputCommand();
+//				String genFileName = "";
+//				String fullPathToTestFile = "";
+//
+//				// generate a number of files in the subdir
+//				for (int i = 0; i < numberOfTestFiles; i++) {
+//					genFileName = testFileNamePrefix + String.valueOf(i) + testFileExtension;
+//					fullPathToTestFile = FileGenerator.generateFileOfFixedLengthGivenName(testingProperties.getProperty(GENERATED_FILE_DIRECTORY_KEY) + "/", genFileName, 1);
+//
+//					iputCommand.setLocalFileName(fullPathToTestFile);
+//					iputCommand.setIrodsFileName(deleteCollectionAbsPath);
+//					iputCommand.setForceOverride(true);
+//					invoker.invokeCommandAndGetResultAsString(iputCommand);
+//				}
+//
+//				// now try and delete the collecton **** code to replicate Rowan's issue *****
+//				IRODSAccount account = testingPropertiesHelper.buildIRODSAccountFromTestProperties(testingProperties);
+//				IRODSFileSystem irodsFileSystem = new IRODSFileSystem(account);
+//				IRODSFile irodsFile = new IRODSFile(irodsFileSystem, testingPropertiesHelper.buildIRODSCollectionAbsolutePathFromTestProperties(testingProperties, deleteCollectionSubdir));
+//
+//				System.err.println("** Parent file before="+irodsFile.getParentFile());					
+//				boolean deleteResult = irodsFile.delete(false);
+//				System.err.println("** Parent file after="+irodsFile.getParentFile());					
+//				System.err.println("** Parent file exists="+irodsFile.getParentFile().exists());					
+//
+//
+//				//irodsFile.close();
+//				// now do a query
+//
+//
+//				String[] fields = { IRODSMetaDataSet.FILE_NAME,	IRODSMetaDataSet.DIRECTORY_NAME };
+//
+//
+//				MetaDataSelect[] select = IRODSMetaDataSet.newSelection(fields);
+//				MetaDataCondition[] condition = new MetaDataCondition[1];
+//				condition[0] = IRODSMetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME,
+//						MetaDataCondition.EQUAL, irodsFile.getAbsolutePath());
+//				MetaDataRecordList[] fileList = irodsFileSystem.query(condition, select, 100, Namespace.FILE, false);
+//
+//
+//				irodsFileSystem.close();
+//				TestCase.assertTrue("delete was unsuccessful", deleteResult);
+//				assertionHelper.assertIrodsFileOrCollectionDoesNotExist(deleteCollectionAbsPath);
+				
+//				IRODSCommandsDeleteTest tester = new IRODSCommandsDeleteTest();
+//				tester.setUpBeforeClass();
+//				tester.testDelete1200ByDeletingCollectionNoForceThenIssueGenQuery();
+			} catch (Exception e) {
+				System.err.println("************ Exception in debug method handler: "+e);
+				e.printStackTrace();
+			}
 		} else if (method.equalsIgnoreCase("logout")) { 
-			// Not useful at the moment because the browser caches username/password and establishes a new session automatically.
 			HttpSession session = request.getSession(true);
+			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
-			//if (shib)
+			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
+//TBD change this to new attirbute method			Cookie cookie = new Cookie(Davis.FORMAUTHATTRIBUTENAME, "");
+//			cookie.setPath("/");
+//			cookie.setMaxAge(0);	// Browser should delete cookie
+//			response.addCookie(cookie);
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
-//			json.append("{\n"+escapeJSONArg("items")+":[\n");
-			String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
-			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg("https://"+request.getServerName()+"/Shibboleth.sso/Logout"
-					+(returnURL != null ? "?return="+returnURL : ""))+"}");
-//			json.append("\n]}");
+			String redirect = request.getRequestURI();	// Return to login page for original url
+			String returnURL = "";
+			if (!request.isSecure()) {
+				redirect = "https://"+request.getServerName()+"/Shibboleth.sso/Logout";
+				returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+			}
+			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(redirect+" "+returnURL)+"}");
 		}
 		
 		ServletOutputStream op = null;

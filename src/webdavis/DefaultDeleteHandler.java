@@ -78,7 +78,6 @@ public class DefaultDeleteHandler extends AbstractHandler {
 //			} else
 //				throw new ServletException("Internal error deleting file: error parsing JSON");
 //		}
-		
         Iterator<RemoteFile> iterator = fileList.iterator();
         while (iterator.hasNext()) {
         	RemoteFile condemnedFile = iterator.next();

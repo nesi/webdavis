@@ -1,7 +1,9 @@
 package webdavis;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 
 import java.lang.reflect.Field;
@@ -16,6 +18,7 @@ import java.text.SimpleDateFormat;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
@@ -25,7 +28,9 @@ import java.util.SimpleTimeZone;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -95,6 +100,42 @@ public class DavisUtilities {
 
     private static MessageDigest digest;
 
+	// Define general parameter substitutions for HTML file (substitutions not related to a file or request)
+	public static Hashtable<String, String> substitutions = new Hashtable<String, String>();
+	static {
+		DavisConfig config = DavisConfig.getInstance();
+		substitutions.put("appversion", config.getAppVersion());
+		substitutions.put("authenticationrealm", config.getRealm());
+		substitutions.put("organisationname", config.getOrganisationName());
+		substitutions.put("organisationlogo", config.getOrganisationLogo());
+		substitutions.put("favicon", config.getFavicon());
+		substitutions.put("displayMetadata", config.getDisplayMetadata());
+		String s = config.getAnonymousUsername();
+		if (s == null)
+			s = "";
+		substitutions.put("anonymoususer", s);
+		String[] geom = null;
+		String geomString = config.getOrganisationLogoGeometry();
+		String w = "";
+		String h = "";
+		if (geomString != null) {
+			try {
+				geom = geomString.split("x");
+				w = geom[0];
+				h = geom[1];
+			} catch (Exception e) {}
+		}
+		substitutions.put("organisationlogowidth", w);
+		substitutions.put("organisationlogoheight", h);
+		substitutions.put("organisationsupport", config.getOrganisationSupport());
+		substitutions.put("helpurl", config.getHelpURL());
+		substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
+		substitutions.put("loginimage", config.getLoginImage());
+		substitutions.put("loginhelp", config.getLoginHelp());
+	}
+	
+	private static ServletConfig servletConfig;
+    
     static {
         TimeZone gmt = new SimpleTimeZone(0, "GMT");
         CREATION_FORMAT.setTimeZone(gmt);
@@ -109,8 +150,13 @@ public class DavisUtilities {
     
 	public static final int JARGON_MAX_QUERY_NUM = 100000;
 
+	
     private DavisUtilities() { }
-
+    
+    public static void init(ServletConfig config) {
+    	servletConfig = config;
+    }
+    
     /**
      * Returns the specified resource string value.
      *
@@ -346,6 +392,162 @@ public class DavisUtilities {
         return base.getOwnerDocument().createElement(tag);
     }
 
+//    public static String preprocess(String document) {
+//    	
+//		DavisConfig config = DavisConfig.getInstance();
+//
+//		// Define general parameter substitutions for HTML file (substitutions not related to a file or request)
+//		Hashtable<String, String> substitutions = new Hashtable<String, String>();
+//		substitutions.put("appversion", config.getAppVersion());
+//		substitutions.put("authenticationrealm", config.getRealm());
+//		substitutions.put("organisationname", config.getOrganisationName());
+//		substitutions.put("organisationlogo", config.getOrganisationLogo());
+//		substitutions.put("favicon", config.getFavicon());
+//		substitutions.put("displayMetadata", config.getDisplayMetadata());
+//		String s = config.getAnonymousUsername();
+//		if (s == null)
+//			s = "";
+//		substitutions.put("anonymoususer", s);
+//		String[] geom = null;
+//		String geomString = config.getOrganisationLogoGeometry();
+//		String w = "";
+//		String h = "";
+//		if (geomString != null) {
+//			try {
+//				geom = geomString.split("x");
+//				w = geom[0];
+//				h = geom[1];
+//			} catch (Exception e) {}
+//		}
+//		substitutions.put("organisationlogowidth", w);
+//		substitutions.put("organisationlogoheight", h);
+//		substitutions.put("organisationsupport", config.getOrganisationSupport());
+//		substitutions.put("helpurl", config.getHelpURL());
+//		substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
+//		
+//		document = substitute(document, substitutions);
+//		return document;
+//    }
+    
+    public static String preprocess(String document, Hashtable<String, String> substitutions) {
+    	
+		// Make substitutions in file
+		for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements();) {
+			String key = keys.nextElement();
+			String replacement = substitutions.get(key);
+			if (replacement == null)
+				replacement = "";
+			document = document.replace("<parameter " + key + "/>", replacement);
+		}
+		return document;
+    }
+    
+    public static String loadResource(String fileName) {
+    	
+		String result = "";
+		try {
+			InputStream stream = getResourceAsStream(fileName);
+			if (stream == null)
+				throw new IOException("can't open file");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+			char[] buffer = new char[1024];
+			int numRead = 0;
+			while ((numRead = reader.read(buffer)) != -1) {
+				String readData = String.valueOf(buffer, 0, numRead);
+				result += (readData);
+			}
+			reader.close();
+		} catch (IOException e) {
+			Log.log(Log.CRITICAL, "Failed to read file "+fileName+": " + e);
+		}
+		return result;
+    }
+    
+	public static InputStream getResourceAsStream(String location, Locale locale) {
+		
+		int index = location.indexOf('.');
+		String prefix = (index != -1) ? location.substring(0, index) : location;
+		String suffix = (index != -1) ? location.substring(index) : "";
+		String language = locale.getLanguage();
+		String country = locale.getCountry();
+		String variant = locale.getVariant();
+		InputStream stream = null;
+		if (!variant.equals("")) {
+			stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
+			if (stream != null)
+				return stream;
+		}
+		if (!country.equals("")) {
+			stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
+			if (stream != null)
+				return stream;
+		}
+		stream = getResourceAsStream(prefix + '_' + language + suffix);
+		if (stream != null)
+			return stream;
+		Locale secondary = Locale.getDefault();
+		if (!locale.equals(secondary)) {
+			language = secondary.getLanguage();
+			country = secondary.getCountry();
+			variant = secondary.getVariant();
+			if (!variant.equals("")) {
+				stream = getResourceAsStream(prefix + '_' + language + '_' + country + '_' + variant + suffix);
+				if (stream != null)
+					return stream;
+			}
+			if (!country.equals("")) {
+				stream = getResourceAsStream(prefix + '_' + language + '_' + country + suffix);
+				if (stream != null)
+					return stream;
+			}
+			stream = getResourceAsStream(prefix + '_' + language + suffix);
+			if (stream != null)
+				return stream;
+		}
+		return getResourceAsStream(location);
+	}
+
+	public static InputStream getResourceAsStream(String location) {
+		
+		InputStream stream = null;
+		try {
+			stream = servletConfig.getServletContext().getResourceAsStream(location);
+			if (stream != null)
+				return stream;
+		} catch (Exception ex) {}
+//		try {
+//			stream = getClass().getResourceAsStream(location);
+//			if (stream != null)
+//				return stream;
+//		} catch (Exception ex) {}
+		try {
+			ClassLoader loader = Thread.currentThread().getContextClassLoader();
+			if (loader != null)
+				stream = loader.getResourceAsStream(location);
+			if (stream != null)
+				return stream;
+		} catch (Exception ex) {}
+		try {
+			ClassLoader loader = ClassLoader.getSystemClassLoader();
+			if (loader != null)
+				stream = loader.getResourceAsStream(location);
+			if (stream != null)
+				return stream;
+		} catch (Exception ex) {}
+		return null;
+	}
+	
+	public static Cookie getCookie(HttpServletRequest request, String name) {
+
+		Cookie[] cookies = request.getCookies();
+		if (cookies == null)
+			return null;
+		for (Cookie cookie:cookies)
+			if (cookie.getName().equals(name)) 
+				return cookie;
+		return null;
+	}
+    
     /**
      * Dumps a DOM tree to a PrintStream
      *
