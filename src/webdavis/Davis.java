@@ -72,7 +72,7 @@ public class Davis extends HttpServlet {
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
-	private Cookie formAuthAttribute = null;
+//	private Cookie formAuthAttribute = null;
 	
 
 	public void init() throws ServletException {
@@ -190,7 +190,7 @@ public class Davis extends HttpServlet {
 		String pathInfo = request.getPathInfo();
 		String uri=request.getRequestURI();
 		String queryString = request.getQueryString();
-		formAuthAttribute = null;
+//		formAuthAttribute = null;
 		
 		if (request.getParameter("loginform") != null) {
 System.err.println("********** got loginform");
