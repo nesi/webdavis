@@ -10,7 +10,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -40,12 +39,10 @@ import edu.sdsc.grid.io.MetaDataRecordList;
 import edu.sdsc.grid.io.MetaDataSelect;
 import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.MetaDataTable;
-import edu.sdsc.grid.io.Namespace;
 import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileOutputStream;
 import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
-import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
@@ -127,8 +124,6 @@ public class DefaultPostHandler extends AbstractHandler {
 		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 		    	getFileList(request, davisSession, fileList, jsonArray);					
 
-				JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-//				JSONArray filesArray = (JSONArray)jsonObject.get("files");
 				GeneralFileSystem fileSystem = file.getFileSystem();
 				String domain = null;
 				String permission = null;
@@ -367,8 +362,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 
 			// Get and return metadata 
-			MetaDataCondition[] conditions;
-			MetaDataTable metaDataTable = null;
 			MetaDataSelect[] selects=null;
 			MetaDataRecordList[] rl = null;
 			json.append("{\n"+escapeJSONArg("items")+":[");
@@ -840,22 +833,29 @@ public class DefaultPostHandler extends AbstractHandler {
 				e.printStackTrace();
 			}
 		} else if (method.equalsIgnoreCase("logout")) { 
+//			Cookie[] cookies = request.getCookies();
+//			if (cookies != null) // Delete shib cookies if present
+//				for (Cookie cookie:cookies)
+//					if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) {
+//						cookie.setPath("/");
+//						cookie.setMaxAge(0);	// Browser should delete cookie
+//						response.addCookie(cookie);
+//					}
 			HttpSession session = request.getSession(true);
 			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
-//TBD change this to new attirbute method			Cookie cookie = new Cookie(Davis.FORMAUTHATTRIBUTENAME, "");
-//			cookie.setPath("/");
-//			cookie.setMaxAge(0);	// Browser should delete cookie
-//			response.addCookie(cookie);
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
-			String redirect = request.getRequestURI();	// Return to login page for original url
-			String returnURL = "";
-			if (!request.isSecure()) {
-				redirect = "https://"+request.getServerName()+"/Shibboleth.sso/Logout";
-				returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+			if (request.isSecure()) 
+				json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(request.getRequestURI())+"}");	// Return to login page for original url
+			else {
+				String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+				if (returnURL == null || returnURL.length() == 0)
+					returnURL = "";
+				else
+					returnURL = "?return="+returnURL;
+				json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg("https://"+request.getServerName()+"/Shibboleth.sso/Logout"+returnURL)+"}");
 			}
-			json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(redirect+" "+returnURL)+"}");
 		}
 		
 		ServletOutputStream op = null;
