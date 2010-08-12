@@ -104,7 +104,7 @@ public class AuthorizationProcessor {
 		return login(null, sharedToken, commonName, shibSessionID);
 	}
 	
-	private String getUsername(String authorization){
+	protected String getUsername(String authorization){
 		if (authorization.startsWith("Basic ")){
 			String authInfo;
 			try {

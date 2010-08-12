@@ -263,8 +263,11 @@ public class Davis extends HttpServlet {
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
 		String authorization = null;
-		if (!isBrowser(request))	// Only allow Basic auth for webdav 
-			authorization = request.getHeader("Authorization"); 
+		authorization = request.getHeader("Authorization"); 
+//if (authorization != null)
+//System.err.println("#########username="+authorizationProcessor.getUsername(authorization));
+		if (authorization != null && isBrowser(request) && !authorizationProcessor.getUsername(authorization).contains("\\"))	// Only allow basic auth for webdav and non-shib login
+			authorization = null;
 //System.err.println("###############authorization header found");
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
@@ -343,8 +346,12 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
-				Log.log(Log.WARNING, "Unhandled error: {0}", throwable);
-				throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
+				Log.log(Log.WARNING, "Unhandled error for {0} request to \"{1}\": {2}", new Object[] {request.getMethod(), request.getRequestURL(), throwable});
+				try {
+					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
+				} catch (StackOverflowError e) {
+					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was due to a stack overflow but details are unavailable.");
+				}
 				if (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe"))
 					throwable = new Throwable("Client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
 				if (throwable instanceof ServletException) {
@@ -484,12 +491,12 @@ public class Davis extends HttpServlet {
 		boolean browser = true;		
 		String method = request.getMethod();
 		String accept = request.getHeader("accept");
-		Log.log(Log.DEBUG, "in isBrowser(): method="+method+" accept="+accept);
 		if (Arrays.asList(WEBDAVMETHODS).contains(method))
 			browser = false;
 		else
 		if (accept == null)
 			browser = false;
+		Log.log(Log.DEBUG, "isBrowser(): "+browser+" (method="+method+" accept="+accept+")");
 		return browser;
 	}
 
