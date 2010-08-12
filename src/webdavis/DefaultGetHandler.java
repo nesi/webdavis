@@ -843,6 +843,8 @@ public class DefaultGetHandler extends AbstractHandler {
 				output.flush();
 			} catch (Exception e) {
 				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
+				if (checkGetError(response, e.getMessage()))
+					return;
 			}
 			if (input != null)
 				input.close();
@@ -881,12 +883,24 @@ public class DefaultGetHandler extends AbstractHandler {
 				output.flush();
 			} catch (Exception e) {
 				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
+				if (checkGetError(response, e.getMessage()))
+					return;
 			}
 			if (input != null)
 				input.close();
 		}
 		request.getSession().setMaxInactiveInterval(interval);
 		output.close();
+	}
+	
+	private boolean checkGetError(HttpServletResponse response, String message) throws IOException {
+		
+		if (message.contains("IRODS error occured -105000")) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND, "Item is unavailable because its resource is unavailable.  Please contact "+DavisConfig.getInstance().getOrganisationSupport());
+			response.flushBuffer();
+			return true;
+		}
+		return false;
 	}
 
 	private void writeFile(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
