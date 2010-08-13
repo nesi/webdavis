@@ -728,9 +728,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
 			};
 			MetaDataSelect selects[] = MetaDataSet.newSelection(new String[]{
+					IRODSMetaDataSet.RESOURCE_STATUS,
 					IRODSMetaDataSet.RESOURCE_NAME
 				});
 			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
+
     		if (fileDetails == null || fileDetails.length < 1) {
     			Log.log(Log.WARNING, "No clean replicas found for "+file.getAbsolutePath());
     		
@@ -751,12 +753,24 @@ public class DefaultGetHandler extends AbstractHandler {
     			Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
     		}
     		
-    		MetaDataRecordList p = fileDetails[0]; // Use first clean copy found
-// System.err.println("***************************doing query");
-// System.err.println("setting resource to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-    		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
- 			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-// System.err.println("file resource is "+((IRODSFile)file).getResource());
+    		boolean found = false;
+    		for (int i = 0; i < fileDetails.length; i++) {
+        		MetaDataRecordList p = fileDetails[i]; 
+  //System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
+        		if (p.getValue(IRODSMetaDataSet.RESOURCE_STATUS).equals("up")) {
+            		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+            		((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+            		found = true;
+            		break;
+        		}
+    		}
+    		if (!found) {
+    			String s= "No replicas are available because a resource is down: "+file.getAbsolutePath();
+    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
+    			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
+    			response.flushBuffer();
+    			return;
+    		}
 		}
 
 		String etag = DavisUtilities.getETag(file);
