@@ -300,7 +300,6 @@ public class Davis extends HttpServlet {
 		}
 		
 		DavisSession davisSession = null;
-		// Reset connection was requested?
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
 
@@ -308,9 +307,8 @@ public class Davis extends HttpServlet {
 		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 		if (request.isSecure() && isBrowser(request)) { 
 			String auth = null;
-			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) { 
+			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
 				authorization = auth;
-			}
 		}
 		
 		if (authorization == null)
@@ -345,9 +343,8 @@ public class Davis extends HttpServlet {
 				errorMsg = "Shibboleth login failed.";
 		}else
 		// If auth info in header but not shib (http or https)
-		if (authorization != null){
+		if (authorization != null)
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
-		} 
 		
 		// Anonymous access
 		if (davisSession == null && isAnonymousPath(pathInfo)){
