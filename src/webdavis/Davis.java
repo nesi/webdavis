@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
@@ -153,6 +155,44 @@ public class Davis extends HttpServlet {
 				+Runtime.getRuntime().totalMemory()+" bytes   max memory: "+Runtime.getRuntime().maxMemory()+" bytes";
 	}
 	
+	private String requestToString(HttpServletRequest request, int debugLevel) {
+		
+		String s = "";
+		
+		if (debugLevel < Log.INFORMATION) {
+			s += "    "+request.getMethod()+" request for "+request.getRequestURL()+"\n"+
+				 "    uri: "+request.getRequestURI()+"\n"+
+				 "    queryString: "+request.getQueryString()+"\n"+
+			     "    pathInfo: "+request.getPathInfo()+"\n"+
+				 "    headers:\n";
+			Enumeration headerNames = request.getHeaderNames();
+			while (headerNames.hasMoreElements()) {
+				String headerName = (String)headerNames.nextElement();
+				s += "        "+headerName+": ";
+				if (headerName.equalsIgnoreCase("Authorization"))
+					s += "censored\n";
+				else {
+					Enumeration headerValues = request.getHeaders(headerName);
+					while (headerValues.hasMoreElements()) {
+						s += headerValues.nextElement();
+						if (headerValues.hasMoreElements())
+							s += ", ";
+					}
+				}
+				//if (headerNames.hasMoreElements())
+					s += "\n";
+			}
+		
+			s += "    isSecure: "+request.isSecure()+"\n";
+			HttpSession httpSession = request.getSession(false);
+			if (httpSession != null) 
+				s += "    Active HTTP session: }"+httpSession.getId(); // This is the JSESSIONID cookie
+			else 
+				s += "    HTTP session not yet established";
+		}
+		return s;
+	}
+	
 	/**
 	 * Authenticates the user against a domain before forwarding the request to
 	 * the appropriate handler.
@@ -196,40 +236,41 @@ public class Davis extends HttpServlet {
 			pathInfo = "/";
 
 		profilingTimer = new Date();		
-		Log.log(Log.DEBUG, "#### Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
+		Log.log(Log.DEBUG, "Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
 
 		// Log request + header
-		Log.log(Log.INFORMATION, "================ Received {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
-		Log.log(Log.INFORMATION, "uri:"+uri);
-		Log.log(Log.INFORMATION, "queryString:"+queryString);
-		if (Log.getThreshold() < Log.INFORMATION) {
-			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
-			StringBuffer headers = new StringBuffer();
-			Enumeration headerNames = request.getHeaderNames();
-			while (headerNames.hasMoreElements()) {
-				String headerName = (String) headerNames.nextElement();
-				headers.append("    ").append(headerName).append(": ");
-				if (!headerName.equalsIgnoreCase("Authorization")){
-					Enumeration headerValues = request.getHeaders(headerName);
-					while (headerValues.hasMoreElements()) {
-						headers.append(headerValues.nextElement());
-						if (headerValues.hasMoreElements())
-							headers.append(", ");
-					}
-				}else 
-					headers.append("censored");
-				if (headerNames.hasMoreElements())
-					headers.append("\n");
-			}
-			Log.log(Log.DEBUG, "Headers:\n{0}", headers);
-			Log.log(Log.DEBUG, "isSecure:{0}", request.isSecure());
-			HttpSession httpSession = request.getSession(false);
-			if (httpSession != null) {
-				Log.log(Log.DEBUG, "Active HTTP session: {0}", httpSession.getId()); // This is the JSESSIONID cookie
-			} else {
-				Log.log(Log.DEBUG, "HTTP session not yet established.");
-			}
-		}
+//		Log.log(Log.INFORMATION, "\nReceived {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
+		Log.log(Log.INFORMATION, "==========> RECEIVED REQUEST:\n"+requestToString(request, Log.getThreshold()));
+//		Log.log(Log.INFORMATION, "uri:"+uri);
+//		Log.log(Log.INFORMATION, "queryString:"+queryString);
+//		if (Log.getThreshold() < Log.INFORMATION) {
+//			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
+//			StringBuffer headers = new StringBuffer();
+//			Enumeration headerNames = request.getHeaderNames();
+//			while (headerNames.hasMoreElements()) {
+//				String headerName = (String) headerNames.nextElement();
+//				headers.append("    ").append(headerName).append(": ");
+//				if (!headerName.equalsIgnoreCase("Authorization")){
+//					Enumeration headerValues = request.getHeaders(headerName);
+//					while (headerValues.hasMoreElements()) {
+//						headers.append(headerValues.nextElement());
+//						if (headerValues.hasMoreElements())
+//							headers.append(", ");
+//					}
+//				}else 
+//					headers.append("censored");
+//				if (headerNames.hasMoreElements())
+//					headers.append("\n");
+//			}
+//			Log.log(Log.DEBUG, "Headers:\n{0}", headers);
+//			Log.log(Log.DEBUG, "isSecure:{0}", request.isSecure());
+//			HttpSession httpSession = request.getSession(false);
+//			if (httpSession != null) {
+//				Log.log(Log.DEBUG, "Active HTTP session: {0}", httpSession.getId()); // This is the JSESSIONID cookie
+//			} else {
+//				Log.log(Log.DEBUG, "HTTP session not yet established.");
+//			}
+//		}
 		
 		DavisConfig config=DavisConfig.getInstance();
 		String contextBase = config.getContextBase();
@@ -262,23 +303,23 @@ public class Davis extends HttpServlet {
 		// Reset connection was requested?
 		boolean reset=false;
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
+
 		String authorization = null;
-		authorization = request.getHeader("Authorization"); 
-//if (authorization != null)
-//System.err.println("#########username="+authorizationProcessor.getUsername(authorization));
-		if (authorization != null && isBrowser(request) && !authorizationProcessor.getUsername(authorization).contains("\\"))	// Only allow basic auth for webdav and non-shib login
-			authorization = null;
-//System.err.println("###############authorization header found");
-		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
-			reset=true;
-		
-		if (authorization == null && isBrowser(request)) { 
+		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
+		if (request.isSecure() && isBrowser(request)) { 
 			String auth = null;
-			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) { // Check if there's an auth attribute stored in httpsession (from form-based login page)
-//System.err.println("%%%%%%%%%%%%%%%% Found auth attribute");
+			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) { 
 				authorization = auth;
 			}
 		}
+		
+		if (authorization == null)
+			// Check for basic auth header
+			authorization = request.getHeader("Authorization"); 
+
+		// Reset request?
+		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
+			reset=true;
 					
 		String errorMsg = null;
 		// If no auth info in header and http connection - should be shib
@@ -335,7 +376,7 @@ public class Davis extends HttpServlet {
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
 		long currentTime = new Date().getTime();
-		Log.log(Log.DEBUG, "#### Time after establishing session: "+(currentTime-profilingTimer.getTime()));
+		Log.log(Log.DEBUG, "Time after establishing session: "+(currentTime-profilingTimer.getTime()));
 		if (currentTime - lastLogTime >= MEMORYLOGPERIOD) {
 			lastLogTime = currentTime;
 			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
@@ -346,14 +387,18 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
-				Log.log(Log.WARNING, "Unhandled error for {0} request to \"{1}\": {2}", new Object[] {request.getMethod(), request.getRequestURL(), throwable});
-				try {
-					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
-				} catch (StackOverflowError e) {
-					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+".\n\nError was due to a stack overflow but details are unavailable.");
-				}
-				if (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe"))
-					throwable = new Throwable("Client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\nError was: "+throwable, throwable.getCause());
+				StringWriter trace = new StringWriter();
+				throwable.printStackTrace(new PrintWriter(trace));
+				Log.log(Log.WARNING, "**** UNHANDLED ERROR for:\n"+requestToString(request, Log.DEBUG)+"\n\n    Exception was: "+trace);
+				String firstStackElement = "";
+				StackTraceElement[] elements = throwable.getStackTrace();
+				if (elements.length > 0)
+					firstStackElement = "at "+elements[0].getClassName()+"."+elements[0].getMethodName()+"("+elements[0].getFileName()+":"+elements[0].getLineNumber()+")";
+//				if (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe"))
+				if (throwable.getMessage().contains("Broken pipe") || (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe")))
+					throwable = new Throwable("Your client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\n    Error was: "+throwable, throwable.getCause());
+				else
+					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+"\n\n    Error was: "+throwable+"\n        "+firstStackElement+"\n        ------------------------\n", throwable.getCause());
 				if (throwable instanceof ServletException) {
 					throw (ServletException) throwable;
 				} else if (throwable instanceof IOException) {
@@ -370,7 +415,7 @@ public class Davis extends HttpServlet {
 			Log.log(Log.INFORMATION, "Unrecognized method: " + request.getMethod());
 			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 		}
-		Log.log(Log.DEBUG, "#### Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
+		Log.log(Log.DEBUG, "Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
 	}
 
 	/**

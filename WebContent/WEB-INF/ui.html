@@ -292,7 +292,7 @@
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
 				},
 				gotoDirectory: function(dir, addToHistory) {
-					if (!listingStore.isValid()) // Don't another chdir if already doing one 
+					if (!listingStore.isValid()) // Don't do another chdir if already doing one 
 						return;
 					dir = unescapePath(dir); // Seems to be necessary when apache is in front of jetty - restores forward slashes in path
 					listingStore.inherited("gotoDirectory", arguments);
@@ -1861,7 +1861,7 @@
 
 		var enableDebugButton = true;
 		function debugButtonHandler() {
-			//listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
+		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 //			unitTests();
 			//debug();
 		}

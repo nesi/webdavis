@@ -365,7 +365,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			return;
 		}
 		if (!file.isFile()) { // Directory
-			Log.log(Log.DEBUG, "#### Time before creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
+			Log.log(Log.DEBUG, "Time before creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 			String method = request.getParameter("method");
 			if (method != null && method.equals("dojoquery")) { // Dojo QueryReadStore request (ie ajax directory listing)
 				if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem) {
@@ -484,7 +484,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				op.flush();
 				op.close();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
+				Log.log(Log.DEBUG, "Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 				return;
 			}
 			String format = request.getParameter("format");
@@ -515,7 +515,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				op.flush();
 				op.close();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
+				Log.log(Log.DEBUG, "Time after creating dynamic json: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 				return;
 			}
 			if (request.getParameter("uiold") == null) { // Use new UI
@@ -719,7 +719,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				collector.writeTo(response.getOutputStream());
 				response.flushBuffer();
 
-				Log.log(Log.DEBUG, "#### Time after creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
+				Log.log(Log.DEBUG, "Time after creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 
 			} catch (TransformerException ex) {
 				throw new IOException(ex.getMessage());
