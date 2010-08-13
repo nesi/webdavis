@@ -1,0 +1,30 @@
+#!/bin/bash
+ 
+usage="usage: `basename $0` {URL {username {password}}}"
+defaultURL=https://data-dev.eresearchsa.edu.au/ARCSDEV/home/public
+
+if [ "$#" -gt 0 ]; then
+    URL=$1; shift
+	if [ "$#" -gt 0 ]; then
+    	username=$1; shift
+		if [ "$#" -gt 0 ]; then
+    		password=$1; shift
+    	fi
+    fi
+fi
+
+#LITMUS=/usr/local/bin/litmus
+LITMUS=litmus
+
+if [ "X$URL" = "X" ]; then
+	read -p "URL [$defaultURL]: " URL
+	URL=${URL:-$defaultURL}
+fi
+if [ "X$username" = "X" ]; then
+	read -r -p "username: " username
+fi
+if [ "X$password" = "X" ]; then
+	read -p "password: " -s password
+fi
+$LITMUS "$URL" "$username" "$password"
+read -p "Press Enter to exit..." 
