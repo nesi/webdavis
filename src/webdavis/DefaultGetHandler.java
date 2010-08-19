@@ -764,8 +764,8 @@ public class DefaultGetHandler extends AbstractHandler {
     		boolean found = false;
     		for (int i = 0; i < fileDetails.length; i++) {
         		MetaDataRecordList p = fileDetails[i]; 
-  //System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
-        		if (p.getValue(IRODSMetaDataSet.RESOURCE_STATUS).equals("up")) {
+//  System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
+        		if (((String)p.getValue(IRODSMetaDataSet.RESOURCE_STATUS)).toLowerCase().contains("up")) {
             		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
             		((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
             		found = true;
