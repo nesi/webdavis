@@ -94,8 +94,14 @@
 		var dynamicObjects = new Array();
 		var firstRender = true;
 		var pageLoaded = false;
+		var queryParams;
 		
 		dojo.addOnLoad(function() {
+			queryParams = dojo.queryToObject(window.location.search.slice(1));		
+			if (queryParams.embed == "true") {
+				dojo.style(dojo.byId("topContainer"), "height", "0px");
+				borderContainer.layout();
+			}
 			if (!(""+dojo.version).indexOf("<parameter requireddojoversion/>") == 0)
 				alert("Internal error: dojo version is "+dojo.version+" - required version is <parameter requireddojoversion/>");
 			pageLoaded = true;
@@ -2147,8 +2153,8 @@
 <!-- ---------Main body------------ -->			
 <!--<div style="width: 400px; height: 500px; border: 1px solid blue;" id="destinationGrid" jsId="destinationGrid" dojoType="dojox.grid.DataGrid" structure="destinationLayout" store="destinationStore" rowsPerPage="50"></div>-->
 <div jsId="borderContainer" dojoType="dijit.layout.BorderContainer" style="width: 100%; height: 100%; border: 0px; padding-top: 0px; padding-bottom: 0px;">
-	<div jsId="topContainer" dojoType="dijit.layout.ContentPane" region="top" style="border: 0px;">
-		<table id="header" width="100%" border="0" cellspacing="0" cellpadding="0">
+	<div jsId="topContainer" id="topContainer" dojoType="dijit.layout.ContentPane" region="top" style="border: 0px;">
+		<table id="header" width="100%" border="0" cellspacing="0" cellpadding="0" ">
 			<tr>
 	    		<td valign="bottom">
 					<h1 class="text"><img src="<parameter organisationlogo/>" alt="" width="<parameter organisationlogowidth/>" height="<parameter organisationlogoheight/>" />&nbsp;<parameter authenticationrealm/></h1>
