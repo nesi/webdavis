@@ -797,18 +797,31 @@ public class DefaultGetHandler extends AbstractHandler {
 		long offset = 0;
 		if (startingPoint == null)
 			startingPoint = request.getHeader("Range");
+		startingPoint = null;  // Disable ranges for now because Davis can't handle multiple ranges. FF uses them for (at least) PDF downloads and the download fails
 		if (startingPoint != null) {
-			try {
-				String offsetString = startingPoint.substring(startingPoint.indexOf("bytes") + 6, startingPoint.indexOf("-"));
-				Log.log(Log.DEBUG, "offset:" + offsetString);
-				offset = Long.parseLong(offsetString);
-				response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
-				response.setHeader("Content-Range", startingPoint.substring(0,6) + offset + "-" + file.length() + "/" + file.length());
-				response.setContentLength((int) (file.length() - offset));
-			} catch (Exception _e) {
-			}
+//			if (startingPoint.contains(",")) {
+//				try {
+//	//				Log.log(Log.DEBUG, "offset:" + offsetString);
+//	//				offset = Long.parseLong(offsetString);
+////					response.setHeader("Accept-Ranges", "none");
+//					offset = 0;
+//					response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+//					response.setHeader("Content-Range", offset + "-" + file.length() + "/" + file.length());
+//					response.setContentLength((int) (file.length() - offset));
+//				} catch (Exception _e) {
+//				}
+//			} else
+				try {
+					String offsetString = startingPoint.substring(startingPoint.indexOf("bytes") + 6, startingPoint.indexOf("-"));
+					Log.log(Log.DEBUG, "offset:" + offsetString);
+					offset = Long.parseLong(offsetString);
+					response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
+					response.setHeader("Content-Range", startingPoint.substring(0,6) + offset + "-" + file.length() + "/" + file.length());
+					response.setContentLength((int) (file.length() - offset));
+				} catch (Exception _e) {
+				}
 		} else {
-			response.setHeader("Accept-Ranges", "bytes");
+			response.setHeader("Accept-Ranges", /*"bytes"*/"none");
 		}
 		int bufferSize = (int) (file.length() / 100);
 		// minimum buf size of 50KiloBytes
@@ -849,6 +862,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
 				if (checkGetError(response, e.getMessage()))
 					return;
+				Log.log(Log.WARNING, "Exception was "+e);
 			}
 			if (input != null)
 				input.close();
@@ -881,7 +895,7 @@ public class DefaultGetHandler extends AbstractHandler {
 						request.getSession().setMaxInactiveInterval(request.getSession().getMaxInactiveInterval() + 300);
 						Log.log(Log.DEBUG, "session time is extended to:" + request.getSession().getMaxInactiveInterval());
 					}
-					// Log.log(Log.DEBUG, "read "+count);
+					//Log.log(Log.DEBUG, "read "+count);
 					output.write(buf, 0, count);
 				}
 				output.flush();
@@ -889,6 +903,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				Log.log(Log.WARNING, "remote peer is closed: " + e.getMessage());
 				if (checkGetError(response, e.getMessage()))
 					return;
+				Log.log(Log.WARNING, "Exception was "+e);
 			}
 			if (input != null)
 				input.close();
@@ -899,7 +914,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	
 	private boolean checkGetError(HttpServletResponse response, String message) throws IOException {
 		
-		if (message.contains("IRODS error occured -105000")) {
+		if ((message != null) && message.contains("IRODS error occured -105000")) {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND, "Item is unavailable because its resource is unavailable.  Please contact "+DavisConfig.getInstance().getOrganisationSupport());
 			response.flushBuffer();
 			return true;
