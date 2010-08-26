@@ -1132,8 +1132,8 @@ public abstract class AbstractHandler implements MethodHandler {
 	public boolean checkClientInSync(HttpServletResponse response, Throwable e) throws IOException {
 		
 		if (e.getCause() instanceof NoSuchFieldException) {
-			Log.log(Log.ERROR, "Client appears to have lost its connection with the server: "+e.getMessage());
-			response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server");
+			Log.log(Log.ERROR, "Client is out of sync with the server (server may have been restarted): "+e.getMessage());
+			response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
 			response.flushBuffer();
 			return false;
 		}
