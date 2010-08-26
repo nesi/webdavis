@@ -121,8 +121,13 @@ public class DefaultPostHandler extends AbstractHandler {
 			
 			// Write permissions for given items
 			if (jsonArray != null) {	
-		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-		    	getFileList(request, davisSession, fileList, jsonArray);					
+		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();		    						
+		    	try {
+		    		getFileList(request, davisSession, fileList, jsonArray);
+		    	} catch (ServletException e) {
+		    		if (!checkClientInSync(response, e))
+		    			return;
+		    	}
 
 				GeneralFileSystem fileSystem = file.getFileSystem();
 				String domain = null;
@@ -290,8 +295,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (jsonArray != null) {	
 
 			    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-			    	getFileList(request, davisSession, fileList, jsonArray);					
-					
+			    	try {
+			    		getFileList(request, davisSession, fileList, jsonArray);
+			    	} catch (ServletException e) {
+			    		if (!checkClientInSync(response, e))
+			    			return;
+			    	}
+				
 					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
 //					JSONArray filesArray = (JSONArray)jsonObject.get("files");
 					JSONArray metadataArray = (JSONArray)jsonObject.get("metadata");
@@ -619,7 +629,13 @@ public class DefaultPostHandler extends AbstractHandler {
 		} else if (method.equalsIgnoreCase("execbutton")) {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-	    	boolean batch = getFileList(request, davisSession, fileList, jsonArray); 
+	    	boolean batch = true;
+	    	try {
+	    		batch = batch = getFileList(request, davisSession, fileList, jsonArray);
+	    	} catch (ServletException e) {
+	    		if (!checkClientInSync(response, e))
+	    			return;
+	    	}
 //System.err.println("file list="+fileList);
 			String buttonName = request.getParameter("button");
 
@@ -689,7 +705,13 @@ public class DefaultPostHandler extends AbstractHandler {
 			String deleteResource = request.getParameter("delete");
 			String replicateResource = request.getParameter("replicate");
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-	    	/*boolean batch = */getFileList(request, davisSession, fileList, getJSONContent(request)); 
+	    	try {
+	    		getFileList(request, davisSession, fileList, getJSONContent(request));
+	    	} catch (ServletException e) {
+	    		if (!checkClientInSync(response, e))
+	    			return;
+	    	}
+
 	        Iterator<RemoteFile> iterator = fileList.iterator();
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 	        while (iterator.hasNext()) {

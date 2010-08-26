@@ -45,12 +45,17 @@ public class DefaultDeleteHandler extends AbstractHandler {
      * @throws ServletException If an application error occurs.
      * @throws IOException If an IO error occurs while handling the request.
      */
-    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
-    	throws ServletException, IOException {
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
     	   	
         response.setContentType("text/html; charset=\"utf-8\"");
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-    	boolean batch = getFileList(request, davisSession, fileList, getJSONContent(request));
+    	boolean batch = true;
+    	try {
+    		batch = getFileList(request, davisSession, fileList, getJSONContent(request));
+    	} catch (ServletException e) {
+    		if (!checkClientInSync(response, e))
+    			return;
+    	}
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
     	
 //    	boolean batch = false;  	

@@ -1030,9 +1030,9 @@ public abstract class AbstractHandler implements MethodHandler {
     
     	boolean batch = false;
     	RemoteFile uriFile = getRemoteFile(request, davisSession);
-        if (request.getContentLength() <= 0) {
+        if (request.getContentLength() <= 0) 
         	fileList.add(uriFile);
-        } else {
+        else {
         	batch = true;
 //	        InputStream input = request.getInputStream();
 //	        byte[] buf = new byte[request.getContentLength()];
@@ -1060,8 +1060,8 @@ public abstract class AbstractHandler implements MethodHandler {
 //    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
     		CachedFile[] files = davisSession.getCacheByID(cacheID);
     		if (files == null) {
-    			Log.log(Log.ERROR, "Internal error reading file list: files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getCache().keySet());
-    			throw new ServletException("Internal error reading file list: files cache for cacheID="+cacheID+" not found");
+    			Log.log(Log.ERROR, "Files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getCache().keySet());
+    			throw new ServletException("Files cache for cacheID="+cacheID+" not found", new NoSuchFieldException());
     		}
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
@@ -1127,6 +1127,17 @@ public abstract class AbstractHandler implements MethodHandler {
 		Log.log(Log.ERROR, "Davis appears to have lost its connection with the server: "+message);
 		response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "The server has dropped its connection.");
 		response.flushBuffer();
+	}
+
+	public boolean checkClientInSync(HttpServletResponse response, Throwable e) throws IOException {
+		
+		if (e.getCause() instanceof NoSuchFieldException) {
+			Log.log(Log.ERROR, "Client appears to have lost its connection with the server: "+e.getMessage());
+			response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server");
+			response.flushBuffer();
+			return false;
+		}
+		return true;
 	}
 
     public abstract void service(HttpServletRequest request,

@@ -784,6 +784,10 @@
 				case 404:   return "This collection does not exist or you don't have permission to access it.";
 				case 405:	return "path already exists";
 				case 409:	return "You cannot put items here"; 
+				case 410:	{
+								loadedAlert(message+" - this page will be reloaded");
+								window.location.reload();
+							}
 				case 412: 	return "destination already exists";
 				default: 	return message;
 			}
@@ -1528,7 +1532,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				loadedAlert("Error when updating metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert(errorMessage("metadata", ioArgs.xhr.status, "Error when updating metadata:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
 	    			},
 	    		sync: synchronous,
@@ -1606,7 +1610,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				loadedAlert("Error when loading permissions:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert(errorMessage("permission", ioArgs.xhr.status, "Error when loading permissions:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
 	    			},
 	    		sync: synchronous,
