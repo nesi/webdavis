@@ -70,6 +70,7 @@ public class Davis extends HttpServlet {
 	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
 	static long lastLogTime = 0;  // Used to log memory usage on a regular basis
 	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
+	static long headroom = Long.MAX_VALUE;
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
@@ -151,7 +152,7 @@ public class Davis extends HttpServlet {
 
 	protected String getMemoryUsage() {
 		
-		return "free memory: "+Runtime.getRuntime().freeMemory()+" bytes   total memory: "
+		return "free memory: "+Runtime.getRuntime().freeMemory()+" bytes   headroom: "+headroom+" bytes   total memory: "
 				+Runtime.getRuntime().totalMemory()+" bytes   max memory: "+Runtime.getRuntime().maxMemory()+" bytes";
 	}
 	
@@ -374,10 +375,14 @@ public class Davis extends HttpServlet {
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
 		long currentTime = new Date().getTime();
 		Log.log(Log.DEBUG, "Time after establishing session: "+(currentTime-profilingTimer.getTime()));
+
+		if (Runtime.getRuntime().freeMemory() < headroom)
+			headroom = Runtime.getRuntime().freeMemory();
 		if (currentTime - lastLogTime >= MEMORYLOGPERIOD) {
 			lastLogTime = currentTime;
 			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
 		}
+		
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
 			try {
