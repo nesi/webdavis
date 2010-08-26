@@ -335,6 +335,7 @@
 					}
 					if (doMetadata)
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
+					borderContainer.layout();
 				}
 			});
 			listingStore.setURL(escape("<parameter url/>"), false),
