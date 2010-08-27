@@ -383,6 +383,16 @@ public class Davis extends HttpServlet {
 			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
 		}
 		
+		// Check that the client's uihandle is known to us. If not, send an error so that UI can reload window.
+		String cacheID = request.getParameter("uihandle");
+		if (cacheID != null && !cacheID.equals("null")) 
+			if (davisSession.getCacheByID(cacheID) == null) {
+				Log.log(Log.WARNING, "Files cache for client with cacheID="+cacheID+" not found (server may have been restarted). Cache keys:"+davisSession.getCache().keySet());
+				response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+				response.flushBuffer();
+				return;
+			}
+
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
 			try {

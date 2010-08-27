@@ -32,6 +32,7 @@ public class DavisSession implements Serializable{
 
 	private Hashtable<String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
 
+
 	public CachedFile[] getCacheByID(String cacheID) {
 		
 		return fileListCache.get(cacheID);
@@ -42,7 +43,6 @@ public class DavisSession implements Serializable{
 		return fileListCache;
 	}
 	
-
 	public void disconnect() throws RuntimeException {
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){

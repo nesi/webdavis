@@ -1057,7 +1057,6 @@ public abstract class AbstractHandler implements MethodHandler {
 		}
     	if (batch && fileList.size() == 0) {
     		String cacheID = request.getParameter("uihandle");
-//    		DefaultGetHandler getHandler = (DefaultGetHandler)davis.getHandler("GET");
     		CachedFile[] files = davisSession.getCacheByID(cacheID);
     		if (files == null) {
     			Log.log(Log.ERROR, "Files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getCache().keySet());
@@ -1129,16 +1128,16 @@ public abstract class AbstractHandler implements MethodHandler {
 		response.flushBuffer();
 	}
 
-	public boolean checkClientInSync(HttpServletResponse response, Throwable e) throws IOException {
-		
-		if (e.getCause() instanceof NoSuchFieldException) {
-			Log.log(Log.ERROR, "Client is out of sync with the server (server may have been restarted): "+e.getMessage());
-			response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
-			response.flushBuffer();
-			return false;
-		}
-		return true;
-	}
+//	public boolean checkClientInSync(HttpServletResponse response, Throwable e) throws IOException {
+//		
+//		if (e.getCause() instanceof NoSuchFieldException) {
+//			Log.log(Log.ERROR, "Client is out of sync with the server (server may have been restarted): "+e.getMessage());
+//			response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+//			response.flushBuffer();
+//			return false;
+//		}
+//		return true;
+//	}
 
     public abstract void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)

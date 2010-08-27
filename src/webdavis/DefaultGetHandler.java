@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.ProtocolException;
 import java.net.SocketException;
 
 import java.text.SimpleDateFormat;
@@ -319,19 +320,30 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		
 		if (!file.exists()) { // File doesn't exist
-			try {
+//			try {
 				boolean connected = true;
 				String message = "";
-				try {
-					file.getPermissions(); // Test server connection
-				} catch (SocketException e) {
-					connected = false;
-					message = e.getMessage();
-				} catch (IRODSException e) {
-					message = e.getMessage();
-           			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
-           				connected = false;
+				if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
+					try {
+						((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+					} catch (ProtocolException e) {
+						connected = false;
+						message = e.getMessage();
+					} catch (SocketException e) {
+						connected = false;
+						message = e.getMessage();
+					}
 				}
+//				try {  //### Not needed anymore because of above test?
+//					file.getPermissions(); // Test server connection
+//				} catch (SocketException e) {
+//					connected = false;
+//					message = e.getMessage();
+//				} catch (IRODSException e) {
+//					message = e.getMessage();
+//           			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
+//           				connected = false;
+//				}
 				if (!connected) {
 					lostConnection(response, message);
 					return;
@@ -339,11 +351,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error.");					
 				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " does not exist.");
 				response.flushBuffer();
-			} catch (IOException e) {
-				if (e.getMessage().equals("Closed"))
-					Log.log(Log.WARNING, file.getAbsolutePath() + ": connection to server may have been lost.");
-				throw (e);
-			}
+//			} catch (IOException e) {  //### Not needed anymore because of above test?
+//				if (e.getMessage() != null && e.getMessage().equals("Closed"))
+//					Log.log(Log.WARNING, file.getAbsolutePath() + ": connection to server may have been lost.");
+//				throw (e);
+//			}
 			return;
 		}
 		

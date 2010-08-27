@@ -50,12 +50,12 @@ public class DefaultDeleteHandler extends AbstractHandler {
         response.setContentType("text/html; charset=\"utf-8\"");
     	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
     	boolean batch = true;
-    	try {
+//    	try {
     		batch = getFileList(request, davisSession, fileList, getJSONContent(request));
-    	} catch (ServletException e) {
-    		if (!checkClientInSync(response, e))
-    			return;
-    	}
+//    	} catch (ServletException e) {
+//    		if (!checkClientInSync(response, e))
+//    			return;
+//    	}
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
     	
 //    	boolean batch = false;  	

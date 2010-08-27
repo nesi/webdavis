@@ -294,6 +294,7 @@
 //						checkAll(false);
 						listingStore.setLastURL(listingStore.urlFields);
 						listingStore.refreshDisplay(true);
+						borderContainer.layout();
 						firstRender = false;
 					} else
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
@@ -335,7 +336,6 @@
 					}
 					if (doMetadata)
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
-					borderContainer.layout();
 				}
 			});
 			listingStore.setURL(escape("<parameter url/>"), false),
@@ -481,40 +481,15 @@
 		}
 		
 		function resetPermissionsStore(fast) {
-//			if (fast) {
-//				if (permissionsGrid.rowCount == 0) 
-//					return;
-////				permissionsGrid.selection.selectRange(0, permissionsGrid.rowCount-1);
-////				permissionsGrid.removeSelectedRows();
-//				for (var i = 0; i < permissionsStore._arrayOfAllItems.length; i++) 
-//					permissionsStore.deleteItem(permissionsStore._arrayOfAllItems[i]);
-//				return;
-//			}
 			permissionsStore = resetStore(permissionsStore, permissionsGrid, permissionsLayout, fast);
-//			permissionsStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});	
-//			permissionsGrid.setStructure(permissionsLayout);	
-//			permissionsGrid.setStore(permissionsStore);	
 		}
 		
 		function resetMetadataStore(fast) {
-//			if (fast) {
-//				if (metadataGrid.rowCount == 0) 
-//					return;
-//				metadataGrid.selection.selectRange(0, metadataGrid.rowCount-1);
-//				metadataGrid.removeSelectedRows();
-//				return;
-//			}
 			metadataStore = resetStore(metadataStore, metadataGrid, metadataLayout, fast);
-//			metadataStore=new dojo.data.ItemFileWriteStore({data: {items:[]}}); 
-//			metadataGrid.setStructure(metadataLayout);
-//			metadataGrid.setStore(metadataStore);
 		}
 		
 		function resetReplicasStore() { 
 			replicasStore = resetStore(replicasStore, replicasGrid, replicasLayout, false);
-//			replicasStore=new dojo.data.ItemFileWriteStore({data: {items:[]}});
-//			replicasGrid.setStructure(replicasLayout);  
-//			replicasGrid.setStore(replicasStore);  
 		}
 		
 		function resetDomainsStore() { 
@@ -534,8 +509,6 @@
 			if (fast) {
 				if (grid.rowCount == 0) 
 					return store;
-//				permissionsGrid.selection.selectRange(0, permissionsGrid.rowCount-1);
-//				permissionsGrid.removeSelectedRows();
 				for (var i = 0; i < store._arrayOfAllItems.length; i++) 
 				try {
 					store.deleteItem(store._arrayOfAllItems[i]);
@@ -697,7 +670,7 @@
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
 	    			checkOffline(response);
-	      			loadedAlert("Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert(errorMessage("dynamicObjects", ioArgs.xhr.status, "Internal error when fetching dynamic objects list:\n\n"+ioArgs.xhr.statusText));
 	      			return response;
 	    		},
 	    		sync: true,
@@ -760,7 +733,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			loadedAlert("Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert(errorMessage("execbutton", ioArgs.xhr.status, "Internal error when executing dynamic button action:\n\n"+ioArgs.xhr.statusText));
 	      			return response;
 	    		},
 	    		sync: synchronous,
@@ -772,10 +745,14 @@
 			if (code < 0)
 				return message;
 			switch(code) {
-				case 0:		switch(method) {
+				case 0:		/*switch(method) {
 								case "replicas": return "replicate failed";
-								default: return message;
+								default: return message;*/
+							{
+								loadedAlert(message+" Can't connect to server. It may be unavailable.");
+								reloadWindow();
 							}
+							
 				case 403:	switch(method) {
 								//case "move": 
 								//case "copy": return "source and destination URI are the same";
@@ -786,8 +763,8 @@
 				case 405:	return "path already exists";
 				case 409:	return "You cannot put items here"; 
 				case 410:	{
-								loadedAlert(message+" - this page will be reloaded");
-								window.location.reload();
+								loadedAlert(message+"\nThis page will be reloaded");
+								reloadWindow();
 							}
 				case 412: 	return "destination already exists";
 				default: 	return message;
@@ -797,7 +774,7 @@
 		function checkOffline(response) {
 			// For seamonkey
 			if ((""+response).indexOf("Deferred Cancelled") > -1) // If user used back button after shib logout, detect dead session 
-				window.location.reload();
+				reloadWindow();
 		}
 		
 		var cursorCount = 0;	// Depth of cursor busy requests
@@ -1202,7 +1179,7 @@
 				return;	
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: listingStore.getCurrentDirectory()+"?method=metadata",
+	    		url: listingStore.getCurrentDirectory()+"?method=metadata&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){	  
 		  				var html = "";//"&nbsp;&nbsp;&nbsp;&nbsp;Metadata:<br>";
 		  				for (var i = 0; i < dynamicObjects.length; i++) {
@@ -1221,7 +1198,7 @@
 	    				cursorBusy(false);
 		    			checkOffline(response);
 		  				borderContainer.layout();
-	      				loadedAlert("Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert(errorMessage("metadata", ioArgs.xhr.status, "Error when loading collection metadata:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
 	    			},
 	    		sync: synchronous,
@@ -1249,7 +1226,7 @@
 			dialogCreateDir.hide();
 			cursorBusy(true);
 			dojo.xhr("MKCOL", {
-				url: listingStore.getCurrentDirectory()+"/"+/*escape(*/dirName/*)*/,
+				url: listingStore.getCurrentDirectory()+"/"+/*escape(*/dirName/*)*/+"?uihandle="+listingStore.uiHandle,
 			    currentDirectory: listingStore.getCurrentDirectory(),
 	    		sync: synchronous,
 			    load: function(responseObject, ioArgs){
@@ -1284,7 +1261,7 @@
 			dojo.html.set(dojo.byId('uploadStatusField'), "Uploading...");
 			uploadInProgress = true;
 			dojo.io.iframe.send({
-				url: listingStore.getCurrentDirectory()+"?method=upload",
+				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
@@ -1317,7 +1294,7 @@
 			else {
 				uploadInProgress = false;
 				dojo.html.set(dojo.byId('uploadStatusField'), "Cancelling...");
-				window.location.reload();	// Is this the only way to kill a transfer?
+				reloadWindow();	// Is this the only way to kill a transfer?
 			}
       		listingStore.refreshDisplay(false);
 		}
@@ -1442,7 +1419,7 @@
 		function loadMetadataFromServer(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url+"?method=metadata",
+	    		url: url+"?method=metadata&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){	  
 		  				cursorBusy(false);
 						metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1451,7 +1428,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				loadedAlert("Error when loading metadata:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert(errorMessage("metadata", ioArgs.xhr.status, "Error when loading metadata:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
 	    			},
 		    		sync: synchronous,
@@ -1519,7 +1496,7 @@
 			data += "]}]";
 			cursorBusy(true);
 		  	dojo.rawXhrPost({
-	    		url: listingStore.getCurrentDirectory()+"?method=metadata"+"&uihandle="+listingStore.uiHandle,
+	    		url: listingStore.getCurrentDirectory()+"?method=metadata&uihandle="+listingStore.uiHandle,
 			    headers: {
 			        "content-length": data.length,
 			        "content-type": "text/x-json"
@@ -1551,7 +1528,7 @@
 		function getDomains(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url,
+	    		url: url+"?uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){
 		  			cursorBusy(false);
 					domainsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1566,7 +1543,7 @@
 	    		},
 	    		error: function(response, ioArgs){
 	    			cursorBusy(false);
-	      			loadedAlert("Error when loading domain list:\n\n"+ioArgs.xhr.statusText);
+	      			loadedAlert(errorMessage("domains", ioArgs.xhr.status, "Error when loading domain list:\n\n"+ioArgs.xhr.statusText));
 	      			return response;
 	    		},
 	    		sync: synchronous,
@@ -1577,7 +1554,7 @@
 		function getUsers(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url,
+	    		url: url+"?uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){
 		  				cursorBusy(false);
 						usersStore = new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1585,7 +1562,7 @@
 	    			},
 	    		error: function(response, ioArgs){
 	    				cursorBusy(false);
-	      				loadedAlert("Error when loading user list:\n\n"+ioArgs.xhr.statusText);
+	      				loadedAlert(errorMessage("userlist", ioArgs.xhr.status, "Error when loading user list:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
 	    			},
 	    		sync: synchronous,
@@ -1704,7 +1681,7 @@
 		function getReplicas(action, refresh){
 			cursorBusy(true);	
 		  	dojo.xhrPost({
-	    		url: listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action,
+	    		url: listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=replicas"+action+"&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){    
 						replicasStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						replicasGrid.setStore(replicasStore);  
@@ -1716,7 +1693,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-	      				loadedAlert("Error while fetching replicas: "+/*errorMessage("replicas", ioArgs.xhr.status,*/ ioArgs.xhr.statusText/*)*/);
+	      				loadedAlert(errorMessage("replicas", ioArgs.xhr.status, "Error while fetching replicas:\n\n"+ioArgs.xhr.statusText));
 						replicasGrid.selection.deselectAll();
 						if (refresh)
 							refreshReplicasButtons();
@@ -1732,7 +1709,7 @@
 			cursorBusy(true);	
 			dojo.html.set(dojo.byId('replicasStatusField'), 'Fetching list of resources from server...');
 		  	dojo.xhrPost({
-	    		url: listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources",
+	    		url: listingStore.getCurrentDirectory()+"/"+getFirstCheckedItem()+"?method=resources&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){    
 						var resources = responseObject.items;
 						replicasStore.fetch({
@@ -1808,11 +1785,15 @@
 				url += "?reset";
 			window.location.replace(url);	
 		}
+
+		function reloadWindow() {
+			window.location.reload();
+		}
 		
 		function logout() {
 			cursorBusy(true);	
 		  	dojo.xhrPost({
-	    		url: "?method=logout",
+	    		url: "?method=logout&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){    
 		//  alert("logout successful");
 	 					cursorBusy(false);
@@ -1857,7 +1838,7 @@
 		function debug() {
 			cursorBusy(true);	
 		  	dojo.xhrPost({
-	    		url: "?method=debug",
+	    		url: "?method=debug&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){    
 //						alert("debug successful");
 	 					cursorBusy(false);
@@ -1939,8 +1920,12 @@
 				var newErrorHandler = function(errorData, requestObject) {
 					if (pageLoaded) {
 						if (errorData.status == 502) { // Server connection lost
-							alert("The server has dropped your connection and will now be reset.");
+							loadedAlert("The server has dropped your connection and will now be reset.");
 							resetConnection();
+						} else 
+						if (errorData.status == 410) { // Server restarted
+							loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
+				//			reloadWindow();
 						} else {
 							var s = "Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\n";
 							if (confirm(s+"Would you like further details?"))

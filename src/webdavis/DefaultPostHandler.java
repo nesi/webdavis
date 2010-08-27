@@ -122,12 +122,12 @@ public class DefaultPostHandler extends AbstractHandler {
 			// Write permissions for given items
 			if (jsonArray != null) {	
 		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();		    						
-		    	try {
+//		    	try {
 		    		getFileList(request, davisSession, fileList, jsonArray);
-		    	} catch (ServletException e) {
-		    		if (!checkClientInSync(response, e))
-		    			return;
-		    	}
+//		    	} catch (ServletException e) {
+//		    		if (!checkClientInSync(response, e))
+//		    			return;
+//		    	}
 
 				GeneralFileSystem fileSystem = file.getFileSystem();
 				String domain = null;
@@ -295,12 +295,12 @@ public class DefaultPostHandler extends AbstractHandler {
 				if (jsonArray != null) {	
 
 			    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-			    	try {
+//			    	try {
 			    		getFileList(request, davisSession, fileList, jsonArray);
-			    	} catch (ServletException e) {
-			    		if (!checkClientInSync(response, e))
-			    			return;
-			    	}
+//			    	} catch (ServletException e) {
+//			    		if (!checkClientInSync(response, e))
+//			    			return;
+//			    	}
 				
 					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
 //					JSONArray filesArray = (JSONArray)jsonObject.get("files");
@@ -630,12 +630,12 @@ public class DefaultPostHandler extends AbstractHandler {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 	    	boolean batch = true;
-	    	try {
+//	    	try {
 	    		batch = batch = getFileList(request, davisSession, fileList, jsonArray);
-	    	} catch (ServletException e) {
-	    		if (!checkClientInSync(response, e))
-	    			return;
-	    	}
+//	    	} catch (ServletException e) {
+//	    		if (!checkClientInSync(response, e))
+//	    			return;
+//	    	}
 //System.err.println("file list="+fileList);
 			String buttonName = request.getParameter("button");
 
@@ -705,12 +705,12 @@ public class DefaultPostHandler extends AbstractHandler {
 			String deleteResource = request.getParameter("delete");
 			String replicateResource = request.getParameter("replicate");
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-	    	try {
+//	    	try {
 	    		getFileList(request, davisSession, fileList, getJSONContent(request));
-	    	} catch (ServletException e) {
-	    		if (!checkClientInSync(response, e))
-	    			return;
-	    	}
+//	    	} catch (ServletException e) {
+//	    		if (!checkClientInSync(response, e))
+//	    			return;
+//	    	}
 
 	        Iterator<RemoteFile> iterator = fileList.iterator();
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
@@ -867,6 +867,9 @@ public class DefaultPostHandler extends AbstractHandler {
 			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
+			
+			davisSession.getCache().clear(); // destroy cache for the session (all browser windows) 
+			
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
 			if (request.isSecure()) 
 				json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(request.getRequestURI())+"}");	// Return to login page for original url
