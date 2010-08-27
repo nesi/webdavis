@@ -557,35 +557,12 @@ public class DefaultGetHandler extends AbstractHandler {
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				substitutions.put("dojoroot", dojoroot);
 				substitutions.put("servertype", getServerType());
-//				substitutions.put("appversion", config.getAppVersion());
 				substitutions.put("href", requestUrl);
 				substitutions.put("url", file.getAbsolutePath().replace("\\", "\\\\").replace("\"", "\\\"")); // Escape " chars - ui uses this string inside double quotes
 				substitutions.put("unc", file.toString());
 				substitutions.put("parent", request.getContextPath()+file.getParent());
 				substitutions.put("home", davisSession.getHomeDirectory());
 				substitutions.put("trash", davisSession.getTrashDirectory());
-//				substitutions.put("authenticationrealm", config.getRealm());
-//				substitutions.put("organisationname", config.getOrganisationName());
-//				substitutions.put("organisationlogo", config.getOrganisationLogo());
-//				substitutions.put("favicon", config.getFavicon());
-//				substitutions.put("displayMetadata", config.getDisplayMetadata());
-//				String s = config.getAnonymousUsername();
-//				if (s == null)
-//					s = "";
-//				substitutions.put("anonymoususer", s);
-//				String[] geom = null;
-//				String geomString = config.getOrganisationLogoGeometry();
-//				String w = "";
-//				String h = "";
-//				if (geomString != null) {
-//					try {
-//						geom = geomString.split("x");
-//						w = geom[0];
-//						h = geom[1];
-//					} catch (Exception e) {}
-//				}
-//				substitutions.put("organisationlogowidth", w);
-//				substitutions.put("organisationlogoheight", h);
 				substitutions.put("account", davisSession.getAccount());
 				substitutions.put("uiloaddate", uiLoadDate);
 				String version = "";
@@ -594,21 +571,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				else
 					version = ((SRBFileSystem)file.getFileSystem()).getVersion();
 				substitutions.put("jargonversion", version);
-//				substitutions.put("organisationsupport", config.getOrganisationSupport());
-//				substitutions.put("helpurl", config.getHelpURL());
-//				substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
+				substitutions.put("disablereplicasbutton", ""+DavisConfig.getInstance().getDisableReplicasButton());
 				
 				String uiContent = new String(uiHTMLContent);
 				uiContent = DavisUtilities.preprocess(uiContent, DavisUtilities.substitutions);	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions
-//				// Make substitutions in UI HTML file
-//				for (Enumeration<String> keys = substitutions.keys(); keys.hasMoreElements();) {
-//					String key = keys.nextElement();
-//					String replacement = substitutions.get(key);
-//					if (replacement == null)
-//						replacement = "";
-//					uiContent = uiContent.replace("<parameter " + key + "/>", replacement);
-//				}
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
 				out.write(uiContent, 0, uiContent.length());

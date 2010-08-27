@@ -74,6 +74,7 @@ public class DavisConfig {
     private String logoutReturnURL;
     private String loginImage;
     private String loginHelp;
+    private boolean disableReplicasButton;
 
 	public String getAuthClass() {
 		return authClass;
@@ -288,6 +289,8 @@ public class DavisConfig {
         
         displayMetadata = getInitParameter("displayMetadata", "").trim();
         authClass = getInitParameter("authClass", true);
+		s = getInitParameter("disable-replicas-button", false);
+        disableReplicasButton = Boolean.valueOf(s).booleanValue();
 	}
 
 	public String getDefaultDomain() {
@@ -564,5 +567,9 @@ public class DavisConfig {
 	
 	public String getRequiredDojoVersion() {
 		return requiredDojoVersion;
+	}
+	
+	public boolean getDisableReplicasButton() {
+		return disableReplicasButton;
 	}
 }

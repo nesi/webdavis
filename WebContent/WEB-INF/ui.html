@@ -99,11 +99,15 @@
 		var queryParams;
 		
 		dojo.addOnLoad(function() {
+			if ("<parameter disablereplicasbutton/>" == "true")
+				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
+				
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
 				dojo.html.set(dojo.byId("header"), ''); // Hide header section
 				borderContainer.layout();
 			}
+			
 			if (!(""+dojo.version).indexOf("<parameter requireddojoversion/>") == 0)
 				alert("Internal error: dojo version is "+dojo.version+" - required version is <parameter requireddojoversion/>");
 			pageLoaded = true;
@@ -2300,11 +2304,13 @@
 	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
- 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
-	    	<tr>
-	    		<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
-	    	</tr>
-	    </table>	
+ 	    <span id="replicasButtonHolder">
+ 	 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+		    	<tr>
+		    		<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
+		    	</tr>
+		    </table>	
+	    </span>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
 	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURIComponent(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
