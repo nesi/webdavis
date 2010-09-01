@@ -763,7 +763,7 @@
 								case "delete": return message+": you don't have permission";
 								default: return "refused";
 						  	}
-				case 404:   return "This collection does not exist or you don't have permission to access it.";
+				case 404:   return "You don't have permission to access it or the collection does not exist.";
 				case 405:	return "path already exists";
 				case 409:	return "You cannot put items here"; 
 				case 410:	{
@@ -1931,8 +1931,8 @@
 							loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
 				//			reloadWindow();
 						} else {
-							var s = "Failed to fetch directory details for "+directory+": "+errorMessage("get", errorData.status, "")+"\n\n";
-							if (confirm(s+"Would you like further details?"))
+							var s = "Can't read "+directory+": "+errorMessage("get", errorData.status, "")+"\n\n";
+							if (confirm(s+"Would you like debugging details?"))
 								loadedAlert(s+(errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
 						}
 					}
