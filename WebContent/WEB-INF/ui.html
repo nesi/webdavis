@@ -755,6 +755,7 @@
 							{
 								loadedAlert(message+" Can't connect to server. It may be unavailable.");
 								reloadWindow();
+								return "";
 							}
 							
 				case 403:	switch(method) {
@@ -769,6 +770,12 @@
 				case 410:	{
 								loadedAlert(message+"\nThis page will be reloaded");
 								reloadWindow();
+								return "";
+							}
+				case 503:	{
+								loadedAlert(message+"\nThe server may be down. This page will be reloaded");
+								reloadWindow();
+								return "";
 							}
 				case 412: 	return "destination already exists";
 				default: 	return message;
@@ -1139,7 +1146,7 @@
 					dojo.html.set(trashEmpty, 
 							'<table id="emptyTrashButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
 							'	<tr>'+
-							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; checkAll(true); /*dialogDelete.show()*/deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
+							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; checkAll(true); deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+
 							'</table>'
 					);
