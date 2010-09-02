@@ -75,6 +75,8 @@ public class DavisConfig {
     private String loginImage;
     private String loginHelp;
     private boolean disableReplicasButton;
+    private int ghostBreadcrumb=0;
+    private int ghostTrashBreadcrumb=0;
 
 	public String getAuthClass() {
 		return authClass;
@@ -291,6 +293,14 @@ public class DavisConfig {
         authClass = getInitParameter("authClass", true);
 		s = getInitParameter("disable-replicas-button", false);
         disableReplicasButton = Boolean.valueOf(s).booleanValue();
+		s = getInitParameter("ghost-breadcrumb", "0");
+		try {
+			ghostBreadcrumb = Integer.parseInt(s);
+		} catch (Exception e) {}
+		s = getInitParameter("ghost-trash-breadcrumb", "0");
+		try {
+			ghostTrashBreadcrumb = Integer.parseInt(s);
+		} catch (Exception e) {}
 	}
 
 	public String getDefaultDomain() {
@@ -571,5 +581,13 @@ public class DavisConfig {
 	
 	public boolean getDisableReplicasButton() {
 		return disableReplicasButton;
+	}
+	
+	public int getGhostBreadcrumb() {
+		return ghostBreadcrumb;
+	}
+	
+	public int getGhostTrashBreadcrumb() {
+		return ghostTrashBreadcrumb;
 	}
 }

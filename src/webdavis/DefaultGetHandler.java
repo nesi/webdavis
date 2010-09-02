@@ -571,8 +571,10 @@ public class DefaultGetHandler extends AbstractHandler {
 				else
 					version = ((SRBFileSystem)file.getFileSystem()).getVersion();
 				substitutions.put("jargonversion", version);
-				substitutions.put("disablereplicasbutton", ""+DavisConfig.getInstance().getDisableReplicasButton());
-				
+				substitutions.put("disablereplicasbutton", ""+config.getDisableReplicasButton());
+				substitutions.put("ghostbreadcrumb", ""+config.getGhostBreadcrumb());
+				substitutions.put("ghosttrashbreadcrumb", ""+config.getGhostTrashBreadcrumb());
+
 				String uiContent = new String(uiHTMLContent);
 				uiContent = DavisUtilities.preprocess(uiContent, DavisUtilities.substitutions);	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions

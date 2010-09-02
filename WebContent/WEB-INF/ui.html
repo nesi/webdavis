@@ -846,12 +846,21 @@
 			var result = "";
 			var subpath = "";
 			var dirs = path.split('/');
+			var prune;
+			if (isTrash(path))
+				prune = <parameter ghosttrashbreadcrumb/>;
+			else
+				prune = <parameter ghostbreadcrumb/>;
 			for (var i = 1; i < dirs.length; i++) {
 				subpath = subpath+'/'+dirs[i];
 				if (i > 1)
 					result = result + " > ";
 				var s = escapeString(encodeURIComponent(subpath));
-				result = result+'<a class="link" onclick="'+storeName+'.gotoDirectory(\''+s+'\','+addToHistory+'); return false" href="'+encodeURI(subpath)+'">'+unescape(dirs[i])+'</a>';
+				if (i > prune)
+					s = '<a class="link" onclick="'+storeName+'.gotoDirectory(\''+s+'\','+addToHistory+'); return false" href="'+encodeURI(subpath)+'">'+unescape(dirs[i])+'</a>';
+				else
+					s = unescape(dirs[i]);
+				result = result+s;
 			}
 			return result;
 		}
@@ -1931,7 +1940,7 @@
 							loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
 				//			reloadWindow();
 						} else {
-							var s = "Can't read "+directory+": "+errorMessage("get", errorData.status, "")+"\n\n";
+							var s = "Can't read "+directory+"\n\n"+errorMessage("get", errorData.status, "")+"\n\n";
 							if (confirm(s+"Would you like debugging details?"))
 								loadedAlert(s+(errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
 						}
@@ -2256,7 +2265,7 @@
 	    <table width="80%" border="0" cellpadding="0" cellspacing="0" style="padding-top:0px; padding-bottom:15px;">
 			<tr>
 	    		<td valign="bottom">
-	    			<div class="text" style="padding-bottom:6px;">You are browsing: &nbsp;&nbsp;<span class="text" id="listingBreadcrumb"></span></div>
+	    			<div class="text" style="padding-bottom:6px;"><small>You are browsing: </small>&nbsp;&nbsp;<span class="text" id="listingBreadcrumb"></span></div>
 	    			<small><small><div class="text" id="statusPanelHTML"></div></small></small>
 	    			<small><small><div class="text" id="displayMetadataHTML" style="padding-top:6px;"></div><br></small></small>
 	    			<div id="currentDirectoryButtonsHTML"></div>
