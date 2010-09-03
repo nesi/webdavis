@@ -1129,6 +1129,7 @@
 			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash && !readOnly);
 			enableActiveItem('renameButton', checkedItemsCount() == 1 && !isAnonymous() && !inTrash);
 			enableActiveItem('moveButton', checkedItemsCount() != 0 && !isAnonymous() && !inTrash);
+			enableActiveItem('copyButton', checkedItemsCount() != 0);
 			enableActiveItem('replicasButton', checkedItemsCount() == 1 && !directoryIsChecked() && !inTrash);
 			enableActiveItem('deleteButton', checkedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', checkedItemsCount() != 0);
@@ -1168,8 +1169,16 @@
 			enableActiveItem('emptyTrashButton', !isAnonymous());
 			
 			setToggleButtonState(getToggleButtonState());
-			dojo.byId("destinationMoveButton").disabled = (destinationStore.getCurrentDirectory() == listingStore.getCurrentDirectory());
-
+			dojo.byId('destinationMoveCopyButton').disabled = (destinationStore.getCurrentDirectory() == listingStore.getCurrentDirectory());
+			var mode = dialogMoveCopy.attr('mode');
+			if (mode)
+				mode = "Move";
+			else
+				mode = "Copy";
+			dojo.html.set(dojo.byId('moveCopyAction'), mode);
+			dialogMoveCopy.attr('title', mode+" Items");
+			dojo.html.set(dojo.byId('destinationMoveCopyButton'), mode);
+			
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
@@ -1374,16 +1383,16 @@
 			checkAll(false);
 		}	
 			
-		function move(destination){
-			dialogMove.hide();
-			moveFiles(listingStore.getCurrentDirectory(), destination, false);
+		function moveCopy(destination, move){
+			dialogMoveCopy.hide();
+			moveCopyFiles(listingStore.getCurrentDirectory(), destination, move, false);
 		}
 
 		function rename(newName){
 			if (!isValidFileName(newName, true))
 				return;
 			dialogRename.hide();
-			moveFiles(listingStore.getCurrentDirectory()+'/'+/*escape(*/getFirstCheckedItem()/*)*/, listingStore.getCurrentDirectory()+'/'+newName, true);
+			moveCopyFiles(listingStore.getCurrentDirectory()+'/'+getFirstCheckedItem(), listingStore.getCurrentDirectory()+'/'+newName, true, true);
 		}
 
 		function restoreSelection() {
@@ -1394,18 +1403,18 @@
 		function restoreFiles() {
 //			dialogRestore.hide();
 			var destination = "<parameter home/>"+listingStore.getCurrentDirectory().substr("<parameter trash/>".length, listingStore.getCurrentDirectory().length);
-			moveFiles(listingStore.getCurrentDirectory(), destination, false);
+			moveCopyFiles(listingStore.getCurrentDirectory(), destination, true, false);
 		}
 		
-		function moveFiles(url, destination, rename) {
-//			alert("moving from "+url+" to "+destination);
+		function moveCopyFiles(url, destination, move, rename) {
+//			alert("moving/copying from "+url+" to "+destination);
 			if (!rename && checkedItemsCount() == 0)
 				return;
 			cursorBusy(true);
 			var data = "";
 			if (!rename)
 				data='[{"indices":['+listCheckedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
-			dojo.xhr("MOVE", {
+			dojo.xhr(move?"MOVE":"COPY", {
 				url: url+"?uihandle="+listingStore.uiHandle,
 				headers: {
 			        "content-length": data.length,
@@ -1425,8 +1434,8 @@
 			    },
 	    		error: function(response, ioArgs){
 					cursorBusy(false);
-	      			loadedAlert("Failed to move one or more items: "+errorMessage("move", ioArgs.xhr.status, ioArgs.xhr.statusText));
-					if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+	      			loadedAlert("Failed to "+(move?"move":"copy")+" one or more items: "+errorMessage(move?"move":"copy", ioArgs.xhr.status, ioArgs.xhr.statusText));
+					if (move && listingStore.getCurrentDirectory() == this.currentDirectory) { 
 		      			refreshCurrentDirectory(); // Reload on error in case some files were deleted
 		      			listingStore.refreshDisplay(false);
 					}
@@ -1795,6 +1804,12 @@
 				dialogUpload.hide();
 		}
 
+		function showDialogMoveCopy(move) {
+			dialogMoveCopy.attr("mode", move);
+			refreshButtons();
+			dialogMoveCopy.show()
+		}
+
 		function resetConnection() {
 			var url = window.location.href;
 			url = url.replace(/#.*/, ""); 		// Trim anchor
@@ -2059,14 +2074,14 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="rename(/*escape(*/encodeURIComponent(dojo.byId('renameInputBox').value)/*)*/)">Rename</button>
+		<button type="button" onclick="rename(encodeURIComponent(dojo.byId('renameInputBox').value))">Rename</button>
 		<button type="button" onclick="dialogRename.hide()">Cancel</button>
 	</div>
 </div>					
-<div dojoType="dijit.Dialog" jsId="dialogMove" title="Move Items">
+<div dojoType="dijit.Dialog" jsId="dialogMoveCopy" title="Move/Copy Items">
 	<table>
 		<tr>
-			<td> Move selected items to:&nbsp;
+			<td><span class="text" id="moveCopyAction"></span> selected items to:&nbsp;
 				<span class="text" id="destinationBreadcrumb" jsId="destinationBreadcrumb"></span>
 				<br><br>
 				<div style="width: 600px; height: 350px; border: inset;" id="destinationGrid" jsId="destinationGrid" dojoType="dojox.grid.DataGrid" structure="destinationLayout" store="destinationStore" selectionMode="none" rowsPerPage="50"></div>
@@ -2075,8 +2090,8 @@
 		<tr>
 			<td>
 				<div style="text-align: right;">
-					<button type="button" id="destinationMoveButton" jsId="destinationMoveButton" onclick="move(destinationStore.getCurrentDirectory())">Move</button>
-					<button type="button" onclick="dialogMove.hide()">Cancel</button>
+					<button type="button" id="destinationMoveCopyButton" jsId="destinationMoveCopyButton" onclick="moveCopy(destinationStore.getCurrentDirectory(), dialogMoveCopy.attr('mode'))">Move/Copy</button>
+					<button type="button" onclick="dialogMoveCopy.hide()">Cancel</button>
 				</div>
 			</td>
 		</tr>
@@ -2329,17 +2344,22 @@
 	    </span>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
-	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=/*unescape(*/decodeURIComponent(getFirstCheckedItem())/*)*/; dialogRename.show()">Rename</td>         				
+	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=decodeURIComponent(getFirstCheckedItem()); dialogRename.show()">Rename</td>         				
 	    	</tr>
 	    </table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
     		<tr>
-    			<td class="activeItem" id="moveButton" onclick="if (!activeItemIsEnabled('moveButton')) return; destinationStore.show(false); destinationStore.gotoDirectory(listingStore.getCurrentDirectory(), false); dialogMove.show();">Move</td>         				
+    			<td class="activeItem" id="copyButton" onclick="if (!activeItemIsEnabled('copyButton')) return; destinationStore.show(false); destinationStore.gotoDirectory(listingStore.getCurrentDirectory(), false); showDialogMoveCopy(false);">Copy</td>         				
+    		</tr>
+    	</table>
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+    		<tr>
+    			<td class="activeItem" id="moveButton" onclick="if (!activeItemIsEnabled('moveButton')) return; destinationStore.show(false); destinationStore.gotoDirectory(listingStore.getCurrentDirectory(), false); showDialogMoveCopy(true);">Move</td>         				
     		</tr>
     	</table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 	    	<tr>
-	    		<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; /*dialogDelete.show()*/ deleteSelection()" >Delete</td>
+	    		<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; deleteSelection()" >Delete</td>
 	    	</tr>
 	    </table>
 	    <div id=dynamicSelectionButtonsHTML></div>

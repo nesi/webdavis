@@ -343,7 +343,7 @@ public class Davis extends HttpServlet {
 			davisSession = authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg = null;
 		}
-				
+
 		// Check that the client's uihandle is known to us. If not, send an error so that UI can reload window.
 		String cacheID = request.getParameter("uihandle");
 		if (cacheID != null && !cacheID.equals("null")) 
