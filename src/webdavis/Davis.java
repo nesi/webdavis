@@ -198,10 +198,10 @@ public class Davis extends HttpServlet {
 	 *             If an application error occurs.
 	 */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-		
+
 		String pathInfo = request.getPathInfo();
-		String uri=request.getRequestURI();
-		String queryString = request.getQueryString();
+//		String uri=request.getRequestURI();
+//		String queryString = request.getQueryString();
 		
 		if (request.getParameter("loginform") != null) {
 //			System.err.println("********** got loginform");
@@ -230,38 +230,7 @@ public class Davis extends HttpServlet {
 		Log.log(Log.DEBUG, "Timer started: "+(new Date().getTime()-profilingTimer.getTime()));
 
 		// Log request + header
-//		Log.log(Log.INFORMATION, "\nReceived {0} request for \"{1}\".", new Object[] {request.getMethod(), request.getRequestURL()});
 		Log.log(Log.INFORMATION, "==========> RECEIVED REQUEST:\n"+requestToString(request, Log.getThreshold()));
-//		Log.log(Log.INFORMATION, "uri:"+uri);
-//		Log.log(Log.INFORMATION, "queryString:"+queryString);
-//		if (Log.getThreshold() < Log.INFORMATION) {
-//			Log.log(Log.DEBUG, "pathInfo:\n{0}", pathInfo);
-//			StringBuffer headers = new StringBuffer();
-//			Enumeration headerNames = request.getHeaderNames();
-//			while (headerNames.hasMoreElements()) {
-//				String headerName = (String) headerNames.nextElement();
-//				headers.append("    ").append(headerName).append(": ");
-//				if (!headerName.equalsIgnoreCase("Authorization")){
-//					Enumeration headerValues = request.getHeaders(headerName);
-//					while (headerValues.hasMoreElements()) {
-//						headers.append(headerValues.nextElement());
-//						if (headerValues.hasMoreElements())
-//							headers.append(", ");
-//					}
-//				}else 
-//					headers.append("censored");
-//				if (headerNames.hasMoreElements())
-//					headers.append("\n");
-//			}
-//			Log.log(Log.DEBUG, "Headers:\n{0}", headers);
-//			Log.log(Log.DEBUG, "isSecure:{0}", request.isSecure());
-//			HttpSession httpSession = request.getSession(false);
-//			if (httpSession != null) {
-//				Log.log(Log.DEBUG, "Active HTTP session: {0}", httpSession.getId()); // This is the JSESSIONID cookie
-//			} else {
-//				Log.log(Log.DEBUG, "HTTP session not yet established.");
-//			}
-//		}
 		
 		DavisConfig config=DavisConfig.getInstance();
 		String contextBase = config.getContextBase();
@@ -344,9 +313,9 @@ public class Davis extends HttpServlet {
 			errorMsg = null;
 		}
 
-		// Check that the client's uihandle is known to us. If not, send an error so that UI can reload window.
+		// Check that the client's uihandle is known to us (skip if basic auth - let fail() handle that case). If not, send an error so that UI can reload window.
 		String cacheID = request.getParameter("uihandle");
-		if (cacheID != null && !cacheID.equals("null")) 
+		if ((request.isSecure() || authorization != null) && cacheID != null && !cacheID.equals("null")) 
 			if (davisSession == null || davisSession.getCacheByID(cacheID) == null) {
 				String s = "Files cache for client with cacheID="+cacheID+" not found (server may have been restarted).";
 				if (davisSession != null)
@@ -360,10 +329,12 @@ public class Davis extends HttpServlet {
 		// Still no session established, check for error, else tell client with auth to try next
 		if (davisSession == null){
 			if (errorMsg != null){
+				Log.log(Log.DEBUG, "No session found, returning FORBIDDEN with message: "+errorMsg);
 				response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
 				response.flushBuffer();
 				return;
 			}else{
+				Log.log(Log.DEBUG, "No session found, calling fail handler.");
 				fail(request, response);
 				return;
 			}
