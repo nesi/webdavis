@@ -50,16 +50,14 @@ public class DefaultCopyHandler extends AbstractHandler {
      * @throws SerlvetException If an application error occurs.
      * @throws IOException If an IO error occurs while handling the request.
      */
-    public void service(HttpServletRequest request,
-            HttpServletResponse response, DavisSession davisSession)
-                    throws ServletException, IOException {
+    public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
+    	
         RemoteFile file = getRemoteFile(request, davisSession);
         if (!file.exists()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        String destination = getRemoteURL(request,
-                request.getHeader("Destination"));
+        String destination = getRemoteURL(request, request.getHeader("Destination"));
         if (destination == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
@@ -82,12 +80,11 @@ public class DefaultCopyHandler extends AbstractHandler {
             return;
         }
         LockManager lockManager = getLockManager();
-        if (lockManager != null) {
-            destinationFile =lockManager.getLockedResource(destinationFile,
-            		davisSession);
-        }
+        if (lockManager != null) 
+            destinationFile =lockManager.getLockedResource(destinationFile,	davisSession);
+
         boolean overwritten = false;
-        if (destinationFile.exists()) {
+        if (destinationFile.exists()) 
             if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {
                 destinationFile.delete();
                 overwritten = true;
@@ -95,7 +92,7 @@ public class DefaultCopyHandler extends AbstractHandler {
                 response.sendError(HttpServletResponse.SC_PRECONDITION_FAILED);
                 return;
             }
-        }
+
         if (file.getFileSystem() instanceof SRBFileSystem) {
         	((SRBFile)file).setResource(davisSession.getDefaultResource());
         	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
@@ -111,32 +108,24 @@ public class DefaultCopyHandler extends AbstractHandler {
 
 	private void copyTo(RemoteFile sourceFile, RemoteFile destinationFile, DavisSession davisSession) throws IOException {
 		if (sourceFile.isFile()){
-	        if (destinationFile.getFileSystem() instanceof SRBFileSystem) {
+	        if (destinationFile.getFileSystem() instanceof SRBFileSystem) 
 	        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
-	         }else if (destinationFile.getFileSystem() instanceof IRODSFileSystem) {
+	        else
+	        if (destinationFile.getFileSystem() instanceof IRODSFileSystem) 
 	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
-	        }
 			sourceFile.copyTo(destinationFile);
-		}else if (sourceFile.isDirectory()){
+		} else if (sourceFile.isDirectory()) {
 			  //recursive copy
 			String fileList[] = sourceFile.list();
 			
 			destinationFile.mkdir();
-			if (fileList != null) {
-				for (int i=0;i<fileList.length;i++) {
-					if (sourceFile.getFileSystem() instanceof SRBFileSystem){
-						copyTo(new SRBFile( (SRBFile)sourceFile,fileList[i]), 
-								new SRBFile( (SRBFile)destinationFile,  fileList[i]),davisSession);
-					}else if (sourceFile.getFileSystem() instanceof IRODSFileSystem){
-						copyTo(new IRODSFile( (IRODSFile)sourceFile,fileList[i]), 
-								new IRODSFile( (IRODSFile)destinationFile,  fileList[i]),davisSession);
-						
-					}
-			    }
-			}
-
-		}
-		
+			if (fileList != null) 
+				for (int i=0;i<fileList.length;i++) 
+					if (sourceFile.getFileSystem() instanceof SRBFileSystem)
+						copyTo(new SRBFile( (SRBFile)sourceFile,fileList[i]), new SRBFile( (SRBFile)destinationFile, fileList[i]),davisSession);
+					else 
+					if (sourceFile.getFileSystem() instanceof IRODSFileSystem)
+						copyTo(new IRODSFile( (IRODSFile)sourceFile,fileList[i]), new IRODSFile( (IRODSFile)destinationFile, fileList[i]),davisSession);
+		}	
 	}
-
 }
