@@ -46,11 +46,13 @@ public abstract class Log {
      */ 
     public static final int CRITICAL = 4;
 
+    public static final String[] LEVELNAMES  = {"DEBUG", "INFORMATION", "WARNING", "ERROR", "CRITICAL"}; 
+
     /**
      * Logging threshold indicating nothing should be logged.
      */ 
     public static final int NOTHING = Integer.MAX_VALUE;
-
+    
     private static final String RESOURCE = "/META-INF/services/" +
             Log.class.getName();
 

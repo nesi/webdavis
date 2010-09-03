@@ -17,6 +17,8 @@ import java.util.Properties;
 
 import javax.servlet.ServletConfig;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -27,9 +29,10 @@ public class DavisConfig {
 	 * The name of the servlet context attribute containing the charset used to
 	 * interpret request URIs.
 	 */
-	public static final String REQUEST_URI_CHARSET = "request-uri.charset";
-	
+	public static final String REQUEST_URI_CHARSET = "request-uri.charset";	
 	public static final String VERSION_FILE = "/WEB-INF/davis.version";
+	
+	private ServletConfig servletConfig;
 	
 	private String defaultDomain;
 	private String realm;
@@ -77,6 +80,10 @@ public class DavisConfig {
     private boolean disableReplicasButton;
     private int ghostBreadcrumb=0;
     private int ghostTrashBreadcrumb=0;
+    private ArrayList<String> administrators = new ArrayList<String>();
+
+    // General parameter substitutions for HTML file (substitutions not related to a file or request)
+	public static Hashtable<String, String> substitutions;
 
 	public String getAuthClass() {
 		return authClass;
@@ -85,7 +92,6 @@ public class DavisConfig {
 	private Properties configProperties = new Properties();
 	private Hashtable<String, JSONObject> dynamicObjects;
 	
-
 	private DavisConfig() {
 	}
 
@@ -176,15 +182,23 @@ public class DavisConfig {
 		}
 	}
 	
+	public void initConfig() {
+		initConfig(null);
+	}
+	
 	public void initConfig(ServletConfig config) {
 
+		if (config == null)
+			config = servletConfig;
+		servletConfig = config;
 		readVersion(config);
 		String filesList = config.getInitParameter("config-files");
 		if (filesList != null) {
 			String[] configFileNames = filesList.split(" *, *");
 			for (int i = 0; i < configFileNames.length; i++) {
-				if (configFileNames[i].trim().startsWith("/")||(configFileNames[i].trim().length()>2&&configFileNames[i].trim().charAt(1)==':')){
-					String fileName = configFileNames[i].trim();
+				String fileName = configFileNames[i].trim();
+				System.err.println("Loading config file: "+fileName);
+				if (fileName.startsWith("/") || (fileName.length() > 2 && fileName.charAt(1)==':')){
 					Properties properties = new Properties();
 			        InputStream stream = null;
 			        try {
@@ -197,7 +211,7 @@ public class DavisConfig {
 			        	continue;
 			        }   
 				}else{
-					String fileName = "/WEB-INF/"+configFileNames[i].trim();
+					fileName = "/WEB-INF/"+fileName;
 					Properties properties = new Properties();
 			        InputStream stream = null;
 			        try {
@@ -229,7 +243,10 @@ public class DavisConfig {
 		String logThreshold = getInitParameter(logProviderName+ ".threshold", true);
 		if (logThreshold != null) 
 			try {
-				System.setProperty(logProviderName + ".threshold", logThreshold);
+				System.setProperty(logProviderName + ".threshold", logThreshold); 
+				for (int i = 0; i < Log.LEVELNAMES.length; i++)
+					if (Log.LEVELNAMES[i].toLowerCase().equals(logThreshold.toLowerCase()))
+						Log.setThreshold(i);
 			} catch (Exception ignore) {}
 		
 		// requestUriCharset = "ISO-8859-1";
@@ -301,8 +318,61 @@ public class DavisConfig {
 		try {
 			ghostTrashBreadcrumb = Integer.parseInt(s);
 		} catch (Exception e) {}
+		String admins = getInitParameter("administrators", "").trim();
+		if (admins != null) 
+			administrators = new ArrayList<String>(Arrays.asList(admins.split(" *, *")));
+
+		Log.log(Log.DEBUG, "Logging initialized.");
+		if (Log.getThreshold() < Log.INFORMATION) 
+			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
+		
+		String jargonDebug= DavisConfig.getInstance().getJargonDebug();
+		if (jargonDebug!=null) {
+			Level level = Level.toLevel(jargonDebug, Level.WARN);
+			Logger.getRootLogger().setLevel(level);
+			Log.log(Log.INFORMATION, "Jargon logging level set to "+level);
+		}
+		initSubstitutions();
 	}
 
+	private void initSubstitutions() {
+		
+		substitutions = new Hashtable<String, String>();
+		substitutions.put("appversion", getAppVersion());
+		substitutions.put("authenticationrealm", getRealm());
+		substitutions.put("organisationname", getOrganisationName());
+		substitutions.put("organisationlogo", getOrganisationLogo());
+		substitutions.put("favicon", getFavicon());
+		substitutions.put("displayMetadata", getDisplayMetadata());
+		String s = getAnonymousUsername();
+		if (s == null)
+			s = "";
+		substitutions.put("anonymoususer", s);
+		String[] geom = null;
+		String geomString = getOrganisationLogoGeometry();
+		String w = "";
+		String h = "";
+		if (geomString != null) {
+			try {
+				geom = geomString.split("x");
+				w = geom[0];
+				h = geom[1];
+			} catch (Exception e) {}
+		}
+		substitutions.put("organisationlogowidth", w);
+		substitutions.put("organisationlogoheight", h);
+		substitutions.put("organisationsupport", getOrganisationSupport());
+		substitutions.put("helpurl", getHelpURL());
+		substitutions.put("requireddojoversion", getRequiredDojoVersion());
+		substitutions.put("loginimage", getLoginImage());
+		substitutions.put("loginhelp", getLoginHelp());
+	}
+
+	public void refresh() {
+		
+		initConfig();
+	}
+	
 	public String getDefaultDomain() {
 		return defaultDomain;
 	}
@@ -589,5 +659,9 @@ public class DavisConfig {
 	
 	public int getGhostTrashBreadcrumb() {
 		return ghostTrashBreadcrumb;
+	}
+	
+	public ArrayList getAdministrators() {
+		return administrators;
 	}
 }

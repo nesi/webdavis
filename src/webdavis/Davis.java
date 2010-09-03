@@ -101,16 +101,6 @@ public class Davis extends HttpServlet {
 //			}
 //		}
 		
-		Log.log(Log.DEBUG, "Logging initialized.");
-		if (Log.getThreshold() < Log.INFORMATION) 
-			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
-		
-		String jargonDebug= DavisConfig.getInstance().getJargonDebug();
-		if (jargonDebug!=null) {
-			Level level = Level.toLevel(jargonDebug, Level.WARN);
-			Logger.getRootLogger().setLevel(level);
-			Log.log(Log.INFORMATION, "Jargon logging level set to "+level);
-		}
 		DavisUtilities.init(config);
 		initLockManager(config);
 		// initFilter(config);
@@ -590,7 +580,7 @@ public class Davis extends HttpServlet {
 			if (browser) {
 				Log.log(Log.DEBUG, "Client is using "+(browser ? "a browser" : "webdav"));
 				String form = DavisUtilities.loadResource("/WEB-INF/login.html");
-				form = DavisUtilities.preprocess(form, DavisUtilities.substitutions);	// Make general substitutions
+				form = DavisUtilities.preprocess(form, DavisConfig.substitutions);	// Make general substitutions
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				String queryString = request.getQueryString();
 				if (queryString == null)

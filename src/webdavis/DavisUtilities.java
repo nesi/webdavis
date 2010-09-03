@@ -100,40 +100,6 @@ public class DavisUtilities {
 
     private static MessageDigest digest;
 
-	// Define general parameter substitutions for HTML file (substitutions not related to a file or request)
-	public static Hashtable<String, String> substitutions = new Hashtable<String, String>();
-	static {
-		DavisConfig config = DavisConfig.getInstance();
-		substitutions.put("appversion", config.getAppVersion());
-		substitutions.put("authenticationrealm", config.getRealm());
-		substitutions.put("organisationname", config.getOrganisationName());
-		substitutions.put("organisationlogo", config.getOrganisationLogo());
-		substitutions.put("favicon", config.getFavicon());
-		substitutions.put("displayMetadata", config.getDisplayMetadata());
-		String s = config.getAnonymousUsername();
-		if (s == null)
-			s = "";
-		substitutions.put("anonymoususer", s);
-		String[] geom = null;
-		String geomString = config.getOrganisationLogoGeometry();
-		String w = "";
-		String h = "";
-		if (geomString != null) {
-			try {
-				geom = geomString.split("x");
-				w = geom[0];
-				h = geom[1];
-			} catch (Exception e) {}
-		}
-		substitutions.put("organisationlogowidth", w);
-		substitutions.put("organisationlogoheight", h);
-		substitutions.put("organisationsupport", config.getOrganisationSupport());
-		substitutions.put("helpurl", config.getHelpURL());
-		substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
-		substitutions.put("loginimage", config.getLoginImage());
-		substitutions.put("loginhelp", config.getLoginHelp());
-	}
-	
 	private static ServletConfig servletConfig;
     
     static {
@@ -392,43 +358,6 @@ public class DavisUtilities {
         return base.getOwnerDocument().createElement(tag);
     }
 
-//    public static String preprocess(String document) {
-//    	
-//		DavisConfig config = DavisConfig.getInstance();
-//
-//		// Define general parameter substitutions for HTML file (substitutions not related to a file or request)
-//		Hashtable<String, String> substitutions = new Hashtable<String, String>();
-//		substitutions.put("appversion", config.getAppVersion());
-//		substitutions.put("authenticationrealm", config.getRealm());
-//		substitutions.put("organisationname", config.getOrganisationName());
-//		substitutions.put("organisationlogo", config.getOrganisationLogo());
-//		substitutions.put("favicon", config.getFavicon());
-//		substitutions.put("displayMetadata", config.getDisplayMetadata());
-//		String s = config.getAnonymousUsername();
-//		if (s == null)
-//			s = "";
-//		substitutions.put("anonymoususer", s);
-//		String[] geom = null;
-//		String geomString = config.getOrganisationLogoGeometry();
-//		String w = "";
-//		String h = "";
-//		if (geomString != null) {
-//			try {
-//				geom = geomString.split("x");
-//				w = geom[0];
-//				h = geom[1];
-//			} catch (Exception e) {}
-//		}
-//		substitutions.put("organisationlogowidth", w);
-//		substitutions.put("organisationlogoheight", h);
-//		substitutions.put("organisationsupport", config.getOrganisationSupport());
-//		substitutions.put("helpurl", config.getHelpURL());
-//		substitutions.put("requireddojoversion", config.getRequiredDojoVersion());
-//		
-//		document = substitute(document, substitutions);
-//		return document;
-//    }
-    
     public static String preprocess(String document, Hashtable<String, String> substitutions) {
     	
 		// Make substitutions in file
@@ -583,5 +512,18 @@ public class DavisUtilities {
     				dump(children.item(i), prefix+"    ", out); 
     		}
     	}
-    }    
+    }
+    
+    public static String arrayToString(String[] array, String delim) {
+    	
+    	String s = "";
+    	if (array == null)
+    		return null;
+    	for (int i = 0; i < array.length; i++) {
+    		if (i > 0)
+    			s += delim;
+    		s += array[i];
+    	}	           
+    	return s;
+    }
 }

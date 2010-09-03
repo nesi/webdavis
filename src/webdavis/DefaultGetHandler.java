@@ -531,11 +531,30 @@ public class DefaultGetHandler extends AbstractHandler {
 				return;
 			}
 			if (request.getParameter("uiold") == null) { // Use new UI
-				if (request.getParameter("reload-ui") != null) {
-					// If ?reload-ui is added to url, then ui.html will be reloaded.
+				if (request.getParameter("reload-config") != null && DavisConfig.getInstance().getAdministrators().contains(davisSession.getAccount())) {
+					// If ?reload-config is added to url, then entire configuration will be reloaded.
+					Log.log(Log.INFORMATION, "Reloading configuration");
+					DavisConfig.getInstance().refresh();
 					Log.log(Log.INFORMATION, "Reloading ui from "+UIHTMLLocation);
 					defaultUIHTMLContent = loadUI(UIHTMLLocation);
+					addNoCacheDirectives(response);
+					ServletOutputStream op = null;
+					try {
+						op = response.getOutputStream();
+					} catch (EOFException e) {
+						Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
+						return;
+					}
+					op.println("<html><body><br><br><br><br><h2 style=\"text-align: center;\">Davis configuration was reloaded.</h2></body></html>");
+					op.flush();
+					op.close();
+					return;
 				}
+//				if (request.getParameter("reload-ui") != null) {
+//					// If ?reload-ui is added to url, then ui.html will be reloaded.
+//					Log.log(Log.INFORMATION, "Reloading ui from "+UIHTMLLocation);
+//					defaultUIHTMLContent = loadUI(UIHTMLLocation);
+//				}
 				String uiHTMLContent = defaultUIHTMLContent;
 				if (request.getParameter("uidev") != null) {
 					// Simple hack to allow loading of a development ui every time a request is received.
@@ -576,7 +595,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("ghosttrashbreadcrumb", ""+config.getGhostTrashBreadcrumb());
 
 				String uiContent = new String(uiHTMLContent);
-				uiContent = DavisUtilities.preprocess(uiContent, DavisUtilities.substitutions);	// Make general substitutions
+				uiContent = DavisUtilities.preprocess(uiContent, DavisConfig.substitutions);	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());

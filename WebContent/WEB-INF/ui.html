@@ -313,7 +313,7 @@
 					listingStore.setURL(dir, true);
 					// This method works but causes a "loading" message to appear
 //					listingStore.grid._refresh(true);	// Update grid by forcing a store load from new url
-					// This method does everything we want. Needs thorough testing
+					// This method does everything we want. 
 					listingStore.invalid = true;
 					listingStore.grid._fetch(0, true);
 				},
@@ -1548,7 +1548,7 @@
 		function getDomains(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url+"?uihandle="+listingStore.uiHandle,
+	    		url: url+"&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){
 		  			cursorBusy(false);
 					domainsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1574,7 +1574,7 @@
 		function getUsers(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
-	    		url: url+"?uihandle="+listingStore.uiHandle,
+	    		url: url+"&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){
 		  				cursorBusy(false);
 						usersStore = new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -1886,7 +1886,7 @@
 			lastURL:null,
 			uiHandle:null,
 			grid:null,
-			invalid:/*false*/true,
+			invalid:true,
 			addToHistory:false,
 			readOnly: true,
 			currentDirectory:"",
