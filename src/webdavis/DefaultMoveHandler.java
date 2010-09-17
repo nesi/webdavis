@@ -128,15 +128,17 @@ public class DefaultMoveHandler extends AbstractHandler {
             } else 
                 return HttpServletResponse.SC_PRECONDITION_FAILED;
         }
-        if (file.getFileSystem() instanceof SRBFileSystem) {
-        	((SRBFile)file).setResource(davisSession.getDefaultResource());
-        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
-        } //else 
-//        if (file.getFileSystem() instanceof IRODSFileSystem) {
-//        	        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
-//        	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
-//        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
-//        }
+    	if (davisSession.getDefaultResource() != null && davisSession.getDefaultResource().length() > 0) {
+	        if (file.getFileSystem() instanceof SRBFileSystem) {
+	        	((SRBFile)file).setResource(davisSession.getDefaultResource());
+	        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
+	        } //else 
+	//        if (file.getFileSystem() instanceof IRODSFileSystem) {
+	//        	        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
+	//        	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+	//        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
+	//        }
+    	}
         if (!file.renameTo(destinationFile)) 
         	// Jargon sometimes returns false when the rename seems to have worked, so check
         	if (!destinationFile.exists() || file.exists()) 
