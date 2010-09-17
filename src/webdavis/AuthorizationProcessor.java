@@ -167,10 +167,12 @@ public class AuthorizationProcessor {
 			}
             return gssCredential;
         }
-        catch(MyProxyException mpe){
+        catch(MyProxyException e){
+        	Log.log(Log.DEBUG, "Caught MyProxy exception: "+e);
             return null;
         }
         catch(Exception e){
+        	Log.log(Log.DEBUG, "Caught exception during myproxy login: "+e);
         	return null;
         }
     }

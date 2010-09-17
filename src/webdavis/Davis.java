@@ -293,9 +293,9 @@ public class Davis extends HttpServlet {
 				String commonName = request.getHeader(config.getCommonNameHeaderName());
 				String shibSessionID = request.getHeader("Shib-Session-ID");
 				if (sharedToken == null || sharedToken.length() == 0) {
-					errorMsg = "Shared token is not found in HTTP header.";
+					errorMsg = "Shared token '"+sharedToken+"' is not found in HTTP header.";
 				} else if (commonName == null || commonName.length() == 0) {
-					errorMsg = "Common name is not found in HTTP header.";
+					errorMsg = "Common name '"+commonName+"' is not found in HTTP header.";
 				} else if (shibCookieNum > 0) 
 					davisSession = authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
 			}
