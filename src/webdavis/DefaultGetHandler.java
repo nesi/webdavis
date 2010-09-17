@@ -593,7 +593,9 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("disablereplicasbutton", ""+config.getDisableReplicasButton());
 				substitutions.put("ghostbreadcrumb", ""+config.getGhostBreadcrumb());
 				substitutions.put("ghosttrashbreadcrumb", ""+config.getGhostTrashBreadcrumb());
-
+				substitutions.put("includehead", ""+config.getUIIncludeHead());
+				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
+				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
 				String uiContent = new String(uiHTMLContent);
 				uiContent = DavisUtilities.preprocess(uiContent, DavisConfig.substitutions);	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions

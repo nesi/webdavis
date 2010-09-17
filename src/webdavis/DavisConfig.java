@@ -81,6 +81,9 @@ public class DavisConfig {
     private int ghostBreadcrumb=0;
     private int ghostTrashBreadcrumb=0;
     private ArrayList<String> administrators = new ArrayList<String>();
+    private String uiIncludeHead;
+    private String uiIncludeBodyHeader;
+    private String uiIncludeBodyFooter;
 
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	public static Hashtable<String, String> substitutions;
@@ -321,7 +324,10 @@ public class DavisConfig {
 		String admins = getInitParameter("administrators", "").trim();
 		if (admins != null) 
 			administrators = new ArrayList<String>(Arrays.asList(admins.split(" *, *")));
-
+		uiIncludeHead = getInitParameter("ui-include-head", "").trim();
+		uiIncludeBodyHeader = getInitParameter("ui-include-body-header", "").trim();
+		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
+		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
 			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
@@ -663,5 +669,17 @@ public class DavisConfig {
 	
 	public ArrayList getAdministrators() {
 		return administrators;
+	}
+	
+	public String getUIIncludeHead() {
+		return uiIncludeHead;
+	}
+	
+	public String getUIIncludeBodyHeader() {
+		return uiIncludeBodyHeader;
+	}
+	
+	public String getUIIncludeBodyFooter() {
+		return uiIncludeBodyFooter;
 	}
 }
