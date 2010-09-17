@@ -618,8 +618,6 @@ public class FSUtilities {
 	    					continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
 	    			}	
 	    			lastName = file.getName();
-	    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0"))
-	    				Log.log(Log.WARNING, "Using dirty copy for "+file.getAbsolutePath());
 	    			fileList.add(file);
 	    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
 	    			file.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
@@ -636,6 +634,12 @@ public class FSUtilities {
     						file.setMetadata(metadata.get(path).getMetadata());
 //    						files[i].setMetadata(metadata.get(path).getMetadata());
     				}
+	    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0")) {
+	    				String s = "";
+	    				if (file.length() == 0)
+	    					s = " (its length is 0)";
+	    				Log.log(Log.WARNING, "Using a dirty copy of "+file.getAbsolutePath()+s);
+	    			}
 	    			i++;
 	    		}
     		CachedFile[] files = fileList.toArray(new CachedFile[0]);
