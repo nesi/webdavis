@@ -316,10 +316,10 @@ public class Davis extends HttpServlet {
 		// Check that the client's uihandle is known to us (skip if basic auth - let fail() handle that case). If not, send an error so that UI can reload window.
 		String cacheID = request.getParameter("uihandle");
 		if ((request.isSecure() || authorization != null) && cacheID != null && !cacheID.equals("null")) 
-			if (davisSession == null || davisSession.getCacheByID(cacheID) == null) {
+			if (davisSession == null || davisSession.getClientInstance(cacheID) == null) {
 				String s = "Files cache for client with cacheID="+cacheID+" not found (server may have been restarted).";
 				if (davisSession != null)
-					s += " Cache keys:"+davisSession.getCache().keySet();
+					s += " Cache keys:"+davisSession.getClientInstances().keySet();
 				Log.log(Log.WARNING,  s);
 				response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
 				response.flushBuffer();

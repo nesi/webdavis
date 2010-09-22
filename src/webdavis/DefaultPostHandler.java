@@ -92,8 +92,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		String method = request.getParameter("method");
 		if (method == null)
 			return;
-		String url = getRemoteURL(request, getRequestURL(request),
-				getRequestURICharset());
+		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		Log.log(Log.DEBUG, "url:" + url + " method:" + method);
 		RemoteFile file = getRemoteFile(request, davisSession);
 		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
@@ -104,30 +103,26 @@ public class DefaultPostHandler extends AbstractHandler {
 		}
 		String requestUrl = getRequestURL(request);
 		Log.log(Log.DEBUG, "Request URL: {0}", requestUrl);
-		//StringBuffer str = new StringBuffer();
 		StringBuffer json = new StringBuffer();
+		
+		String requestUIHandle = null;
+		if (request.getParameter("uihandle") != null) {
+			requestUIHandle = request.getParameter("uihandle");
+			if (requestUIHandle.equals("null"))
+				requestUIHandle = null;
+		}
+		
         response.setContentType("text/json; charset=\"utf-8\"");
 		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
 			boolean recursive = false;
 			JSONArray jsonArray = getJSONContent(request);						
-//			InputStream input = request.getInputStream();
-//			byte[] buf = new byte[request.getContentLength()];
-//			int count=input.read(buf);
-//			Log.log(Log.DEBUG, "read:"+count);
-//			Log.log(Log.DEBUG, "received data: " + new String(buf));
-//			JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 			
 			// Write permissions for given items
 			if (jsonArray != null) {	
 		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();		    						
-//		    	try {
-		    		getFileList(request, davisSession, fileList, jsonArray);
-//		    	} catch (ServletException e) {
-//		    		if (!checkClientInSync(response, e))
-//		    			return;
-//		    	}
+	    		getFileList(request, davisSession, fileList, jsonArray);
 
 				GeneralFileSystem fileSystem = file.getFileSystem();
 				String domain = null;
@@ -491,84 +486,113 @@ public class DefaultPostHandler extends AbstractHandler {
 	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Invalid request (not multipart)")));
 	        else {
                 long contentLength = request.getContentLength();
-                if (contentLength==-1)
-                	contentLength=Long.parseLong(request.getHeader("x-expected-entity-length"));
-		        
-		        Tracker tracker = createTracker(contentLength);
-		      	
-		        String encoding = request.getCharacterEncoding();
-		        if (encoding == null) 
-		            encoding = "UTF-8";
-		        
-		        ServletFileUpload uploadProcessor = new ServletFileUpload();
-		        uploadProcessor.setHeaderEncoding(encoding);
-//	      		upload.setSizeMax(getSizeLimit(request));	// Set maximum file size allowed for transfer
-
-		        try {
-		        	boolean result = false;
-		            FileItemIterator iter = uploadProcessor.getItemIterator(request);
-		            if (iter.hasNext()) {
-		                FileItemStream fileItemStream = iter.next();
-		                if (!fileItemStream.isFormField()) {
-		                	InputStream inputStream = fileItemStream.openStream();
-		                	String fileName = fileItemStream.getName();
-		                	char c = '/';
-		                	if (fileName.startsWith(":\\", 1))	// Win32 upload
-		                		c = '\\';
-		                	int j = fileName.lastIndexOf(c); 
-		                	if (j >= 0)
-		                		fileName = fileName.substring(j+1);
-	                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
-	                        boolean existsCurrently = file.exists();
-	                        if (existsCurrently /*&& !file.isFile()*/) {
-	                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
-	            	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("File already exists")));
-	                        } else {	                        
-		                		if (davisSession.getCurrentResource() == null) 
-		                			davisSession.setCurrentResource(davisSession.getDefaultResource());
-		                        RemoteFileOutputStream stream = null;
-		                    	Log.log(Log.DEBUG, "saving file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
-		                        if (file.getFileSystem() instanceof SRBFileSystem) {
-		                        	((SRBFile)file).setResource(davisSession.getCurrentResource());
-		                        	stream = new SRBFileOutputStream((SRBFile)file);
-		                        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
-		                        	stream = new IRODSFileOutputStream((IRODSFile)file);
+                if (contentLength == -1)
+                	contentLength = Long.parseLong(request.getHeader("x-expected-entity-length"));
+	            if (contentLength < 0) 
+	            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Your browser can't upload files larger than 2Gb")));
+	            else {
+	                Tracker tracker = createTracker(contentLength);
+	                ClientInstance client = davisSession.getClientInstance(requestUIHandle);
+	                if (client != null)
+	                	client.setTracker(tracker);
+			      	
+			        String encoding = request.getCharacterEncoding();
+			        if (encoding == null) 
+			            encoding = "UTF-8";
+			        
+			        ServletFileUpload uploadProcessor = new ServletFileUpload();
+			        uploadProcessor.setHeaderEncoding(encoding);
+	//	      		upload.setSizeMax(getSizeLimit(request));	// Set maximum file size allowed for transfer
+	
+			        try {
+			        	boolean result = false;
+			            FileItemIterator iter = uploadProcessor.getItemIterator(request);
+			            if (iter.hasNext()) {
+			                FileItemStream fileItemStream = iter.next();
+			                if (!fileItemStream.isFormField()) {
+			                	InputStream inputStream = fileItemStream.openStream();
+			                	String fileName = fileItemStream.getName();
+			                	char c = '/';
+			                	if (fileName.startsWith(":\\", 1))	// Win32 upload
+			                		c = '\\';
+			                	int j = fileName.lastIndexOf(c); 
+			                	if (j >= 0)
+			                		fileName = fileName.substring(j+1);
+		                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
+		                        boolean existsCurrently = file.exists();
+		                        if (existsCurrently /*&& !file.isFile()*/) {
+		                        	Log.log(Log.WARNING, file.getAbsolutePath()+" already exists on server");
+		            	            json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("File already exists")));
+		                        } else {	                        
+			                		if (davisSession.getCurrentResource() == null) 
+			                			davisSession.setCurrentResource(davisSession.getDefaultResource());
+			                        RemoteFileOutputStream stream = null;
+			                    	Log.log(Log.DEBUG, "saving file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
+			                        if (file.getFileSystem() instanceof SRBFileSystem) {
+			                        	((SRBFile)file).setResource(davisSession.getCurrentResource());
+			                        	stream = new SRBFileOutputStream((SRBFile)file);
+			                        }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+			                        	stream = new IRODSFileOutputStream((IRODSFile)file);
+			                        }
+			                        BufferedOutputStream outputStream = new BufferedOutputStream(stream, 1024*256);  //Buffersize of 256k seems to give max speed
+			                        try {
+			                        	copy(tracker, inputStream, outputStream);
+			                        } catch (IOException e) {
+			                        	try {
+					                        outputStream.flush();
+					                        outputStream.close();
+			                        	} catch (IOException ee) {}
+			                        	throw e;
+			                        }
+			                        outputStream.flush();
+			                        outputStream.close();
+				                    if (tracker.getBytesReceived() >= 0) {
+				                    	tracker.setComplete();
+				                        json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("success")+","+escapeJSONArg("message")+":"+escapeJSONArg(""+tracker.getBytesReceived())));
+				                        result = true;
+				                    } 
+				                    client = davisSession.getClientInstance(requestUIHandle);
+				                    if (client != null)
+				                    	client.setTracker(null);
 		                        }
-		                        BufferedOutputStream outputStream = new BufferedOutputStream(stream, 1024*256);  //Buffersize of 256k seems to give max speed
-		                        try {
-		                        	copy(tracker, inputStream, outputStream);
-		                        } catch (IOException e) {
-		                        	try {
-				                        outputStream.flush();
-				                        outputStream.close();
-		                        	} catch (IOException ee) {}
-		                        	throw e;
-		                        }
-		                        outputStream.flush();
-		                        outputStream.close();
-			                    if (tracker.getBytesReceived() >= 0) {
-			                        tracker.setComplete();
-			                        json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("success")+","+escapeJSONArg("message")+":"+escapeJSONArg(""+tracker.getBytesReceived())));
-			                        result = true;
-			                    } 
-	                        }
-		                }
-		            }
-		            if (!result) 
-		            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("No file to upload")));
-		        } catch (EOFException e) {
-                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Unexpected end of file")));
-		        } catch (IOException e) {
-		        	Log.log(Log.DEBUG, "Upload failed: "+e);
-		        	String s = e.getMessage();
-		        	if (s.equals("IRODS error occured msg")) //sic
-		        		s = "you don't have permission to upload here"; // Assume it's irods error -818000
-                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(s)));
-		        } catch (FileUploadException e) {
-		        	Log.log(Log.DEBUG, "Upload failed: "+e);
-	                json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
-		        }
+			                }
+			            }
+			            if (!result) 
+			            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("No file to upload")));
+			        } catch (EOFException e) {
+	                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Unexpected end of file")));
+			        } catch (IOException e) {
+			        	Log.log(Log.DEBUG, "Upload failed: "+e);
+			        	String s = e.getMessage();
+			        	if (s.equals("IRODS error occured msg")) //sic
+			        		s = "you don't have permission to upload here"; // Assume it's irods error -818000
+	                    json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(s)));
+			        } catch (FileUploadException e) {
+			        	Log.log(Log.DEBUG, "Upload failed: "+e);
+		                json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg(e.getMessage())));
+			        }
+	            }
 	        }
+		} else if (method.equalsIgnoreCase("uploadstatus")) {	
+			Tracker tracker = null;
+            ClientInstance client = davisSession.getClientInstance(requestUIHandle);
+            if (client == null) {
+    			Log.log(Log.DEBUG, "Transfer for "+requestUIHandle+" does not exist.");
+    			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+    			return;
+            }
+            tracker = client.getTracker();
+			if (tracker != null) {
+				long transferred = -1;
+				long total = -1;
+				try {
+					transferred = tracker.getBytesReceived();
+					total = tracker.getSize();
+				} catch (Exception e) {}
+				if (transferred > -1 && total > -1)
+					json.append("{"+escapeJSONArg("transferred")+":"+transferred+','+escapeJSONArg("total")+":"+total+"}");
+			}
+			json.append("\n");
 		} else if (method.equalsIgnoreCase("domains")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
@@ -868,7 +892,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
 			
-			davisSession.getCache().clear(); // destroy cache for the session (all browser windows) 
+			davisSession.getClientInstances().clear(); // destroy cache for the session (all browser windows) 
 			
 			Log.log(Log.INFORMATION, "logout from: "+request.getRemoteAddr());
 			if (request.isSecure()) 

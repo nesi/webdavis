@@ -418,11 +418,16 @@ public class DefaultGetHandler extends AbstractHandler {
 				if (s != null)
 					count = Integer.parseInt(s);
 
-				CachedFile[] fileList = davisSession.getCacheByID(requestUIHandle);
+				CachedFile[] fileList = null;
+				ClientInstance client = davisSession.getClientInstance(requestUIHandle);
+				if (client != null)
+					fileList = client.getFileListCache();
 				if (noCache || fileList == null) {
 					Log.log(Log.DEBUG, "Fetching directory contents from irods");
 					fileList = FSUtilities.getIRODSCollectionDetails(file, false, !directoriesOnly, !directoriesOnly);
-					davisSession.getCache().put(requestUIHandle, fileList);
+					client = new ClientInstance();
+					client.setFileListCache(fileList);
+					davisSession.getClientInstances().put(requestUIHandle, client);
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 

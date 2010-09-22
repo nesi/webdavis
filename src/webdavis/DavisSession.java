@@ -6,6 +6,8 @@ import java.util.Hashtable;
 
 import org.irods.jargon.core.exception.JargonException;
 
+import webdavis.DefaultPostHandler.Tracker;
+
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
@@ -29,20 +31,10 @@ public class DavisSession implements Serializable{
 	private String currentRoot;
 	private String currentResource;
 	private int sharedSessionNumber;
-
-	private Hashtable<String, CachedFile[]> fileListCache = new Hashtable(); // Table of file listings from last server query - one per unique UI
-
-
-	public CachedFile[] getCacheByID(String cacheID) {
-		
-		return fileListCache.get(cacheID);
-	}
 	
-	public Hashtable<String, CachedFile[]> getCache() {
+	private Hashtable<String, ClientInstance> clientInstances = new Hashtable(); // Client instance specific items - one per unique UI
 
-		return fileListCache;
-	}
-	
+
 	public void disconnect() throws RuntimeException {
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
@@ -179,5 +171,11 @@ public class DavisSession implements Serializable{
 	}
 	public boolean isConnected() {
 		return remoteFileSystem.isConnected();
+	}
+	public ClientInstance getClientInstance(String clientID) {
+		return clientInstances.get(clientID);
+	}
+	public Hashtable<String, ClientInstance> getClientInstances() {
+		return clientInstances;
 	}
 }

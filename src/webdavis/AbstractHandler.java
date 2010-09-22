@@ -1057,9 +1057,12 @@ public abstract class AbstractHandler implements MethodHandler {
 		}
     	if (batch && fileList.size() == 0) {
     		String cacheID = request.getParameter("uihandle");
-    		CachedFile[] files = davisSession.getCacheByID(cacheID);
+			CachedFile[] files = null;
+			ClientInstance client = davisSession.getClientInstance(cacheID);
+			if (client != null)
+				files = client.getFileListCache();
     		if (files == null) {
-    			Log.log(Log.ERROR, "Files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getCache().keySet());
+    			Log.log(Log.ERROR, "Files cache for cacheID="+cacheID+" not found. Cache keys:"+davisSession.getClientInstances().keySet());
     			throw new ServletException("Files cache for cacheID="+cacheID+" not found", new NoSuchFieldException());
     		}
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();

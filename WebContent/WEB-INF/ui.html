@@ -560,7 +560,7 @@
           		'		<td>'+
 				'			<table id="uploadButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
              	'				<tr>'+
-                '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); dojo.html.set(dojo.byId(\'uploadStatusField\'), \'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
+                '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); setUploadStatus(\'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
@@ -1285,10 +1285,39 @@
 		}
 
 		var uploadInProgress = false;
+		var progressTimer;
+
+		function setUploadStatus(html) {
+			dojo.html.set(dojo.byId("uploadStatusField"), '<small>'+html+'</small>');
+		}
+
+		function updateTransferStatus() {
+		  	dojo.xhrPost({
+	    		url: "?method=uploadstatus&uihandle="+listingStore.uiHandle,
+	    		load: function(responseObject, ioArgs){	  
+				  		var transferred = responseObject.transferred;
+		  				var total = responseObject.total;
+		  				if (transferred != undefined) 
+							setUploadStatus('Uploading: '+Math.round(transferred/total*100)+'%&nbsp;&nbsp;&nbsp;('+humanReadable(transferred)+' of '+humanReadable(total)+' transferred)');
+		  			    return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+						clearInterval(progressTimer);
+						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.");
+		    			checkOffline(response);
+	      				//loadedAlert(errorMessage("uploadstatus", ioArgs.xhr.status, "Error during upload status update:\n\n"+ioArgs.xhr.statusText));
+	      				return response;
+	    			},
+	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});
+		}
 		
 		function uploadFile(){ 		
-			dojo.html.set(dojo.byId('uploadStatusField'), "Uploading...");
+			var statusField = 
+			setUploadStatus("Uploading...");
 			uploadInProgress = true;
+			progressTimer = setInterval("updateTransferStatus()", 5000);
 			dojo.io.iframe.send({
 				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
 				method: "POST",
@@ -1297,6 +1326,11 @@
 	    		sync: synchronous,
 				handle: function(response, ioArgs){
 							showUploadDialog(false);
+//alert("ioargs1= "+dojo.toJson(ioArgs, true));
+//alert("response1="+dojo.toJson(response, true));
+							if (response.name == "TypeError")	// IE bad upload
+								alert("Failed to upload file: Your browser can't upload files larger than 2Gb");
+							else
 							if (response.status == "success") {
 								//alert("Successfully transferred "+response.message+" bytes");
 								window.status="Successfully transferred "+response.message+" bytes";
@@ -1305,13 +1339,16 @@
 								alert("Failed to upload file: "+response.message);
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
+							clearInterval(progressTimer);
 							return response;
 						},
 				error: function(response, ioArgs) {
 							showUploadDialog(false);
-							alert("Failed to upload file: "+ioArgs.xhr.statusText);
+							if (ioArgs.xhr)
+								alert("Failed to upload file: "+ioArgs.xhr.statusText);
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
+							clearInterval(progressTimer);
 							return response;
 						}
 			});
@@ -1322,7 +1359,7 @@
 				showUploadDialog(false);
 			else {
 				uploadInProgress = false;
-				dojo.html.set(dojo.byId('uploadStatusField'), "Cancelling...");
+				setUploadStatus("Cancelling...");
 				reloadWindow();	// Is this the only way to kill a transfer?
 			}
       		listingStore.refreshDisplay(false);
@@ -2055,8 +2092,9 @@
    		File to upload:
    		<input id="uploadTextField" type="file" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
  	</form>
+ 	<br/>
 	<div id="uploadStatusField"></div>
-	<br/>
+	<br/><br/>
 	<div style="text-align: right;">
 		<button type="button" id="uploadStartButton" onclick="enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();">Upload</button> 
 		<button type="button" id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
