@@ -550,6 +550,7 @@ public class DefaultGetHandler extends AbstractHandler {
 						Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 						return;
 					}
+					response.setContentType("text/html; charset=\"utf-8\"");
 					op.println("<html><body><br><br><br><br><h2 style=\"text-align: center;\">Davis configuration was reloaded.</h2></body></html>");
 					op.flush();
 					op.close();
