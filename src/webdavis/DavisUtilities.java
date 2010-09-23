@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 
 import java.lang.reflect.Field;
+import java.net.URLEncoder;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -525,5 +527,15 @@ public class DavisUtilities {
     		s += array[i];
     	}	           
     	return s;
+    }
+    
+    public static String encodeURLString(String url) {
+    	
+    	  String s = null;
+    	  try {
+    		  s = URLEncoder.encode(url, "UTF-8");
+    	  } catch (UnsupportedEncodingException e) {}
+    	  s = s.replace("+", "%2B");
+    	  return s;
     }
 }

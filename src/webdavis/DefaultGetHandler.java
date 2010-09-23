@@ -447,16 +447,25 @@ public class DefaultGetHandler extends AbstractHandler {
 					if (i == 0) {json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
 										+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
 										+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
+										+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
 										+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
 						continue;
 					}
 					String type = fileList[i-1].isDirectory() ? "d" : "f";
+					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
+					String sharingValue = "";
+					String sharingKey = DavisConfig.getInstance().getSharingKey();
+					if (metadata != null && sharingKey != null) {
+						ArrayList<String> values = metadata.get(sharingKey);
+						if (values != null)
+							sharingValue = values.get(0);
+					}
 					json.append("{\"name\":{\"name\":"+/*escapeJSONArg(*/ "\""+FSUtilities.escape(fileList[i-1].getName())/*)*/+"\""+",\"type\":"+escapeJSONArg(type)+"}"
 							+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
+							+"\"sharing\":{\"value\":"+escapeJSONArg(sharingValue)+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"metadata\":{\"values\":[");
 
-					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
 					if (metadata != null) {
 						json.append("\n");
 						String[] names = metadata.keySet().toArray(new String[0]);
@@ -483,6 +492,7 @@ public class DefaultGetHandler extends AbstractHandler {
 					json.append(",\n{\"name\":{\"name\":\""	+ (filtered ? "(No matches)" : "(Directory is empty)")
 									+ "\",\"type\":\"bottom\"}," + "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
 									+ "\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
+									+ "\"sharing\":{\"value\":\"\",\"type\":\"bottom\"},"
 									+ "\"metadata\":{\"value\":\"\",\"type\":\"bottom\"}}");
 				}
 				json.append("\n]}");
@@ -598,6 +608,8 @@ public class DefaultGetHandler extends AbstractHandler {
 					version = ((SRBFileSystem)file.getFileSystem()).getVersion();
 				substitutions.put("jargonversion", version);
 				substitutions.put("disablereplicasbutton", ""+config.getDisableReplicasButton());
+				substitutions.put("sharinguser", ""+config.getSharingUser());
+				substitutions.put("sharingkey", ""+config.getSharingKey());
 				substitutions.put("ghostbreadcrumb", ""+config.getGhostBreadcrumb());
 				substitutions.put("ghosttrashbreadcrumb", ""+config.getGhostTrashBreadcrumb());
 				substitutions.put("includehead", ""+config.getUIIncludeHead());

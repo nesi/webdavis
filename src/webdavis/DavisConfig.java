@@ -84,6 +84,9 @@ public class DavisConfig {
     private String uiIncludeHead;
     private String uiIncludeBodyHeader;
     private String uiIncludeBodyFooter;
+    private String sharingKey;
+    private String sharingUser;
+    private String sharingURLPrefix;
 
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	public static Hashtable<String, String> substitutions;
@@ -308,7 +311,13 @@ public class DavisConfig {
 		dojoroot = getInitParameter("dojoroot", "").trim();
         String s = getInitParameter("maximumXmlRequest", true);
         maximumXmlRequest = (s != null) ? Long.parseLong(s) : 20000l;
-        
+		sharingKey = getInitParameter("sharing-key", "").trim();
+		if (sharingKey.length() == 0)
+			sharingKey = null;
+		sharingUser = getInitParameter("sharing-user", "").trim();
+		if (sharingUser.length() == 0)
+			sharingUser = null;
+        sharingURLPrefix = getInitParameter("sharing-URL-prefix", "").trim();
         displayMetadata = getInitParameter("displayMetadata", "").trim();
         authClass = getInitParameter("authClass", true);
 		s = getInitParameter("disable-replicas-button", false);
@@ -681,5 +690,17 @@ public class DavisConfig {
 	
 	public String getUIIncludeBodyFooter() {
 		return uiIncludeBodyFooter;
+	}
+
+	public String getSharingUser() {
+		return sharingUser;
+	}
+	
+	public String getSharingKey() {
+		return sharingKey;
+	}
+	
+	public String getsharingURLPrefix() {
+		return sharingURLPrefix;
 	}
 }

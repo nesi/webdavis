@@ -10,6 +10,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -72,6 +73,8 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  */
 public class DefaultPostHandler extends AbstractHandler {
 
+	private static Random random = new Random();
+	
 	/**
 	 * Services requests which use the HTTP POST method. 
 	 * 
@@ -788,6 +791,72 @@ public class DefaultPostHandler extends AbstractHandler {
 	        	}
 	        }
 			json.append("\n]}");
+		} else if (method.equalsIgnoreCase("share")) {
+			String action = request.getParameter("action");
+			String sharingKey = DavisConfig.getInstance().getSharingKey();
+	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+//	    	try {
+	    		getFileList(request, davisSession, fileList, getJSONContent(request));
+//	    	} catch (ServletException e) {
+//	    		if (!checkClientInSync(response, e))
+//	    			return;
+//	    	}
+
+	        Iterator<RemoteFile> iterator = fileList.iterator();
+	        while (sharingKey != null && iterator.hasNext()) {
+	        	file = iterator.next();
+	        	if (!file.isDirectory()) {	// Can't share a directory
+	        		String username = DavisConfig.getInstance().getSharingUser();
+					if (username != null) {
+						GeneralFileSystem fileSystem = file.getFileSystem();
+						String permission = "r";
+						if (action.equals("unshare"))
+							permission = "n";
+						String domain = request.getParameter("domain");
+						
+						try {
+							// Add/remove read permission for share user
+							if (fileSystem instanceof SRBFileSystem) {
+								Log.log(Log.WARNING, "sharing is not implemented for SRB servers");
+							} else if (fileSystem instanceof IRODSFileSystem) {
+								Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" for sharing");
+								((IRODSFile)file).changePermissions(permission, username, false);
+							}
+						} catch (IOException e){
+				        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+e);
+				        	String s = e.getMessage();
+				        	if (s.endsWith("-818000")) 
+				        		s = "you don't have permission"; // irods error -818000 
+		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+		        			return;
+						}
+						
+						try {
+							// Add/remove share metadata
+							if (fileSystem instanceof SRBFileSystem) {
+							}else 
+							if (fileSystem instanceof IRODSFileSystem) {
+								Log.log(Log.DEBUG, "removing metadata field '"+sharingKey+"' for "+username+" to end sharing");
+								((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
+								if (action.equals("share")) {
+									String randomString = Long.toHexString(random.nextLong());
+									String shareURL = DavisConfig.getInstance().getsharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeURLString(file.getName());
+									String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
+									Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
+									((IRODSFile)file).modifyMetaData(metadata);
+								}
+							}
+						} catch (IOException e){
+				        	Log.log(Log.DEBUG, "Set metadata failed for sharing: "+e);
+				        	String s = e.getMessage();
+				        	if (s.endsWith("-818000")) 
+				        		s = "you don't have permission"; // irods error -818000 
+		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+		        			return;
+						}
+					}
+	        	}
+	        }
 		} else if (method.equalsIgnoreCase("userlist")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
