@@ -589,6 +589,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("home", davisSession.getHomeDirectory());
 				substitutions.put("trash", davisSession.getTrashDirectory());
 				substitutions.put("account", davisSession.getAccount());
+				substitutions.put("authscheme", davisSession.getAuthenticationScheme());
 				substitutions.put("uiloaddate", uiLoadDate);
 				String version = "";
 				if (file.getFileSystem() instanceof IRODSFileSystem) 

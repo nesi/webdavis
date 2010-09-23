@@ -35,6 +35,19 @@ public class DavisSession implements Serializable{
 	private Hashtable<String, ClientInstance> clientInstances = new Hashtable(); // Client instance specific items - one per unique UI
 
 
+	public String getAuthenticationScheme() {
+		if (sessionID != null) {
+			if (sessionID.endsWith("*shib|"))
+				return "shib";
+			if (sessionID.endsWith("*basic|"))
+				return "basic";
+			return null;
+		}
+		if (DavisConfig.getInstance().getServerType().equalsIgnoreCase("irods"))
+			return ((IRODSFileSystem)remoteFileSystem).getAuthenticationScheme();
+		return null;
+	}
+	
 	public void disconnect() throws RuntimeException {
 		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){

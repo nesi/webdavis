@@ -101,6 +101,8 @@
 		dojo.addOnLoad(function() {
 			if ("<parameter disablereplicasbutton/>" == "true")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
+			if (window.location.protocol == "http:" && "<parameter authscheme/>" == "basic")
+				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
 				
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
@@ -2228,7 +2230,7 @@
 		<tr>
 			<td align="center">Davis version: <parameter appversion/><br><br><small>
 			    Using Dojo version: <script>document.write(dojo.version)</script><br>
-			    Server type: <parameter servertype/>&nbsp;&nbsp;&nbsp;&nbsp;Jargon version string: <parameter jargonversion/><br><br>
+			    Server type: <parameter servertype/>&nbsp;&nbsp;&nbsp;&nbsp;Authentication scheme: <parameter authscheme/>&nbsp;&nbsp;&nbsp;&nbsp;Jargon version string: <parameter jargonversion/><br><br>
 			    Davis UI last loaded <parameter uiloaddate/>&nbsp;&nbsp;&nbsp;&nbsp;UI handle: <span id="aboutUIHandle"></span><br>
 			    Browser: <script>document.write(navigator.userAgent)</script><br><br>
 			    Support contact: <parameter organisationsupport/></br></small>
@@ -2277,7 +2279,7 @@
 			        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
 											<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a>
 											<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a>
-											<a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
