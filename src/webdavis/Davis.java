@@ -12,6 +12,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 
@@ -73,6 +75,7 @@ public class Davis extends HttpServlet {
 	static long headroom = Long.MAX_VALUE;
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
+	static final String[] WEBDAVUSERAGENTS = {"webdav"}; // user-agent header prefixes that indicate a webdav client
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
 	
 
@@ -512,11 +515,18 @@ public class Davis extends HttpServlet {
 		boolean browser = true;		
 		String method = request.getMethod();
 		String accept = request.getHeader("accept");
+		String agent = request.getHeader("user-agent");
+		ListIterator<String> webdavAgents = Arrays.asList(WEBDAVUSERAGENTS).listIterator();
+		
 		if (Arrays.asList(WEBDAVMETHODS).contains(method))
 			browser = false;
 		else
 		if (accept == null)
 			browser = false;
+		while (browser && agent != null && webdavAgents.hasNext()) 
+			if (agent.toLowerCase().startsWith(webdavAgents.next()))
+				browser = false;
+
 		Log.log(Log.DEBUG, "isBrowser(): "+browser+" (method="+method+" accept="+accept+")");
 		return browser;
 	}
