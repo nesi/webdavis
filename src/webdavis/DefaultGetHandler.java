@@ -855,14 +855,14 @@ public class DefaultGetHandler extends AbstractHandler {
 		} else {
 			response.setHeader("Accept-Ranges", /*"bytes"*/"none");
 		}
-		int bufferSize = (int) (file.length() / 100);
+		long bufferSize = file.length() / 100;
 		// minimum buf size of 50KiloBytes
 		if (bufferSize < 51200)
 			bufferSize = 51200;
 		// maximum buf size of 5MegaByte
 		else if (bufferSize > 5242880)
 			bufferSize = 5242880;
-		byte[] buf = new byte[bufferSize];
+		byte[] buf = new byte[(int)bufferSize];
 		int count = 0;
 		ServletOutputStream output = response.getOutputStream();
 		int interval = request.getSession().getMaxInactiveInterval();
