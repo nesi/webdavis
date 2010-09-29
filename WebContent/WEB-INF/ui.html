@@ -97,18 +97,10 @@
 		var pageLoaded = false;
 		var synchronous = false/*true*/;
 		var queryParams;
+		var listingLayoutSharingField;
+		var listingLayoutMetadataField;
 		
 		dojo.addOnLoad(function() {
-			if ("<parameter disablereplicasbutton/>" == "true")
-				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
-			if (window.location.protocol == "http:" && "<parameter authscheme/>" == "basic")
-				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
-			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
-				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
-				listingLayout[listingLayoutMetadataField].hidden = true;
-		//		listingGrid.setStructure(listingLayout);
-			}
-											
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
 				dojo.html.set(dojo.byId("header"), ''); // Hide header section
@@ -120,6 +112,17 @@
 			pageLoaded = true;
 //			showDebug();
 			initVariables();
+
+			if ("<parameter disablereplicasbutton/>" == "true")
+				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
+			if (window.location.protocol == "http:" && "<parameter authscheme/>" == "basic")
+				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
+			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
+				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
+				listingLayout[listingLayoutMetadataField].hidden = true;
+		//		listingGrid.setStructure(listingLayout);
+			}
+											
 			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
 			initDynamicObjects();
 //			gotoDirectory(escape("<parameter url/>"), false);
