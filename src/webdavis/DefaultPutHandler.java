@@ -55,10 +55,12 @@ public class DefaultPutHandler extends AbstractHandler {
         long length = -1;
         try {
         	length=Long.parseLong(request.getHeader("Content-Length"));
-        }catch (Exception _e){}
+        }catch (Exception e){}
         Log.log(Log.DEBUG, "request.getContentLength(): "+length);
         if (length==-1){
-        	length=Long.parseLong(request.getHeader("x-expected-entity-length"));
+            try {
+            	length=Long.parseLong(request.getHeader("x-expected-entity-length"));
+            }catch (Exception e){}
             Log.log(Log.DEBUG, "request.getHeader(\"x-expected-entity-length\"): "+length);
         }
         if (length < 0) {
@@ -121,15 +123,15 @@ public class DefaultPutHandler extends AbstractHandler {
             	Log.log(Log.DEBUG, "saving file into res:"+((IRODSFile)file).getResource());
             	outputStream = new IRODSFileOutputStream((IRODSFile)file);
             }
-        	if (length>0) {
-                int bufferSize = (int) (length / 100);
+        	if (length > 0) {
+                long bufferSize = length / 100;
                 //minimum buf size of 50KiloBytes
                 if (bufferSize < 51200)
                     bufferSize = 51200;
                     //maximum buf size of 5MegaByte
                 else if (bufferSize > 5242880)
                     bufferSize = 5242880;
-                byte[] buf = new byte[bufferSize];
+                byte[] buf = new byte[(int)bufferSize];
 	            int count;
 	            int interval=request.getSession().getMaxInactiveInterval();
 	            long startTime=new Date().getTime();
