@@ -1329,6 +1329,8 @@
 
 		var uploadInProgress = false;
 		var progressTimer;
+		var TIMERDEFAULT = 5000;
+		var timerInterval = TIMERDEFAULT;
 
 		function setUploadStatus(html) {
 			dojo.html.set(dojo.byId("uploadStatusField"), '<small>'+html+'</small>');
@@ -1345,7 +1347,10 @@
 		  			    return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-						clearInterval(progressTimer);
+	    	    		var oldTimer = progressTimer;
+	    	    		timerInterval *= 2;
+	    	    		progressTimer = setInterval("updateTransferStatus()", timerInterval);
+						clearInterval(oldTimer);
 						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.");
 		    			checkOffline(response);
 	      				//loadedAlert(errorMessage("uploadstatus", ioArgs.xhr.status, "Error during upload status update:\n\n"+ioArgs.xhr.statusText));
@@ -1360,7 +1365,7 @@
 			var statusField = 
 			setUploadStatus("Uploading...");
 			uploadInProgress = true;
-			progressTimer = setInterval("updateTransferStatus()", 5000);
+			progressTimer = setInterval("updateTransferStatus()", timerInterval);
 			dojo.io.iframe.send({
 				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
 				method: "POST",
@@ -1383,6 +1388,7 @@
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							clearInterval(progressTimer);
+							timerInterval = TIMERDEFAULT;
 							return response;
 						},
 				error: function(response, ioArgs) {
@@ -1392,6 +1398,7 @@
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							clearInterval(progressTimer);
+							timerInterval = TIMERDEFAULT;
 							return response;
 						}
 			});
