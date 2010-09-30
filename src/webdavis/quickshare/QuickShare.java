@@ -28,6 +28,7 @@ public class QuickShare extends HttpServlet {
     private ServletConfig config = null;
     private String key = null;
     private final static String CONFIGPATH = "/WEB-INF/quickshare.properties";
+    private String username = null;
 
     public void init(ServletConfig config) throws ServletException {
     	
@@ -36,7 +37,7 @@ public class QuickShare extends HttpServlet {
         try {
         	Log.log(Log.INFORMATION, "QuickShare config path: " + config.getServletContext().getRealPath(CONFIGPATH));
             properties.load(new FileInputStream(config.getServletContext().getRealPath(CONFIGPATH)));
-            String username = properties.getProperty("username");
+            username = properties.getProperty("username");
             String password = properties.getProperty("password");
             String host = properties.getProperty("irods-host");
             int port = Integer.valueOf(properties.getProperty("irods-port"));
@@ -72,7 +73,13 @@ public class QuickShare extends HttpServlet {
         byte[] buf = new byte[(int)bufferSize];
         int count = 0;
         ServletOutputStream output = response.getOutputStream();
-        IRODSRandomAccessFile input = new IRODSRandomAccessFile(file, "r");
+        IRODSRandomAccessFile input = null;
+        try {
+        	input = new IRODSRandomAccessFile(file, "r");
+        } catch (SecurityException e) {
+        	response.sendError(HttpServletResponse.SC_FORBIDDEN, "The file is not readable by the "+username+" user.");
+        	return;
+        }
 
         while ((count = input.read(buf)) > 0) 
             output.write(buf, 0, count);
@@ -162,14 +169,14 @@ public class QuickShare extends HttpServlet {
 			
 			//findPath
 			IRODSFile file = findFile(sys, cut);
-			if(file != null) {
+			if (file != null) {
 			   //write to outputStream
 			   sendFile(file, response);
 			} else
-			   response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			   response.sendError(HttpServletResponse.SC_NOT_FOUND, "QuickShare can't find the file. It may not currently be shared.");
 		}
 		catch(IOException e) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			response.sendError(HttpServletResponse.SC_NOT_FOUND,  "QuickShare can't locate the file. It may not currently be shared.");
 		}
 		finally {
 			if(sys != null)
