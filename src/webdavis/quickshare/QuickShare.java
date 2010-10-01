@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import webdavis.DavisConfig;
 import webdavis.Log;
 import webdavis.DavisUtilities;
 
@@ -27,27 +28,41 @@ public class QuickShare extends HttpServlet {
     private IRODSAccount account = null;
     private ServletConfig config = null;
     private String key = null;
-    private final static String CONFIGPATH = "/WEB-INF/quickshare.properties";
+   // private final static String CONFIGPATH = "/WEB-INF/quickshare.properties";
     private String username = null;
 
     public void init(ServletConfig config) throws ServletException {
     	
+    	while (DavisConfig.getInstance(false) == null) {
+    		//Log.log(Log.INFORMATION, "QuickShare: Davis config is not yet loaded - waiting...");
+    		System.err.println("QuickShare: Davis config is not yet loaded - waiting...");
+    		try {Thread.sleep(10000);} catch(Exception e) {}
+//    		throw new ServletException("QuickShare service is not running.");
+    	}
+        Log.log(Log.INFORMATION, "QuickShare is using Davis' configuration class");
         this.config = config;
-        Properties properties = new Properties();
-        try {
-        	Log.log(Log.INFORMATION, "QuickShare config path: " + config.getServletContext().getRealPath(CONFIGPATH));
-            properties.load(new FileInputStream(config.getServletContext().getRealPath(CONFIGPATH)));
-            username = properties.getProperty("username");
-            String password = properties.getProperty("password");
-            String host = properties.getProperty("irods-host");
-            int port = Integer.valueOf(properties.getProperty("irods-port"));
-            String zone = properties.getProperty("irods-zone");
-            key = properties.getProperty("metadata-key");
+      //  Properties properties = new Properties();
+     //   try {
+        //	Log.log(Log.INFORMATION, "QuickShare config path: " + config.getServletContext().getRealPath(CONFIGPATH));
+         //   properties.load(new FileInputStream(config.getServletContext().getRealPath(CONFIGPATH)));
+           // username = properties.getProperty("username");
+            username = DavisConfig.getInstance().getSharingUser();
+           //String password = properties.getProperty("password");
+            String password = DavisConfig.getInstance().getSharingPassword();
+           
+            //String host = properties.getProperty("irods-host");
+            String host = DavisConfig.getInstance().getSharingHost();
+            //int port = Integer.valueOf(properties.getProperty("irods-port"));
+            int port = DavisConfig.getInstance().getSharingPort();
+            //String zone = properties.getProperty("irods-zone");
+            String zone = DavisConfig.getInstance().getSharingZone();
+            //key = properties.getProperty("metadata-key");
+            key = DavisConfig.getInstance().getSharingKey();
 			account = new IRODSAccount(host, port, username, password,  "/" + zone + "/home", zone, "");
-        } catch(IOException e) {
-            Log.log(Log.ERROR, "QuickShare: Cannot open "+CONFIGPATH+".  Please make sure it's in the classpath.");
-            throw new ServletException("FATAL: Cannot start QuickShare servlet");
-        }
+      //  } catch(IOException e) {
+      //      Log.log(Log.ERROR, "QuickShare: Cannot open "+CONFIGPATH+".  Please make sure it's in the classpath.");
+      //      throw new ServletException("FATAL: Cannot start QuickShare servlet");
+      //  }
     }
 
     public IRODSFileSystem getFilesystem() throws IOException {

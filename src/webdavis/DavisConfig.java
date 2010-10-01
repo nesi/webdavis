@@ -24,7 +24,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class DavisConfig {
-	private static DavisConfig self;
+	private static DavisConfig self = null;
 	/**
 	 * The name of the servlet context attribute containing the charset used to
 	 * interpret request URIs.
@@ -87,6 +87,10 @@ public class DavisConfig {
     private String sharingKey;
     private String sharingUser;
     private String sharingURLPrefix;
+    private String sharingPassword;
+    private String sharingHost;
+    private int sharingPort;
+    public String sharingZone;
 
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	public static Hashtable<String, String> substitutions;
@@ -102,7 +106,11 @@ public class DavisConfig {
 	}
 
 	public static DavisConfig getInstance() {
-		if (self == null) {
+		return getInstance(true);
+	}
+	
+	public static DavisConfig getInstance(boolean create) {
+		if (self == null && create) {
 			self = new DavisConfig();
 		}
 		return self;
@@ -315,9 +323,16 @@ public class DavisConfig {
 		if (sharingKey.length() == 0)
 			sharingKey = null;
 		sharingUser = getInitParameter("sharing-user", "").trim();
+		sharingZone = getInitParameter("sharing-zone", "").trim();
 		if (sharingUser.length() == 0)
 			sharingUser = null;
         sharingURLPrefix = getInitParameter("sharing-URL-prefix", "").trim();
+        sharingHost = getInitParameter("sharing-host", "").trim();
+        sharingPassword = getInitParameter("sharing-password", "");
+		s = getInitParameter("sharing-port", "0");
+		try {
+			sharingPort = Integer.parseInt(s);
+		} catch (Exception e) {}
         displayMetadata = getInitParameter("displayMetadata", "").trim();
         authClass = getInitParameter("authClass", true);
 		s = getInitParameter("disable-replicas-button", false);
@@ -703,7 +718,23 @@ public class DavisConfig {
 		return sharingKey;
 	}
 	
-	public String getsharingURLPrefix() {
+	public String getSharingURLPrefix() {
 		return sharingURLPrefix;
+	}
+	
+	public String getSharingPassword() {
+		return sharingPassword;
+	}
+	
+	public String getSharingHost() {
+		return sharingHost;
+	}
+	
+	public int getSharingPort() {
+		return sharingPort;
+	}
+	
+	public String getSharingZone() {
+		return sharingZone;
 	}
 }

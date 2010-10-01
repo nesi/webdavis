@@ -846,7 +846,7 @@ public class DefaultPostHandler extends AbstractHandler {
 								((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
 								if (action.equals("share")) {
 									String randomString = Long.toHexString(random.nextLong());
-									String shareURL = DavisConfig.getInstance().getsharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
+									String shareURL = DavisConfig.getInstance().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
 									String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
 									Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
 									((IRODSFile)file).modifyMetaData(metadata);
