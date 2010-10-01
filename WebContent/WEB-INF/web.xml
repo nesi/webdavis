@@ -953,14 +953,22 @@
     </init-param>
 -->
 </servlet>
+<servlet>
+	<servlet-name>quickshare</servlet-name>
+	<servlet-class>webdavis.quickshare.QuickShare</servlet-class>
+</servlet>
 <servlet-mapping>
 	<servlet-name>Davis</servlet-name>
 	<url-pattern>/*</url-pattern>
 </servlet-mapping>
-	<listener>
-		<listener-class>webdavis.DavisListener</listener-class>
-	</listener>
-	<session-config>
-    	<session-timeout>30</session-timeout>
-    </session-config>
+<servlet-mapping>
+	<servlet-name>quickshare</servlet-name>
+	<url-pattern>/quickshare/*</url-pattern>
+</servlet-mapping>
+<listener>
+	<listener-class>webdavis.DavisListener</listener-class>
+</listener>
+<session-config>
+   	<session-timeout>30</session-timeout>
+</session-config>
 </web-app>

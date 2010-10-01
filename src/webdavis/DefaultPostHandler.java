@@ -490,7 +490,9 @@ public class DefaultPostHandler extends AbstractHandler {
 	        else {
                 long contentLength = request.getContentLength();
                 if (contentLength == -1)
-                	contentLength = Long.parseLong(request.getHeader("x-expected-entity-length"));
+                	try {
+                		contentLength = Long.parseLong(request.getHeader("x-expected-entity-length"));
+                	} catch (NumberFormatException e){}
 	            if (contentLength < 0) 
 	            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Your browser can't upload files larger than 2Gb")));
 	            else {
@@ -827,6 +829,10 @@ public class DefaultPostHandler extends AbstractHandler {
 				        	String s = e.getMessage();
 				        	if (s.endsWith("-818000")) 
 				        		s = "you don't have permission"; // irods error -818000 
+				        	if (s.endsWith("-827000")) {
+				        		s = "Internal error: sharing user account doesn't exist";
+				        		Log.log(Log.ERROR, s);
+				        	}
 		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
 		        			return;
 						}
@@ -840,7 +846,7 @@ public class DefaultPostHandler extends AbstractHandler {
 								((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
 								if (action.equals("share")) {
 									String randomString = Long.toHexString(random.nextLong());
-									String shareURL = DavisConfig.getInstance().getsharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeURLString(file.getName());
+									String shareURL = DavisConfig.getInstance().getsharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
 									String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
 									Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
 									((IRODSFile)file).modifyMetaData(metadata);

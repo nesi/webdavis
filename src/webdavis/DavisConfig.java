@@ -362,7 +362,10 @@ public class DavisConfig {
 		String s = getAnonymousUsername();
 		if (s == null)
 			s = "";
-		substitutions.put("anonymoususer", s);
+		int i = s.lastIndexOf('\\');
+		if (i > -1)
+			s = s.substring(i+1);
+		substitutions.put("anonymoususername", s);
 		String[] geom = null;
 		String geomString = getOrganisationLogoGeometry();
 		String w = "";

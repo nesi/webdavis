@@ -219,7 +219,10 @@ public class Davis extends HttpServlet {
 			String authorization = "Basic "+new String(Base64.encodeBase64((request.getParameter("username").trim()+":"+request.getParameter("password")).getBytes()));
 			
 			request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
-			
+			if (referrer.toLowerCase().endsWith("?noanon") || referrer.toLowerCase().endsWith("&noanon")) { // trim trailing noanon query if present
+				int i = referrer.length()-".noanon".length();
+				referrer = referrer.substring(0, i);
+			}
 			response.addHeader("Location", referrer);
 			response.sendError(HttpServletResponse.SC_SEE_OTHER);
 			response.flushBuffer();
@@ -305,26 +308,27 @@ public class Davis extends HttpServlet {
 			if (davisSession == null && errorMsg == null)
 				errorMsg = "Shibboleth login failed.";
 		}else
-		// If auth info in header but not shib (http or https)
+		// If auth info in header (basic/form auth) but not shib (http or https)
 		if (authorization != null)
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
 		
 		// Anonymous access
-		if (davisSession == null && isAnonymousPath(pathInfo)){
+		if (davisSession == null && isAnonymousPath(pathInfo) && (request.getQueryString() == null || request.getQueryString().indexOf("noanon") < 0)){
 			String authString = "Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
 			davisSession = authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg = null;
 		}
 
-		// Check that the client's uihandle is known to us (skip if basic auth - let fail() handle that case). If not, send an error so that UI can reload window.
-		String cacheID = request.getParameter("uihandle");
-		if ((request.isSecure() || authorization != null) && cacheID != null && !cacheID.equals("null")) 
-			if (davisSession == null || davisSession.getClientInstance(cacheID) == null) {
-				String s = "Files cache for client with cacheID="+cacheID+" not found (server may have been restarted).";
+		// Check that the client's uihandle is known to us . If not, send an error so that UI can reload window.
+		String uiHandle = request.getParameter("uihandle");
+		if (uiHandle != null && !uiHandle.equals("null")) 
+			if (davisSession == null || davisSession.getClientInstance(uiHandle) == null) {	
+				String s = "Cache for client with uiHandle="+uiHandle+" not found (server may have been restarted).";
 				if (davisSession != null)
 					s += " Cache keys:"+davisSession.getClientInstances().keySet();
 				Log.log(Log.WARNING,  s);
-				response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+			//	response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+				response.sendError(HttpServletResponse.SC_GONE, "Access denied - you are not currently logged in");
 				response.flushBuffer();
 				return;
 			}
@@ -568,6 +572,10 @@ public class Davis extends HttpServlet {
 					queryString = "";
 				else
 					queryString = "?"+queryString;
+				if (queryString.toLowerCase().endsWith("?noanon") || queryString.toLowerCase().endsWith("&noanon")) { // trim trailing noanon query if present
+					int i = queryString.length()-".noanon".length();
+					queryString = queryString.substring(0, i);
+				}				
 				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
 				if (request.getSession().getAttribute(FORMAUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
 					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");

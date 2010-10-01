@@ -115,8 +115,13 @@
 
 			if ("<parameter disablereplicasbutton/>" == "true")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
-			if (window.location.protocol == "http:" && "<parameter authscheme/>" == "basic")
+			if ((!isSecure() && "<parameter authscheme/>" == "basic") || isAnonymous())
 				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
+			if (isAnonymous()) { // Hide buttons if anonymous access
+				dojo.html.set(dojo.byId("homeButton"), '');  
+				dojo.html.set(dojo.byId("trashButton"), '');  
+			} else
+				dojo.html.set(dojo.byId("loginButton"), '');  // Hide login button if not anonymous user
 			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
 				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
 				listingLayout[listingLayoutMetadataField].hidden = true;
@@ -768,11 +773,8 @@
 			if (code < 0)
 				return message;
 			switch(code) {
-				case 0:		/*switch(method) {
-								case "replicas": return "replicate failed";
-								default: return message;*/
-							{
-								loadedAlert(message+" Can't connect to server. It may be unavailable.");
+				case 0:		{
+								loadedAlert(message+/*" Can't connect to server. It may be unavailable."*/"Access denied - you are not currently logged in");
 								reloadWindow();
 								return "";
 							}
@@ -788,7 +790,8 @@
 				case 405:	return "path already exists";
 				case 409:	return "You cannot put items here"; 
 				case 410:	{
-								loadedAlert(message+"\nThis page will be reloaded");
+								//loadedAlert(message+"\nThis page will be reloaded");
+								loadedAlert(message);
 								reloadWindow();
 								return "";
 							}
@@ -1288,7 +1291,7 @@
 		}
 
 		function isAnonymous() {
-			return ("<parameter account/>" == "<parameter anonymoususer/>");
+			return ("<parameter account/>" == "<parameter anonymoususername/>");
 		}
 
 		function createDirectory(){	
@@ -1329,6 +1332,8 @@
 
 		var uploadInProgress = false;
 		var progressTimer;
+		var TIMERDEFAULT = 5000;
+		var timerInterval = TIMERDEFAULT;
 
 		function setUploadStatus(html) {
 			dojo.html.set(dojo.byId("uploadStatusField"), '<small>'+html+'</small>');
@@ -1345,7 +1350,10 @@
 		  			    return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
-						clearInterval(progressTimer);
+	    	    		var oldTimer = progressTimer;
+	    	    		timerInterval *= 2;
+	    	    		progressTimer = setInterval("updateTransferStatus()", timerInterval);
+						clearInterval(oldTimer);
 						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.");
 		    			checkOffline(response);
 	      				//loadedAlert(errorMessage("uploadstatus", ioArgs.xhr.status, "Error during upload status update:\n\n"+ioArgs.xhr.statusText));
@@ -1360,7 +1368,7 @@
 			var statusField = 
 			setUploadStatus("Uploading...");
 			uploadInProgress = true;
-			progressTimer = setInterval("updateTransferStatus()", 5000);
+			progressTimer = setInterval("updateTransferStatus()", timerInterval);
 			dojo.io.iframe.send({
 				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
 				method: "POST",
@@ -1383,6 +1391,7 @@
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							clearInterval(progressTimer);
+							timerInterval = TIMERDEFAULT;
 							return response;
 						},
 				error: function(response, ioArgs) {
@@ -1392,6 +1401,7 @@
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							clearInterval(progressTimer);
+							timerInterval = TIMERDEFAULT;
 							return response;
 						}
 			});
@@ -1954,6 +1964,24 @@
 			window.location.reload();
 		}
 		
+		function isSecure() {
+			return window.location.protocol == "https:";
+		}
+		
+		function login() {
+			var url;
+			if (isSecure()) {
+				url = window.location.href;
+				url = url.replace(/#.*/, ""); 		// Trim anchor
+				if (url.indexOf("?") > -1)
+					url += "&noanon";
+				else
+					url += "?noanon";
+			} else 
+				url = 'https://'+window.location.hostname+'/Shibboleth.sso/DS?target='+window.location.href;
+			window.location.replace(url);
+		}
+		 
 		function logout() {
 			cursorBusy(true);	
 		  	dojo.xhrPost({
@@ -2088,12 +2116,14 @@
 							resetConnection();
 						} else 
 						if (errorData.status == 410) { // Server restarted
-							loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
+				//			loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
+							loadedAlert(errorMessage("get", errorData.status, "Access denied - you are not currently logged in"));
 				//			reloadWindow();
 						} else {
 							var s = "Can't read "+directory+"\n\n"+errorMessage("get", errorData.status, "")+"\n\n";
-							if (confirm(s+"Would you like debugging details?"))
-								loadedAlert(s+(errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
+							if (errorData.status != 0 && errorData.status != 503)
+								if (confirm(s+"Would you like debugging details?"))
+									loadedAlert(s+(errorData.status?"Server responded with:\n\n":"")+(errorData.lineNumber?"At line "+errorData.lineNumber+": ":"")+errorData.message);
 						}
 					}
 					//this.grid._pending_requests[request.start] = false; // Indicate this fetch is complete - only needed for dojo < 1.4.1
@@ -2368,15 +2398,16 @@
 							<tr><td>
 								<table border="0" cellspacing="0" cellpadding="0">
 									<tr class="text">
-			        					<td colspan="100" align="right" style="padding-bottom:4px;">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+			        					<td colspan="100" align="right" style="padding-bottom:4px;">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="if (!anonymous()) {listingStore.gotoDirectory('<parameter home/>', true);} return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
 			        				</tr>
 			        				<tr>
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
 			        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
-											<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a>
-											<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a></span>
+											<span id="homeButton"><a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
+											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
