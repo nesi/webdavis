@@ -308,7 +308,7 @@ public class Davis extends HttpServlet {
 			if (davisSession == null && errorMsg == null)
 				errorMsg = "Shibboleth login failed.";
 		}else
-		// If auth info in header but not shib (http or https)
+		// If auth info in header (basic/form auth) but not shib (http or https)
 		if (authorization != null)
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
 		
@@ -319,15 +319,16 @@ public class Davis extends HttpServlet {
 			errorMsg = null;
 		}
 
-		// Check that the client's uihandle is known to us (skip if basic auth - let fail() handle that case). If not, send an error so that UI can reload window.
-		String cacheID = request.getParameter("uihandle");
-		if ((request.isSecure() || authorization != null) && cacheID != null && !cacheID.equals("null")) 
-			if (davisSession == null || davisSession.getClientInstance(cacheID) == null) {
-				String s = "Files cache for client with cacheID="+cacheID+" not found (server may have been restarted).";
+		// Check that the client's uihandle is known to us . If not, send an error so that UI can reload window.
+		String uiHandle = request.getParameter("uihandle");
+		if (uiHandle != null && !uiHandle.equals("null")) 
+			if (davisSession == null || davisSession.getClientInstance(uiHandle) == null) {	
+				String s = "Cache for client with uiHandle="+uiHandle+" not found (server may have been restarted).";
 				if (davisSession != null)
 					s += " Cache keys:"+davisSession.getClientInstances().keySet();
 				Log.log(Log.WARNING,  s);
-				response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+			//	response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+				response.sendError(HttpServletResponse.SC_GONE, "Access denied - you are not currently logged in");
 				response.flushBuffer();
 				return;
 			}
