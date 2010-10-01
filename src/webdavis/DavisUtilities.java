@@ -529,13 +529,21 @@ public class DavisUtilities {
     	return s;
     }
     
-    public static String encodeURLString(String url) {
+    public static String encodeFileName(String fileName) {
     	
-    	  String s = null;
-    	  try {
-    		  s = URLEncoder.encode(url, "UTF-8");
-    	  } catch (UnsupportedEncodingException e) {}
-    	  s = s.replace("+", "%2B");
-    	  return s;
+    	try {
+    		java.net.URI uri = new java.net.URI(null, null, fileName, null);
+  //  		System.err.println("uri="+uri);
+  			return uri.toString();
+    	} catch (Exception e) {
+  //  		System.err.println("bad uri:"+fileName);
+    	}
+    	return null;
+//    	  String s = null;
+//    	  try {
+//    		  s = URLEncoder.encode(url, "UTF-8");
+//    	  } catch (UnsupportedEncodingException e) {}
+//    	  s = s.replace("+", "%2B");
+//    	  return s;
     }
 }
