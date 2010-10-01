@@ -615,6 +615,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("includehead", ""+config.getUIIncludeHead());
 				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
 				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
+				String s = config.getAnonymousUsername();
+				int i = s.lastIndexOf('\\');
+				if (i > -1)
+					s = s.substring(i+1);
+				substitutions.put("anonymoususername", s);
 				String uiContent = new String(uiHTMLContent);
 				uiContent = DavisUtilities.preprocess(uiContent, DavisConfig.substitutions);	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions

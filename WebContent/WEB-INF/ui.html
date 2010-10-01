@@ -115,8 +115,10 @@
 
 			if ("<parameter disablereplicasbutton/>" == "true")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
-			if (window.location.protocol == "http:" && "<parameter authscheme/>" == "basic")
+			if ((/*window.location.protocol == "http:"*/!isSecure() && "<parameter authscheme/>" == "basic") || "<parameter account/>" == "<parameter anonymoususername/>")
 				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
+			if ("<parameter account/>" != "<parameter anonymoususername/>")
+				dojo.html.set(dojo.byId("loginButton"), '');  // Hide login button if not anonymous user
 			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
 				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
 				listingLayout[listingLayoutMetadataField].hidden = true;
@@ -1961,6 +1963,24 @@
 			window.location.reload();
 		}
 		
+		function isSecure() {
+			return window.location.protocol == "https:";
+		}
+		
+		function login() {
+			var url;
+			if (isSecure()) {
+				url = window.location.href;
+				url = url.replace(/#.*/, ""); 		// Trim anchor
+				if (url.indexOf("?") > -1)
+					url += "&noanon";
+				else
+					url += "?noanon";
+			} else 
+				url = 'https://'+window.location.hostname+'/Shibboleth.sso/DS?target='+window.location.href;
+			window.location.replace(url);
+		}
+		 
 		function logout() {
 			cursorBusy(true);	
 		  	dojo.xhrPost({
@@ -2383,7 +2403,8 @@
 			        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
 											<a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a>
 											<a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="30" height="32"/></a></span>
+											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
