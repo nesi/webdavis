@@ -1978,7 +1978,7 @@
 				else
 					url += "?noanon";
 			} else 
-				url = 'https://'+window.location.hostname+'/Shibboleth.sso/DS?target='+window.location.href;
+				url = 'https://'+window.location.hostname+'<parameter shibinitpath/>?target='+window.location.href;
 			window.location.replace(url);
 		}
 		 

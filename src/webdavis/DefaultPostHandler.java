@@ -608,7 +608,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("dynamicobjects")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
-			Enumeration<JSONObject> dynamicObjects = DavisConfig.getInstance().getDynamicObjects().elements();
+			Enumeration<JSONObject> dynamicObjects = Davis.getConfig().getDynamicObjects().elements();
 			int i = 0;
 			while (dynamicObjects.hasMoreElements()) {
 				JSONObject dynamicObject = dynamicObjects.nextElement();
@@ -677,7 +677,7 @@ public class DefaultPostHandler extends AbstractHandler {
     			return;
 	    	}
 			Log.log(Log.DEBUG, "Executing rule '"+buttonName+"'");
-			JSONObject button = DavisConfig.getInstance().getDynamicObject(buttonName);
+			JSONObject button = Davis.getConfig().getDynamicObject(buttonName);
 //System.err.println("button="+button);
 			String ruleText = (String)button.get("rule");
 			StringBuffer commandLine = new StringBuffer(ruleText);
@@ -795,7 +795,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			json.append("\n]}");
 		} else if (method.equalsIgnoreCase("share")) {
 			String action = request.getParameter("action");
-			String sharingKey = DavisConfig.getInstance().getSharingKey();
+			String sharingKey = Davis.getConfig().getSharingKey();
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
 //	    	try {
 	    		getFileList(request, davisSession, fileList, getJSONContent(request));
@@ -808,7 +808,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	        while (sharingKey != null && iterator.hasNext()) {
 	        	file = iterator.next();
 	        	if (!file.isDirectory()) {	// Can't share a directory
-	        		String username = DavisConfig.getInstance().getSharingUser();
+	        		String username = Davis.getConfig().getSharingUser();
 					if (username != null) {
 						GeneralFileSystem fileSystem = file.getFileSystem();
 						String permission = "r";
@@ -846,7 +846,7 @@ public class DefaultPostHandler extends AbstractHandler {
 								((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
 								if (action.equals("share")) {
 									String randomString = Long.toHexString(random.nextLong());
-									String shareURL = DavisConfig.getInstance().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
+									String shareURL = Davis.getConfig().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
 									String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
 									Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
 									((IRODSFile)file).modifyMetaData(metadata);
@@ -973,7 +973,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			if (request.isSecure()) 
 				json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg(request.getRequestURI())+"}");	// Return to login page for original url
 			else {
-				String returnURL = DavisConfig.getInstance().getLogoutReturnURL();
+				String returnURL = Davis.getConfig().getLogoutReturnURL();
 				if (returnURL == null || returnURL.length() == 0)
 					returnURL = "";
 				else

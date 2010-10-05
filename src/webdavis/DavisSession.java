@@ -43,7 +43,7 @@ public class DavisSession implements Serializable{
 				return "basic";
 			return null;
 		}
-		if (DavisConfig.getInstance().getServerType().equalsIgnoreCase("irods"))
+		if (Davis.getConfig().getServerType().equalsIgnoreCase("irods"))
 			return ((IRODSFileSystem)remoteFileSystem).getAuthenticationScheme();
 		return null;
 	}

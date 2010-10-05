@@ -227,7 +227,7 @@ public class ShibUtil {
     	Map result=new HashMap();
     	if (sharedToken==null) return null;
 		GlobusCredential adminCred;
-		DavisConfig config=DavisConfig.getInstance();
+		DavisConfig config=Davis.getConfig();
 		try {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
@@ -336,7 +336,7 @@ public class ShibUtil {
 //    	ShibUtil util=new ShibUtil();
 //    	String cookies="__utma=253871064.1465110725924340500.1230188098.1237530361.1237876387.17; __utmz=253871064.1237440678.15.4.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=grix%20host%20cert; _saml_idp=dXJuOm1hY2U6ZmVkZXJhdGlvbi5vcmcuYXU6dGVzdGZlZDppZHAuZXJlc2VhcmNoc2EuZWR1LmF1; __utmc=253871064; _shibstate_310a075eb49be4d6e82949dd26300a51cd1ecec9=https%3A%2F%2Fslcs1.arcs.org.au%2FSLCS%2Flogin; _shibsession_310a075eb49be4d6e82949dd26300a51cd1ecec9=_68da754b83be351338b774875b51741f";
 //    	util.getSLCSCertificate(cookies);
-    	DavisConfig config=DavisConfig.getInstance();
+    	DavisConfig config=Davis.getConfig();
     	config.setAdminCertFile("/Users/shundezh/grix/arcs-df.eresearchsa.edu.au/hostcert.pem");
     	config.setAdminKeyFile("/Users/shundezh/grix/arcs-df.eresearchsa.edu.au/hostkey.pem");
     	config.setServerType("irods");

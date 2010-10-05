@@ -24,7 +24,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class DavisConfig {
-	private static DavisConfig self = null;
+//	private static DavisConfig self = null;
 	/**
 	 * The name of the servlet context attribute containing the charset used to
 	 * interpret request URIs.
@@ -90,10 +90,11 @@ public class DavisConfig {
     private String sharingPassword;
     private String sharingHost;
     private int sharingPort;
-    public String sharingZone;
+    private String sharingZone;
+    private String shibInitPath;
 
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
-	public static Hashtable<String, String> substitutions;
+	private Hashtable<String, String> substitutions;
 
 	public String getAuthClass() {
 		return authClass;
@@ -102,19 +103,19 @@ public class DavisConfig {
 	private Properties configProperties = new Properties();
 	private Hashtable<String, JSONObject> dynamicObjects;
 	
-	private DavisConfig() {
+	public DavisConfig() {
 	}
 
-	public static DavisConfig getInstance() {
-		return getInstance(true);
-	}
+//	public static DavisConfig getInstance() {
+//		return getInstance(true);
+//	}
 	
-	public static DavisConfig getInstance(boolean create) {
-		if (self == null && create) {
-			self = new DavisConfig();
-		}
-		return self;
-	}
+//	public static DavisConfig getInstance(boolean create) {
+//		if (self == null && create) {
+//			self = new DavisConfig();
+//		}
+//		return self;
+//	}
 
 	public String getInitParameter(String key, boolean trim) {
 		String s = getInitParameter(key, null);
@@ -204,6 +205,9 @@ public class DavisConfig {
 
 		if (config == null)
 			config = servletConfig;
+System.err.println("config="+config);
+System.err.println(config.getServletName());
+System.err.println(config.getInitParameterNames());
 		servletConfig = config;
 		readVersion(config);
 		String filesList = config.getInitParameter("config-files");
@@ -351,12 +355,13 @@ public class DavisConfig {
 		uiIncludeHead = getInitParameter("ui-include-head", "").trim();
 		uiIncludeBodyHeader = getInitParameter("ui-include-body-header", "").trim();
 		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
+		shibInitPath = getInitParameter("shib-init-path", "/Shibboleth.sso/DS").trim();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
-			Log.log(Log.DEBUG, "Configuration items:\n"+DavisConfig.getInstance().getInitParameters());
+			Log.log(Log.DEBUG, "Configuration items:\n"+/*DavisConfig.getInstance().*/getInitParameters());
 		
-		String jargonDebug= DavisConfig.getInstance().getJargonDebug();
+		String jargonDebug= /*DavisConfig.getInstance().*/getJargonDebug();
 		if (jargonDebug!=null) {
 			Level level = Level.toLevel(jargonDebug, Level.WARN);
 			Logger.getRootLogger().setLevel(level);
@@ -736,5 +741,13 @@ public class DavisConfig {
 	
 	public String getSharingZone() {
 		return sharingZone;
+	}
+	
+	public String getShibInitPath() {
+		return shibInitPath;
+	}
+	
+	public Hashtable<String, String> getSubstitutions() {
+		return substitutions;
 	}
 }

@@ -52,7 +52,7 @@ public class DefaultLockHandler extends AbstractHandler {
         super.init(config);
 //        String maximumXmlRequest = config.getInitParameter("maximumXmlRequest");
 //        this.maximumXmlRequest = (maximumXmlRequest != null) ? Long.parseLong(maximumXmlRequest) : 20000l;
-        maximumXmlRequest = DavisConfig.getInstance().getMaximumXmlRequest();
+        maximumXmlRequest = Davis.getConfig().getMaximumXmlRequest();
     }
 
     /**

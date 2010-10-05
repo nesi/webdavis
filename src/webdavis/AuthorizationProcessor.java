@@ -36,14 +36,14 @@ public class AuthorizationProcessor {
 	
 	protected AuthorizationProcessor(){
 		connectionPool=new HashMap<String, DavisSession>();
-		davisConfig=DavisConfig.getInstance();
+		davisConfig=Davis.getConfig();
 	}
 	public static AuthorizationProcessor getInstance(){
 		if (self==null){
-			if (DavisConfig.getInstance().getAuthClass()!=null){
+			if (Davis.getConfig().getAuthClass()!=null){
 				try {
-					self=(AuthorizationProcessor) Class.forName(DavisConfig.getInstance().getAuthClass()).newInstance();
-					Log.log(Log.DEBUG, DavisConfig.getInstance().getAuthClass()+" init'ed.");
+					self=(AuthorizationProcessor) Class.forName(Davis.getConfig().getAuthClass()).newInstance();
+					Log.log(Log.DEBUG, Davis.getConfig().getAuthClass()+" init'ed.");
 				} catch (InstantiationException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

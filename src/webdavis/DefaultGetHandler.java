@@ -454,7 +454,7 @@ public class DefaultGetHandler extends AbstractHandler {
 					String type = fileList[i-1].isDirectory() ? "d" : "f";
 					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
 					String sharingValue = "";
-					String sharingKey = DavisConfig.getInstance().getSharingKey();
+					String sharingKey = Davis.getConfig().getSharingKey();
 					if (metadata != null && sharingKey != null) {
 						ArrayList<String> values = metadata.get(sharingKey);
 						if (values != null)
@@ -546,10 +546,10 @@ public class DefaultGetHandler extends AbstractHandler {
 				return;
 			}
 			if (request.getParameter("uiold") == null) { // Use new UI
-				if (request.getParameter("reload-config") != null && DavisConfig.getInstance().getAdministrators().contains(davisSession.getAccount())) {
+				if (request.getParameter("reload-config") != null && Davis.getConfig().getAdministrators().contains(davisSession.getAccount())) {
 					// If ?reload-config is added to url, then entire configuration will be reloaded.
 					Log.log(Log.INFORMATION, "Reloading configuration");
-					DavisConfig.getInstance().refresh();
+					Davis.getConfig().refresh();
 					Log.log(Log.INFORMATION, "Reloading ui from "+UIHTMLLocation);
 					defaultUIHTMLContent = loadUI(UIHTMLLocation);
 					addNoCacheDirectives(response);
@@ -581,12 +581,12 @@ public class DefaultGetHandler extends AbstractHandler {
 					Log.log(Log.DEBUG, "loading ui from " + s);
 					uiHTMLContent = loadUI(s);
 				}
-				String dojoroot = DavisConfig.getInstance().getDojoroot();
+				String dojoroot = Davis.getConfig().getDojoroot();
 				if (dojoroot.indexOf("/") < 0)
 					dojoroot = request.getContextPath() + "/" + dojoroot;
 				Log.log(Log.DEBUG, "dojoroot:" + dojoroot);
 
-				DavisConfig config = DavisConfig.getInstance();
+				DavisConfig config = Davis.getConfig();
 
 				// Define request specific substitutions for UI HTML file
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
@@ -615,8 +615,9 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("includehead", ""+config.getUIIncludeHead());
 				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
 				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
+				substitutions.put("shibinitpath", ""+config.getShibInitPath());
 				String uiContent = new String(uiHTMLContent);
-				uiContent = DavisUtilities.preprocess(uiContent, DavisConfig.substitutions);	// Make general substitutions
+				uiContent = DavisUtilities.preprocess(uiContent, Davis.getConfig().getSubstitutions());	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());
@@ -690,7 +691,7 @@ public class DefaultGetHandler extends AbstractHandler {
 
 			try {
 				Transformer transformer = templates.newTransformer();
-				String dojoroot = DavisConfig.getInstance().getDojoroot();
+				String dojoroot = Davis.getConfig().getDojoroot();
 				if (dojoroot.indexOf("/") < 0) {
 					// System.out.println(request.getPathInfo());
 					// System.out.println(request.getRequestURI());
@@ -947,7 +948,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	private boolean checkGetError(HttpServletResponse response, String message) throws IOException {
 		
 		if ((message != null) && message.contains("IRODS error occured -105000")) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND, "Item is unavailable because its resource is unavailable.  Please contact "+DavisConfig.getInstance().getOrganisationSupport());
+			response.sendError(HttpServletResponse.SC_NOT_FOUND, "Item is unavailable because its resource is unavailable.  Please contact "+Davis.getConfig().getOrganisationSupport());
 			response.flushBuffer();
 			return true;
 		}

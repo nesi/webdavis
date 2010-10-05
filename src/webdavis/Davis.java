@@ -64,6 +64,8 @@ public class Davis extends HttpServlet {
 	public static final String SESSION_ID = "davis.sessionID";
 
 	private final Map<String, MethodHandler> handlers = new HashMap<String, MethodHandler>();
+	
+	static DavisConfig davisConfig = null;
 
 	// private ErrorHandler[] errorHandlers;
 
@@ -78,10 +80,15 @@ public class Davis extends HttpServlet {
 	static final String[] WEBDAVUSERAGENTS = {"webdav"}; // user-agent header prefixes that indicate a webdav client
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
 	
+	public static DavisConfig getConfig() {
+		
+		return davisConfig;
+	}
 
 	public void init() throws ServletException {
 		ServletConfig config = getServletConfig();
-		DavisConfig.getInstance().initConfig(config);
+		davisConfig = new DavisConfig();
+		getConfig().initConfig(config);
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
@@ -212,7 +219,7 @@ public class Davis extends HttpServlet {
 			if (referrer == null)
 				referrer = request.getHeader("referer");
 			if (referrer == null) {
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Your browser doesn't provide a referrer header field. \nPlease contact "+DavisConfig.getInstance().getOrganisationSupport());
+				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Your browser doesn't provide a referrer header field. \nPlease contact "+getConfig().getOrganisationSupport());
 				response.flushBuffer();
 				return;
 			}
@@ -238,7 +245,7 @@ public class Davis extends HttpServlet {
 		// Log request + header
 		Log.log(Log.INFORMATION, "==========> RECEIVED REQUEST:\n"+requestToString(request, Log.getThreshold()));
 		
-		DavisConfig config=DavisConfig.getInstance();
+		DavisConfig config=davisConfig;
 		String contextBase = config.getContextBase();
 		if (config.getContextBaseHeader() != null) {
 			String dynamicBase = request.getHeader(config.getContextBaseHeader());
@@ -565,7 +572,7 @@ public class Davis extends HttpServlet {
 			if (browser) {
 				Log.log(Log.DEBUG, "Client is using "+(browser ? "a browser" : "webdav"));
 				String form = DavisUtilities.loadResource("/WEB-INF/login.html");
-				form = DavisUtilities.preprocess(form, DavisConfig.substitutions);	// Make general substitutions
+				form = DavisUtilities.preprocess(form, getConfig().getSubstitutions());	// Make general substitutions
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				String queryString = request.getQueryString();
 				if (queryString == null)
@@ -600,7 +607,7 @@ public class Davis extends HttpServlet {
 		}
 
 		Log.log(Log.DEBUG, "Requesting Basic Authentication.");
-		response.addHeader("WWW-Authenticate", "Basic realm=\"" + DavisConfig.getInstance().getRealm() + "\"");
+		response.addHeader("WWW-Authenticate", "Basic realm=\"" + getConfig().getRealm() + "\"");
 //		response.addHeader("WWW-Authenticate", "Digest realm=\"" + realm + "\", algorithm=MD5, domain=\""+ "eResearchSA" +"\", nonce=\""+newNonce(request)+"\",qop=\"auth\"");
 		// }
 		// if (closeOnAuthenticate) {
@@ -614,8 +621,8 @@ public class Davis extends HttpServlet {
 	
 
     private boolean isAnonymousPath(String path){
-    	if (DavisConfig.getInstance().getAnonymousCollections()==null||DavisConfig.getInstance().getAnonymousCollections().size()==0) return false;
-    	for (String s:DavisConfig.getInstance().getAnonymousCollections()){
+    	if (getConfig().getAnonymousCollections()==null||getConfig().getAnonymousCollections().size()==0) return false;
+    	for (String s:getConfig().getAnonymousCollections()){
     		if (path.startsWith(s)) return true;
     	}
     	return false;
