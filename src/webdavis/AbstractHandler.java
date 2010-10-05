@@ -998,7 +998,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
     
     public String getServerType(){
-    	return /*config.getInitParameter("server-type")*/ DavisConfig.getInstance().getServerType();
+    	return /*config.getInitParameter("server-type")*/ Davis.getConfig().getServerType();
     }
 
     protected JSONArray getJSONContent(HttpServletRequest request) throws IOException {

@@ -956,6 +956,13 @@
 <servlet>
 	<servlet-name>quickshare</servlet-name>
 	<servlet-class>webdavis.quickshare.QuickShare</servlet-class>
+	<init-param>
+		<description>
+			Configuration files to be read (in order)
+		</description>
+		<param-name>config-files</param-name>
+		<param-value>davis.properties, davis-organisation.properties, davis-host.properties, davis-dev.properties</param-value>
+	</init-param>
 </servlet>
 <servlet-mapping>
 	<servlet-name>Davis</servlet-name>

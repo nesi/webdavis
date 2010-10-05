@@ -4,6 +4,7 @@ import org.ietf.jgss.GSSCredential;
 
 import webdavis.AuthorizationProcessor;
 import webdavis.DavisConfig;
+import webdavis.Davis;
 
 public class ARCSAuthorizationProcessor extends AuthorizationProcessor {
 
@@ -18,7 +19,7 @@ public class ARCSAuthorizationProcessor extends AuthorizationProcessor {
 			String user, char[] password, String domain, String serverName,
 			String defaultResource) {
 		if ("arcs".equalsIgnoreCase(schemeName)) {
-			return myproxyLogin(user, password, DavisConfig.getInstance().getInitParameter("arcs-myproxy-server", true));
+			return myproxyLogin(user, password, Davis.getConfig().getInitParameter("arcs-myproxy-server", true));
 		}
 		return super.processExtendedAuthScheme(schemeName, user, password, domain, serverName, defaultResource);
 	}
