@@ -489,7 +489,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				}
 				if (emptyDir) {
 					boolean filtered = false;
-					json.append(",\n{\"name\":{\"name\":\""	+ (filtered ? "(No matches)" : "(Directory is empty)")
+					json.append(",\n{\"name\":{\"name\":\""	+ (filtered ? "(No matches)" : "("+(directoriesOnly?"No directories found":"Directory is empty")+")")
 									+ "\",\"type\":\"bottom\"}," + "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
 									+ "\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
 									+ "\"sharing\":{\"value\":\"\",\"type\":\"bottom\"},"
