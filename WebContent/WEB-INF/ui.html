@@ -795,6 +795,11 @@
 								reloadWindow();
 								return "";
 							}
+				case 502:	{
+								loadedAlert("The server has dropped your connection. It will now be reset.");
+								resetConnection();
+								return "";
+							}
 				case 503:	{
 								loadedAlert(message+"\nThe server may be down. This page will be reloaded");
 								reloadWindow();
@@ -2113,7 +2118,7 @@
 				var newErrorHandler = function(errorData, requestObject) {
 					if (pageLoaded) {
 						if (errorData.status == 502) { // Server connection lost
-							loadedAlert("The server has dropped your connection and will now be reset.");
+							loadedAlert("The server has dropped your connection. It will now be reset.");
 							resetConnection();
 						} else 
 						if (errorData.status == 410) { // Server restarted

@@ -5,6 +5,8 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ProtocolException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -97,7 +99,42 @@ public class DefaultPostHandler extends AbstractHandler {
 			return;
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		Log.log(Log.DEBUG, "url:" + url + " method:" + method);
-		RemoteFile file = getRemoteFile(request, davisSession);
+
+		boolean connected = true;
+		String message = "";
+		if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
+			try {
+				((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+			} catch (ProtocolException e) {
+				connected = false;
+				message = e.getMessage();
+			} catch (SocketException e) {
+				connected = false;
+				message = e.getMessage();
+			}
+		}
+//		try {  //### Not needed anymore because of above test?
+//			file.getPermissions(); // Test server connection
+//		} catch (SocketException e) {
+//			connected = false;
+//			message = e.getMessage();
+//		} catch (IRODSException e) {
+//			message = e.getMessage();
+//   			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
+//   				connected = false;
+//		}
+		if (!connected) {
+			lostConnection(response, message);
+			return;
+		}
+
+		RemoteFile file = null;
+//		try {
+			file = getRemoteFile(request, davisSession);
+//		} catch (SocketException e) {
+//			lostConnection(response, e.getMessage());
+//			return;
+//		}
 		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
 		if (!file.exists()) {
 			Log.log(Log.WARNING, "File does not exist.");
