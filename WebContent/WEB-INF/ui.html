@@ -1985,6 +1985,7 @@
 					url += "?noanon";
 			} else 
 				url = 'https://'+window.location.hostname+'<parameter shibinitpath/>?target='+window.location.href;
+			logout(); // Logout from anonymous user
 			window.location.replace(url);
 		}
 		 

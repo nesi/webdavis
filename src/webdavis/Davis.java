@@ -296,6 +296,7 @@ public class Davis extends HttpServlet {
 		// If no auth info in header and http connection - should be shib
 		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
 			//before login, check if there is shib session
+			Log.log(Log.DEBUG, "Trying shib login");
 			int shibCookieNum = 0;
 			Cookie[] cookies = request.getCookies();
 			if (cookies != null){
@@ -316,11 +317,14 @@ public class Davis extends HttpServlet {
 				errorMsg = "Shibboleth login failed.";
 		}else
 		// If auth info in header (basic/form auth) but not shib (http or https)
-		if (authorization != null)
+		if (authorization != null) {
+			Log.log(Log.DEBUG, "Not shib login but auth info present. Looking for existing session...");
 			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
+		}
 		
 		// Anonymous access
 		if (davisSession == null && isAnonymousPath(pathInfo) && (request.getQueryString() == null || request.getQueryString().indexOf("noanon") < 0)){
+			Log.log(Log.DEBUG, "Path is anonymous, allowing access by anonymous user");
 			String authString = "Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
 			davisSession = authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg = null;
@@ -377,14 +381,13 @@ public class Davis extends HttpServlet {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
 				handler.service(request, response, davisSession);
 			} catch (Throwable throwable) {
-				StringWriter trace = new StringWriter();
-				throwable.printStackTrace(new PrintWriter(trace));
-				Log.log(Log.WARNING, "**** UNHANDLED ERROR for:\n"+requestToString(request, Log.DEBUG)+"\n\n    Exception was: "+trace);
+				Log.log(Log.WARNING, "**** UNHANDLED ERROR for:\n"+requestToString(request, Log.DEBUG)+"\n\n    Exception was: "+DavisUtilities.getStackTrace(throwable));
 				String firstStackElement = "";
 				StackTraceElement[] elements = throwable.getStackTrace();
 				if (elements.length > 0)
 					firstStackElement = "at "+elements[0].getClassName()+"."+elements[0].getMethodName()+"("+elements[0].getFileName()+":"+elements[0].getLineNumber()+")";
 //				if (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe"))
+//				if (throwable.getMessage().contains("Broken pipe") || (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe")))
 				if ((throwable.getMessage() != null && throwable.getMessage().contains("Broken pipe")) || 
 					(throwable.getCause() != null && throwable.getCause().getMessage() != null && throwable.getCause().getMessage().contains("Broken pipe")))
 					throwable = new Throwable("Your client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\n    Error was: "+throwable, throwable.getCause());

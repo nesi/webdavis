@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 
 import java.lang.reflect.Field;
@@ -545,5 +547,12 @@ public class DavisUtilities {
 //    	  } catch (UnsupportedEncodingException e) {}
 //    	  s = s.replace("+", "%2B");
 //    	  return s;
+    }
+    
+    public static String getStackTrace(Throwable e) {
+    	
+		StringWriter trace = new StringWriter();
+		e.printStackTrace(new PrintWriter(trace));
+		return trace.toString();
     }
 }

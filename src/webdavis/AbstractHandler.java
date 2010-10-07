@@ -350,6 +350,12 @@ public abstract class AbstractHandler implements MethodHandler {
             }else if (rfs instanceof IRODSFileSystem){
             	file=new IRODSFile((IRODSFileSystem) rfs,uri);
             }
+//System.err.println("########################################");
+//System.err.println("######file="+file);
+//System.err.println("######session="+davisSession);
+//System.err.println("######filesystem="+davisSession.getRemoteFileSystem());
+//System.err.println("######miscsrvinf="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo());
+//System.err.println("########################################");
             exists = file.exists();
             Log.log(Log.DEBUG,"uri exists: "+exists);
         } catch (IOException ex) {

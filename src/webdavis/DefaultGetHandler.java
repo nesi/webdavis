@@ -299,8 +299,8 @@ public class DefaultGetHandler extends AbstractHandler {
 		try {
 			file = getRemoteFile(request, davisSession);
 		} catch (NullPointerException e) {
-			Log.log(Log.CRITICAL, "Caught a NullPointerException in DefaultGethandler.service. request=" + request + " session=" + davisSession
-							+ "\nAborting request.");
+			Log.log(Log.CRITICAL, "Caught a NullPointerException in DefaultGethandler.service. request=" + request.getRequestURI() + " session=" + davisSession
+							+ "\nAborting request. Exception is:"+DavisUtilities.getStackTrace(e));
 			internalError(response, "Jargon error in DefaultGethandler.service");
 			return;
 		}
