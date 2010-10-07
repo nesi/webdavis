@@ -385,7 +385,8 @@ public class Davis extends HttpServlet {
 				if (elements.length > 0)
 					firstStackElement = "at "+elements[0].getClassName()+"."+elements[0].getMethodName()+"("+elements[0].getFileName()+":"+elements[0].getLineNumber()+")";
 //				if (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe"))
-				if (throwable.getMessage().contains("Broken pipe") || (throwable.getCause() != null && throwable.getCause().getMessage().contains("Broken pipe")))
+				if ((throwable.getMessage() != null && throwable.getMessage().contains("Broken pipe")) || 
+					(throwable.getCause() != null && throwable.getCause().getMessage() != null && throwable.getCause().getMessage().contains("Broken pipe")))
 					throwable = new Throwable("Your client appears to have disconnected. Please try again, or contact "+config.getOrganisationSupport()+".\n\n    Error was: "+throwable, throwable.getCause());
 				else
 					throwable = new Throwable("Internal Davis error. Please contact "+config.getOrganisationSupport()+"\n\n    Error was: "+throwable+"\n        "+firstStackElement+"\n        ------------------------\n", throwable.getCause());
