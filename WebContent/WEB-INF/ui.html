@@ -422,7 +422,7 @@
 			});
 			dojo.connect(dojo.byId("renameInputBox"), 'onkeypress', function(e) {
 				if (e.keyCode == dojo.keys.ENTER) {
-					rename(/*escape*/encodeURI(dojo.byId('renameInputBox').value));
+					rename(dojo.byId('renameInputBox').value);
 				}
 			});
 			dojo.connect(listingGrid, 'onClick', function(e) {listingStore.refreshDisplay(false)});
@@ -1481,6 +1481,7 @@
 		function rename(newName){
 			if (!isValidFileName(newName, true))
 				return;
+			newName = encodeURIComponent(newName);
 			dialogRename.hide();
 			moveCopyFiles(listingStore.getCurrentDirectory()+'/'+getFirstSelectedItem(), listingStore.getCurrentDirectory()+'/'+newName, true, true);
 		}
@@ -2236,7 +2237,7 @@
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
 	<br/><br/>
 	<div style="text-align: right;">
-		<button type="button" onclick="rename(encodeURIComponent(dojo.byId('renameInputBox').value))">Rename</button>
+		<button type="button" onclick="rename(dojo.byId('renameInputBox').value)">Rename</button>
 		<button type="button" onclick="dialogRename.hide()">Cancel</button>
 	</div>
 </div>					
