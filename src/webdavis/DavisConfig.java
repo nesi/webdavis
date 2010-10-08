@@ -205,14 +205,12 @@ public class DavisConfig {
 
 		if (config == null)
 			config = servletConfig;
-System.err.println("config="+config);
-System.err.println(config.getServletName());
-System.err.println(config.getInitParameterNames());
 		servletConfig = config;
 		readVersion(config);
 		String filesList = config.getInitParameter("config-files");
 		if (filesList != null) {
 			String[] configFileNames = filesList.split(" *, *");
+			configProperties = new Properties();
 			for (int i = 0; i < configFileNames.length; i++) {
 				String fileName = configFileNames[i].trim();
 				System.err.println("Loading config file: "+fileName);
