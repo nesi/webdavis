@@ -1419,6 +1419,7 @@
 			else {
 				uploadInProgress = false;
 				setUploadStatus("Cancelling...");
+				clearInterval(progressTimer);
 				reloadWindow();	// Is this the only way to kill a transfer?
 			}
       		listingStore.refreshDisplay(false);
