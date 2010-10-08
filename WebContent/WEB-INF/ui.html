@@ -1359,7 +1359,8 @@
 	    	    		timerInterval *= 2;
 	    	    		progressTimer = setInterval("updateTransferStatus()", timerInterval);
 						clearInterval(oldTimer);
-						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.");
+//						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.");
+						setUploadStatus("Uploading: transfer doesn't appear to have started yet.<br><br>Your browser may be having problems with the upload.");
 		    			checkOffline(response);
 	      				//loadedAlert(errorMessage("uploadstatus", ioArgs.xhr.status, "Error during upload status update:\n\n"+ioArgs.xhr.statusText));
 	      				return response;
@@ -2226,7 +2227,7 @@
  	</form>
  	<br/>
 	<div id="uploadStatusField"></div>
-	<br/><br/>
+	<br/><small>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.</small><br/><br/>
 	<div style="text-align: right;">
 		<button type="button" id="uploadStartButton" onclick="enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();">Upload</button> 
 		<button type="button" id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
