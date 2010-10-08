@@ -100,19 +100,6 @@ public class DefaultPostHandler extends AbstractHandler {
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		Log.log(Log.DEBUG, "url:" + url + " method:" + method);
 
-		boolean connected = true;
-		String message = "";
-		if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
-			try {
-				((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-			} catch (ProtocolException e) {
-				connected = false;
-				message = e.getMessage();
-			} catch (SocketException e) {
-				connected = false;
-				message = e.getMessage();
-			}
-		}
 //		try {  //### Not needed anymore because of above test?
 //			file.getPermissions(); // Test server connection
 //		} catch (SocketException e) {
@@ -123,22 +110,58 @@ public class DefaultPostHandler extends AbstractHandler {
 //   			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
 //   				connected = false;
 //		}
-		if (!connected) {
-			lostConnection(response, message);
-			return;
-		}
 
 		RemoteFile file = null;
-//		try {
+		try {
 			file = getRemoteFile(request, davisSession);
+		} catch (NullPointerException e) {
+			Log.log(Log.CRITICAL, "Caught a NullPointerException in DefaultGethandler.service. request=" + request.getRequestURI() + " session=" + davisSession
+							+ "\nAborting request. Exception is:"+DavisUtilities.getStackTrace(e));
+			internalError(response, "Jargon error in DefaultGethandler.service");
+			return;
+		}
+		Log.log(Log.DEBUG, "POST Request for resource \"{0}\".", file.getAbsolutePath());
+
+		if (file.getName().equals("noaccess")) { 
+			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error - Jargon says 'noaccess'");
+			try {
+				response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " provides no access.");
+				response.flushBuffer();
+			} catch (IOException e) {
+				if (e.getMessage().equals("Closed"))
+					Log.log(Log.WARNING, file.getAbsolutePath() + ": connection to server may have been lost.");
+				throw (e);
+			}
+			return;
+		}
+//		try {
+//			file = getRemoteFile(request, davisSession);
 //		} catch (SocketException e) {
 //			lostConnection(response, e.getMessage());
 //			return;
 //		}
-		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
+//		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
 		if (!file.exists()) {
-			Log.log(Log.WARNING, "File does not exist.");
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			boolean connected = true;
+			String message = "";
+			if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
+				try {
+					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+				} catch (ProtocolException e) {
+					connected = false;
+					message = e.getMessage();
+				} catch (SocketException e) {
+					connected = false;
+					message = e.getMessage();
+				}
+			}
+			if (!connected) {
+				lostConnection(response, message);
+				return;
+			}
+			Log.log(Log.WARNING, "File " + file.getAbsolutePath() + " does not exist or unknown server error.");					
+			response.sendError(HttpServletResponse.SC_NOT_FOUND, "File " + file.getAbsolutePath() + " does not exist.");
+			response.flushBuffer();
 			return;
 		}
 		String requestUrl = getRequestURL(request);

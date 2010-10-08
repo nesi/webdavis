@@ -1967,7 +1967,10 @@
 		}
 
 		function reloadWindow() {
-			window.location.reload();
+			if (dojo.isIE) 
+				window.location.href = window.location.href;  // reload doesn't seem to work for IE but this does
+			else
+				window.location.reload(true);
 		}
 		
 		function isSecure() {

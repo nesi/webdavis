@@ -350,12 +350,6 @@ public abstract class AbstractHandler implements MethodHandler {
             }else if (rfs instanceof IRODSFileSystem){
             	file=new IRODSFile((IRODSFileSystem) rfs,uri);
             }
-//System.err.println("########################################");
-//System.err.println("######file="+file);
-//System.err.println("######session="+davisSession);
-//System.err.println("######filesystem="+davisSession.getRemoteFileSystem());
-//System.err.println("######miscsrvinf="+((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo());
-//System.err.println("########################################");
             exists = file.exists();
             Log.log(Log.DEBUG,"uri exists: "+exists);
         } catch (IOException ex) {
@@ -1137,6 +1131,18 @@ public abstract class AbstractHandler implements MethodHandler {
 		response.flushBuffer();
 	}
 
+	public void internalError(HttpServletResponse response, String message) {
+
+		try {
+			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
+			response.flushBuffer();
+		} catch (IOException e) {
+			if (e.getMessage().equals("Closed"))
+				Log.log(Log.WARNING, "DefaultGetHandler.internalError: connection to server may have been lost.");
+		}
+		return;
+	}
+	
 //	public boolean checkClientInSync(HttpServletResponse response, Throwable e) throws IOException {
 //		
 //		if (e.getCause() instanceof NoSuchFieldException) {

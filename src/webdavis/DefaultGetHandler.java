@@ -245,18 +245,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 	};
 
-	public void internalError(HttpServletResponse response, String message) {
-
-		try {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, message);
-			response.flushBuffer();
-		} catch (IOException e) {
-			if (e.getMessage().equals("Closed"))
-				Log.log(Log.WARNING, "DefaultGetHandler.internalError: connection to server may have been lost.");
-		}
-		return;
-	}
-	
 	/**
 	 * Services requests which use the HTTP GET method. This implementation
 	 * retrieves the content for non-collection resources, using the content
