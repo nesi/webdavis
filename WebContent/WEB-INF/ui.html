@@ -116,12 +116,16 @@
 			if ("<parameter disablereplicasbutton/>" == "true")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
 			if ((!isSecure() && "<parameter authscheme/>" == "basic") || isAnonymous())
-				dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
+				if (dojo.byId("logoutButton") != null)
+					dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
 			if (isAnonymous()) { // Hide buttons if anonymous access
-				dojo.html.set(dojo.byId("homeButton"), '');  
-				dojo.html.set(dojo.byId("trashButton"), '');  
+				if (dojo.byId("homeButton") != null)
+					dojo.html.set(dojo.byId("homeButton"), '');  
+				if (dojo.byId("trashButton") != null)
+					dojo.html.set(dojo.byId("trashButton"), '');  
 			} else
-				dojo.html.set(dojo.byId("loginButton"), '');  // Hide login button if not anonymous user
+				if (dojo.byId("loginButton") != null)
+					dojo.html.set(dojo.byId("loginButton"), '');  // Hide login button if not anonymous user
 			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
 				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
 				listingLayout[listingLayoutMetadataField].hidden = true;
