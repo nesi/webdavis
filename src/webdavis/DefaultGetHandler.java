@@ -320,6 +320,8 @@ public class DefaultGetHandler extends AbstractHandler {
 					} catch (SocketException e) {
 						connected = false;
 						message = e.getMessage();
+					} catch (Exception e) {
+						Log.log(Log.WARNING, "Jargon exception when testing for connection (get): "+e);					
 					}
 				}
 //				try {  //### Not needed anymore because of above test?

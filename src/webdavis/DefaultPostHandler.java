@@ -153,6 +153,8 @@ public class DefaultPostHandler extends AbstractHandler {
 				} catch (SocketException e) {
 					connected = false;
 					message = e.getMessage();
+				} catch (Exception e) {
+					Log.log(Log.WARNING, "Jargon exception when testing for connection (post): "+e);					
 				}
 			}
 			if (!connected) {
@@ -214,9 +216,9 @@ public class DefaultPostHandler extends AbstractHandler {
 								((SRBFile) selectedFile).changePermissions(permission, username, domain, recursive);
 							} else if (fileSystem instanceof IRODSFileSystem) {
 								Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" (recursive="+recursive+")");
-								if (recursive) 
+						/*		if (recursive) 
 									iRODSSetPermission((IRODSFile)selectedFile, permission, username);
-								else
+								else*/
 									((IRODSFile)selectedFile).changePermissions(permission, username, recursive);
 							}
 						}
