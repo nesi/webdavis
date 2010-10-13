@@ -1103,6 +1103,8 @@ public class DefaultPostHandler extends AbstractHandler {
 		try {
 			file.changePermissions(permission, username, false);
 		} catch (IOException e) {
+			if (!error)
+				Log.log(Log.DEBUG, "recursive iRODSSetPermission caught: "+e); // Only log first error
 			error = true;
 		}
     	
