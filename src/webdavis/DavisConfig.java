@@ -269,14 +269,9 @@ public class DavisConfig {
 		contextBase = getInitParameter("contextBase", true);
 		contextBaseHeader = getInitParameter("contextBaseHeader", true);
 		config.getServletContext().setAttribute(REQUEST_URI_CHARSET, requestUriCharset);
-		String acceptBasic = getInitParameter("acceptBasic", true);
-		this.acceptBasic = Boolean.valueOf(acceptBasic).booleanValue();
-//		String enableBasic = "true";
-//		this.enableBasic = (enableBasic == null) || Boolean.valueOf(enableBasic).booleanValue();
-		String closeOnAuthenticate = getInitParameter("closeOnAuthenticate", true);
-		this.closeOnAuthenticate = Boolean.valueOf(closeOnAuthenticate).booleanValue();
-		String alwaysAuthenticate = getInitParameter("alwaysAuthenticate", true);
-		this.alwaysAuthenticate = (alwaysAuthenticate == null) || Boolean.valueOf(alwaysAuthenticate).booleanValue();
+		acceptBasic = Boolean.valueOf(getInitParameter("acceptBasic", "false").trim()).booleanValue();
+		closeOnAuthenticate = Boolean.valueOf(getInitParameter("closeOnAuthenticate", "false").trim()).booleanValue();
+		alwaysAuthenticate = Boolean.valueOf(getInitParameter("alwaysAuthenticate", "true").trim()).booleanValue();
 		insecureConnection = getInitParameter("insecureConnection", "block").trim();
 
 		defaultIdp = getInitParameter("default-idp", true);
@@ -294,7 +289,7 @@ public class DavisConfig {
 		proxyHost = getInitParameter("proxy-host", true);
 		proxyPort = getInitParameter("proxy-port", true);
 		proxyUsername = getInitParameter("proxy-username", true);
-		proxyPassword = getInitParameter("proxy-password", false);
+		proxyPassword = getInitParameter("proxy-password", /*false*/true);
 
 		sharedTokenHeaderName = getInitParameter("shared-token-header-name", true);
 		commonNameHeaderName = getInitParameter("cn-header-name", true);
@@ -307,7 +302,7 @@ public class DavisConfig {
 		}
 		String anonymousCollectionString = getInitParameter("anonymousCollections", true);
 		if (anonymousCollectionString != null && anonymousCollectionString.length() > 0) 
-			anonymousCollections = Arrays.asList(anonymousCollectionString.split(","));
+			anonymousCollections = Arrays.asList(anonymousCollectionString.split(" *, *"));
 		realm = getInitParameter("authentication-realm", "Davis").trim();
 		organisationName = getInitParameter("organisation-name", "Davis").trim();
 		organisationLogo = getInitParameter("organisation-logo", "").trim();
@@ -330,20 +325,19 @@ public class DavisConfig {
 			sharingUser = null;
         sharingURLPrefix = getInitParameter("sharing-URL-prefix", "").trim();
         sharingHost = getInitParameter("sharing-host", "").trim();
-        sharingPassword = getInitParameter("sharing-password", "");
-		s = getInitParameter("sharing-port", "0");
+        sharingPassword = getInitParameter("sharing-password", "").trim();
+		s = getInitParameter("sharing-port", "0").trim();
 		try {
 			sharingPort = Integer.parseInt(s);
 		} catch (Exception e) {}
         displayMetadata = getInitParameter("displayMetadata", "").trim();
         authClass = getInitParameter("authClass", true);
-		s = getInitParameter("disable-replicas-button", false);
-        disableReplicasButton = Boolean.valueOf(s).booleanValue();
-		s = getInitParameter("ghost-breadcrumb", "0");
+        disableReplicasButton = Boolean.valueOf(getInitParameter("disable-replicas-button", "false").trim()).booleanValue();
+		s = getInitParameter("ghost-breadcrumb", "0").trim();
 		try {
 			ghostBreadcrumb = Integer.parseInt(s);
 		} catch (Exception e) {}
-		s = getInitParameter("ghost-trash-breadcrumb", "0");
+		s = getInitParameter("ghost-trash-breadcrumb", "0").trim();
 		try {
 			ghostTrashBreadcrumb = Integer.parseInt(s);
 		} catch (Exception e) {}
@@ -357,9 +351,9 @@ public class DavisConfig {
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
-			Log.log(Log.DEBUG, "Configuration items:\n"+/*DavisConfig.getInstance().*/getInitParameters());
+			Log.log(Log.DEBUG, "Configuration items:\n"+getInitParameters());
 		
-		String jargonDebug= /*DavisConfig.getInstance().*/getJargonDebug();
+		String jargonDebug= getJargonDebug();
 		if (jargonDebug!=null) {
 			Level level = Level.toLevel(jargonDebug, Level.WARN);
 			Logger.getRootLogger().setLevel(level);
