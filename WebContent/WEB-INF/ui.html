@@ -142,7 +142,8 @@
 			createDomainRow();
 			borderContainer.layout();
 			listingStore.refreshDisplay(true);
-
+			unshareAllGrid.setSortIndex(1, true);
+			
 			if (dojo.isMozilla)
 				HTMLElement.prototype.click = function() { // Add a click() method to all elements
 					var evt = this.ownerDocument.createEvent('MouseEvents');
@@ -226,6 +227,7 @@
     	var replicasLayout;
     	var listingLayout;
     	var destinationLayout;
+    	var unshareAllLayout;
     	
 		var metadataStore;
 		var permissionsStore;
@@ -234,6 +236,7 @@
 		var replicasStore;		
 		var listingStore;
 		var destinationStore;
+		var unshareAllStore;
 		
 		function initVariables() {
 			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
@@ -267,6 +270,11 @@
 	     			{field: "number", width: "auto", name: "Replica Number"}
 	    		];
 
+	    	unshareAllLayout = [
+	    		    {field: "file", width: "250px", name: "File"},
+	    		    {field: "dir", width: "auto", name: "Collection"}
+	    		];
+
 		    listingLayoutSharingField = 3; // This MUST be the layout row for "sharing" below
 		    listingLayoutMetadataField = 4; // This MUST be the layout row for "metadata" below
 	    	listingLayout = [
@@ -285,6 +293,7 @@
 			resetDomainsStore();
 			resetUsersStore();
 			resetReplicasStore();
+			resetUnshareAllStore();
 
 			listingStore = new ListingStore({
 				id: "listingStore", // For debugging
@@ -515,6 +524,10 @@
 		
 		function resetReplicasStore() { 
 			replicasStore = resetStore(replicasStore, replicasGrid, replicasLayout, false);
+		}
+		
+		function resetUnshareAllStore() { 
+			unshareAllStore = resetStore(unshareAllStore, unshareAllGrid, unshareAllLayout, false);
 		}
 		
 		function resetDomainsStore() { 
@@ -786,6 +799,8 @@
 				case 403:	switch(method) {
 								//case "move": 
 								//case "copy": return "source and destination URI are the same";
+								case "share":
+								case "unshareall":
 								case "delete": return message+": you don't have permission";
 								case "share": return message;
 								default: return "refused";
@@ -1578,6 +1593,66 @@
 			}, true);
 		}
 			
+		function unshareAll() {
+			if (unshareAllGrid.selection.getSelectedCount() == 0)
+				return;
+			var list = "";
+			var selected = unshareAllGrid.selection.getSelected();
+			if (selected != null)
+				for (var i = 0; i < selected.length; i++) 
+					list += "\""+escapeJSON(unescape(selected[i].dir+"/"+selected[i].file))+"\",";
+			if (list.length > 0)
+				list = list.substring(0, list.length-1);  // remove trailing ','
+			
+			var data ='[{"files":['+list+']}]'; //json format is: [{"files":["file1","file2"...]}]		
+			cursorBusy(true);
+			dojo.xhrPost({
+				url: "?method=unshareall&uihandle="+listingStore.uiHandle,
+	    		sync: synchronous,
+				headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json"
+			    },
+			    putData: data, 
+//			    currentDirectory: listingStore.getCurrentDirectory(),
+			    load: function(responseObject, ioArgs){
+			    		cursorBusy(false);
+//						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
+							refreshCurrentDirectory();
+							listingStore.refreshDisplay(true);
+//						}
+			      		return responseObject;
+			   		},
+	    		error: function(response, ioArgs){
+			   			cursorBusy(false);
+	      				loadedAlert(errorMessage("unshareall", ioArgs.xhr.status, ioArgs.xhr.statusText));
+		      			listingStore.refreshDisplay(true);
+	      				return response;
+	    			}
+			}, true);
+		}
+			
+		function getShares() {
+			cursorBusy(true);	
+		  	dojo.xhrPost({
+	    		url: "?method=shares&uihandle="+listingStore.uiHandle,
+	    		load: function(responseObject, ioArgs){    
+	 					cursorBusy(false);
+						unshareAllStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						unshareAllGrid.setStore(unshareAllStore);	 
+						unshareAllGrid.selection.deselectAll();     			
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	       				cursorBusy(false);
+	      				loadedAlert(errorMessage("shares", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				return response;
+	    			},
+	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});
+		}
+
 		function loadMetadataFromServer(url){
 			cursorBusy(true);
 		  	dojo.xhrPost({
@@ -1761,6 +1836,7 @@
 		function populatePermission(permissions){
 			permissionsStore = new dojo.data.ItemFileWriteStore({data: permissions});
 			permissionsGrid.setStore(permissionsStore);
+			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+permissions.owner+")</small>");
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
 					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(false, dojo.byId('recursive').checked)\">Unset</button>");
@@ -1947,6 +2023,16 @@
 //			}
 		}
 
+		function showUnshareAll(show) {
+			if (show) {
+				resetUnshareAllStore();
+				getShares();
+				dialogUnshareAll.show();
+			} else {
+				dialogUnshareAll.hide();
+			}
+		}
+
 		function showUploadDialog(show) {
 			if (show) {
 				dialogUpload.show();
@@ -2067,6 +2153,7 @@
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 //			unitTests();
 			//debug();
+			showUnshareAll(true);
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -2334,6 +2421,9 @@
 			</td>
 		</tr>
 		<tr>
+			<td id="permissionsOwner" align="left" valign="top"></td>
+		</tr>
+		<tr>
 			<td colspan="2" align="right" valign="bottom">
 				<button type="button" id="applyPermissionsButton" onclick="savePermission()">Apply</button>
 				<button type="button" onclick="dijit.byId('recursive').setAttribute('checked', false); dialogPermissions.hide()">Close</button>
@@ -2360,6 +2450,15 @@
 			</td>
 		</tr>
 	</table>
+</div>
+<div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogUnshareAll" title="Unshare" onCancel="setCursor(false, true)">
+	<small>Shared files owned by <parameter account/>:<br><br></small>
+	<div autoHeight="20" structure="unshareAllLayout" dojoType="dojox.grid.DataGrid" id="unshareAllGrid" jsId="unshareAllGrid" loadingMessage="loading" autoHeight="true"></div>
+	<br>
+	<div style="text-align: right;">
+		<button type="button" id="unshareAllButton" onclick="unshareAll()">Unshare</button>
+		<button type="button" onclick="dialogUnshareAll.hide()">Close</button>
+	</div>
 </div>
 <div dojoType="dijit.Dialog" jsId="dialogAbout" title="About" onCancel="setCursor(false, true)">
 	<table>

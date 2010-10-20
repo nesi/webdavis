@@ -1017,7 +1017,8 @@ public abstract class AbstractHandler implements MethodHandler {
 //     break;
         }
         Log.log(Log.DEBUG, "read:"+s.length());
-        Log.log(Log.DEBUG, "received json data: "+s);
+        Log.log(Log.DEBUG, "received json data: "+s); 
+        s.replaceAll("\n", ""); // New lines in file names break all sorts of things, so strip them and let them fail nicely
 		return (JSONArray)JSONValue.parse(s);
     }
 

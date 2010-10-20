@@ -555,4 +555,16 @@ public class DavisUtilities {
 		e.printStackTrace(new PrintWriter(trace));
 		return trace.toString();
     }
+    
+    final static Hashtable <String, String> permMap = new Hashtable<String, String>();
+    static {
+	    permMap.put("own", "read and write");
+	    permMap.put("modify object", "write only");
+	    permMap.put("read object", "read only");
+	    permMap.put("null", "no access");
+    }
+
+    public static String iPermissionToPermission(String p) {
+    	return permMap.get(p);
+    }
 }
