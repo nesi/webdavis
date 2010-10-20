@@ -77,7 +77,6 @@ public class Davis extends HttpServlet {
 	static long headroom = Long.MAX_VALUE;
 	
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
-	static final String[] WEBDAVUSERAGENTS = {"webdav"}; // user-agent header prefixes that indicate a webdav client
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
 	
 	public static DavisConfig getConfig() {
@@ -531,17 +530,23 @@ public class Davis extends HttpServlet {
 		String method = request.getMethod();
 		String accept = request.getHeader("accept");
 		String agent = request.getHeader("user-agent");
-		ListIterator<String> webdavAgents = Arrays.asList(WEBDAVUSERAGENTS).listIterator();
-		
-		if (Arrays.asList(WEBDAVMETHODS).contains(method))
-			browser = false;
-		else
-		if (accept == null)
-			browser = false;
-		while (browser && agent != null && webdavAgents.hasNext()) 
-			if (agent.toLowerCase().startsWith(webdavAgents.next()))
+		ListIterator<String> webdavAgents = Davis.getConfig().getWebdavUserAgents().listIterator();
+		ListIterator<String> browserAgents = Davis.getConfig().getBrowserUserAgents().listIterator();
+		while (browser && (agent != null) && webdavAgents.hasNext()) 
+			if (agent.toLowerCase().startsWith(webdavAgents.next().toLowerCase()))
 				browser = false;
+		if (browser) { // If agent prefix not in webdavagent items, infer client type
+			if (Arrays.asList(WEBDAVMETHODS).contains(method.toLowerCase()))
+				browser = false;
+			else
+			if (accept == null)
+				browser = false;
+		}
 
+		while (browser && (agent != null) && browserAgents.hasNext()) 
+			if (agent.toLowerCase().startsWith(browserAgents.next().toLowerCase()))
+				browser = true;
+		
 		Log.log(Log.DEBUG, "isBrowser(): "+browser+" (method="+method+" accept="+accept+")");
 		return browser;
 	}

@@ -80,7 +80,7 @@ public class DavisConfig {
     private boolean disableReplicasButton;
     private int ghostBreadcrumb=0;
     private int ghostTrashBreadcrumb=0;
-    private ArrayList<String> administrators = new ArrayList<String>();
+    private List<String> administrators = new ArrayList<String>();
     private String uiIncludeHead;
     private String uiIncludeBodyHeader;
     private String uiIncludeBodyFooter;
@@ -92,7 +92,9 @@ public class DavisConfig {
     private int sharingPort;
     private String sharingZone;
     private String shibInitPath;
-
+    private List<String> webdavUserAgents = new ArrayList<String>();
+    private List<String> browserUserAgents = new ArrayList<String>();
+    
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	private Hashtable<String, String> substitutions;
 
@@ -300,9 +302,15 @@ public class DavisConfig {
 			anonymousUsername = anonymousCredentials.split(":")[0];
 			anonymousPassword = anonymousCredentials.split(":")[1];
 		}
-		String anonymousCollectionString = getInitParameter("anonymousCollections", true);
-		if (anonymousCollectionString != null && anonymousCollectionString.length() > 0) 
-			anonymousCollections = Arrays.asList(anonymousCollectionString.split(" *, *"));
+		String s = getInitParameter("anonymousCollections", true);
+		if (s != null && s.length() > 0) 
+			anonymousCollections = Arrays.asList(s.split(" *, *"));
+		s = getInitParameter("webdavUserAgents", true);
+		if (s != null && s.length() > 0) 
+			webdavUserAgents = Arrays.asList(s.split(" *, *"));
+		s = getInitParameter("browserUserAgents", true);
+		if (s != null && s.length() > 0) 
+			browserUserAgents = Arrays.asList(s.split(" *, *"));
 		realm = getInitParameter("authentication-realm", "Davis").trim();
 		organisationName = getInitParameter("organisation-name", "Davis").trim();
 		organisationLogo = getInitParameter("organisation-logo", "").trim();
@@ -314,7 +322,7 @@ public class DavisConfig {
 		helpURL = getInitParameter("helpURL", "For help, please contact user support at your organisation").trim();
 		favicon = getInitParameter("favicon", "").trim();		
 		dojoroot = getInitParameter("dojoroot", "").trim();
-        String s = getInitParameter("maximumXmlRequest", true);
+        s = getInitParameter("maximumXmlRequest", true);
         maximumXmlRequest = (s != null) ? Long.parseLong(s) : 20000l;
 		sharingKey = getInitParameter("sharing-key", "").trim();
 		if (sharingKey.length() == 0)
@@ -353,8 +361,8 @@ public class DavisConfig {
 		if (Log.getThreshold() < Log.INFORMATION) 
 			Log.log(Log.DEBUG, "Configuration items:\n"+getInitParameters());
 		
-		String jargonDebug= getJargonDebug();
-		if (jargonDebug!=null) {
+		jargonDebug = getJargonDebug();
+		if (jargonDebug != null) {
 			Level level = Level.toLevel(jargonDebug, Level.WARN);
 			Logger.getRootLogger().setLevel(level);
 			Log.log(Log.INFORMATION, "Jargon logging level set to "+level);
@@ -691,8 +699,16 @@ public class DavisConfig {
 		return ghostTrashBreadcrumb;
 	}
 	
-	public ArrayList getAdministrators() {
+	public List<String> getAdministrators() {
 		return administrators;
+	}
+	
+	public List<String> getWebdavUserAgents() {
+		return webdavUserAgents;
+	}
+	
+	public List<String> getBrowserUserAgents() {
+		return browserUserAgents;
 	}
 	
 	public String getUIIncludeHead() {
