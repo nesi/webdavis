@@ -76,7 +76,8 @@ public class Davis extends HttpServlet {
 	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
 	static long headroom = Long.MAX_VALUE;
 	
-	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
+//	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
+	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "lock"}; // Methods that indicate client must be webdav (methods not used by Davis web interface)
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
 	
 	public static DavisConfig getConfig() {
@@ -328,7 +329,6 @@ public class Davis extends HttpServlet {
 			davisSession = authorizationProcessor.getDavisSession(authString, reset);
 			errorMsg = null;
 		}
-
 		// Check that the client's uihandle is known to us . If not, send an error so that UI can reload window.
 		String uiHandle = request.getParameter("uihandle");
 		if (uiHandle != null && !uiHandle.equals("null")) 
@@ -532,9 +532,11 @@ public class Davis extends HttpServlet {
 		String agent = request.getHeader("user-agent");
 		ListIterator<String> webdavAgents = Davis.getConfig().getWebdavUserAgents().listIterator();
 		ListIterator<String> browserAgents = Davis.getConfig().getBrowserUserAgents().listIterator();
-		while (browser && (agent != null) && webdavAgents.hasNext()) 
-			if (agent.toLowerCase().startsWith(webdavAgents.next().toLowerCase()))
+		while ((agent != null) && webdavAgents.hasNext()) 
+			if (agent.toLowerCase().startsWith(webdavAgents.next().toLowerCase())) {
 				browser = false;
+				break;
+			}
 		if (browser) { // If agent prefix not in webdavagent items, infer client type
 			if (Arrays.asList(WEBDAVMETHODS).contains(method.toLowerCase()))
 				browser = false;
@@ -543,9 +545,11 @@ public class Davis extends HttpServlet {
 				browser = false;
 		}
 
-		while (browser && (agent != null) && browserAgents.hasNext()) 
-			if (agent.toLowerCase().startsWith(browserAgents.next().toLowerCase()))
+		while ((agent != null) && browserAgents.hasNext()) 
+			if (agent.toLowerCase().startsWith(browserAgents.next().toLowerCase())) {
 				browser = true;
+				break;
+			}
 		
 		Log.log(Log.DEBUG, "isBrowser(): "+browser+" (method="+method+" accept="+accept+")");
 		return browser;
