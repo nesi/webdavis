@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.net.SocketException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -888,12 +889,11 @@ public class DefaultPostHandler extends AbstractHandler {
 			    			fileDetails = new MetaDataRecordList[0];	
 			 			int i = 0;
 			    		for (MetaDataRecordList p:fileDetails) {
-//	System.err.println("##########p="+p);
 			    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
 			    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
 							if (i++ > 0) json.append(",\n");
-							json.append("{"+escapeJSONArg("file")+":"+escapeJSONArg(fileName)+",");
-							json.append(escapeJSONArg("dir")+":"+escapeJSONArg(dirName)+"}");
+							json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
+							json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\"}");
 			        	}
 //					} catch (IOException e) {
 //						e.printStackTrace();
@@ -901,105 +901,82 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("unshareall")) {
-			JSONObject jsonObject = null;
-			JSONArray jsonArray = getJSONContent(request);
-			if (jsonArray != null) {	
-				jsonObject = (JSONObject)jsonArray.get(0);
-				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
-				String sharingKey = Davis.getConfig().getSharingKey();
-				if (fileNamesArray != null && sharingKey != null)
-					for (int i = 0; i < fileNamesArray.size(); i++) {
-						String name = (String)fileNamesArray.get(i);
-						if (name.trim().length() == 0)
-							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
-						file = getRemoteFile(name, davisSession);
-	System.err.println("##########got file:"+file);
-						String s = share(file, false);
-						if (s != null) {
-							response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-							return;
-						}
-					}			
-			} else
-				throw new ServletException("Internal error reading file list: error parsing JSON");			
+			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
+				Log.log(Log.ERROR, "Sharing is only supported for iRODS");
+			else {
+				JSONObject jsonObject = null;
+				JSONArray jsonArray = getJSONContent(request);
+				if (jsonArray != null) {	
+					jsonObject = (JSONObject)jsonArray.get(0);
+					JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
+					String sharingKey = Davis.getConfig().getSharingKey();
+					if (fileNamesArray != null && sharingKey != null)
+						for (int i = 0; i < fileNamesArray.size(); i++) {
+							String name = (String)fileNamesArray.get(i);
+							name = name.replaceAll("\\+", "%2B");
+							name = URLDecoder.decode(name, "UTF-8");
+							if (name.trim().length() == 0)
+								continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
+							file = getRemoteFile(name, davisSession);
+							String s = share(file, false);
+							if (s != null) {
+								response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+								return;
+							}
+						}			
+				} else
+					throw new ServletException("Internal error reading file list: error parsing JSON");			
+			}
 			
 		} else if (method.equalsIgnoreCase("share")) {
-			String action = request.getParameter("action");
-			String sharingKey = Davis.getConfig().getSharingKey();
-	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-//	    	try {
-	    		getFileList(request, davisSession, fileList, getJSONContent(request));
-//	    	} catch (ServletException e) {
-//	    		if (!checkClientInSync(response, e))
-//	    			return;
-//	    	}
-
-	        Iterator<RemoteFile> iterator = fileList.iterator();
-	        while (sharingKey != null && iterator.hasNext()) {
-	        	file = iterator.next();
-	        	String s = share(file, action.equals("share"));
-	        	if (s != null) {
-        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-        			return;
-	        	}
-//	        	if (!file.isDirectory()) {	// Can't share a directory
-//	        		String username = Davis.getConfig().getSharingUser();
-//					if (username != null) {
-//						GeneralFileSystem fileSystem = file.getFileSystem();
-//						String permission = "r";
-//						if (action.equals("unshare"))
-//							permission = "n";
-//						String domain = request.getParameter("domain");
-//						
-//						try {
-//							// Add/remove read permission for share user
-//							if (fileSystem instanceof SRBFileSystem) {
-//								Log.log(Log.WARNING, "sharing is not implemented for SRB servers");
-//							} else if (fileSystem instanceof IRODSFileSystem) {
-//								Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" for sharing");
-//								((IRODSFile)file).changePermissions(permission, username, false);
-//							}
-//						} catch (IOException e){
-//				        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+e);
-//				        	String s = e.getMessage();
-//				        	if (s.endsWith("-818000")) 
-//				        		s = "you don't have permission"; // irods error -818000 
-//				        	if (s.endsWith("-827000")) {
-//				        		s = "Internal error: sharing user account doesn't exist";
-//				        		Log.log(Log.ERROR, s);
-//				        	}
-//		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-//		        			return;
-//						}
-//						
-//						try {
-//							// Add/remove share metadata
-//							if (fileSystem instanceof SRBFileSystem) {
-//								Log.log(Log.ERROR,"Sharing not implemented for SRB");
-//							}else 
-//							if (fileSystem instanceof IRODSFileSystem) {
-//								Log.log(Log.DEBUG, "removing metadata field '"+sharingKey+"' for "+username+" to end sharing");
-//								((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
-//								if (action.equals("share")) {
-//									String randomString = Long.toHexString(random.nextLong());
-//									String shareURL = Davis.getConfig().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
-//									String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
-//									Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
-//									((IRODSFile)file).modifyMetaData(metadata);
-//								}
-//							}
-//						} catch (IOException e){
-//				        	Log.log(Log.DEBUG, "Set metadata failed for sharing: "+e);
-//				        	String s = e.getMessage();
-//				        	if (s.endsWith("-818000")) 
-//				        		s = "you don't have permission"; // irods error -818000 
-//		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-//		        			return;
-//						}
-//					}
-//	        	}
-	        }
+			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
+				Log.log(Log.ERROR, "Sharing is only supported for iRODS");
+			else {
+				String action = request.getParameter("action");
+				String sharingKey = Davis.getConfig().getSharingKey();
+		    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+	//	    	try {
+		    		getFileList(request, davisSession, fileList, getJSONContent(request));
+	//	    	} catch (ServletException e) {
+	//	    		if (!checkClientInSync(response, e))
+	//	    			return;
+	//	    	}
+	
+		        Iterator<RemoteFile> iterator = fileList.iterator();
+		        while (sharingKey != null && iterator.hasNext()) {
+		        	file = iterator.next();
+					MetaDataSelect selectsFile[] = 
+						MetaDataSet.newSelection(new String[] {
+								IRODSMetaDataSet.OWNER,							
+						});
+					String s= null;
+					try {
+						MetaDataRecordList[] details = ((IRODSFile)file).query(selectsFile);
+			 			if (details == null) 
+			    			details = new MetaDataRecordList[0];	
+			    		for (MetaDataRecordList p:details) {
+	//System.err.println("##########p="+p);
+			    			String owner = (String)p.getValue(IRODSMetaDataSet.OWNER);
+			    			if (!owner.equals(davisSession.getAccount())) 
+			    				s = "you are not the owner";
+			        	}
+					} catch (IOException e) {
+						s = "Internal error: can't determine the owner of the resource";
+						Log.log(Log.ERROR, s);
+						Log.log(Log.ERROR, e);
+					}
+	       	
+					if (s == null)
+						s = share(file, action.equals("share"));
+		        	if (s != null) {
+	        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+	        			return;
+		        	}
+		        }
+			}
+			
 		} else if (method.equalsIgnoreCase("userlist")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
@@ -1139,7 +1116,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			String sharingKey = Davis.getConfig().getSharingKey();
     		String username = Davis.getConfig().getSharingUser();
 			if (username != null) {
-				GeneralFileSystem fileSystem = file.getFileSystem();
+				GeneralFileSystem fileSystem = file.getFileSystem();				
 				String permission = "r";
 				if (!share)
 					permission = "n";
@@ -1153,11 +1130,17 @@ public class DefaultPostHandler extends AbstractHandler {
 						((IRODSFile)file).changePermissions(permission, username, false);
 					}
 				} catch (IOException e){
-		        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+e);
-		        	String s = e.getMessage();
-		        	if (s.endsWith("-818000")) 
+					String s = e.toString();
+					if (e.getCause() != null)
+						s += " : "+e.getCause().getMessage();
+		        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+s);
+		        	if (e.getMessage().endsWith("-818000")) 
 		        		s = "you don't have permission"; // irods error -818000 
-		        	if (s.endsWith("-827000")) {
+		        	if (e.getMessage().endsWith("IRODS error occured msg")) {
+		        		s = "can't unshare "+file.getName();  
+		        		Log.log(Log.ERROR, s+" due to iRODS error");
+		        	}
+		        	if (e.getMessage().endsWith("-827000")) {
 		        		s = "Internal error: sharing user account doesn't exist";
 		        		Log.log(Log.ERROR, s);
 		        	}

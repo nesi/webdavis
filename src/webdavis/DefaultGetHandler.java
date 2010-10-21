@@ -606,6 +606,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
 				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
 				substitutions.put("shibinitpath", ""+config.getShibInitPath());
+				substitutions.put("isadmin", ""+Davis.getConfig().getAdministrators().contains(davisSession.getAccount()));
 				String uiContent = new String(uiHTMLContent);
 				uiContent = DavisUtilities.preprocess(uiContent, Davis.getConfig().getSubstitutions());	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions

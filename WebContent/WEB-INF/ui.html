@@ -113,7 +113,7 @@
 //			showDebug();
 			initVariables();
 
-			if ("<parameter disablereplicasbutton/>" == "true")
+			if ("<parameter disablereplicasbutton/>" == "true" && "<parameter isadmin/>" == "false")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
 			if ((!isSecure() && "<parameter authscheme/>" == "basic") || isAnonymous())
 				if (dojo.byId("logoutButton") != null)
@@ -127,7 +127,10 @@
 				if (dojo.byId("loginButton") != null)
 					dojo.html.set(dojo.byId("loginButton"), '');  // Hide login button if not anonymous user
 			if ("<parameter sharinguser/>" == "null" || "<parameter sharingkey/>" == "null") {
-				dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
+				if (dojo.byId("sharingButtonHolder") != null)
+					dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
+				if (dojo.byId("unshareAllButton") != null)
+					dojo.html.set(dojo.byId("unshareAllButton"), '');
 				listingLayout[listingLayoutMetadataField].hidden = true;
 		//		listingGrid.setStructure(listingLayout);
 			}
@@ -271,8 +274,8 @@
 	    		];
 
 	    	unshareAllLayout = [
-	    		    {field: "file", width: "250px", name: "File"},
-	    		    {field: "dir", width: "auto", name: "Collection"}
+	    		    {field: "file", width: "250px", name: "File", formatter: gridFormatUnescape},
+	    		    {field: "dir", width: "auto", name: "Collection", formatter: gridFormatUnescape}
 	    		];
 
 		    listingLayoutSharingField = 3; // This MUST be the layout row for "sharing" below
@@ -444,6 +447,9 @@
     		dojo.connect(listingGrid, 'onHeaderClick', function(e){
     			selectAll(false); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
     		});
+    		dojo.connect(unshareAllGrid, 'onHeaderClick', function(e){
+    			unshareAllGrid.selection.deselectAll(); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
+    		});  		
 		}
 		
 		function initWidgets() {
@@ -627,6 +633,10 @@
 				dojo.html.set(sessionButtons, html);
 		}
 
+		function gridFormatUnescape(value) {
+			return decodeURIComponent(value);
+		}
+		
 		function gridFormatFileListing(value) {
 			return gridFormatFile(value, listingStore, "listingStore", true);
 		}
@@ -799,10 +809,9 @@
 				case 403:	switch(method) {
 								//case "move": 
 								//case "copy": return "source and destination URI are the same";
-								case "share":
-								case "unshareall":
 								case "delete": return message+": you don't have permission";
-								case "share": return message;
+								case "unshareall":
+								case "share": return "Failed to share/unshare a resource: "+message;
 								default: return "refused";
 						  	}
 				case 404:   return "You don't have permission to access it or the collection does not exist.";
@@ -1252,6 +1261,7 @@
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
+			enableButton('unshareButton', unshareAllGrid.selection.getSelectedCount() > 0);
 		}
 		
 		function setStatusPanel(html) {
@@ -1594,13 +1604,14 @@
 		}
 			
 		function unshareAll() {
+			showUnshareAll(false);
 			if (unshareAllGrid.selection.getSelectedCount() == 0)
 				return;
 			var list = "";
 			var selected = unshareAllGrid.selection.getSelected();
 			if (selected != null)
 				for (var i = 0; i < selected.length; i++) 
-					list += "\""+escapeJSON(unescape(selected[i].dir+"/"+selected[i].file))+"\",";
+					list += "\""+escapeJSON(encodeURI(decodeURIComponent(selected[i].dir+"/"+selected[i].file)))+"\",";
 			if (list.length > 0)
 				list = list.substring(0, list.length-1);  // remove trailing ','
 			
@@ -1614,7 +1625,6 @@
 			        "content-type": "text/x-json"
 			    },
 			    putData: data, 
-//			    currentDirectory: listingStore.getCurrentDirectory(),
 			    load: function(responseObject, ioArgs){
 			    		cursorBusy(false);
 //						if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
@@ -1626,6 +1636,7 @@
 	    		error: function(response, ioArgs){
 			   			cursorBusy(false);
 	      				loadedAlert(errorMessage("unshareall", ioArgs.xhr.status, ioArgs.xhr.statusText));
+						refreshCurrentDirectory();
 		      			listingStore.refreshDisplay(true);
 	      				return response;
 	    			}
@@ -2151,9 +2162,7 @@
 		var enableDebugButton = false;
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
-//			unitTests();
 			//debug();
-			showUnshareAll(true);
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -2453,10 +2462,11 @@
 </div>
 <div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogUnshareAll" title="Unshare" onCancel="setCursor(false, true)">
 	<small>Shared files owned by <parameter account/>:<br><br></small>
-	<div autoHeight="20" structure="unshareAllLayout" dojoType="dojox.grid.DataGrid" id="unshareAllGrid" jsId="unshareAllGrid" loadingMessage="loading" autoHeight="true"></div>
+	<div autoHeight="10" structure="unshareAllLayout" dojoType="dojox.grid.DataGrid" id="unshareAllGrid" jsId="unshareAllGrid" loadingMessage="loading" 
+	     autoHeight="true" onSelectionChanged="refreshButtons()"></div>
 	<br>
 	<div style="text-align: right;">
-		<button type="button" id="unshareAllButton" onclick="unshareAll()">Unshare</button>
+		<button type="button" id="unshareButton" onclick="unshareAll()">Unshare</button>
 		<button type="button" onclick="dialogUnshareAll.hide()">Close</button>
 	</div>
 </div>
@@ -2523,6 +2533,7 @@
 											<span id="trashButton"><a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
 											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
+											<span id="unshareAllButton"><a title="Unshare all of your shared items" onclick="showUnshareAll(true); return false" href="unshareAll"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
