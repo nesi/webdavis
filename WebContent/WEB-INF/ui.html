@@ -1607,6 +1607,9 @@
 			showUnshareAll(false);
 			if (unshareAllGrid.selection.getSelectedCount() == 0)
 				return;
+		    if (!confirm(warnBulk()+'Are you sure you want to unshare the selected items?'))
+			    return;
+		
 			var list = "";
 			var selected = unshareAllGrid.selection.getSelected();
 			if (selected != null)
@@ -2016,22 +2019,12 @@
 			getReplicas("");
 		}
 
-		function showSharing(show) {
-//			var selectedCount = selectedItemsCount();
-//			if (selectedCount != 1)
-//				return;
-			var action = sharedIsSelected() ? 'Unshare' : 'Share';
-			if (show) {
-				dojo.html.set(dojo.byId('sharingDialogMessage'), action+' '+decodeURIComponent(getFirstSelectedItem())+"?");
-				dialogSharing.show();
-			} else {
-				dialogSharing.hide();
-				shareFiles(listingStore.getCurrentDirectory(), action.toLowerCase());
-			}
-//			if (listingStore.getCurrentDirectory() == this.currentDirectory) { 
-//				refreshCurrentDirectory();
-//				listingStore.refreshDisplay(true);
-//			}
+		function share() {
+//dialogShare.show();
+			var action = sharedIsSelected() ? 'unshare' : 'share';
+		    if (!confirm(warnBulk()+'Are you sure you want to '+action+' '+decodeURIComponent(getFirstSelectedItem())+"?"))
+			    return;
+			shareFiles(listingStore.getCurrentDirectory(), action);
 		}
 
 		function showUnshareAll(show) {
@@ -2334,15 +2327,6 @@
 		<button type="button" id="uploadCancelButton" onclick="enableButton('uploadCancelButton', false); uploadCancel();">Cancel</button>
 	</div>
 </div>					
-<!-- <div dojoType="dijit.Dialog" jsId="dialogDelete" title="Delete Items">
-    <div id="dialogDeleteBulk"></div>
-    Are you sure you want to delete the selected items and their contents?
-	<br/><br/>
-	<div style="text-align: right;">
-		<button type="button" onclick="deleteFiles(listingStore.getCurrentDirectory());">Yes</button>
-		<button type="button" onclick="dialogDelete.hide()">No</button>
-	</div>
-</div> -->					
 <div dojoType="dijit.Dialog" jsId="dialogRename" title="Rename">
     New name:
 	<input name="newname" id="renameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -2371,15 +2355,6 @@
 		</tr>
 	</table>
 </div>					
-<!-- <div dojoType="dijit.Dialog" jsId="dialogRestore" title="Restore Items">
-	<div id="dialogRestoreBulk"></div>
-    Are you sure you want to restore the selected items and their contents?
-	<br/><br/>
-	<div style="text-align: right;">
-		<button type="button" onclick="restoreFiles()">Restore</button>
-		<button type="button" onclick="dialogRestore.hide()">Cancel</button>
-	</div>
-</div> -->					
 <div dojoType="dijit.Dialog" jsId="dynamicDialog" style="width: 600px;">
 </div>					
 <div dojoType="dijit.Dialog" jsId="dialogMetadata" title="Metadata">
@@ -2460,8 +2435,14 @@
 		</tr>
 	</table>
 </div>
+<div dojoType="dijit.Dialog" jsId="dialogShare" title="Sharing" onCancel="setCursor(false, true)">
+	<div style="text-align: right;">
+		<button type="button" id="shareButton" onclick="">OK</button>
+		<button type="button" onclick="">Cancel</button>
+	</div>
+</div>
 <div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogUnshareAll" title="Unshare" onCancel="setCursor(false, true)">
-	<small>Shared files owned by <parameter account/>:<br><br></small>
+	<small>Select the shared files owned by <parameter account/> to be unshared:<br><br></small>
 	<div autoHeight="10" structure="unshareAllLayout" dojoType="dojox.grid.DataGrid" id="unshareAllGrid" jsId="unshareAllGrid" loadingMessage="loading" 
 	     autoHeight="true" onSelectionChanged="refreshButtons()"></div>
 	<br>
@@ -2495,13 +2476,6 @@
 		<button type="button" onclick="dialogHelp.hide()">Close</button>
 	</div>
 </div>					
-<div dojoType="dijit.Dialog" jsId="dialogSharing" title="QuickShare" style="min-width:300px;">
-    <br><div id="sharingDialogMessage"></div><br/><br/>
-	<div style="text-align: right;">
-		<button type="button" onclick="showSharing(false)">OK</button>
-		<button type="button" onclick="dialogSharing.hide()">Cancel</button>
-	</div>
-</div>					
 <div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
 	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
 </div>
@@ -2533,7 +2507,7 @@
 											<span id="trashButton"><a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
 											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
-											<span id="unshareAllButton"><a title="Unshare all of your shared items" onclick="showUnshareAll(true); return false" href="unshareAll"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
+											<span id="unshareAllButton"><a title="Unshare your shared items" onclick="showUnshareAll(true); return false" href="unshareAll"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
@@ -2661,7 +2635,7 @@
 	    <span id="sharingButtonHolder">
 		    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 		    	<tr>
-		    		<td class="activeItem" id="sharingButton" onclick="if (!activeItemIsEnabled('sharingButton')) return; showSharing(true)" >Sharing</td>
+		    		<td class="activeItem" id="sharingButton" onclick="if (!activeItemIsEnabled('sharingButton')) return; share()" >Sharing</td>
 		    	</tr>
 		    </table>
 		</span>
