@@ -182,7 +182,7 @@
 			}
 		}
 		// If the debug window exists, then write to it
-		function debug(text) {
+		function debugMessage(text) {
 			try {
 				if (!window.top.debugWindow)
 					showDebug();
@@ -202,9 +202,9 @@
 		// Dump fields of object
 		function dump(message, object) {
 			try {
-				debug(message+" "+dojo.toJson(object, true));
+				debugMessage(message+" "+dojo.toJson(object, true));
 			} catch(e) {
-				debug("dump: error dumping: "+object+" - "+e);
+				debugMessage("dump: error dumping: "+object+" - "+e);
 			}
 		}
 		
@@ -326,8 +326,9 @@
 				onFetchSuccess: function() {
 					if (firstRender)
 			    		listingGrid.setSortIndex(0, true);
-					selectAll(false);
-					if (listingStore.urlChanged() || firstRender) { // If directory changed, clear selections
+//					selectAll(false);
+					setToggleButtonState(true); // Selections have been cleared, so set toggle button accordingly
+					if (listingStore.urlChanged() || firstRender) { // If directory changed
 //						selectAll(false);
 						listingStore.setLastURL(listingStore.urlFields);
 						listingStore.refreshDisplay(true);
@@ -449,6 +450,12 @@
     		});
     		dojo.connect(unshareAllGrid, 'onHeaderClick', function(e){
     			unshareAllGrid.selection.deselectAll(); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
+    		});  		
+    		dojo.connect(dojo.byId("shareRadioButton"), 'onClick', function(e){
+    			refreshButtons();
+    		});  		
+    		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){
+    			refreshButtons();
     		});  		
 		}
 		
@@ -1083,26 +1090,52 @@
 				for (var i = 0; i < selected.length; i++) {
 					var selIndex = selected[i]+1;
 					var item = listingGrid.getItem(selIndex);
+//					if (!item)
+//						return true; // If not all selected items are loaded, must return true in case some are dirs
+					if (item)
+						if (item.i.name.type == "d")
+							return true;
+				}
+			return false;
+		}
+
+		function unknownIsSelected() {
+			if (!listingGrid._isLoaded)
+				return false;
+			var selected = getSelected(listingGrid);
+			if (selected != null)
+				for (var i = 0; i < selected.length; i++) {
+					var selIndex = selected[i]+1;
+					var item = listingGrid.getItem(selIndex);
 					if (!item)
-						return true; // If not all selected items are loaded, must return true in case some are dirs
-					if (item.i.name.type == "d")
-						return true;
+						return true; // found an item not yet loaded
 				}
 			return false;
 		}
 		
-		function sharedIsSelected() {
+		function sharedIsSelected(exclusive) {
 			if (!listingGrid._isLoaded)
 				return false;
 			var selected = getSelected(listingGrid);
-			if (selected == null)
-				return false;
-			var selIndex = selected[0]+1;
-			var item = listingGrid.getItem(selIndex);
-			if (!item)
-				return true; // If not all selected items are loaded, return true to be safe
-			if (item.i.sharing.value.length > 0)
-				return true;
+			if (selected != null) {
+				var shared = false;
+				var unshared = false;
+				for (var i = 0; i < selected.length; i++) {
+					var selIndex = selected[i]+1;
+					var item = listingGrid.getItem(selIndex);
+//					if (!item)
+//						return true; // If not all selected items are loaded, must return true in case some are dirs
+					if (item) {
+						var state = (item.i.sharing.value.length > 0);
+						shared = shared || state;
+						unshared = unshared || !state;
+					}
+				}
+				if (exclusive)
+					return shared && ! unshared
+				else
+					return shared;
+			}
 			return false;
 		}
 		
@@ -1201,11 +1234,11 @@
 			enableActiveItem('renameButton', selectedItemsCount() == 1 && !isAnonymous() && !inTrash);
 			enableActiveItem('moveButton', selectedItemsCount() != 0 && !isAnonymous() && !inTrash);
 			enableActiveItem('copyButton', selectedItemsCount() != 0);
-			enableActiveItem('replicasButton', selectedItemsCount() == 1 && !directoryIsSelected() && !inTrash);
+			enableActiveItem('replicasButton', selectedItemsCount() == 1 && !(directoryIsSelected() || unknownIsSelected()) && !inTrash);
 			enableActiveItem('deleteButton', selectedItemsCount() != 0 && !isAnonymous());
 			enableActiveItem('metadataButton', selectedItemsCount() != 0);
 			enableActiveItem('accessControlButton', selectedItemsCount() != 0);
-			enableActiveItem('sharingButton', selectedItemsCount() == 1 && !directoryIsSelected() && !inTrash && !isAnonymous());
+			enableActiveItem('sharingButton', selectedItemsCount() != 0 && !(directoryIsSelected() || unknownIsSelected()) && !inTrash && !isAnonymous());
 			
 			for (i = 0; i < dynamicObjects.length; i++) 
 				if (dynamicObjects[i].objectType == "button")
@@ -1251,12 +1284,12 @@
 			dialogMoveCopy.attr('title', mode+" Items");
 			dojo.html.set(dojo.byId('destinationMoveCopyButton'), mode);
 
-			var s = sharedIsSelected() ? "Unshare" : "Share";
-			var button = dojo.byId("sharingButton");
-			if (button) {
-				button.title = s;
-				dojo.html.set(button, s);
-			}
+//			var s = sharedIsSelected() ? "Unshare" : "Share";
+			dojo.byId('shareOKButton').disabled = !(dojo.byId('shareRadioButton').checked || dojo.byId('unshareRadioButton').checked);
+//			if (button) {
+//				button.title = s;
+//				dojo.html.set(button, s);
+//			}
 			
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
@@ -1316,7 +1349,7 @@
 		}
 				
 		function addToHistory(url) {
-//			debug("addtohistory:"+url);
+//			debugMessage("addtohistory:"+url);
 			dojo.back.addToHistory(newBackState(url));
 		}
 
@@ -1575,6 +1608,13 @@
 		function shareFiles(url, share) {
 			if (selectedItemsCount() == 0)
 				return;
+			if (share)
+				share = "share";
+			else
+				share = "unshare";
+		    if (!confirm(warnBulk()+'Are you sure you want to '+share+' the selected items?'))
+			    return;
+		
 			var data='[{"indices":['+listSelectedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			cursorBusy(true);
 			dojo.xhrPost({
@@ -1865,7 +1905,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstSelectedItem()/*)*/; 
-			enableButton('recursive', directoryIsSelected());	// Enable if any dirs in list
+			enableButton('recursive', (directoryIsSelected() || unknownIsSelected()));	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
 	        else
@@ -2019,12 +2059,28 @@
 			getReplicas("");
 		}
 
-		function share() {
-//dialogShare.show();
-			var action = sharedIsSelected() ? 'unshare' : 'share';
-		    if (!confirm(warnBulk()+'Are you sure you want to '+action+' '+decodeURIComponent(getFirstSelectedItem())+"?"))
-			    return;
-			shareFiles(listingStore.getCurrentDirectory(), action);
+		function showShare() {
+			var shareButton = dojo.byId('shareRadioButton');
+			var unshareButton = dojo.byId('unshareRadioButton');
+			if (unknownIsSelected() || (sharedIsSelected(false) && !sharedIsSelected(true))) {
+				shareButton.checked = false;
+				unshareButton.checked = false;
+			} else
+			if (sharedIsSelected(true)) {
+				shareButton.checked = false;
+				unshareButton.checked = true;
+			} else
+			if (!sharedIsSelected(false)) {
+				shareButton.checked = true;
+				unshareButton.checked = false;
+			}				
+			dojo.byId("shareOKButton").disabled = true;
+			refreshButtons();
+			dialogShare.show();
+//			var action = sharedIsSelected() ? 'unshare' : 'share';
+//		    if (!confirm(warnBulk()+'Are you sure you want to '+action+' '+decodeURIComponent(getFirstSelectedItem())+"?"))
+//			    return;
+//			shareFiles(listingStore.getCurrentDirectory(), action);
 		}
 
 		function showUnshareAll(show) {
@@ -2133,7 +2189,7 @@
 //			dojox.grid.DataGrid.prototype.onStyleRow.apply(this, arguments);
 //		}
 		
-		function debug() {
+		function doDebug() {
 			cursorBusy(true);	
 		  	dojo.xhrPost({
 	    		url: "?method=debug&uihandle="+listingStore.uiHandle,
@@ -2155,7 +2211,7 @@
 		var enableDebugButton = false;
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
-			//debug();
+			//doDebug();
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -2436,9 +2492,17 @@
 	</table>
 </div>
 <div dojoType="dijit.Dialog" jsId="dialogShare" title="Sharing" onCancel="setCursor(false, true)">
+	<div style="text-align: left;">
+		<input type="radio" name="sharingRadioButtons" id="shareRadioButton" value="share" onClick="refreshButtons()">
+		<label for="g1rb1">Share items</label>
+		<br><br>
+		<input type="radio" name="sharingRadioButtons" id="unshareRadioButton" value="unshare" onClick="refreshButtons()">
+		<label for="g1rb2">Unshare items</label>
+		<br><br><br>
+	</div>
 	<div style="text-align: right;">
-		<button type="button" id="shareButton" onclick="">OK</button>
-		<button type="button" onclick="">Cancel</button>
+		<button type="button" id="shareOKButton" onclick="dialogShare.hide(); shareFiles(listingStore.getCurrentDirectory(), dojo.byId('shareRadioButton').checked);">OK</button>
+		<button type="button" onclick="dialogShare.hide()">Cancel</button>
 	</div>
 </div>
 <div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogUnshareAll" title="Unshare" onCancel="setCursor(false, true)">
@@ -2510,8 +2574,9 @@
 											<span id="unshareAllButton"><a title="Unshare your shared items" onclick="showUnshareAll(true); return false" href="unshareAll"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
-		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
-												<div dojoType="dijit.Menu" style="display: none;">
+ 		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
+<!-- 												<div dojoType="dijit.Menu" style="display: none;">-->
+												<div dojoType="dijit.Menu" >
 													<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
 													<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
 												</div>
@@ -2635,7 +2700,7 @@
 	    <span id="sharingButtonHolder">
 		    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
 		    	<tr>
-		    		<td class="activeItem" id="sharingButton" onclick="if (!activeItemIsEnabled('sharingButton')) return; share()" >Sharing</td>
+		    		<td class="activeItem" id="sharingButton" onclick="if (!activeItemIsEnabled('sharingButton')) return; showShare()" >Sharing</td>
 		    	</tr>
 		    </table>
 		</span>
