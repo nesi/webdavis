@@ -538,15 +538,15 @@ public class DavisUtilities {
   //  		System.err.println("uri="+uri);
   			return uri.toString();
     	} catch (Exception e) {
-  //  		System.err.println("bad uri:"+fileName);
+    		Log.log(Log.DEBUG, "Failed to encode file name: bad uri:"+fileName);
+//    		String s = null;
+//      	  	try {
+//      	  		s = URLEncoder.encode(fileName, "UTF-8");
+//      	  	} catch (UnsupportedEncodingException e2) {}
+//      	  	s = s.replace("+", "%2B");
+//      	  	return s;
     	}
     	return null;
-//    	  String s = null;
-//    	  try {
-//    		  s = URLEncoder.encode(url, "UTF-8");
-//    	  } catch (UnsupportedEncodingException e) {}
-//    	  s = s.replace("+", "%2B");
-//    	  return s;
     }
     
     public static String getStackTrace(Throwable e) {
