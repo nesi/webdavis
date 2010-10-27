@@ -132,6 +132,7 @@
 					dojo.html.set(dojo.byId("sharingButtonHolder"), '');  // Hide sharing button if no sharing user configured
 				if (dojo.byId("sharesButton") != null)
 					dojo.html.set(dojo.byId("sharesButton"), '');
+				
 				listingLayout[listingLayoutMetadataField].hidden = true;
 		//		listingGrid.setStructure(listingLayout);
 			}
@@ -2222,6 +2223,17 @@
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
+//			var body="line one<br>line two";
+//			var win = window.open('mailto:?subject=testing&body='+body,'emailWindow');
+//			alert("win.name="+win.name);
+//			win.document.write("hello there");
+            var linksWindow = window.open("", "Selected Links");
+            if (window.focus)
+                linksWindow.focus();
+            linksWindow.document.write('<html><head><title>Selected Links</title></head>');
+            linksWindow.document.write('blah<br>blah');
+            linksWindow.document.write('</body></html>');
+            linksWindow.document.close();
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
