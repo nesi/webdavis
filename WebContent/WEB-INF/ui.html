@@ -277,7 +277,8 @@
 
 	    	sharesLayout = [
 	    		    {field: "file", width: "250px", name: "File", formatter: gridFormatUnescape},
-	    		    {field: "dir", width: "auto", name: "Collection", formatter: gridFormatUnescape}
+	    		    {field: "dir", width: "auto", name: "Collection", formatter: gridFormatUnescape},
+	    		    {field: "url", width: "100px", name: "URL", hidden: true}
 	    		];
 
 		    listingLayoutSharingField = 3; // This MUST be the layout row for "sharing" below
@@ -1297,7 +1298,7 @@
 			enableButton('addMetadataButton', true); 
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 			enableButton('unshareButton', sharesGrid.selection.getSelectedCount() > 0);
-			enableButton('emailSharesButton', sharesGrid.selection.getSelectedCount() > 0);
+			enableButton('generateLinksButton', sharesGrid.selection.getSelectedCount() > 0);
 		}
 		
 		function setStatusPanel(html) {
@@ -1615,8 +1616,8 @@
 				share = "share";
 			else
 				share = "unshare";
-		    if (!confirm(warnBulk()+'Are you sure you want to '+share+' the selected items?'))
-			    return;
+//		    if (!confirm(warnBulk()+'Are you sure you want to '+share+' the selected items?'))
+//			    return;
 		
 			var data='[{"indices":['+listSelectedItems()+']}]'; //json format is: [{"indices":["file1index","file2index"...]}]		
 			cursorBusy(true);
@@ -2096,11 +2097,18 @@
 			}
 		}
 
-		function emailSharesLinks() {
+		function generateSharesLinks() {
 			var selected = sharesGrid.selection.getSelected();
 			if (selected != null) {
-				//for (var i = 0; i < selected.length; i++) 
-					//selected[i].
+	            var linksWindow = window.open('');
+	            if (window.focus)
+	                linksWindow.focus();
+	            linksWindow.document.write('<html><head><title>Selected Links</title></head>');
+	            linksWindow.document.write('<body><h2 style="text-align: center;">Selected Links For <parameter account/></h2><br>');
+				for (var i = 0; i < selected.length; i++) 			
+		            linksWindow.document.write('<a href="'+selected[i].url+'">'+selected[i].url+'</a><br>');
+		        linksWindow.document.write('</body></html>');
+	            linksWindow.document.close();
 			}
 		}
 
@@ -2223,17 +2231,6 @@
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
-//			var body="line one<br>line two";
-//			var win = window.open('mailto:?subject=testing&body='+body,'emailWindow');
-//			alert("win.name="+win.name);
-//			win.document.write("hello there");
-            var linksWindow = window.open('', 'linkswindow');
-            if (window.focus)
-                linksWindow.focus();
-            linksWindow.document.write('<html><head><title>Selected Links</title></head>');
-            linksWindow.document.write('blah<br>blah');
-            linksWindow.document.write('</body></html>');
-            linksWindow.document.close();
 		}
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -2531,11 +2528,11 @@
 <div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogShares" title="Shares" onCancel="setCursor(false, true)">
 	<small>Shared files owned by <parameter account/>:<br><br></small>
 	<div autoHeight="10" structure="sharesLayout" dojoType="dojox.grid.DataGrid" id="sharesGrid" jsId="sharesGrid" loadingMessage="loading" 
-	     autoHeight="true" onSelectionChanged="refreshButtons()"></div>
+	     autoHeight="true" columnReordering="true" onSelectionChanged="refreshButtons()"></div>
 	<br>
 	<div style="text-align: right;">
 		<button type="button" onclick="sharesGrid.selection.selectRange(0, sharesGrid.rowCount-1);">Select all</button>
-		<button type="button" id="emailSharesButton" onclick="dialogShares.hide(); emailSharesLinks()">Email links</button>
+		<button type="button" id="generateLinksButton" onclick="generateSharesLinks()">Generate links</button>
 		<button type="button" id="unshareButton" onclick="unshareAll()">Unshare</button>
 		<button type="button" onclick="dialogShares.hide()">Close</button>
 	</div>

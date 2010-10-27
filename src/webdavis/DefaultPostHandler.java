@@ -893,9 +893,11 @@ public class DefaultPostHandler extends AbstractHandler {
 		    		for (MetaDataRecordList p:fileDetails) {
 		    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
 		    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+		    			String sharingURL = (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE);
 						if (i++ > 0) json.append(",\n");
 						json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
-						json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\"}");
+						json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
+						json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
 		        	}
 //				}
 			}
@@ -1126,6 +1128,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				//IRODSMetaDataSet.FILE_ACCESS_USER_ID,
 				IRODSMetaDataSet.OWNER,							
 				IRODSMetaDataSet.FILE_NAME,
+				IRODSMetaDataSet.META_DATA_ATTR_VALUE,
 				IRODSMetaDataSet.DIRECTORY_NAME
 		});
 		MetaDataCondition conditionsFile[];
