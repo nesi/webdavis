@@ -597,6 +597,7 @@ public class Davis extends HttpServlet {
 					queryString = queryString.substring(0, i);
 				}				
 				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
+				substitutions.put("insecurelogintext", getConfig().getInsecureLoginText());
 				if (request.getSession().getAttribute(FORMAUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
 					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");
 					substitutions.put("failedmessage", "<span style=\"color:red\">Authentication Failed</span><br><br><small>Please ensure your username and password are correct,<br>and that cookies are enabled in your browser.<br><br></small>");

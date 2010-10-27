@@ -29,17 +29,18 @@
               				<table>
            	    				<tbody>
                 					<tr>
-                  						<td>Username:</td><td><input name="username" tabindex="1" type="text"></td>
+                  						<td style="text-align: right; width: 40%;">Username:</td><td style="text-align: left;"><input name="username" tabindex="1" type="text"></td>
                 					</tr>
                 					<tr>
-                  						<td>Password:</td><td><input name="password" tabindex="2" type="password"></td>
+                  						<td style="text-align: right; width: 40%;">Password:</td><td style="text-align: left;"><input name="password" tabindex="2" type="password"></td>
                 					</tr>
                 					<tr>
-                  						<td rowspan="2"><input value="Login" tabindex="3" type="submit"></td>
+                  						<td colspan="1" style="text-align: right; vertical-align: top;"><input value="Login" tabindex="3" type="submit"></td>
+                						<td style="vertical-align: top;"><br></td>
                 					</tr>
                 					<tr>
-                  						<td align="center"><small>Or log in <parameter insecureurl/>via HTTP</a></small></td>
-                  						<td align="center"><small><a href="<parameter loginhelp/>">Need help?</a></small></td>
+                  						<td colspan="3" style="vertical-align: top; text-align:center;"><small>Or log in <parameter insecureurl/><parameter insecurelogintext/></a>
+                  						&nbsp;&nbsp;&nbsp;<a href="<parameter loginhelp/>">Need help?</a></small></td>
                 					</tr>
               					</tbody>
             				</table>
