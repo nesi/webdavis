@@ -2583,14 +2583,14 @@
 							<tr><td>
 								<table border="0" cellspacing="0" cellpadding="0">
 									<tr class="text">
-			        					<td colspan="100" align="right" style="padding-bottom:4px;">You are logged in as &lt;<a title="Go to my home folder" class="link" onclick="if (!anonymous()) {listingStore.gotoDirectory('<parameter home/>', true);} return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
+			        					<td colspan="100" align="right" style="padding-bottom:4px;">You are logged in as &lt;<a title="Go to your home folder" class="link" onclick="if (!anonymous()) {listingStore.gotoDirectory('<parameter home/>', true);} return false" href="<parameter home/>"><parameter account/></a>&gt;<!-- | <a class="link" href="">logout</a>--></td>
 			        				</tr>
 			        				<tr>
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
-			        						<a title="Refresh display" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
-											<span id="homeButton"><a title="Go to my home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a></span>
-											<span id="trashButton"><a title="Go to my trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
+			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
+											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
 											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
 											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
@@ -2598,7 +2598,7 @@
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
 <!-- needed for dojo 1.4.2-->					<div dojoType="dijit.Menu" style="display: none;"><!-- -->
-												<div dojoType="dijit.Menu" >
+<!-- needed for dojo 1.5.0						<div dojoType="dijit.Menu" > -->
 													<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
 													<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
 												</div>
