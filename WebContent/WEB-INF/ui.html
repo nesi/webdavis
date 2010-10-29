@@ -1297,8 +1297,8 @@
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
-			enableButton('unshareButton', sharesGrid.selection.getSelectedCount() > 0);
-			enableButton('generateLinksButton', sharesGrid.selection.getSelectedCount() > 0);
+			enableButton('unshareButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
+			enableButton('generateLinksButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 		}
 		
 		function setStatusPanel(html) {
@@ -1648,14 +1648,18 @@
 		}
 			
 		function unshareAll() {
-			showShares(false);
-			if (sharesGrid.selection.getSelectedCount() == 0)
-				return;
-		    if (!confirm(warnBulk()+'Are you sure you want to unshare the selected items?'))
-			    return;
-
 			var list = "";
 			var selected = sharesGrid.selection.getSelected();
+			for (var i = 0; i < selected.length; i++) 
+				if (selected[i] == null) { // If any selection items are null, force grid to load all items
+					sharesGridLoadPage.onExit = function() {
+						sharesGrid.update();
+						unshareAll()};
+					sharesGridLoadPage.loadPage(0);
+					selected = sharesGrid.selection.getSelected();
+					return;
+				}
+			showShares(false);
 			if (selected != null)
 				for (var i = 0; i < selected.length; i++) 
 					list += "\""+escapeJSON(encodeURI(decodeURIComponent(selected[i].dir+"/"+selected[i].file)))+"\",";
@@ -2097,23 +2101,38 @@
 			}
 		}
 
-		/* Forces shares grid to load all pages before selecting all. This is to ensure that a selection list will not contain
-		/  nulls after the select all. */
-		var sharesSelectAll = function(row) {
-			if (row < sharesGrid.rowCount) {
-				setTimeout("sharesGrid.scroller.findScrollTop("+row+"); sharesSelectAll("+(row+sharesGrid.rowsPerPage)+");", 100);
-			} else { // Last time through
-				sharesGrid.update();
-				sharesGrid.selection.selectRange(0, sharesGrid.rowCount-1);
-				cursorBusy(false);
-			}
-		}
+		/* Forces shares grid to load all pages. This is to ensure that a selection list will not contain
+		/  nulls. The onExit method will be called after the last page.*/
+		var sharesGridLoadPage = {
+			loadPage: function(row) {
+				if (row < sharesGrid.rowCount) {
+					setTimeout("sharesGrid.scroller.findScrollTop("+row+"); sharesGridLoadPage.loadPage("+(row+sharesGrid.rowsPerPage)+");", 100);
+				} else { // Last time through
+					if (sharesGridLoadPage.onExit)
+						sharesGridLoadPage.onExit();
+				}
+			},
+			onExit: null
+		};
 
 		function generateSharesLinks() {
 			var selection = sharesGrid.selection;
 			var selected = selection.getSelected();
 			if (selected != null) {
+				for (var i = 0; i < selected.length; i++) 
+					if (selected[i] == null) { // If any selection items are null, force grid to load all items
+						sharesGridLoadPage.onExit = function() {
+							sharesGrid.update();
+							generateSharesLinks()};
+						sharesGridLoadPage.loadPage(0);
+						selected = sharesGrid.selection.getSelected();
+						return;
+					}
 	            var linksWindow = window.open('');
+	            if (!linksWindow) {
+		            alert("Can't open new window for generated links. Please ensure you have popus enabled for this site.");
+		            return;
+	            }
 	            if (window.focus)
 	                linksWindow.focus();
                 try {
@@ -2549,9 +2568,9 @@
 	     autoHeight="true" columnReordering="true" onSelectionChanged="refreshButtons()"></div>
 	<br>
 	<div style="text-align: right;">
-		<button type="button" onclick="cursorBusy(true); sharesSelectAll(0);">Select all</button>
+		<button type="button" onclick="cursorBusy(true); sharesGrid.selection.selectRange(0, sharesGrid.rowCount-1); cursorBusy(false);">Select all</button>
 		<button type="button" id="generateLinksButton" onclick="generateSharesLinks()">Generate links</button>
-		<button type="button" id="unshareButton" onclick="unshareAll()">Unshare</button>
+		<button type="button" id="unshareButton" onclick="if (!confirm(warnBulk()+'Are you sure you want to unshare the selected items?')) return; unshareAll()">Unshare</button>
 		<button type="button" onclick="dialogShares.hide()">Close</button>
 	</div>
 </div>
