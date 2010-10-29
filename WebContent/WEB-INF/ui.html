@@ -299,7 +299,7 @@
 			resetDomainsStore();
 			resetUsersStore();
 			resetReplicasStore();
-			resetSharesStore();
+			resetSharesStore(false);
 
 			listingStore = new ListingStore({
 				id: "listingStore", // For debugging
@@ -514,7 +514,7 @@
 	 				gridMenu.inherited("_openMyself", arguments);
   			}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
-    		// The following hack prevents the menu items being destroyed if the donNode is null. The other time unReplace is
+    		// The following hack prevents the menu items being destroyed if the domNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
     		columnMenu.oldUnReplace = columnMenu.unReplace;
     		columnMenu.unReplace = function(destroy) {
@@ -542,8 +542,8 @@
 			replicasStore = resetStore(replicasStore, replicasGrid, replicasLayout, false);
 		}
 		
-		function resetSharesStore() { 
-			sharesStore = resetStore(sharesStore, sharesGrid, sharesLayout, false);
+		function resetSharesStore(fast) { 
+			sharesStore = resetStore(sharesStore, sharesGrid, sharesLayout, fast);
 		}
 		
 		function resetDomainsStore() { 
@@ -1653,7 +1653,7 @@
 				return;
 		    if (!confirm(warnBulk()+'Are you sure you want to unshare the selected items?'))
 			    return;
-		
+
 			var list = "";
 			var selected = sharesGrid.selection.getSelected();
 			if (selected != null)
@@ -1717,7 +1717,7 @@
 	    		url: url+"?method=metadata&uihandle="+listingStore.uiHandle,
 	    		load: function(responseObject, ioArgs){	  
 		  				cursorBusy(false);
-						metadataStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						metadataStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						metadataGrid.setStore(metadataStore);	      			
 	       				return responseObject;
 	    			},
@@ -2089,7 +2089,7 @@
 
 		function showShares(show) {
 			if (show) {
-				resetSharesStore();
+				resetSharesStore(true);
 				getShares();
 				dialogShares.show();
 			} else {
@@ -2097,18 +2097,36 @@
 			}
 		}
 
+		/* Forces shares grid to load all pages before selecting all. This is to ensure that a selection list will not contain
+		/  nulls after the select all. */
+		var sharesSelectAll = function(row) {
+			if (row < sharesGrid.rowCount) {
+				setTimeout("sharesGrid.scroller.findScrollTop("+row+"); sharesSelectAll("+(row+sharesGrid.rowsPerPage)+");", 100);
+			} else { // Last time through
+				sharesGrid.update();
+				sharesGrid.selection.selectRange(0, sharesGrid.rowCount-1);
+				cursorBusy(false);
+			}
+		}
+
 		function generateSharesLinks() {
-			var selected = sharesGrid.selection.getSelected();
+			var selection = sharesGrid.selection;
+			var selected = selection.getSelected();
 			if (selected != null) {
 	            var linksWindow = window.open('');
 	            if (window.focus)
 	                linksWindow.focus();
-	            linksWindow.document.write('<html><head><title>Selected Links</title></head>');
-	            linksWindow.document.write('<body><h2 style="text-align: center;">Selected Links For <parameter account/></h2><br>');
-				for (var i = 0; i < selected.length; i++) 			
-		            linksWindow.document.write('<a href="'+selected[i].url+'">'+selected[i].url+'</a><br>');
-		        linksWindow.document.write('</body></html>');
-	            linksWindow.document.close();
+                try {
+	            	linksWindow.document.write('<html><head><title>Selected Links</title></head>');
+	            	linksWindow.document.write('<body><h2 style="text-align: center;">Selected Links for <parameter account/></h2><br>');
+	            	for (var i = 0; i < selection.selected.length; i++)
+		            	if (selection.selected[i])
+			            	sharesGrid.getItem(i); // Force fetch of item at this row, otherwise the next loop might see nulls
+					for (var i = 0; i < selected.length; i++) 			
+		            	linksWindow.document.write('<a href="'+selected[i].url+'">'+selected[i].url+'</a><br>');
+		        	linksWindow.document.write('</body></html>');
+	            	linksWindow.document.close();
+                } catch (e) {} // Ignore write errors. If document is closed, too bad
 			}
 		}
 
@@ -2490,7 +2508,7 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="setCursor(false, true)">
+<div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
 			<td width="400px">
@@ -2510,7 +2528,7 @@
 		</tr>
 	</table>
 </div>
-<div style="width:300px;" dojoType="dijit.Dialog" jsId="dialogShare" title="Sharing" onCancel="setCursor(false, true)">
+<div style="width:300px;" dojoType="dijit.Dialog" jsId="dialogShare" title="Sharing" onCancel="/*setCursor(false, true)*/">
 	<div style="text-align: left;">
 	    Please select an action:<br><br>
 		<input type="radio" name="sharingRadioButtons" id="shareRadioButton" value="share" onClick="refreshButtons()">
@@ -2525,13 +2543,13 @@
 		<button type="button" onclick="dialogShare.hide()">Cancel</button>
 	</div>
 </div>
-<div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogShares" title="Shares" onCancel="setCursor(false, true)">
+<div style="width:90%;" dojoType="dijit.Dialog" jsId="dialogShares" title="Shares" onCancel="/*setCursor(false, true)*/">
 	<small>Shared files owned by <parameter account/>:<br><br></small>
-	<div autoHeight="10" structure="sharesLayout" dojoType="dojox.grid.DataGrid" id="sharesGrid" jsId="sharesGrid" loadingMessage="loading" 
+	<div autoHeight="10" structure="sharesLayout" dojoType="dojox.grid.DataGrid" id="sharesGrid" jsId="sharesGrid" loadingMessage="loading" rowsPerPage="100"
 	     autoHeight="true" columnReordering="true" onSelectionChanged="refreshButtons()"></div>
 	<br>
 	<div style="text-align: right;">
-		<button type="button" onclick="sharesGrid.selection.selectRange(0, sharesGrid.rowCount-1);">Select all</button>
+		<button type="button" onclick="cursorBusy(true); sharesSelectAll(0);">Select all</button>
 		<button type="button" id="generateLinksButton" onclick="generateSharesLinks()">Generate links</button>
 		<button type="button" id="unshareButton" onclick="unshareAll()">Unshare</button>
 		<button type="button" onclick="dialogShares.hide()">Close</button>
@@ -2588,12 +2606,12 @@
 			        				<tr>
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
-			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="refresh"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
-											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a></span>
-											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
-											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
-											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="unshare all" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
+			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
+											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/trash.png" width="28" height="32"/></a></span>
+											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="Login with authentication" src="/images/login.png" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/logout.png" width="26" height="32"/></a></span>
+											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="Show your shared files" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
