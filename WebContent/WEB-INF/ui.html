@@ -1452,7 +1452,7 @@
 //alert("ioargs1= "+dojo.toJson(ioArgs, true));
 //alert("response1="+dojo.toJson(response, true));
 							if (response.name == "TypeError")	// IE bad upload
-								alert("Failed to upload file: Your browser can't upload files larger than 2Gb");
+								alert("Failed to upload file: The transfer was cancelled, or your browser can't upload files that large.");
 							else
 							if (response.status == "success") {
 								//alert("Successfully transferred "+response.message+" bytes");
@@ -1483,6 +1483,7 @@
 			if (!uploadInProgress)  
 				showUploadDialog(false);
 			else {
+				cursorBusy(true);
 				uploadInProgress = false;
 				setUploadStatus("Cancelling...");
 				clearInterval(progressTimer);
@@ -2177,7 +2178,7 @@
 		function reloadWindow() {
 			if (dojo.isIE) 
 				window.location.href = window.location.href;  // reload doesn't seem to work for IE but this does
-			else
+			//else
 				window.location.reload(true);
 		}
 		
@@ -2334,7 +2335,7 @@
 						} else 
 						if (errorData.status == 410) { // Server restarted
 				//			loadedAlert(errorMessage("get", errorData.status, "Your client appears to be out of sync with the server (server may have been restarted)"));
-							loadedAlert(errorMessage("get", errorData.status, "Access denied - you are not currently logged in"));
+							/*loadedAlert(*/errorMessage("get", errorData.status, "Access denied - you are not currently logged in")/*)*/;
 				//			reloadWindow();
 						} else {
 							var s = "Can't read "+directory+"\n\n"+errorMessage("get", errorData.status, "")+"\n\n";
@@ -2426,7 +2427,7 @@
 		<button type="button" onclick="dialogCreateDir.hide()">Cancel</button>
 	</div>
 </div>		
-<div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload">
+<div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload" onCancel="enableButton('uploadCancelButton', false); uploadCancel();">
  	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return /*validateUploadForm()*/ false;">
    		File to upload:
    		<input id="uploadTextField" type="file" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
