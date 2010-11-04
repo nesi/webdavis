@@ -433,6 +433,7 @@ public class AuthorizationProcessor {
 					e.printStackTrace();
 				}
 			}
+			Log.log(Log.DEBUG, "Davis session created.");
 		}else if (user!=null&&password!=null){
 			Log.log(Log.DEBUG,"login with username/password");
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
@@ -461,6 +462,7 @@ public class AuthorizationProcessor {
 		try {
 			String[] resList = null;
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
+				Log.log(Log.DEBUG, "Creating IRODSFileSystem");
 				IRODSFileSystem irodsFileSystem = new IRODSFileSystem((IRODSAccount)account);
 				Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
 				homeDir = irodsFileSystem.getHomeDirectory();

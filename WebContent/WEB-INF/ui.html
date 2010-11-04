@@ -2214,9 +2214,14 @@
 	    			},
 	    		error: function(response, ioArgs){
 		    			checkOffline(response);
-	      				loadedAlert("logout failed:\n\n"+ioArgs.xhr.statusText);
+		    			var i = ioArgs.xhr.statusText.indexOf("not currently logged");
+		    			if (listingStore.uiHandle && (i > -1))
+		      				loadedAlert("You have already been automatically logged out.");
+		    			else
+	      					loadedAlert("logout failed:\n\n"+ioArgs.xhr.statusText);
 	       				cursorBusy(false);
-	      				return response;
+	       				reloadWindow();
+	      			//	return response;
 	    			},
 	    		sync: true,
 	    		handleAs: "json"
