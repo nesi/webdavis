@@ -2216,7 +2216,7 @@
 		    			checkOffline(response);
 		    			var i = ioArgs.xhr.statusText.indexOf("not currently logged");
 		    			if (listingStore.uiHandle && (i > -1))
-		      				loadedAlert("You have already been automatically logged out.");
+		      				loadedAlert("You have already been automatically logged out");
 		    			else
 	      					loadedAlert("logout failed:\n\n"+ioArgs.xhr.statusText);
 	       				cursorBusy(false);
