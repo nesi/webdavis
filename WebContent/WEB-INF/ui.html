@@ -1650,16 +1650,7 @@
 			
 		function unshareAll() {
 			var list = "";
-			var selected = sharesGrid.selection.getSelected();
-			for (var i = 0; i < selected.length; i++) 
-				if (selected[i] == null) { // If any selection items are null, force grid to load all items
-					sharesGridLoadPage.onExit = function() {
-						sharesGrid.update();
-						unshareAll()};
-					sharesGridLoadPage.loadPage(0);
-					selected = sharesGrid.selection.getSelected();
-					return;
-				}
+			var selected = getGridSelection(sharesGrid);
 			showShares(false);
 			if (selected != null)
 				for (var i = 0; i < selected.length; i++) 
@@ -2102,33 +2093,21 @@
 			}
 		}
 
-		/* Forces shares grid to load all pages. This is to ensure that a selection list will not contain
-		/  nulls. The onExit method will be called after the last page.*/
-		var sharesGridLoadPage = {
-			loadPage: function(row) {
-				if (row < sharesGrid.rowCount) {
-					setTimeout("sharesGrid.scroller.findScrollTop("+row+"); sharesGridLoadPage.loadPage("+(row+sharesGrid.rowsPerPage)+");", 100);
-				} else { // Last time through
-					if (sharesGridLoadPage.onExit)
-						sharesGridLoadPage.onExit();
-				}
-			},
-			onExit: null
-		};
+		function getGridSelection(grid) {
+			var selected = grid.selection.getSelected();
+			if (selected != null) 
+				for (var i = 0; i < selected.length; i++) 
+					if (selected[i] == null) { // If any selection items are null, force grid to load all items from store
+						for (var row = 0; row < grid.rowCount; row += grid.rowsPerPage)
+							grid._fetch(row, false);
+						return sharesGrid.selection.getSelected();
+					}
+			return selected;
+		}
 
 		function generateSharesLinks() {
-			var selection = sharesGrid.selection;
-			var selected = selection.getSelected();
+			var selected = getGridSelection(sharesGrid);
 			if (selected != null) {
-				for (var i = 0; i < selected.length; i++) 
-					if (selected[i] == null) { // If any selection items are null, force grid to load all items
-						sharesGridLoadPage.onExit = function() {
-							sharesGrid.update();
-							generateSharesLinks()};
-						sharesGridLoadPage.loadPage(0);
-						selected = sharesGrid.selection.getSelected();
-						return;
-					}
 	            var linksWindow = window.open('');
 	            if (!linksWindow) {
 		            alert("Can't open new window for generated links. Please ensure you have popus enabled for this site.");
@@ -2139,9 +2118,6 @@
                 try {
 	            	linksWindow.document.write('<html><head><title>Selected Links</title></head>');
 	            	linksWindow.document.write('<body><h2 style="text-align: center;">Selected Links for <parameter account/></h2><br>');
-	            	for (var i = 0; i < selection.selected.length; i++)
-		            	if (selection.selected[i])
-			            	sharesGrid.getItem(i); // Force fetch of item at this row, otherwise the next loop might see nulls
 					for (var i = 0; i < selected.length; i++) 			
 		            	linksWindow.document.write('<a href="'+selected[i].url+'">'+selected[i].url+'</a><br>');
 		        	linksWindow.document.write('</body></html>');
