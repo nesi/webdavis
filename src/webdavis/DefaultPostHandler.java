@@ -273,6 +273,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					}
 				}
 			} else if (file.getFileSystem() instanceof IRODSFileSystem) {
+				String owner = "unknown";
 				if (file.isDirectory()){
 					permissions = ((IRODSFile) file).query(new String[]{DirectoryMetaData.DIRECTORY_INHERITANCE});
 					boolean stickyBit = false;
@@ -291,8 +292,10 @@ public class DefaultPostHandler extends AbstractHandler {
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_USER_NAME),
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_USER_ZONE),
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT),
-									MetaDataSet.newSelection(IRODSMetaDataSet.OWNER)}, 
+									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_OWNER)}, 
 							DavisUtilities.JARGON_MAX_QUERY_NUM);
+					if (permissions != null && permissions.length > 0)
+						owner = (String)permissions[0].getValue(IRODSMetaDataSet.DIRECTORY_OWNER);
 				}else {
 //					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,	GeneralMetaData.ACCESS_CONSTRAINT});
 					permissions = file.getFileSystem().query( 
@@ -306,11 +309,9 @@ public class DefaultPostHandler extends AbstractHandler {
 									MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT),
 									MetaDataSet.newSelection(IRODSMetaDataSet.OWNER)}, 
 							DavisUtilities.JARGON_MAX_QUERY_NUM);
+					if (permissions != null && permissions.length > 0)
+						owner = (String)permissions[0].getValue(IRODSMetaDataSet.OWNER);
 				}
-
-				String owner = "unknown";
-				if (permissions != null && permissions.length > 0)
-					owner = (String)permissions[0].getValue(IRODSMetaDataSet.OWNER);
 				json.append(escapeJSONArg("owner")+":"+escapeJSONArg(owner)+",\n");
 				Log.log(Log.DEBUG, "irods permissions: "+permissions);
 				json.append(escapeJSONArg("items")+":[");
