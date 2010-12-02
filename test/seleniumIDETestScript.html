@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head profile="http://selenium-ide.openqa.org/profiles/test-case">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="selenium.base" href="http://localhost:8080/ARCS/home" />
+<title>testing</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">testing</td></tr>
+</thead><tbody>
+<!--Set long timeout to allow user time to login-->
+<tr>
+	<td>setTimeout</td>
+	<td>30000</td>
+	<td></td>
+</tr>
+<tr>
+	<td>open</td>
+	<td>/ARCSDEVBACKEND/home</td>
+	<td></td>
+</tr>
+<!---->
+<!--If login element not present, do a logout-->
+<tr>
+	<td>storeElementPresent</td>
+	<td>//input[@value='Login']</td>
+	<td>isLoginPage</td>
+</tr>
+<tr>
+	<td>gotoIf</td>
+	<td>${isLoginPage}</td>
+	<td>doLogin</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>//img[@alt='Logout of this session']</td>
+	<td></td>
+</tr>
+<!---->
+<!--Wait for user to login-->
+<tr>
+	<td>label</td>
+	<td>doLogin</td>
+	<td></td>
+</tr>
+<!--'... Parent Directory' indicates listing widget has loaded-->
+<tr>
+	<td>waitForElementNotPresent</td>
+	<td>link=... Parent Directory</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForElementPresent</td>
+	<td>link=... Parent Directory</td>
+	<td></td>
+</tr>
+<!---->
+<!--Short timeout for remainder of testing-->
+<tr>
+	<td>setTimeout</td>
+	<td>10000</td>
+	<td></td>
+</tr>
+<!---->
+<!--Navigate to home folder-->
+<tr>
+	<td>click</td>
+	<td>//img[@alt='Go to your home folder']</td>
+	<td></td>
+</tr>
+<!--Wait for listing widget loading-->
+<tr>
+	<td>waitForEval</td>
+	<td>this.browserbot.getUserWindow().listingGrid.store.isValid()</td>
+	<td>false</td>
+</tr>
+<!--Wait for listing widget loading finished-->
+<tr>
+	<td>waitForEval</td>
+	<td>this.browserbot.getUserWindow().listingGrid.store.isValid()</td>
+	<td>true</td>
+</tr>
+<!---->
+<!--Do some asserts for fun-->
+<tr>
+	<td>assertElementPresent</td>
+	<td>//span[@id='header']/table[1]/tbody/tr/td[1]/h1</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>//span[@id='header']/table[1]/tbody/tr/td[1]/h1/img</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>//span[@id='header']/table[1]/tbody/tr/td[2]/table/tbody/tr/td/table/tbody/tr[1]/td</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertElementPresent</td>
+	<td>link=... Parent Directory</td>
+	<td></td>
+</tr>
+<!---->
+<!--Create a new directory-->
+<tr>
+	<td>click</td>
+	<td>//td[@onclick=&quot;if (!activeItemIsEnabled('createDirectoryButton')) return; dialogCreateDir.show()&quot;]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>directoryInputBox</td>
+	<td>seleniumtest</td>
+</tr>
+<!--Allow time for dialog to appear - TBD: find a better way-->
+<tr>
+	<td>pause</td>
+	<td>1000</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>createDirCreateButton</td>
+	<td></td>
+</tr>
+<!--Wait for listing to refresh-->
+<tr>
+	<td>waitForEval</td>
+	<td>this.browserbot.getUserWindow().listingGrid.store.isValid()</td>
+	<td>false</td>
+</tr>
+<tr>
+	<td>waitForEval</td>
+	<td>this.browserbot.getUserWindow().listingGrid.store.isValid()</td>
+	<td>true</td>
+</tr>
+<!--Check new directory present-->
+<tr>
+	<td>assertElementPresent</td>
+	<td>link=seleniumtest</td>
+	<td></td>
+</tr>
+</tbody></table>
+</body>
+</html>
