@@ -35,9 +35,10 @@
 		.linkOver{text-decoration:underline;}
 		.link:hover{text-decoration:underline; color:#04E;}
 		.darklink:hover{text-decoration:underline; color:black;}
-		.activeItem{background:#AFCAAF; color:black; font-family:Arial, Helvetica, sans-serif; font-weight:bold;}
-		.activeItem:hover{background:#509C52; color:#FFF;}
-		.inactiveItem{background:#AFCAAF; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold;}
+		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
+		.activeItem:hover{background:#83C500; color:white;}
+		.activeItem:active{background:white; color:#83C500;}
+		.inactiveItem{background:#459E00; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
 		.invisible{background:white; color:white; border: 0px;}
 		.linkImage{text-decoration:underline; color:#04E;}
    		.dojoxGrid-row-odd td {background:#e8f2ff;}
@@ -45,14 +46,15 @@
 		#permissionsGrid {border: 1px solid #333; width: 600px; height: 200px;}
 		#sharesGrid {border: 1px solid #333;}
 		#replicasGrid {border: 1px solid #333;}
-		#listingGrid .dojoxGridHeader .dojoxGridCell {background: #E8E8E8; font-size: 120%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
+		#listingGrid .dojoxGridHeader .dojoxGridCell {background: #459E00; font-size: 110%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
 		#listingGrid .dojoxGridRow {background: white;}
 		#listingGrid .dojoxGridRowSelected {background: #C9D8E9;}
 		#listingGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
 		#listingGrid {border-bottom:solid; border-width:1px; border-color:lightgrey;}
 		#listingGrid .dojoxGridMasterHeader {background:white;} /* These 2 are to make the left listingTable border disappear */
 		#listingGrid .dojoxGridMasterView {background:white;}
-		.tundra .dojoxGridCellFocus {border: 0px !important;}		/* Hide focus border in grid */
+		.tundra .dojoxGridCellFocus {border: 0px dotted white !important;} /* Hide focus border in grid rows (for IE) */
+		.tundra .dojoxGridMasterHeader .dojoxGridCellFocus {border: 1px dotted white !important;} /* Hide focus border in grid header (for IE) */
 		#destinationGrid .dojoxGridHeader .dojoxGridCell {display:none;}
 		#destinationGrid .dojoxGridRow {background: white;}
 		#destinationGrid .dojoxGridRowSelected {background: #C9D8E9;}
@@ -284,7 +286,7 @@
 		    listingLayoutSharingField = 3; // This MUST be the layout row for "sharing" below
 		    listingLayoutMetadataField = 4; // This MUST be the layout row for "metadata" below
 	    	listingLayout = [
-	    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
+	    	 	   	{field: "name", width: "50%", name: "&nbsp;&nbsp;&nbsp;&nbsp;Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
 	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
 	    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
 	    	 	   	{field: "sharing", width: "15%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
@@ -608,14 +610,14 @@
 				'<table border="0" cellspacing="0" cellpadding="2">'+
         		'	<tr class="text">'+
           		'		<td>'+
-				'			<table id="uploadButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
+				'			<table id="uploadButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
              	'				<tr>'+
                 '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); setUploadStatus(\'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
           		'		<td>'+
-				'			<table id="createDirectoryButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
+				'			<table id="createDirectoryButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
             	'				<tr>'+
               	'					<td onclick="if (!activeItemIsEnabled(\'createDirectoryButton\')) return; dialogCreateDir.show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>'+
             	'				</tr>'+
@@ -634,7 +636,7 @@
     			'	<tr class="text">'+
     			dynamicHTML;
 			if (enableDebugButton)
-      			html += '<td><table class="activeItem" border="0" cellspacing="0" cellpadding="5" onclick="debugButtonHandler()"><tr><td>DEBUG</td></tr></table></td>';  			
+      			html += '<td><table class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="5" onclick="debugButtonHandler()"><tr><td>DEBUG</td></tr></table></td>';  			
     		html += 
 				'	</tr>'+
 				'</table>';
@@ -977,7 +979,7 @@
 					if (object.objectType == "button") 
 						buttonSessionHTML +=
 			      			'<td>'+
-							'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			         		'		<tr>'+
 			            	'			<td>&nbsp;'+object.displayTitle+'</td>'+
 			          		'		</tr>'+
@@ -987,7 +989,7 @@
 				if (location == "selection") {
 					if (object.objectType == "button") 
 						buttonSelectionHTML +=
-							'<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'<table width="100%" class="hoverBorderSide" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 				    		'	<tr>'+
 				      		'		<td class="activeItem" id="'+object.name+'"">'+object.displayTitle+'</td>'+
 				    		'	</tr>'+
@@ -997,9 +999,9 @@
 					if (object.objectType == "button") 
 						buttonCollectionHTML +=
 		          			'<td>'+
-		          			'	<table id="'+object.name+'" class="activeItem" border="0" cellspacing="0" cellpadding="6" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+		          			'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 	         				'		<tr>'+
-	            			'			<td>&nbsp;'+object.displayTitle+'</td>'+
+	            			'			<td><img src="/images/1px.png" alt="" style="height:16px; width:0px;" />&nbsp;'+object.displayTitle+'</td>'+
 	            			'		</tr>'+
 	            			'	</table>'+
 	            			'</td>';
@@ -1253,7 +1255,7 @@
 			if (inTrash) {
 				if (trashEmpty)
 					dojo.html.set(trashEmpty, 
-							'<table id="emptyTrashButton" class="activeItem" border="0" cellspacing="0" cellpadding="6">'+
+							'<table id="emptyTrashButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
 							'	<tr>'+
 							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; selectAll(true); deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+
@@ -2652,14 +2654,14 @@
 			    	    			<tr class="text">
 			        	  				<td>Choose mode&nbsp;</td>
 			          					<td bgcolor="#CCCCCC">
-			          						<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
+			          						<table class="hoverBorder" border="0" cellspacing="0" cellpadding="4">
 			          							<tr>
 			              							<td> Basic</td>
 			              						</tr>
 				              				</table>
 				              			</td>
 			    	          			<td bgcolor="#EEEEEE">
-			        	      				<table class="hoverBorder" border="0" cellspacing="0" cellpadding="6">
+			        	      				<table class="hoverBorder" border="0" cellspacing="0" cellpadding="4">
 			            	  					<tr>
 			              							<td> Advanced</td>
 			              						</tr>
@@ -2684,7 +2686,7 @@
 		      	</tr>
 		    </table>
 	    </span>
-	    <table width="80%" border="0" cellpadding="0" cellspacing="0" style="padding-top:0px; padding-bottom:15px;">
+	    <table width="80%" border="0" cellpadding="0" cellspacing="0" style="padding-top:0px; padding-bottom:5px;">
 			<tr>
 	    		<td valign="bottom">
 	    			<div class="text" style="padding-bottom:6px;"><small>You are browsing: </small>&nbsp;&nbsp;<span class="text" id="listingBreadcrumb"></span></div>
@@ -2696,7 +2698,7 @@
 					<p>&nbsp;</p>
 					<p>&nbsp;</p>
 					<form id="form1" name="form1" method="post" action="">
-	        			<table border="0" cellspacing="2" cellpadding="6">
+	        			<table border="0" cellspacing="2" cellpadding="4">
 	          				<tr>
 	          					<td>
 	          						<input name="search" type="text" id="search" size="30" />
@@ -2714,63 +2716,63 @@
  				rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'
  				errorMessage="No Items Loaded"></div> 
 	</div>
-	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
-		<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 13%; border: 0px solid yellow; overflow:hidden;">
+		<table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
 	      		<td class="activeItem" id="toggleAllButton" onclick="toggleAll()" title=""></td>
 	      	</tr>
 	    </table>
-	    <table width="100%" border="0" cellspacing="2" cellpadding="6">
+	    <table width="100%" border="0" cellspacing="2" cellpadding="4">
 	    	<tr>
 	    		<td class="text">&nbsp;</td>
 	    	</tr>
 	    </table>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
 	    		<td class="activeItem" id="accessControlButton" onclick="if (!activeItemIsEnabled('accessControlButton')) return; showPermissions()">Access&nbsp;Control</td>       				
 	    	</tr>
 	    </table>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
 	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
  	    <span id="replicasButtonHolder">
- 	 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+ 	 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 		    	<tr>
 		    		<td class="activeItem" id="replicasButton" onclick="if (!activeItemIsEnabled('replicasButton')) return; showReplicas()">Replicas</td>
 		    	</tr>
 		    </table>	
 	    </span>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
 	    		<td class="activeItem" id="renameButton" onclick="if (!activeItemIsEnabled('renameButton')) return; dojo.byId('renameInputBox').value=decodeURIComponent(getFirstSelectedItem()); dialogRename.show()">Rename</td>         				
 	    	</tr>
 	    </table>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
     		<tr>
     			<td class="activeItem" id="copyButton" onclick="if (!activeItemIsEnabled('copyButton')) return; destinationStore.show(false); destinationStore.gotoDirectory(listingStore.getCurrentDirectory(), false); showDialogMoveCopy(false);">Copy</td>         				
     		</tr>
     	</table>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
     		<tr>
     			<td class="activeItem" id="moveButton" onclick="if (!activeItemIsEnabled('moveButton')) return; destinationStore.show(false); destinationStore.gotoDirectory(listingStore.getCurrentDirectory(), false); showDialogMoveCopy(true);">Move</td>         				
     		</tr>
     	</table>
-	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
 	    		<td class="activeItem" id="deleteButton" onclick="if (!activeItemIsEnabled('deleteButton')) return; deleteSelection()" >Delete</td>
 	    	</tr>
 	    </table>
 	    <span id="sharingButtonHolder">
-		    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="6">
+		    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 		    	<tr>
 		    		<td class="activeItem" id="sharingButton" onclick="if (!activeItemIsEnabled('sharingButton')) return; showShare()" >Share/Unshare</td>
 		    	</tr>
 		    </table>
 		</span>
 	    <div id=dynamicSelectionButtonsHTML></div>
-	    <table width="100%" class="invisible" id="trashRestoreTable" border="0" cellspacing="0" cellpadding="6">
+	    <table width="100%" class="invisible" id="trashRestoreTable" border="0" cellspacing="0" cellpadding="4">
 	    	<tr id="trashRestoreRow"></tr>
 	    </table>
 	</div>
