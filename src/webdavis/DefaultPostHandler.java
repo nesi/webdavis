@@ -238,6 +238,8 @@ public class DefaultPostHandler extends AbstractHandler {
 			        	String s = e.getMessage();
 			        	if (s.endsWith("-818000") || s.endsWith("-816000")) 
 			        		s = "you don't have permission"; // irods error -818000 or -816000
+			        	if (s.endsWith("-827000")) 
+			        		s = "unkown user"; 
 	        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
 	        			return;
 					}
