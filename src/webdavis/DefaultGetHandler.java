@@ -602,9 +602,9 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("sharingkey", ""+config.getSharingKey());
 				substitutions.put("ghostbreadcrumb", ""+config.getGhostBreadcrumb());
 				substitutions.put("ghosttrashbreadcrumb", ""+config.getGhostTrashBreadcrumb());
-				substitutions.put("includehead", ""+config.getUIIncludeHead());
-				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
-				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
+//				substitutions.put("includehead", ""+config.getUIIncludeHead());
+//				substitutions.put("includebodyheader", ""+config.getUIIncludeBodyHeader());
+//				substitutions.put("includebodyfooter", ""+config.getUIIncludeBodyFooter());
 				substitutions.put("shibinitpath", ""+config.getShibInitPath());
 				substitutions.put("isadmin", ""+Davis.getConfig().getAdministrators().contains(davisSession.getAccount()));
 				String uiContent = new String(uiHTMLContent);

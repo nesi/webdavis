@@ -406,6 +406,9 @@ public class DavisConfig {
 		substitutions.put("requireddojoversion", getRequiredDojoVersion());
 		substitutions.put("loginimage", getLoginImage());
 		substitutions.put("loginhelp", getLoginHelp());
+		substitutions.put("includehead", ""+getUIIncludeHead());
+		substitutions.put("includebodyheader", ""+getUIIncludeBodyHeader());
+		substitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
 	}
 
 	public void refresh() {
