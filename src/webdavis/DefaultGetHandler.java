@@ -608,7 +608,8 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("shibinitpath", ""+config.getShibInitPath());
 				substitutions.put("isadmin", ""+Davis.getConfig().getAdministrators().contains(davisSession.getAccount()));
 				String uiContent = new String(uiHTMLContent);
-				uiContent = DavisUtilities.preprocess(uiContent, Davis.getConfig().getSubstitutions());	// Make general substitutions
+				uiContent = DavisUtilities.preprocess(uiContent, Davis.getConfig().getIncludeSubstitutions());	// Make 'include snippets' substitutions
+				uiContent = DavisUtilities.preprocess(uiContent, Davis.getConfig().getGeneralSubstitutions());	// Make general substitutions
 				uiContent = DavisUtilities.preprocess(uiContent, substitutions);				// Make request specific substitutions
 				response.setContentType("text/html; charset=\"utf-8\"");
 				OutputStreamWriter out = new OutputStreamWriter(response.getOutputStream());

@@ -585,7 +585,7 @@ public class Davis extends HttpServlet {
 			if (browser) {
 				Log.log(Log.DEBUG, "Client is using "+(browser ? "a browser" : "webdav"));
 				String form = DavisUtilities.loadResource("/WEB-INF/login.html");
-				form = DavisUtilities.preprocess(form, getConfig().getSubstitutions());	// Make general substitutions
+				form = DavisUtilities.preprocess(form, getConfig().getGeneralSubstitutions());	// Make general substitutions
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				String queryString = request.getQueryString();
 				if (queryString == null)

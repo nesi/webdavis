@@ -97,7 +97,10 @@ public class DavisConfig {
     private String insecureLoginText;
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
-	private Hashtable<String, String> substitutions;
+	private Hashtable<String, String> generalSubstitutions;
+
+    // Include snippets substitutions for HTML file (substitutions related to the 'include' config items')
+	private Hashtable<String, String> includeSubstitutions;
 
 	public String getAuthClass() {
 		return authClass;
@@ -374,20 +377,21 @@ public class DavisConfig {
 
 	private void initSubstitutions() {
 		
-		substitutions = new Hashtable<String, String>();
-		substitutions.put("appversion", getAppVersion());
-		substitutions.put("authenticationrealm", getRealm());
-		substitutions.put("organisationname", getOrganisationName());
-		substitutions.put("organisationlogo", getOrganisationLogo());
-		substitutions.put("favicon", getFavicon());
-		substitutions.put("displayMetadata", getDisplayMetadata());
+		includeSubstitutions = new Hashtable<String, String>();
+		generalSubstitutions = new Hashtable<String, String>();
+		generalSubstitutions.put("appversion", getAppVersion());
+		generalSubstitutions.put("authenticationrealm", getRealm());
+		generalSubstitutions.put("organisationname", getOrganisationName());
+		generalSubstitutions.put("organisationlogo", getOrganisationLogo());
+		generalSubstitutions.put("favicon", getFavicon());
+		generalSubstitutions.put("displayMetadata", getDisplayMetadata());
 		String s = getAnonymousUsername();
 		if (s == null)
 			s = "";
 		int i = s.lastIndexOf('\\');
 		if (i > -1)
 			s = s.substring(i+1);
-		substitutions.put("anonymoususername", s);
+		generalSubstitutions.put("anonymoususername", s);
 		String[] geom = null;
 		String geomString = getOrganisationLogoGeometry();
 		String w = "";
@@ -399,16 +403,16 @@ public class DavisConfig {
 				h = geom[1];
 			} catch (Exception e) {}
 		}
-		substitutions.put("organisationlogowidth", w);
-		substitutions.put("organisationlogoheight", h);
-		substitutions.put("organisationsupport", getOrganisationSupport());
-		substitutions.put("helpurl", getHelpURL());
-		substitutions.put("requireddojoversion", getRequiredDojoVersion());
-		substitutions.put("loginimage", getLoginImage());
-		substitutions.put("loginhelp", getLoginHelp());
-		substitutions.put("includehead", ""+getUIIncludeHead());
-		substitutions.put("includebodyheader", ""+getUIIncludeBodyHeader());
-		substitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
+		generalSubstitutions.put("organisationlogowidth", w);
+		generalSubstitutions.put("organisationlogoheight", h);
+		generalSubstitutions.put("organisationsupport", getOrganisationSupport());
+		generalSubstitutions.put("helpurl", getHelpURL());
+		generalSubstitutions.put("requireddojoversion", getRequiredDojoVersion());
+		generalSubstitutions.put("loginimage", getLoginImage());
+		generalSubstitutions.put("loginhelp", getLoginHelp());
+		includeSubstitutions.put("includehead", ""+getUIIncludeHead());
+		includeSubstitutions.put("includebodyheader", ""+getUIIncludeBodyHeader());
+		includeSubstitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
 	}
 
 	public void refresh() {
@@ -760,8 +764,12 @@ public class DavisConfig {
 		return shibInitPath;
 	}
 	
-	public Hashtable<String, String> getSubstitutions() {
-		return substitutions;
+	public Hashtable<String, String> getIncludeSubstitutions() {
+		return includeSubstitutions;
+	}
+	
+	public Hashtable<String, String> getGeneralSubstitutions() {
+		return generalSubstitutions;
 	}
 	
 	public String getInsecureLoginText() {
