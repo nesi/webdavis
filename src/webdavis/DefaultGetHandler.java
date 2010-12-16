@@ -814,7 +814,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		response.setContentLength((int) file.length());
 		// Don't send cache control stuff for IE. It has problems when 'getting'. 
 		// See http://www.experts-exchange.com/Web_Development/Web_Languages-Standards/ASP/Q_22780724.html
-		if (!request.getHeader("User-Agent").contains("MSIE ")) 
+		if (request.getHeader("User-Agent") != null && !request.getHeader("User-Agent").contains("MSIE ")) 
 			addNoCacheDirectives(response);
 		// RemoteFileInputStream input = null;
 		String startingPoint = request.getHeader("Content-Range");
