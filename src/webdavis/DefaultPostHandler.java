@@ -315,7 +315,7 @@ public class DefaultPostHandler extends AbstractHandler {
 						owner = (String)permissions[0].getValue(IRODSMetaDataSet.OWNER);
 				}
 				json.append(escapeJSONArg("owner")+":"+escapeJSONArg(owner)+",\n");
-				Log.log(Log.DEBUG, "irods permissions: "+permissions);
+//				Log.log(Log.DEBUG, "irods permissions: "+permissions);
 				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
