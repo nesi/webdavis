@@ -79,6 +79,7 @@ public class Davis extends HttpServlet {
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "lock"}; // Methods that indicate client must be webdav (methods not used by Davis web interface)
 	static final String AUTHATTRIBUTENAME = "formauth";
+	static final String ISBROWSERATTRIBUTENAME = "isbrowser";
 	
 	public static DavisConfig getConfig() {
 		
@@ -187,7 +188,7 @@ public class Davis extends HttpServlet {
 			s += "    isSecure: "+request.isSecure()+"\n";
 			HttpSession httpSession = request.getSession(false);
 			if (httpSession != null) 
-				s += "    Active HTTP session: }"+httpSession.getId(); // This is the JSESSIONID cookie
+				s += "    Active HTTP session: "+httpSession.getId(); // This is the JSESSIONID cookie
 			else 
 				s += "    HTTP session not yet established";
 		}
@@ -531,6 +532,10 @@ public class Davis extends HttpServlet {
 	
 	private boolean isBrowser(HttpServletRequest request) {
 		
+		// If we've previously determined browser/webdav client, get result from session
+		if ((String)request.getSession().getAttribute(ISBROWSERATTRIBUTENAME) != null)
+			return ((String)request.getSession().getAttribute(ISBROWSERATTRIBUTENAME)).toLowerCase().equals("true");
+		
 		boolean browser = true;		
 		String method = request.getMethod();
 		String accept = request.getHeader("accept");
@@ -557,6 +562,9 @@ public class Davis extends HttpServlet {
 			}
 		
 		Log.log(Log.DEBUG, "isBrowser(): "+browser+" (method="+method+" accept="+accept+")");
+		
+		// Save decision in session so it's only made once
+		request.getSession().setAttribute(ISBROWSERATTRIBUTENAME, ""+browser);
 		return browser;
 	}
 
