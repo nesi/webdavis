@@ -207,6 +207,10 @@
     <jar jarfile="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/lib/${app.name}.jar">
   	  <fileset dir="${build.home}/WEB-INF/classes/"/>
     </jar>
+    <mkdir dir="${build.home}/${app.name}-${app.version}/etc/patches/"/>
+  	<copy todir="${build.home}/${app.name}-${app.version}/etc/patches/">
+   	  <fileset dir="${basedir}/etc/patches"/>
+   	</copy>
   	<delete dir="${build.home}/META-INF"/>
   	<delete dir="${build.home}/WEB-INF"/>
   	<delete dir="${build.home}/dojoroot"/>

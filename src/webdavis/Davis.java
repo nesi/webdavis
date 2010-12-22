@@ -78,7 +78,7 @@ public class Davis extends HttpServlet {
 	
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "lock"}; // Methods that indicate client must be webdav (methods not used by Davis web interface)
-	static final String FORMAUTHATTRIBUTENAME = "formauth";
+	static final String AUTHATTRIBUTENAME = "formauth";
 	
 	public static DavisConfig getConfig() {
 		
@@ -225,7 +225,7 @@ public class Davis extends HttpServlet {
 			}
 			String authorization = "Basic "+new String(Base64.encodeBase64((request.getParameter("username").trim()+":"+request.getParameter("password")).getBytes()));
 			
-			request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
+			request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
 			if (referrer.toLowerCase().endsWith("?noanon") || referrer.toLowerCase().endsWith("&noanon")) { // trim trailing noanon query if present
 				int i = referrer.length()-".noanon".length();
 				referrer = referrer.substring(0, i);
@@ -280,14 +280,19 @@ public class Davis extends HttpServlet {
 		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 		if (request.isSecure() && isBrowser(request)) { 
 			String auth = null;
-			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
+			if ((auth = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME)) != null) 
 				authorization = auth;
 		}
 		
-		if (authorization == null)
+		if (authorization == null) {
 			// Check for basic auth header
 			authorization = request.getHeader("Authorization"); 
-
+			if (authorization != null) 
+				request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in httpsession in case it's not present in header in later requests
+			else
+				authorization = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
+		}
+		
 		// Reset request?
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
@@ -598,10 +603,10 @@ public class Davis extends HttpServlet {
 				}				
 				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
 				substitutions.put("insecurelogintext", getConfig().getInsecureLoginText());
-				if (request.getSession().getAttribute(FORMAUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
+				if (request.getSession().getAttribute(AUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
 					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");
 					substitutions.put("failedmessage", "<span style=\"color:red\">Authentication Failed</span><br><br><small>Please ensure your username and password are correct,<br>and that cookies are enabled in your browser.<br><br></small>");
-					request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME);
+					request.getSession().removeAttribute(AUTHATTRIBUTENAME);
 				} else {
 					if ((request.getHeader("referrer") != null) || (request.getHeader("referer") != null)) // Cookies might be blocked for this site
 						substitutions.put("failedmessage", "<small>Please ensure cookies are enabled for this site.</small><br><br>");

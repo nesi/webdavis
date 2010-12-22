@@ -119,6 +119,9 @@ public class QuickShare extends HttpServlet {
 //System.err.println("matching with '"+pattern+"'");
 
         MetaDataRecordList[] recordList = sys.query(condList, selectFile);
+        Log.log(Log.DEBUG, "query key="+key+" pattern="+pattern+ " recordList="+recordList);
+        if (recordList != null)
+        	Log.log(Log.DEBUG, "query result list length = "+recordList.length);
 //System.err.println("recordList="+recordList);
 //if((recordList != null) && (recordList.length  > 0)) {
 //System.err.println("list size="+recordList.length);
