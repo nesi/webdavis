@@ -1,0 +1,41 @@
+Install:
+
+svn checkout http://selenium.googlecode.com/svn/trunk/ repo
+
+from repo/
+
+(sudo) python setup.py install
+
+================================
+
+Make sure the server is running:
+
+java -jar selenium-server-standalone-2.0a6.jar
+
+Then do:
+
+python test_df.py
+
+================================
+
+NB: add ?reset to URL to reset connections.
+
+ie https://df.arcs.org.au/ARCS/home?reset
+
+Sometimes needed when see "server dropped connection" errors.
+
+================================
+
+Handling SSL exceptions (eg dev backend)
+
+1. firefox -ProfileManager
+2. create new profile (save to ./profile ...see below)
+3. launch browser - navigate to dev df - perm store cert
+4. exit
+
+java -jar selenium-server-standalone-2.0a6.jar -firefoxProfileTemplate "./profile"
+
+
+
+
+
