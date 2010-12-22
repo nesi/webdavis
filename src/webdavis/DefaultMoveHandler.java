@@ -139,10 +139,12 @@ public class DefaultMoveHandler extends AbstractHandler {
 	//        	        	((IRODSFile)destinationFile).setResource(((IRODSFile)file).getResource());
 	//        }
     	}
-        if (!file.renameTo(destinationFile)) 
+        if (!file.renameTo(destinationFile)) {
         	// Jargon sometimes returns false when the rename seems to have worked, so check
         	if (!destinationFile.exists() || file.exists()) 
         		return HttpServletResponse.SC_FORBIDDEN;
+        	Log.log(Log.DEBUG, "Move appears to have succeeded, so ignoring failure");
+        }
       
         return overwritten ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_CREATED;
     }
