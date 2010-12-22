@@ -289,7 +289,7 @@ public class Davis extends HttpServlet {
 			// Check for basic auth header
 			authorization = request.getHeader("Authorization"); 
 			if (authorization != null) 
-				request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in httpsession in case it's not present in header in later requests
+				request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
 			else
 				authorization = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
 		}
