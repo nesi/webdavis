@@ -90,14 +90,19 @@ public class DefaultDeleteHandler extends AbstractHandler {
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
     			String s = "Failed to delete '"+condemnedFile.getAbsolutePath()+"'";
-				if (batch) {
+				if (batch) 
 	    			Log.log(Log.WARNING, s+" in batch mode");
-	    			response.sendError(HttpServletResponse.SC_FORBIDDEN, s); // Batch delete failed
-	    		} else {
+				else
 	    			Log.log(Log.WARNING, s);
-		    		response.sendError(result, s);
+				if (!condemnedFile.exists())
+					Log.log(Log.DEBUG, "File was actually deleted, so ignoring failure");
+				else { 
+					if (batch) 
+						response.sendError(HttpServletResponse.SC_FORBIDDEN, s); // Batch delete failed
+					else 
+						response.sendError(result, s);
+					return;
 	    		}
-				return;
 			}
         }
 		response.setStatus(HttpServletResponse.SC_NO_CONTENT);
