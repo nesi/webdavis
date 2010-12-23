@@ -1455,14 +1455,14 @@
 //alert("ioargs1= "+dojo.toJson(ioArgs, true));
 //alert("response1="+dojo.toJson(response, true));
 							if (response.name == "TypeError")	// IE bad upload
-								alert("Failed to upload file: The transfer was cancelled, or your browser can't upload files that large.");
+								alert("Failed to upload file: The server refused or cancelled the transfer, or your browser can't upload files that large.");
 							else
 							if (response.status == "success") {
 								//alert("Successfully transferred "+response.message+" bytes");
 								window.status="Successfully transferred "+response.message+" bytes";
-								refreshCurrentDirectory();						
 							}else 
 								alert("Failed to upload file: "+response.message);
+							refreshCurrentDirectory();						
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
 							clearInterval(progressTimer);
