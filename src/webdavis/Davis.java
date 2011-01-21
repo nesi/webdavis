@@ -293,11 +293,11 @@ public class Davis extends HttpServlet {
 			reset=true;
 					
 		while (true) {
-			String authorization = null;
+			authorization = null;
 			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 			if (request.isSecure() && isBrowser(request)) { 
 				String auth = null;
-				if ((auth = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME)) != null) 
+				if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
 					authorization = auth;
 			}
 
@@ -308,9 +308,9 @@ System.err.println("auth="+authorization);
 				// Check for basic auth header
 				authorization = request.getHeader("Authorization"); 
 				if (authorization != null) 
-					request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
+					request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
 				else
-					authorization = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
+					authorization = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
 			}
 
 			String errorMsg = null;
@@ -618,7 +618,7 @@ break;
 			if (browser) {
 				Log.log(Log.DEBUG, "Client is using "+(browser ? "a browser" : "webdav"));
 				String form = DavisUtilities.loadResource("/WEB-INF/login.html");
-				form = DavisUtilities.preprocess(form, getConfig().getSubstitutions());	// Make general substitutions
+				form = DavisUtilities.preprocess(form, getConfig().getGeneralSubstitutions());	// Make general substitutions
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				String queryString = request.getQueryString();
 				if (queryString == null)
