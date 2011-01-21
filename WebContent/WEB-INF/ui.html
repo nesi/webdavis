@@ -100,8 +100,10 @@
 		var queryParams;
 		var listingLayoutSharingField;
 		var listingLayoutMetadataField;
+		var baseURL = '';
 		
 		dojo.addOnLoad(function() {
+			baseURL = location.href.substring(0, location.href.indexOf('/', 14));
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
 				dojo.html.set(dojo.byId("header"), ''); // Hide header section
@@ -656,14 +658,28 @@
 
 		function gridFormatFile(value, store, storeName, addToHistory) {
 			var filename = decodeURIComponent(value.name);
+			var separator = '/';
+			if (store.getCurrentDirectory() == '/')
+				separator = '';
 			if (value.type == "top" ) // "... Parent Directory" 
-				return '<a class="link" onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'\','+addToHistory+'); return false" href="'+escapeString(encodeURI(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'">'+filename+'</a>';
+				return '<a class="link" '+
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'\','+addToHistory+'); return false" '+
+				           'href="'+escapeString(encodeURI(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'">'+filename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
 				return '<i>'+filename+'</i>';
+			var f = filename;
+			if (filename == '/')
+				f = '';
 			if (value.type == "d") 
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(store.getCurrentDirectory())))+'/'+escapeString(encodeURIComponent(filename))+'\','+addToHistory+'); return false" href="'+escapeString(encodeURI(decodeURIComponent(store.getCurrentDirectory())))+'/'+escapeString(encodeURI(filename))+'"><img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURIComponent(f))+'\','+addToHistory+'); return false" '+
+				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURI(f))+'">'+
+				           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
 			else 
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(value.name)+'\'); return false" href="'+store.getCurrentDirectory()+'/'+value.name+'"><img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
+				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+				           'onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(value.name)+'\'); return false" '+
+				           'href="'+store.getCurrentDirectory()+separator+value.name+'">'+
+				           '<img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
 		}
 		
 		function gridFormatDate(value) {
@@ -929,10 +945,13 @@
 				if (i > 1)
 					result = result + " > ";
 				var s = escapeString(encodeURIComponent(subpath));
+				var dir = dirs[i];
+				if (i == 1)
+					dir = '/'+dir;
 				if (i > prune)
-					s = '<a class="link" onclick="'+storeName+'.gotoDirectory(\''+s+'\','+addToHistory+'); return false" href="'+encodeURI(subpath)+'">'+unescape(dirs[i])+'</a>';
+					s = '<a class="link" onclick="'+storeName+'.gotoDirectory(\''+s+'\','+addToHistory+'); return false" href="'+encodeURI(subpath)+'">'+unescape(dir)+'</a>';
 				else
-					s = unescape(dirs[i]);
+					s = unescape(dir);
 				result = result+s;
 			}
 			return result;
@@ -2275,7 +2294,7 @@
 				this.lastURL = {dir:urlFields.dir, noCache:urlFields.noCache, postfix:urlFields.postfix};
 			},
 			buildURL: function() {
-				this.url = this.urlFields.dir+"?method=dojoquery&uihandle="+this.uiHandle+(this.urlFields.noCache?"&nocache":"")+(this.urlFields.postfix ? this.urlFields.postfix:"");
+				this.url = baseURL+this.urlFields.dir+"?method=dojoquery&uihandle="+this.uiHandle+(this.urlFields.noCache?"&nocache":"")+(this.urlFields.postfix ? this.urlFields.postfix:"");
 			},
 			setCurrentDirectory: function(dir) {
 				this.currentDirectory = dir;
