@@ -309,21 +309,22 @@ public class DefaultGetHandler extends AbstractHandler {
 		
 		if (!file.exists()) { // File doesn't exist
 //			try {
-				boolean connected = true;
-				String message = "";
-				if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
-					try {
-						((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-					} catch (ProtocolException e) {
-						connected = false;
-						message = e.getMessage();
-					} catch (SocketException e) {
-						connected = false;
-						message = e.getMessage();
-					} catch (Exception e) {
-						Log.log(Log.WARNING, "Jargon exception when testing for connection (get): "+e);					
-					}
-				}
+//				boolean connected = true;
+				String message = null;
+//				if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
+//					try {
+//						((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+//					} catch (ProtocolException e) {
+//						connected = false;
+//						message = e.getMessage();
+//					} catch (SocketException e) {
+//						connected = false;
+//						message = e.getMessage();
+//					} catch (Exception e) {
+//						Log.log(Log.WARNING, "Jargon exception when testing for connection (get): "+e);					
+//					}
+					message = FSUtilities.testConnection(davisSession);
+//				}
 //				try {  //### Not needed anymore because of above test?
 //					file.getPermissions(); // Test server connection
 //				} catch (SocketException e) {
@@ -334,7 +335,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //           			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
 //           				connected = false;
 //				}
-				if (!connected) {
+				if (message != null) {
 					lostConnection(response, message);
 					return;
 				}

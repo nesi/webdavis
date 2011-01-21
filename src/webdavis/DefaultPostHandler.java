@@ -144,22 +144,33 @@ public class DefaultPostHandler extends AbstractHandler {
 //		}
 //		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
 		if (!file.exists()) {
-			boolean connected = true;
+//			boolean connected = true;
 			String message = "";
-			if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
-				try {
-					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-				} catch (ProtocolException e) {
-					connected = false;
-					message = e.getMessage();
-				} catch (SocketException e) {
-					connected = false;
-					message = e.getMessage();
-				} catch (Exception e) {
-					Log.log(Log.WARNING, "Jargon exception when testing for connection (post): "+e);					
-				}
-			}
-			if (!connected) {
+//			if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
+//				try {
+//					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+//				} catch (ProtocolException e) {
+//					connected = false;
+//					message = e.getMessage();
+//				} catch (SocketException e) {
+//					connected = false;
+//					message = e.getMessage();
+//				} catch (Exception e) {
+//					Log.log(Log.WARNING, "Jargon exception when testing for connection (get): "+e);					
+//				}
+				message = FSUtilities.testConnection(davisSession);
+//			}
+//			try {  //### Not needed anymore because of above test?
+//				file.getPermissions(); // Test server connection
+//			} catch (SocketException e) {
+//				connected = false;
+//				message = e.getMessage();
+//			} catch (IRODSException e) {
+//				message = e.getMessage();
+//       			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
+//       				connected = false;
+//			}
+			if (message != null) {
 				lostConnection(response, message);
 				return;
 			}
