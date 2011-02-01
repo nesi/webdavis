@@ -697,7 +697,7 @@ public class FSUtilities {
 	 * @param davisSession
 	 * @return String Null if connection is ok, an exception message if not.
 	 */
-	public static synchronized String testConnection(DavisSession davisSession) {
+	public static String testConnection(DavisSession davisSession) {
 		
 		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
 			return null;

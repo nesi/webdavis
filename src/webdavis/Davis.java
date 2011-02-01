@@ -209,8 +209,8 @@ public class Davis extends HttpServlet {
 	 *             If an application error occurs.
 	 */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-
 		String pathInfo = request.getPathInfo();
+
 //		String uri=request.getRequestURI();
 //		String queryString = request.getQueryString();
 		
@@ -292,7 +292,7 @@ public class Davis extends HttpServlet {
 		// Reset request?
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
-					
+//try{Thread.sleep(5000);} catch(InterruptedException e){}					
 		while (true) {
 			authorization = null;
 			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
@@ -378,10 +378,14 @@ System.err.println("auth="+authorization);
 					return;
 				}
 			}
-
-if (true == true)  // The following jargon call often throws an exception. Disable for now 
-break;
-			String message = FSUtilities.testConnection(davisSession);
+String message = null;
+synchronized(this){		
+System.err.println("########################### testing connection");
+//if (true == true)  // The following jargon call often throws an exception. Disable for now 
+//break;
+//try{Thread.sleep(5000);} catch(InterruptedException e){}					
+			message = FSUtilities.testConnection(davisSession);
+}
 //			message = null;
 	Log.log(Log.DEBUG, "Davis: ######## message="+message);
 			if (message == null || reset) 
@@ -390,6 +394,7 @@ break;
 			reset = true;
 			davisSession = null;
 		}
+//try{Thread.sleep(5000);} catch(InterruptedException e){}					
 		
 		HttpSession httpSession = request.getSession(false);
 		if ((httpSession == null) || reset) {
@@ -412,7 +417,11 @@ break;
 		if (handler != null) {
 			try {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
+synchronized(this){		
+System.err.println("########################### handler start");
 				handler.service(request, response, davisSession);
+System.err.println("########################### handler end");
+}
 			} catch (Throwable throwable) {
 				Log.log(Log.WARNING, "**** UNHANDLED ERROR for:\n"+requestToString(request, Log.DEBUG)+"\n\n    Exception was: "+DavisUtilities.getStackTrace(throwable));
 				String firstStackElement = "";
@@ -442,6 +451,7 @@ break;
 			Log.log(Log.INFORMATION, "Unrecognized method: " + request.getMethod());
 			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 		}
+System.err.println("########################### service end");
 		Log.log(Log.DEBUG, "Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
 	}
 
