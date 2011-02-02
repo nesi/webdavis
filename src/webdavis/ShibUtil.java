@@ -232,7 +232,8 @@ public class ShibUtil {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
 	        if (config.getServerType().equalsIgnoreCase("irods")){
-		        IRODSAccount adminAccount=new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
+	        	IRODSAccount adminAccount=new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
+	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
 		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
 		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
 		        
