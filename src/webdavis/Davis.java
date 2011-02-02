@@ -71,9 +71,11 @@ public class Davis extends HttpServlet {
 
 	// private ResourceFilter filter;
 	
-	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
-	static long lastLogTime = 0;  // Used to log memory usage on a regular basis
-	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
+	static Date profilingTimer = null;					// Used by DefaultGetHandler to measure time spent in parts of the code
+	static long lastLogTime = 0;  						// Used to log memory usage on a regular basis
+	static final long MEMORYLOGPERIOD = 60*60*1000;  	// How often log memory usage (in ms)
+	static final int MAXCONNECTIONRETRIES = 3;			// Max number of retries if irods connection lost
+	static final int CONNECTIONRETRYPAUSE = 1000;		// Pause between connection retries
 	static long headroom = Long.MAX_VALUE;
 	
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
@@ -292,8 +294,9 @@ public class Davis extends HttpServlet {
 		// Reset request?
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
-//try{Thread.sleep(5000);} catch(InterruptedException e){}					
-		while (true) {
+
+		int tries = 0;
+		while (tries++ < MAXCONNECTIONRETRIES) {
 			authorization = null;
 			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 			if (request.isSecure() && isBrowser(request)) { 
@@ -301,9 +304,6 @@ public class Davis extends HttpServlet {
 				if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
 					authorization = auth;
 			}
-
-System.err.println("****reset="+reset);
-System.err.println("auth="+authorization);
 
 			if (authorization == null) {
 				// Check for basic auth header
@@ -378,23 +378,14 @@ System.err.println("auth="+authorization);
 					return;
 				}
 			}
-String message = null;
-synchronized(this){		
-System.err.println("########################### testing connection");
-//if (true == true)  // The following jargon call often throws an exception. Disable for now 
-//break;
-//try{Thread.sleep(5000);} catch(InterruptedException e){}					
-			message = FSUtilities.testConnection(davisSession);
-}
-//			message = null;
-	Log.log(Log.DEBUG, "Davis: ######## message="+message);
+			String message = FSUtilities.testConnection(davisSession);
 			if (message == null || reset) 
 				break;
-			Log.log(Log.WARNING, "Connection to server appears to have been lost for session "+davisSession.getSessionID()+". Trying reset...");
+			Log.log(Log.WARNING, "Connection to server appears to have been lost for session "+davisSession.getSessionID()+" (connection test returned: "+message+"). Trying reset...");
 			reset = true;
 			davisSession = null;
+			try{Thread.sleep(CONNECTIONRETRYPAUSE*tries*tries);}catch(Exception e){} // Pause between connection retries grows exponentially 
 		}
-//try{Thread.sleep(5000);} catch(InterruptedException e){}					
 		
 		HttpSession httpSession = request.getSession(false);
 		if ((httpSession == null) || reset) {
@@ -417,11 +408,7 @@ System.err.println("########################### testing connection");
 		if (handler != null) {
 			try {
 				Log.log(Log.DEBUG, "Handler is {0}", handler.getClass());
-synchronized(this){		
-System.err.println("########################### handler start");
 				handler.service(request, response, davisSession);
-System.err.println("########################### handler end");
-}
 			} catch (Throwable throwable) {
 				Log.log(Log.WARNING, "**** UNHANDLED ERROR for:\n"+requestToString(request, Log.DEBUG)+"\n\n    Exception was: "+DavisUtilities.getStackTrace(throwable));
 				String firstStackElement = "";
@@ -451,7 +438,6 @@ System.err.println("########################### handler end");
 			Log.log(Log.INFORMATION, "Unrecognized method: " + request.getMethod());
 			response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 		}
-System.err.println("########################### service end");
 		Log.log(Log.DEBUG, "Time at end of service: "+(new Date().getTime()-profilingTimer.getTime()));
 	}
 

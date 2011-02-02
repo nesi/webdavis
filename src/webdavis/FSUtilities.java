@@ -705,27 +705,21 @@ public class FSUtilities {
 		String message = null;
 
 		try {
-Log.log(Log.DEBUG, "Davis: ****** testing connection...");
 			((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-Log.log(Log.DEBUG, "Davis: ****** testing succeeded");
 		} catch (ProtocolException e) {
 			message = e.getMessage();
 			if (message == null)
 				message = "ProtocolException";
-Log.log(Log.DEBUG, "******** message 1="+message);
 		} catch (SocketException e) {
 			message = e.getMessage();
 			if (message == null)
 				message = "SocketException";
-Log.log(Log.DEBUG, "******** message 2="+message);
 		} catch (Exception e) {
 			message = e.getMessage();
 			if (message == null)
 				message = "Exception";
-Log.log(Log.DEBUG, "******** message 3="+message);
 			Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
 		}
-Log.log(Log.DEBUG, "Davis: ******** returning message="+message);
 		return message;
 	}
 }
