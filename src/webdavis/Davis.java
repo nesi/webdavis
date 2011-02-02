@@ -187,9 +187,10 @@ public class Davis extends HttpServlet {
 		
 			s += "    isSecure: "+request.isSecure()+"\n";
 			HttpSession httpSession = request.getSession(false);
-			if (httpSession != null) 
-				s += "    Active HTTP session: "+httpSession.getId(); // This is the JSESSIONID cookie
-			else 
+			if (httpSession != null) {
+				s += "    Active HTTP session: "+httpSession.getId()+"\n"; // This is the JSESSIONID cookie
+				s += "    Davis session: "+httpSession.getAttribute(SESSION_ID);
+			} else 
 				s += "    HTTP session not yet established";
 		}
 		return s;
@@ -364,9 +365,17 @@ public class Davis extends HttpServlet {
 		}
 		
 		HttpSession httpSession = request.getSession(false);
-		if (httpSession == null || reset) {
+		Log.log(Log.DEBUG, "HTTPSession: "+httpSession);
+		if (httpSession != null /*&& httpSession.getAttribute(SESSION_ID) == null*/) {
 			httpSession = request.getSession();
+			Log.log(Log.DEBUG, "Setting Davis session ID: "+davisSession.getSessionID());
 			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
+//			davisSession.increaseSharedNumber();
+		}
+		if (httpSession == null || reset) {
+//			httpSession = request.getSession();
+//			Log.log(Log.DEBUG, "#############################################Setting Davis session ID: "+davisSession.getSessionID());
+//			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
 			davisSession.increaseSharedNumber();
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);

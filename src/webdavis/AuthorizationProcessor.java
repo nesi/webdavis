@@ -639,6 +639,7 @@ public class AuthorizationProcessor {
 		
 	}
 	public DavisSession getDavisSessionByID(String sessionID) {
+		Log.log(Log.DEBUG, "Getting Davis seesion by ID: "+sessionID);
 		DavisSession session=connectionPool.get(sessionID);
 		if (!session.isConnected()){
 //			session.disconnect();
