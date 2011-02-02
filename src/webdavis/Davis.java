@@ -211,6 +211,7 @@ public class Davis extends HttpServlet {
 	 */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
+		HttpSession httpSession = request.getSession(false); // Get session but don't create a new one if not found
 		String pathInfo = request.getPathInfo();
 //		String uri=request.getRequestURI();
 //		String queryString = request.getQueryString();
@@ -364,18 +365,11 @@ public class Davis extends HttpServlet {
 			}
 		}
 		
-		HttpSession httpSession = request.getSession(false);
 		Log.log(Log.DEBUG, "HTTPSession: "+httpSession);
-		if (httpSession != null /*&& httpSession.getAttribute(SESSION_ID) == null*/) {
+		if (httpSession == null || reset) {
 			httpSession = request.getSession();
 			Log.log(Log.DEBUG, "Setting Davis session ID: "+davisSession.getSessionID());
 			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
-//			davisSession.increaseSharedNumber();
-		}
-		if (httpSession == null || reset) {
-//			httpSession = request.getSession();
-//			Log.log(Log.DEBUG, "#############################################Setting Davis session ID: "+davisSession.getSessionID());
-//			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
 			davisSession.increaseSharedNumber();
 		}
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
