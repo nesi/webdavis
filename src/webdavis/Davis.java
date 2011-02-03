@@ -299,7 +299,7 @@ public class Davis extends HttpServlet {
 			reset=true;
 
 		int tries = 0;
-		while (tries++ < MAXCONNECTIONRETRIES) {
+		while (true) {
 			authorization = null;
 			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 			if (request.isSecure() && isBrowser(request)) { 
@@ -384,6 +384,12 @@ public class Davis extends HttpServlet {
 			String message = FSUtilities.testConnection(davisSession);
 			if (message == null || reset) 
 				break;
+			if (tries++ > MAXCONNECTIONRETRIES) {
+				Log.log(Log.DEBUG, "Can't reconnect to server, giving up.");
+				response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Can't reconnect to server.");
+				response.flushBuffer();
+				return;
+			}
 			Log.log(Log.WARNING, "Connection to server appears to have been lost for session "+davisSession.getSessionID()+" (connection test returned: "+message+"). Trying reset...");
 			reset = true;
 			davisSession = null;
