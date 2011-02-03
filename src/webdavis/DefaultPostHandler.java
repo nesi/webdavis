@@ -1081,7 +1081,7 @@ public class DefaultPostHandler extends AbstractHandler {
 //						response.addCookie(cookie);
 //					}
 			HttpSession session = request.getSession(true);
-			request.getSession().removeAttribute(Davis.AUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
+			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
 			AuthorizationProcessor.getInstance().destroy(davisSession.getSessionID());
 			
