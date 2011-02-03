@@ -688,4 +688,36 @@ public class FSUtilities {
 		}
 		return null;
 	}
+
+	/**
+	 * Test an iRODS session connection
+	 * 
+	 * @param davisSession
+	 * @return String Null if connection is ok, an exception message if not.
+	 */
+	public static String testConnection(DavisSession davisSession) {
+		
+		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
+			return null;
+		
+		String message = null;
+
+		try {
+			((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+		} catch (ProtocolException e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "ProtocolException";
+		} catch (SocketException e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "SocketException";
+		} catch (Exception e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "Exception";
+			Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+		}
+		return message;
+	}
 }
