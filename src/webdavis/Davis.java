@@ -74,8 +74,9 @@ public class Davis extends HttpServlet {
 	static Date profilingTimer = null;					// Used by DefaultGetHandler to measure time spent in parts of the code
 	static long lastLogTime = 0;  						// Used to log memory usage on a regular basis
 	static final long MEMORYLOGPERIOD = 60*60*1000;  	// How often log memory usage (in ms)
-	static final int MAXCONNECTIONRETRIES = 3;			// Max number of retries if irods connection lost
-	static final int CONNECTIONRETRYPAUSE = 1000;		// Pause between connection retries
+	static final int MAXCONNECTIONRETRIES = 3;			// Max number of retries if irods connection lost. 
+														// Note: this may not do anything because the fail() handler might be called before a second reconnect is attempted.
+	static final int CONNECTIONRETRYPAUSE = 5000;		// Pause between connection retries
 	static long headroom = Long.MAX_VALUE;
 	
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
