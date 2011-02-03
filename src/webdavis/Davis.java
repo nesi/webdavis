@@ -71,14 +71,16 @@ public class Davis extends HttpServlet {
 
 	// private ResourceFilter filter;
 	
-	static Date profilingTimer = null;	// Used by DefaultGetHandler to measure time spent in parts of the code
-	static long lastLogTime = 0;  // Used to log memory usage on a regular basis
-	static final long MEMORYLOGPERIOD = 60*60*1000;  // How often log memory usage (in ms)
+	static Date profilingTimer = null;					// Used by DefaultGetHandler to measure time spent in parts of the code
+	static long lastLogTime = 0;  						// Used to log memory usage on a regular basis
+	static final long MEMORYLOGPERIOD = 60*60*1000;  	// How often log memory usage (in ms)
+	static final int MAXCONNECTIONRETRIES = 3;			// Max number of retries if irods connection lost
+	static final int CONNECTIONRETRYPAUSE = 1000;		// Pause between connection retries
 	static long headroom = Long.MAX_VALUE;
 	
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "lock"}; // Methods that indicate client must be webdav (methods not used by Davis web interface)
-	static final String AUTHATTRIBUTENAME = "formauth";
+	static final String FORMAUTHATTRIBUTENAME = "formauth";
 	static final String ISBROWSERATTRIBUTENAME = "isbrowser";
 	
 	public static DavisConfig getConfig() {
@@ -228,7 +230,7 @@ public class Davis extends HttpServlet {
 			}
 			String authorization = "Basic "+new String(Base64.encodeBase64((request.getParameter("username").trim()+":"+request.getParameter("password")).getBytes()));
 			
-			request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
+			request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in httpsession - to be retrieved below
 			if (referrer.toLowerCase().endsWith("?noanon") || referrer.toLowerCase().endsWith("&noanon")) { // trim trailing noanon query if present
 				int i = referrer.length()-".noanon".length();
 				referrer = referrer.substring(0, i);
@@ -283,90 +285,112 @@ public class Davis extends HttpServlet {
 		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
 		if (request.isSecure() && isBrowser(request)) { 
 			String auth = null;
-			if ((auth = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME)) != null) 
+			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
 				authorization = auth;
 		}
 		
-		if (authorization == null) {
+		if (authorization == null)
 			// Check for basic auth header
 			authorization = request.getHeader("Authorization"); 
-			if (authorization != null) 
-				request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
-			else
-				authorization = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
-		}
-		
+
 		// Reset request?
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
 			reset=true;
-					
-		String errorMsg = null;
-		// If no auth info in header and http connection - should be shib
-		if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
-			//before login, check if there is shib session
-			Log.log(Log.DEBUG, "Trying shib login");
-			int shibCookieNum = 0;
-			Cookie[] cookies = request.getCookies();
-			if (cookies != null){
-				for (Cookie cookie:cookies)
-					if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) 
-						shibCookieNum++;
-				String sharedToken = request.getHeader(config.getSharedTokenHeaderName());
-				String commonName = request.getHeader(config.getCommonNameHeaderName());
-				String shibSessionID = request.getHeader("Shib-Session-ID");
-				if (sharedToken == null || sharedToken.length() == 0) {
-					errorMsg = "Shared token '"+sharedToken+"' is not found in HTTP header.";
-				} else if (commonName == null || commonName.length() == 0) {
-					errorMsg = "Common name '"+commonName+"' is not found in HTTP header.";
-				} else if (shibCookieNum > 0) 
-					davisSession = authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
-			}
-			if (davisSession == null && errorMsg == null)
-				errorMsg = "Shibboleth login failed.";
-		}else
-		// If auth info in header (basic/form auth) but not shib (http or https)
-		if (authorization != null) {
-			Log.log(Log.DEBUG, "Not shib login but auth info present. Looking for existing session...");
-			davisSession = authorizationProcessor.getDavisSession(authorization, reset);
-		}
-		
-		// Anonymous access
-		if (davisSession == null && isAnonymousPath(pathInfo) && (request.getQueryString() == null || request.getQueryString().indexOf("noanon") < 0)){
-			Log.log(Log.DEBUG, "Path is anonymous, allowing access by anonymous user");
-			String authString = "Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
-			davisSession = authorizationProcessor.getDavisSession(authString, reset);
-			errorMsg = null;
-		}
-		// Check that the client's uihandle is known to us . If not, send an error so that UI can reload window.
-		String uiHandle = request.getParameter("uihandle");
-		if (uiHandle != null && !uiHandle.equals("null")) 
-			if (davisSession == null || davisSession.getClientInstance(uiHandle) == null) {	
-				String s = "Cache for client with uiHandle="+uiHandle+" not found (server may have been restarted).";
-				if (davisSession != null)
-					s += " Cache keys:"+davisSession.getClientInstances().keySet();
-				Log.log(Log.WARNING,  s);
-			//	response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
-				response.sendError(HttpServletResponse.SC_GONE, "Access denied - you are not currently logged in");
-				response.flushBuffer();
-				return;
+
+		int tries = 0;
+		while (tries++ < MAXCONNECTIONRETRIES) {
+			authorization = null;
+			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
+			if (request.isSecure() && isBrowser(request)) { 
+				String auth = null;
+				if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
+					authorization = auth;
 			}
 
-		// Still no session established, check for error, else tell client with auth to try next
-		if (davisSession == null){
-			if (errorMsg != null){
-				Log.log(Log.DEBUG, "No session found, returning FORBIDDEN with message: "+errorMsg);
-				response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
-				response.flushBuffer();
-				return;
-			}else{
-				Log.log(Log.DEBUG, "No session found, calling fail handler.");
-				fail(request, response);
-				return;
+			if (authorization == null) {
+				// Check for basic auth header
+				authorization = request.getHeader("Authorization"); 
+				if (authorization != null) 
+					request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
+				else
+					authorization = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
 			}
+
+			String errorMsg = null;
+			// If no auth info in header and http connection - should be shib
+			if (authorization == null && !request.isSecure() && config.getInsecureConnection().equalsIgnoreCase("shib")){
+				//before login, check if there is shib session
+				Log.log(Log.DEBUG, "Trying shib login");
+				int shibCookieNum = 0;
+				Cookie[] cookies = request.getCookies();
+				if (cookies != null){
+					for (Cookie cookie:cookies)
+						if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) 
+							shibCookieNum++;
+					String sharedToken = request.getHeader(config.getSharedTokenHeaderName());
+					String commonName = request.getHeader(config.getCommonNameHeaderName());
+					String shibSessionID = request.getHeader("Shib-Session-ID");
+					if (sharedToken == null || sharedToken.length() == 0) {
+						errorMsg = "Shared token '"+sharedToken+"' is not found in HTTP header.";
+					} else if (commonName == null || commonName.length() == 0) {
+						errorMsg = "Common name '"+commonName+"' is not found in HTTP header.";
+					} else if (shibCookieNum > 0) 
+						davisSession = authorizationProcessor.getDavisSession(sharedToken, commonName, shibSessionID, reset);
+				}
+				if (davisSession == null && errorMsg == null)
+					errorMsg = "Shibboleth login failed.";
+			}else
+			// If auth info in header (basic/form auth) but not shib (http or https)
+			if (authorization != null) {
+				Log.log(Log.DEBUG, "Not shib login but auth info present. Looking for existing session...");
+				davisSession = authorizationProcessor.getDavisSession(authorization, reset);
+			}
+			
+			// Anonymous access
+			if (davisSession == null && isAnonymousPath(pathInfo) && (request.getQueryString() == null || request.getQueryString().indexOf("noanon") < 0)){
+				Log.log(Log.DEBUG, "Path is anonymous, allowing access by anonymous user");
+				String authString = "Basic "+Base64.encodeBase64String((config.getAnonymousUsername()+":"+config.getAnonymousPassword()).getBytes());
+				davisSession = authorizationProcessor.getDavisSession(authString, reset);
+				errorMsg = null;
+			}
+			// Check that the client's uihandle is known to us . If not, send an error so that UI can reload window.
+			String uiHandle = request.getParameter("uihandle");
+			if (uiHandle != null && !uiHandle.equals("null")) 
+				if (davisSession == null || davisSession.getClientInstance(uiHandle) == null) {	
+					String s = "Cache for client with uiHandle="+uiHandle+" not found (server may have been restarted).";
+					if (davisSession != null)
+						s += " Cache keys:"+davisSession.getClientInstances().keySet();
+					Log.log(Log.WARNING,  s);
+				//	response.sendError(HttpServletResponse.SC_GONE, "Your client appears to be out of sync with the server (server may have been restarted)");
+					response.sendError(HttpServletResponse.SC_GONE, "Access denied - you are not currently logged in");
+					response.flushBuffer();
+					return;
+				}
+	
+			// Still no session established, check for error, else tell client with auth to try next
+			if (davisSession == null) {
+				if (errorMsg != null) {
+					Log.log(Log.DEBUG, "No session found, returning FORBIDDEN with message: "+errorMsg);
+					response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
+					response.flushBuffer();
+					return;
+				} else {
+					Log.log(Log.DEBUG, "No session found, calling fail handler.");
+					fail(request, response);
+					return;
+				}
+			}
+			String message = FSUtilities.testConnection(davisSession);
+			if (message == null || reset) 
+				break;
+			Log.log(Log.WARNING, "Connection to server appears to have been lost for session "+davisSession.getSessionID()+" (connection test returned: "+message+"). Trying reset...");
+			reset = true;
+			davisSession = null;
+			try{Thread.sleep(CONNECTIONRETRYPAUSE*tries*tries);}catch(Exception e){} // Pause between connection retries grows exponentially 
 		}
 		
 		Log.log(Log.DEBUG, "HTTPSession: "+httpSession);
-		if (httpSession == null || reset) {
+		if ((httpSession == null) || reset) {
 			httpSession = request.getSession();
 			Log.log(Log.DEBUG, "Setting Davis session ID: "+davisSession.getSessionID());
 			httpSession.setAttribute(SESSION_ID, davisSession.getSessionID());
@@ -614,10 +638,10 @@ public class Davis extends HttpServlet {
 				}				
 				substitutions.put("insecureurl", "<a href=\""+request.getRequestURL().toString().replaceFirst("^https", "http")+queryString+"\">");
 				substitutions.put("insecurelogintext", getConfig().getInsecureLoginText());
-				if (request.getSession().getAttribute(AUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
+				if (request.getSession().getAttribute(FORMAUTHATTRIBUTENAME) != null) {	// Form has been submitted and auth failed
 					Log.log(Log.DEBUG, "Returning form-based login page with error message to client.");
 					substitutions.put("failedmessage", "<span style=\"color:red\">Authentication Failed</span><br><br><small>Please ensure your username and password are correct,<br>and that cookies are enabled in your browser.<br><br></small>");
-					request.getSession().removeAttribute(AUTHATTRIBUTENAME);
+					request.getSession().removeAttribute(FORMAUTHATTRIBUTENAME);
 				} else {
 					if ((request.getHeader("referrer") != null) || (request.getHeader("referer") != null)) // Cookies might be blocked for this site
 						substitutions.put("failedmessage", "<small>Please ensure cookies are enabled for this site.</small><br><br>");

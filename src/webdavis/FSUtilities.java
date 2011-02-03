@@ -2,6 +2,8 @@ package webdavis;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.ProtocolException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
