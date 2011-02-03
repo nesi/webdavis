@@ -64,6 +64,7 @@
     <Arg>
        <New class="org.mortbay.jetty.ajp.Ajp13SocketConnector">
          <Set name="port">8009</Set>
+         <Set name="host">127.0.0.1</Set>
          <Set name="ThreadPool">
            <New class="org.mortbay.thread.BoundedThreadPool">
              <Set name="minThreads">50</Set>
