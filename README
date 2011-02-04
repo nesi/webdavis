@@ -1,7 +1,0 @@
-dojo toolkit is not included in svn. you just need to download it from its website, and place it in /WebContent/dojoroot. e.g.
-
-WebContent
-	dojoroot
-		dijit
-		dojo
-		dojox
