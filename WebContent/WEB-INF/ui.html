@@ -14,64 +14,7 @@
 		/*@import "<parameter dojoroot/>dojoroot/dojo/resources/dojo.css"; This is disabled. Note that dojo.css has never actually been
 		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
-   	</style>
-	<style>
-		body, html {width:100%; height:100%; margin:0; padding:0;}
-		.text{font-family:Arial, Helvetica, sans-serif;}
-		.text_small{font-family:Arial, Helvetica, sans-serif; font-size:small;}
-		.text_small_small{font-family:Arial, Helvetica, sans-serif; font-size:x-small;}
-		h1{margin:0px;}
-		button {background-color:lightGrey;} 
-		input {background-color:white;}
-		#button_table{margin: 0px 0px 0px -4px;}
-		#mode_buttons{margin: -2px 2px 0px 0px;}
-		#header{margin: 0px 0px -12px 0px;}
-		#hor_rule{margin: 0px -12px -12px 0px;}
-		#table.HoverGreen {background:#509C52; color:#FFF;}
-		#table.HoverGrey {background:#CCC; color:#FFF; border:1px solid #CCC;}
-		.hoverBorderSide {margin: 2px; border: 1px solid #CCC;}
-		.link{text-decoration:none; color:#04E;}
-		.darklink{text-decoration:none; color:black;}
-		.linkOver{text-decoration:underline;}
-		.link:hover{text-decoration:underline; color:#04E;}
-		.darklink:hover{text-decoration:underline; color:black;}
-		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
-		.activeItem:hover{background:#83C500; color:white;}
-		.activeItem:active{background:white; color:#83C500;}
-		.inactiveItem{background:#459E00; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
-		.invisible{background:white; color:white; border: 0px;}
-		.linkImage{text-decoration:underline; color:#04E;}
-   		.dojoxGrid-row-odd td {background:#e8f2ff;}
-    	#metadataGrid {border: 1px solid #333; width: 400px; height: 300px;}
-		#permissionsGrid {border: 1px solid #333; width: 600px; height: 200px;}
-		#sharesGrid {border: 1px solid #333;}
-		#replicasGrid {border: 1px solid #333;}
-		#listingGrid .dojoxGridHeader .dojoxGridCell {background: #459E00; font-size: 110%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
-		#listingGrid .dojoxGridRow {background: white;}
-		#listingGrid .dojoxGridRowSelected {background: #C9D8E9;}
-		#listingGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
-		#listingGrid {border-bottom:solid; border-width:1px; border-color:lightgrey;}
-		#listingGrid .dojoxGridMasterHeader {background:white;} /* These 2 are to make the left listingTable border disappear */
-		#listingGrid .dojoxGridMasterView {background:white;}
-		.tundra .dojoxGridCellFocus {border: 0px dotted white !important;} /* Hide focus border in grid rows (for IE) */
-		.tundra .dojoxGridMasterHeader .dojoxGridCellFocus {border: 1px dotted white !important;} /* Hide focus border in grid header (for IE) */
-		#destinationGrid .dojoxGridHeader .dojoxGridCell {display:none;}
-		#destinationGrid .dojoxGridRow {background: white;}
-		#destinationGrid .dojoxGridRowSelected {background: #C9D8E9;}
-		#destinationGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
-		.questionIcon {
-      		background-image: url('/images/help.png'); 
-      		width: 32px;
-      		height: 32px;
-      	}
-      	.iconButton .dijitButtonNode {
-			background: white;
-			color: white;
-			padding: 0px;
-			border: 0px solid black;
-     	}
-      	.dijitArrowButtonInner {display:none;}
-      	.dijitMenuItem {font-size: small;}	
+		@import "/style/<parameter stylesheet/>";
     </style>	
 	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
 <!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->

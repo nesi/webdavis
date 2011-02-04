@@ -95,6 +95,7 @@ public class DavisConfig {
     private List<String> webdavUserAgents = new ArrayList<String>();
     private List<String> browserUserAgents = new ArrayList<String>();
     private String insecureLoginText;
+    private String styleSheet;
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	private Hashtable<String, String> generalSubstitutions;
@@ -361,6 +362,7 @@ public class DavisConfig {
 		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
 		shibInitPath = getInitParameter("shib-init-path", "/Shibboleth.sso/DS").trim();
 		insecureLoginText = getInitParameter("insecure-login-text", "via HTTP").trim();
+		styleSheet = getInitParameter("davis-style-sheet", "davis.css").trim();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
@@ -413,6 +415,7 @@ public class DavisConfig {
 		includeSubstitutions.put("includehead", ""+getUIIncludeHead());
 		includeSubstitutions.put("includebodyheader", ""+getUIIncludeBodyHeader());
 		includeSubstitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
+		includeSubstitutions.put("stylesheet", ""+getStyleSheet());
 	}
 
 	public void refresh() {
@@ -774,5 +777,9 @@ public class DavisConfig {
 	
 	public String getInsecureLoginText() {
 		return insecureLoginText;
+	}
+	
+	public String getStyleSheet() {
+		return styleSheet;
 	}
 }

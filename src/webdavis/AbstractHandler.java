@@ -283,7 +283,7 @@ public abstract class AbstractHandler implements MethodHandler {
             exception = ex;
         }
         if (exists) return file;
-        Log.log(Log.WARNING, "Returning null getRemoteParentFile (shouldn't happen).");
+        Log.log(Log.WARNING, "Returning null getRemoteParentFile (server connection lost?).");
         return null;
     }
     /**
@@ -391,7 +391,7 @@ public abstract class AbstractHandler implements MethodHandler {
             Log.log(Log.ERROR, exception);
             throw exception;
         }
-        Log.log(Log.WARNING, "Returning null RemoteFile (shouldn't happen).");
+        Log.log(Log.WARNING, "Returning null RemoteFile (server connection lost?).");
         return null;
     }
     protected RemoteFile getRemoteFile(String path,	DavisSession davisSession) throws IOException {
@@ -958,7 +958,7 @@ public abstract class AbstractHandler implements MethodHandler {
             Log.log(Log.DEBUG, exception);
             throw exception;
         }
-        Log.log(Log.WARNING, "Returning null SmbFile (shouldn't happen).");
+        Log.log(Log.WARNING, "Returning null SmbFile (server connection lost?).");
         return null;
     }
 

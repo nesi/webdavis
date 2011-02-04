@@ -278,8 +278,11 @@ public class DefaultGetHandler extends AbstractHandler {
 //			Log.log(Log.DEBUG, ("=============== id="+instanceID+" request="+r));
 //		}
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
-		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar") /*|| url.startsWith("/test")*/) {
+		// Check for non remote-server requests (eg dojo files) and return them if so
+		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar") || url.startsWith("/style/")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
+			if (url.startsWith("/style/") && url.endsWith(".css"))	// Will only serve out style sheet files if they end in .css - for security
+				url = "/WEB-INF/"+url.substring("/style/".length());
 			writeFile(url, request, response);
 			return;
 		}
@@ -742,6 +745,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			return;
 		}
 
+		// Request for file
 		// For files with multiple replicas, a clean replica will be returned. If only a dirty copy is found, then that will be used.
 		if (file.getFileSystem() instanceof IRODSFileSystem) {	
 			// Find first clean replica of file for download
@@ -962,7 +966,10 @@ public class DefaultGetHandler extends AbstractHandler {
 			op.write(buf, 0, length);
 		}
 		op.flush();
-		in.close();
+		if (in == null)
+			Log.log(Log.ERROR, this.getClass().getName()+" failed to return "+url+". It wasn't found on the local file system.");
+		else
+			in.close();
 		op.close();
 	}
 
