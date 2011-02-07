@@ -661,7 +661,12 @@ public class FSUtilities {
 //    			dir.setDirFlag(true);
 //    			dir.setCanWriteFlag(true);
     			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-    			dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+    			try {
+    				dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+    			} catch (Exception e) {
+    				Log.log(Log.ERROR, "failed to get last modified time for "+dirs[i].getAbsolutePath());
+    				dirs[i].setLastModified(0);
+    			}
     			dirs[i].setDirFlag(true);
     			dirs[i].setCanWriteFlag(true);
     			if (getMetadata) {

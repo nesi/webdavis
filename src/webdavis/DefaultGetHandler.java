@@ -784,10 +784,16 @@ public class DefaultGetHandler extends AbstractHandler {
     		for (int i = 0; i < fileDetails.length; i++) {
         		MetaDataRecordList p = fileDetails[i]; 
         		String status = (String)p.getValue(IRODSMetaDataSet.RESOURCE_STATUS);
+        		if (status == null)
+        			Log.log(Log.WARNING, "status of resource "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+" was null");
 //  System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
-        		if (status.length() == 0 || status.toLowerCase().contains("up")) { // Empty status string = up
+        		if (status == null || status.length() == 0 || status.toLowerCase().contains("up")) { // Empty status string = up
             		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-            		((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+            		try {
+            			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+            		} catch (Exception e) {
+            			Log.log(Log.ERROR, "failed to set resource for get of "+file.getName()+" to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+": "+e);
+            		}
             		found = true;
             		break;
         		}
