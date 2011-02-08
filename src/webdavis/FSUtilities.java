@@ -664,7 +664,7 @@ public class FSUtilities {
     			try {
     				dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
     			} catch (Exception e) {
-    				Log.log(Log.ERROR, "failed to get last modified time for "+dirs[i].getAbsolutePath());
+    				Log.log(Log.ERROR, "failed to parse last modified time for "+dirs[i].getAbsolutePath()+": "+(String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE));
     				dirs[i].setLastModified(0);
     			}
     			dirs[i].setDirFlag(true);
