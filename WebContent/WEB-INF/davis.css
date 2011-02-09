@@ -28,7 +28,7 @@
 		#permissionsGrid {border: 1px solid #333; width: 600px; height: 200px;}
 		#sharesGrid {border: 1px solid #333;}
 		#replicasGrid {border: 1px solid #333;}
-		#listingGrid .dojoxGridHeader .dojoxGridCell {background: #459E00; font-size: 110%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
+		#listingGrid .dojoxGridHeader .dojoxGridCell {text-indent:10px; background: #459E00; font-size: 110%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
 		#listingGrid .dojoxGridRow {background: white;}
 		#listingGrid .dojoxGridRowSelected {background: #C9D8E9;}
 		#listingGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
