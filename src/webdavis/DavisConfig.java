@@ -362,7 +362,7 @@ public class DavisConfig {
 		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
 		shibInitPath = getInitParameter("shib-init-path", "/Shibboleth.sso/DS").trim();
 		insecureLoginText = getInitParameter("insecure-login-text", "via HTTP").trim();
-		styleSheet = getInitParameter("davis-style-sheet", "davis.css").trim();
+		styleSheet = getInitParameter("davis-style-sheet", "/include/davis.css").trim();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 

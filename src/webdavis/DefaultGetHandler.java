@@ -279,10 +279,8 @@ public class DefaultGetHandler extends AbstractHandler {
 //		}
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		// Check for non remote-server requests (eg dojo files) and return them if so
-		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar") || url.startsWith("/style/")) {
+		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
-			if (url.startsWith("/style/") && url.endsWith(".css"))	// Will only serve out style sheet files if they end in .css - for security
-				url = "/WEB-INF/"+url.substring("/style/".length());
 			writeFile(url, request, response);
 			return;
 		}

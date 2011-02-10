@@ -200,6 +200,8 @@
 	</copy>
   	<move file="${build.home}/${app.name}-${app.version}/webapps/root/images" todir="${build.home}/${app.name}-${app.version}/webapps"/>
   	<move file="${build.home}/${app.name}-${app.version}/webapps/root/dojoroot" todir="${build.home}/${app.name}-${app.version}/webapps"/>
+  	<mkdir dir="${build.home}/${app.name}-${app.version}/webapps/include"/>
+  	<move file="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/davis.css" todir="${build.home}/${app.name}-${app.version}/webapps/include"/>
   	<mkdir dir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes"/>
  	<copy todir="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/classes/">
   	  <fileset dir="${basedir}/resources"/>
@@ -215,6 +217,7 @@
   	<delete dir="${build.home}/WEB-INF"/>
   	<delete dir="${build.home}/dojoroot"/>
   	<delete dir="${build.home}/images"/>
+  	<delete dir="${build.home}/include"/>
 	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
 	  <!--<tarfileset dir="${build.home}" filemode="755">
 	  	<include name="${app.name}-${app.version}/bin/davis-configure.sh"/>
