@@ -63,7 +63,7 @@
 
 			if ("<parameter disablereplicasbutton/>" == "true" && "<parameter isadmin/>" == "false")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
-			if ((!isSecure() && "<parameter authscheme/>" == "basic") || isAnonymous())
+			if ((!isSecure() && "<parameter authscheme/>" == "password") || isAnonymous())
 				if (dojo.byId("logoutButton") != null)
 					dojo.html.set(dojo.byId("logoutButton"), '');  // Hide logout button for insecure basic auth
 			if (isAnonymous()) { // Hide buttons if anonymous access

@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 import org.apache.commons.codec.binary.Base64;
 
 import edu.sdsc.grid.io.irods.IRODSConstants;
+import edu.sdsc.grid.io.irods.IRODSFileSystem;
 
 /**
  * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
@@ -84,7 +85,9 @@ public class Davis extends HttpServlet {
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
 	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "lock"}; // Methods that indicate client must be webdav (methods not used by Davis web interface)
 	static final String FORMAUTHATTRIBUTENAME = "formauth";
+	static final String AUTHATTRIBUTENAME = "auth";
 	static final String ISBROWSERATTRIBUTENAME = "isbrowser";
+	
 	
 	public static DavisConfig getConfig() {
 		
@@ -95,7 +98,7 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		davisConfig = new DavisConfig();
 		getConfig().initConfig(config);
-		IRODSConstants.CONNECTION_TIMEOUT_VALUE = 10000;	// Jargon <-> irods socket operations should timeout after this many ms
+		IRODSConstants.CONNECTION_TIMEOUT_VALUE = 30000;	// Jargon <-> irods socket operations should timeout after this many ms
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
@@ -286,16 +289,16 @@ public class Davis extends HttpServlet {
 		AuthorizationProcessor authorizationProcessor = AuthorizationProcessor.getInstance();
 
 		String authorization = null;
-		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
-		if (request.isSecure() && isBrowser(request)) { 
-			String auth = null;
-			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
-				authorization = auth;
-		}
-		
-		if (authorization == null)
-			// Check for basic auth header
-			authorization = request.getHeader("Authorization"); 
+//		// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
+//		if (request.isSecure() && isBrowser(request)) { 
+//			String auth = null;
+//			if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
+//				authorization = auth;
+//		}
+//		
+//		if (authorization == null)
+//			// Check for basic auth header
+//			authorization = request.getHeader("Authorization"); 
 
 		// Reset request?
 		if (request.getQueryString() != null && request.getQueryString().indexOf("reset") > -1)
@@ -305,19 +308,18 @@ public class Davis extends HttpServlet {
 		while (true) {
 			authorization = null;
 			// Look for a form-based auth atttribute if https and is a browser (attribute is stored in httpsession from form-based login page)
-			if (request.isSecure() && isBrowser(request)) { 
-				String auth = null;
-				if ((auth = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME)) != null) 
-					authorization = auth;
-			}
+			if (request.isSecure() && isBrowser(request)) 
+				authorization = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME);
+			
+			// Look for auth attribute in httpsession (from Authorization header in previous request)
+			if (authorization == null)
+				authorization = (String)request.getSession().getAttribute(AUTHATTRIBUTENAME);
 
+			// Check for basic auth header
 			if (authorization == null) {
-				// Check for basic auth header
 				authorization = request.getHeader("Authorization"); 
 				if (authorization != null) 
-					request.getSession().setAttribute(FORMAUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
-				else
-					authorization = (String)request.getSession().getAttribute(FORMAUTHATTRIBUTENAME); // If no auth header, get it from session if saved there from earlier request
+					request.getSession().setAttribute(AUTHATTRIBUTENAME, authorization); // Save auth info in http session in case it's not present in header in later requests (FireFox)
 			}
 
 			String errorMsg = null;
@@ -416,7 +418,7 @@ public class Davis extends HttpServlet {
 			lastLogTime = currentTime;
 			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
 		}
-		
+
 		MethodHandler handler = getHandler(request.getMethod());
 		if (handler != null) {
 			try {

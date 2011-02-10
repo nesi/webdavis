@@ -593,7 +593,10 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("home", davisSession.getHomeDirectory());
 				substitutions.put("trash", davisSession.getTrashDirectory());
 				substitutions.put("account", davisSession.getAccount());
-				substitutions.put("authscheme", davisSession.getAuthenticationScheme());
+				String auth = davisSession.getAuthenticationScheme(false).toLowerCase();
+				if (auth == null || !auth.equals("shib"))
+					auth = davisSession.getAuthenticationScheme(true).toLowerCase();
+				substitutions.put("authscheme", /*davisSession.getAuthenticationScheme()*/auth);
 				substitutions.put("uiloaddate", uiLoadDate);
 				String version = "";
 				if (file.getFileSystem() instanceof IRODSFileSystem) 

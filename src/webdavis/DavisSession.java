@@ -35,8 +35,8 @@ public class DavisSession implements Serializable{
 	private Hashtable<String, ClientInstance> clientInstances = new Hashtable(); // Client instance specific items - one per unique UI
 
 
-	public String getAuthenticationScheme() {
-		if (sessionID != null) {
+	public String getAuthenticationScheme(boolean queryFileSystem) {
+		if (sessionID != null && !queryFileSystem) {
 			if (sessionID.endsWith("*shib|"))
 				return "shib";
 			if (sessionID.endsWith("*basic|"))
