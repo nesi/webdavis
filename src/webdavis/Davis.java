@@ -32,6 +32,8 @@ import org.apache.log4j.Logger;
 
 import org.apache.commons.codec.binary.Base64;
 
+import edu.sdsc.grid.io.irods.IRODSConstants;
+
 /**
  * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
  * 
@@ -93,6 +95,7 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		davisConfig = new DavisConfig();
 		getConfig().initConfig(config);
+		IRODSConstants.CONNECTION_TIMEOUT_VALUE = 10000;	// Jargon <-> irods socket operations should timeout after this many ms
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
