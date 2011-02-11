@@ -101,27 +101,7 @@
     </Arg>
   </Call>
 -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- Add a AJP listener on port 8009                           -->
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- Enable this if you want to use Apache -->
-  <!-- 
-  <Call name="addConnector"> 
-    <Arg>
-       <New class="org.mortbay.jetty.ajp.Ajp13SocketConnector">
-         <Set name="port">8009</Set>
-         <Set name="ThreadPool">
-           <New class="org.mortbay.thread.BoundedThreadPool">
-             <Set name="minThreads">50</Set>
-             <Set name="maxThreads">500</Set>
-             <Set name="MaxIdleTimeMs">0</Set>
-         </New>
-         </Set>
-         <Set name="statsOn">false</Set>
-       </New>
-    </Arg>
-  </Call>
-  -->   
+
     <!-- =========================================================== -->
     <!-- Set up global session ID manager                            -->
     <!-- =========================================================== -->
