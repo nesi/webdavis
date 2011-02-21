@@ -992,6 +992,54 @@ public class DefaultPostHandler extends AbstractHandler {
 		        }
 			}
 			
+		} else if (method.equalsIgnoreCase("search")) {
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
+			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
+				Log.log(Log.ERROR, "Searching is only supported for iRODS");
+			else {
+				String s = request.getParameter("from");
+				boolean fromRoot = (s == null || s.equals("root"));
+				s = request.getParameter("show");
+				boolean showRead = (s == null || s.equals("read"));
+				String fileKeyword = request.getParameter("file");
+				String metadataKeyword = request.getParameter("metadata");
+System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+" fileKeyword="+fileKeyword+" metadtakeyword="+metadataKeyword);				
+				
+
+				
+////				String sharingKey = Davis.getConfig().getSharingKey();
+////				if (sharingKey != null) {		
+////					MetaDataSelect selectsFile[] = 
+////						MetaDataSet.newSelection(new String[] {
+////				//				IRODSMetaDataSet.FILE_ACCESS_NAME,
+////								//IRODSMetaDataSet.FILE_ACCESS_USER_ID,
+////								IRODSMetaDataSet.OWNER,							
+////								IRODSMetaDataSet.FILE_NAME,
+////								IRODSMetaDataSet.DIRECTORY_NAME
+////						});
+////					MetaDataCondition conditionsFile[];
+////					conditionsFile = new MetaDataCondition[] {
+////							MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, sharingKey),
+////							MetaDataSet.newCondition(IRODSMetaDataSet.OWNER, MetaDataCondition.EQUAL, davisSession.getAccount()), 
+////					};
+////					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
+//					MetaDataRecordList[] fileDetails = getShares(davisSession);
+//					if (fileDetails == null) 
+//		    			fileDetails = new MetaDataRecordList[0];	
+//		 			int i = 0;
+//		    		for (MetaDataRecordList p:fileDetails) {
+//		    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+//		    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+//		    			String sharingURL = (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE);
+//						if (i++ > 0) json.append(",\n");
+//						json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
+//						json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
+//						json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
+//		        	}
+////				}
+			}
+			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("userlist")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){

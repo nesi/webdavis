@@ -452,7 +452,7 @@ public class DefaultGetHandler extends AbstractHandler {
 						if (values != null)
 							sharingValue = values.get(0);
 					}
-					json.append("{\"name\":{\"name\":"+/*escapeJSONArg(*/ "\""+FSUtilities.escape(fileList[i-1].getName())/*)*/+"\""+",\"type\":"+escapeJSONArg(type)+"}"
+					json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i-1].getName())+"\""+",\"type\":"+escapeJSONArg(type)+"}"
 							+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
 							+"\"sharing\":{\"value\":"+escapeJSONArg(sharingValue)+",\"type\":"+escapeJSONArg(type)+"},"

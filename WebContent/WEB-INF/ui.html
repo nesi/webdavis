@@ -180,6 +180,7 @@
     	var listingLayout;
     	var destinationLayout;
     	var sharesLayout;
+    	var searchResultsLayout;
     	
 		var metadataStore;
 		var permissionsStore;
@@ -189,6 +190,7 @@
 		var listingStore;
 		var destinationStore;
 		var sharesStore;
+		var searchStore;
 		
 		function initVariables() {
 			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
@@ -240,6 +242,12 @@
 	    	destinationLayout = [
 	    	        {field: "name", width: "50%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
 	    	    ];	
+	    	searchResultsLayout = [
+	    		    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
+	    		    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
+	    		    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
+	    		    	 	   	{field: "sharing", width: "15%", name: "QuickShare", formatter: gridFormatSharing, hidden: false}
+	    		    	 	];
 
 	    	resetMetadataStore();
 			resetPermissionsStore();
@@ -247,6 +255,7 @@
 			resetUsersStore();
 			resetReplicasStore();
 			resetSharesStore(false);
+			resetSearchStore();
 
 			listingStore = new ListingStore({
 				id: "listingStore", // For debugging
@@ -491,6 +500,10 @@
 		
 		function resetSharesStore(fast) { 
 			sharesStore = resetStore(sharesStore, sharesGrid, sharesLayout, fast);
+		}
+		
+		function resetSearchStore(fast) { 
+			searchStore = resetStore(searchStore, searchResultsGrid, searchResultsLayout, fast);
 		}
 		
 		function resetDomainsStore() { 
@@ -2182,6 +2195,35 @@
 	  		});
 		}
 
+		function showSearch() {
+			dialogSearch.show();
+		}
+
+		function startSearch() {
+			cursorBusy(true);	
+			var from = dojo.byId('searchFromRootRadioButton').checked ? "root" : "current";
+			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
+			var fileKeyword = dojo.byId('searchFileInputBox').value;
+			var metadataKeyword = dojo.byId('searchMetadataInputBox').value;
+		  	dojo.xhrPost({
+	    		url: "?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&metadata="+metadataKeyword,
+	    		load: function(responseObject, ioArgs){    
+	 					cursorBusy(false);
+						searchStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						searchGrid.setStore(searchStore);	 
+						searchGrid.selection.deselectAll();     			
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	       				cursorBusy(false);
+	      				loadedAlert(errorMessage("search", ioArgs.xhr.status, ioArgs.xhr.statusText));
+	      				return response;
+	    			},
+	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});		
+		}
+
 		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
 		function getColumnMenu() {
 			result = listingGrid.inherited("getColumnTogglingItems", arguments);
@@ -2488,6 +2530,77 @@
 		</tr>
 	</table>
 </div>
+<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 85%; max-height:90%;">
+	<table style="width: 100%; border: 0px solid red;">
+		<tr>
+			<td>
+				<table style="width: 100%;">
+					<tr>
+						<td>
+							<table>
+								<!-- <tr>
+									<td><i>Search:</i></td>
+									<td><input type="radio" name="searchWhatRadioButtons" value="files" onClick="refreshButtons()" checked >files and collections</td>
+									<td><input type="radio" name="searchWhatRadioButtons" value="metadata" onClick="refreshButtons()">metadata</td>
+								</tr>-->
+								<tr>
+									<td><i>Search from:</i></td>	
+									<td><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
+									<td><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
+								</tr>
+								<tr>
+									<td><i>Show all files:</i></td>
+									<td><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
+									<td><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<table style="width: 100%;">
+								<tr><td>&nbsp;</td></tr>
+								<tr>
+        							<td><i>File/collection&nbsp;keyword:</i></td>
+									<td><input id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+								</tr>
+								<tr>
+        							<td><i>Metadata&nbsp;keyword:</i></td>
+									<td><input id="searchMetadataInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" align="right"><button align="right" "type="button" id="startSearchButton" onclick="startSearch()">Search</button></td>
+								</tr>
+							</table>
+        				</td>
+            		</tr>
+				</table>
+			</td>
+		</tr>
+		<tr><td>&nbsp;</td></tr>
+		<tr>
+			<td colspan="3" style="border: lightgray groove;">
+				<div style="width: 100%; min-height: 100px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single" onRowClick=""></div>
+			</td>
+		</tr>
+		<tr>
+			<td><br>Item details:<br><span id="searchDetails"></span></td>
+		</tr>
+		<tr><td>&nbsp;</td></tr>
+		<tr>
+			<td colspan="3" align="right" valign="bottom">
+				<button type="button" onclick="dialogSearch.hide()">Cancel</button>
+			</td>
+		</tr>
+	</table>
+</div>
+<div dojoType="dijit.Dialog" jsId="dialogSearchResults" title="Search results">
+	<table>
+		<tr>
+			<td colspan="2" align="right" valign="bottom">
+				<button type="button" onclick="dialogSearchResults.hide()">Close</button>
+			</td>
+		</tr>
+	</table>
+</div>
 <div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
@@ -2592,6 +2705,7 @@
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="Login with authentication" src="/images/login.png" width="26" height="32"/></a></span>
 											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/logout.png" width="26" height="32"/></a></span>
 											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="Show your shared files" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
+											<span id="searchButton"><a title="Search for items" onclick="showSearch(); return false" href="search"><img border="0" alt="Search for items" src="/images/search.png" width="28" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
