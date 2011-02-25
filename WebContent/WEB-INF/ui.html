@@ -1852,10 +1852,14 @@
 	  		});		
 		}
 
+		function setPermissionsOwner(owner) {
+			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+owner+")</small>");
+		}
+					
 		function populatePermission(permissions){
 			permissionsStore = new dojo.data.ItemFileWriteStore({data: permissions});
 			permissionsGrid.setStore(permissionsStore);
-			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+permissions.owner+")</small>");
+			setPermissionsOwner(permissions.owner);
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
 					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(false, dojo.byId('recursive').checked)\">Unset</button>");
@@ -1870,6 +1874,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstSelectedItem()/*)*/; 
+			setPermissionsOwner("");
 			enableButton('recursive', (directoryIsSelected() || unknownIsSelected()));	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
