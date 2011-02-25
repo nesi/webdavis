@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
@@ -1062,7 +1063,7 @@ System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+"
 //						IRODSMetaDataSet.META_COLL_ATTR_VALUE,
 //						IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
 					});
-		//		try {
+				try {
 System.err.println("%%%%first query");
 					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditionsFile, selectsFile, SEARCH_MAX_QUERY_NUM);
 System.err.println("%%%%second query");
@@ -1071,11 +1072,12 @@ System.err.println("%%%%build cache");
 					CachedFile[] fileList = FSUtilities.buildCache(fileDetails, dirDetails, (RemoteFileSystem)file.getFileSystem(), metadata, /*sort*/false, /*getFiles*/true, /*getMetadata*/false);
 System.err.println("%%%%fileList.length="+fileList.length);
 					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false));
-		//		} catch (NullPointerException e) {
-		//			e.printStackTrace();
-		//		} catch (IOException e) {
-		//			e.printStackTrace();
-		//		}
+				} catch (SocketTimeoutException e) {
+					s = "Server search query timedout";
+					Log.log(Log.ERROR, s);
+					response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT, s);
+					return;
+				}
 
 				
 
