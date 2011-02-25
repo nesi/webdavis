@@ -1100,12 +1100,12 @@ public abstract class AbstractHandler implements MethodHandler {
     
     public String escapeJSONArg(String s) {
     	
-    	return "\""+escapeJSON(s)+"\"";
+    	return FSUtilities.escapeJSONArg(s);
     }
     
     protected String escapeJSON(String s) {
 
-    	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
+    	return FSUtilities.escapeJSON(s);
     }
     
     public String wrapJSONInHTML(String s) {

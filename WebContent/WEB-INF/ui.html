@@ -81,7 +81,6 @@
 					dojo.html.set(dojo.byId("sharesButton"), '');
 				
 				listingLayout[listingLayoutMetadataField].hidden = true;
-		//		listingGrid.setStructure(listingLayout);
 			}
 											
 			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
@@ -190,7 +189,7 @@
 		var listingStore;
 		var destinationStore;
 		var sharesStore;
-		var searchStore;
+		var searchResultsStore;
 		
 		function initVariables() {
 			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
@@ -255,7 +254,7 @@
 			resetUsersStore();
 			resetReplicasStore();
 			resetSharesStore(false);
-			resetSearchStore();
+			resetSearchResultsStore();
 
 			listingStore = new ListingStore({
 				id: "listingStore", // For debugging
@@ -434,14 +433,31 @@
         	}
 //    		listingGrid.setSortIndex(0, true);
     		listingGrid.onCanSelect = function(inRowIndex) {
-    			return canSelect(inRowIndex, listingStore, listingGrid);
+    			return canSelect(inRowIndex, listingStore, listingGrid, true);
     		};
     		destinationGrid.onCanSelect = function(inRowIndex) {
-    			return canSelect(inRowIndex, destinationStore, destinationGrid);
+    			return canSelect(inRowIndex, destinationStore, destinationGrid, true);
     		};
-    		function canSelect(inRowIndex, store, grid){
+    		searchResultsGrid.onCanSelect = function(inRowIndex) {
+    			return canSelect(inRowIndex, searchResultsStore, searchResultsGrid, false);
+    		};
+    		function canSelect(inRowIndex, store, grid, directoryListing){
     			if (!store)
     				return false;
+
+    			if (!directoryListing) 
+					if (inRowIndex == store._numRows-1) { // If last row
+//						if (store._numRows > 1)  // Can select last row if dir is definitely not empty - there won't be a "dir empty" row
+//							return true;
+//					 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
+//						// dir listing with more than a page's worth of items. 
+//						// If 0 or 1 item, should be safe to call getValue to check the row's type.
+	    				var name = store.getValue(grid.getItem(inRowIndex), "name"); 
+	    				if (name.type == "bottom")
+	    					return false;
+	    				return true;
+					}
+
     			if (inRowIndex == 0) // Can't select ... Parent Directory row
     				return false;
 				if (inRowIndex == store._numRows-1) { // If last row
@@ -502,8 +518,8 @@
 			sharesStore = resetStore(sharesStore, sharesGrid, sharesLayout, fast);
 		}
 		
-		function resetSearchStore(fast) { 
-			searchStore = resetStore(searchStore, searchResultsGrid, searchResultsLayout, fast);
+		function resetSearchResultsStore(fast) { 
+			searchResultsStore = resetStore(searchResultsStore, searchResultsGrid, searchResultsLayout, fast);
 		}
 		
 		function resetDomainsStore() { 
@@ -2204,14 +2220,17 @@
 			var from = dojo.byId('searchFromRootRadioButton').checked ? "root" : "current";
 			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
 			var fileKeyword = dojo.byId('searchFileInputBox').value;
+			var pathKeyword = dojo.byId('searchPathInputBox').value;
 			var metadataKeyword = dojo.byId('searchMetadataInputBox').value;
+			var fileMatch = dojo.byId('searchFileExactRadioButton').checked ? "exact" : "inexact";
+			var pathMatch = dojo.byId('searchPathExactRadioButton').checked ? "exact" : "inexact";
 		  	dojo.xhrPost({
-	    		url: "?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&metadata="+metadataKeyword,
+	    		url: "?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword+"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadata="+metadataKeyword,
 	    		load: function(responseObject, ioArgs){    
 	 					cursorBusy(false);
-						searchStore=new dojo.data.ItemFileWriteStore({data: responseObject});
-						searchGrid.setStore(searchStore);	 
-						searchGrid.selection.deselectAll();     			
+						searchResultsStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						searchResultsGrid.setStore(searchResultsStore);	 
+						searchResultsGrid.selection.deselectAll();     			
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
@@ -2561,8 +2580,16 @@
 							<table style="width: 100%;">
 								<tr><td>&nbsp;</td></tr>
 								<tr>
-        							<td><i>File/collection&nbsp;keyword:</i></td>
+        							<td><i>File/Collection&nbsp;keyword:</i></td>
 									<td><input id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td><input type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase</td>
+									<td><input type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+								<tr>
+        							<td><i>Path&nbsp;keyword:</i></td>
+									<td><input id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td><input type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase</td>
+									<td><input type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i>Metadata&nbsp;keyword:</i></td>
@@ -2592,7 +2619,7 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogSearchResults" title="Search results">
+<!-- <div dojoType="dijit.Dialog" jsId="dialogSearchResults" title="Search results">
 	<table>
 		<tr>
 			<td colspan="2" align="right" valign="bottom">
@@ -2600,7 +2627,7 @@
 			</td>
 		</tr>
 	</table>
-</div>
+</div>-->
 <div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
