@@ -1025,7 +1025,7 @@ System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+"
 	//				metadata = getIRODSCollectionMetadata(collection);
 	//			Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
 				MetaDataCondition conditionsFile[] = {
-					MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.LIKE, keyword),
+					MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword),
 					MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword),
 //					MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getAbsolutePath()),
 //					MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
@@ -1073,8 +1073,7 @@ System.err.println("%%%%build cache");
 System.err.println("%%%%fileList.length="+fileList.length);
 					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false));
 				} catch (SocketTimeoutException e) {
-					s = "Server search query timedout";
-					Log.log(Log.ERROR, s);
+					s = "Search query took too long - aborted.";
 					response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT, s);
 					return;
 				}

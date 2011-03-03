@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ProtocolException;
@@ -12,7 +13,13 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+
+import javax.swing.SwingUtilities;
 
 import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.GeneralMetaData;
@@ -40,6 +47,8 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  *
  */
 public class FSUtilities {
+	
+	public static final int PINGTIMEOUT = 20*1000;	// Timeout for Jargon server-alive ping test in ms
 	
 	public static SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
 
@@ -697,30 +706,93 @@ System.err.println("************dirs:"+dirs.length);
 	 * @param davisSession
 	 * @return String Null if connection is ok, an exception message if not.
 	 */
-	public static String testConnection(DavisSession davisSession) {
+	public static String testConnection(final DavisSession davisSession) {
 		
 		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
 			return null;
 		
+		//String message = null;
+		
+		Callable <String> callable = new Callable<String>() {
+			public String call() throws java.io.InvalidObjectException {
+				String message = "ok";
+				try {
+System.err.println("********* calling miscserverinfo");
+					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+System.err.println("********* finished miscserverinfo");
+				} catch (ProtocolException e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "ProtocolException";
+				} catch (SocketException e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "SocketException";
+				} catch (Exception e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "Exception";
+					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+				}
+System.err.println("********* returning message="+message);
+				return message;
+			}
+		};
+		
+		FutureTask <String>task = new FutureTask<String>(callable);
+System.err.println("********* running task");
+		task.run();
+System.err.println("********* task is running");
 		String message = null;
-
 		try {
-			((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-		} catch (ProtocolException e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "ProtocolException";
-		} catch (SocketException e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "SocketException";
+System.err.println("********* getting message");
+			message = task.get(PINGTIMEOUT, TimeUnit.MILLISECONDS);
+System.err.println("********* got message="+message);
 		} catch (Exception e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "Exception";
-			Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+			message = "IOException";
 		}
-		return message;
+System.err.println("********* message is "+message);
+		if (message == null) {
+			task.cancel(true);
+			return "timeout";
+		}
+		if (message.equals("ok"))
+			message = null;
+		if (task.isDone())
+			return message;
+System.err.println("********* task not done");
+		return "timeout";
+		
+//		Runnable runnable = new Runnable() { 
+//			private String message = null;
+//			public void run() {  
+//				try {
+//					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+//				} catch (ProtocolException e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "ProtocolException";
+//				} catch (SocketException e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "SocketException";
+//				} catch (Exception e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "Exception";
+//					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+//				}
+//				thread.setMessage(message);
+//			}
+//		};
+//		MessageRunnable messageRunnable = new MessageRunnable(runnable);
+//		thread = new MessageThread(runnable);
+//
+////		thread.setDaemon(true);
+//		thread.start();				
+//		thread.join(PINGTIMEOUT);
+//		
+//		return thread.getMessage();
 	}
 	
 	public static String escapeJSONArg(String s) {
@@ -817,5 +889,25 @@ System.err.println("*****************start="+start);
 System.err.println("!!!!!!!!!returning json:"+json);
 		return json.toString();
 	}
+
+//	private class MessageRunnable implements Runnable {
+//
+//		private String message = null;
+//		private Runnable run = null;
+//		
+//		public MessageRunnable(Runnable run) {
+//			this.run = run;
+//		}
+//		
+//		public void run() {this.run();}
+//
+//		public void setMessage(String message) {
+//			this.message = message;
+//		}
+//		
+//		public String getMessage() {
+//			return message;
+//		}
+//	}
 }
 

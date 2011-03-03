@@ -98,7 +98,7 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		davisConfig = new DavisConfig();
 		getConfig().initConfig(config);
-		IRODSConstants.CONNECTION_TIMEOUT_VALUE = 30000;	// Jargon <-> irods socket operations should timeout after this many ms
+		IRODSConstants.CONNECTION_TIMEOUT_VALUE = /*30000*/5*60*1000;	// Jargon <-> irods socket operations should timeout after this many ms
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
