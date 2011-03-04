@@ -233,19 +233,22 @@
 		    listingLayoutMetadataField = 4; // This MUST be the layout row for "metadata" below
 	    	listingLayout = [
 	    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
-	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
+	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate, styles: "padding-right: 5px;"},
 	    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
 	    	 	   	{field: "sharing", width: "15%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
 	    	 	   	{field: "metadata", width: "15%", name: " ", formatter: gridFormatMetadata, hidden: false}
 	    	 	];
+    	 	
 	    	destinationLayout = [
-	    	        {field: "name", width: "50%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
+	    	        {field: "name", width: "100%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
 	    	    ];	
+    	    
 	    	searchResultsLayout = [
-	    		    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
-	    		    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
+	    		    	 	   	{field: "name", width: "25%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
+	    		    	 	   	{field: "date", width: "19%", name: "Last Modified", formatter: gridFormatDate, styles: "padding-right: 5px;"},
 	    		    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
-	    		    	 	   	{field: "sharing", width: "15%", name: "QuickShare", formatter: gridFormatSharing, hidden: false}
+	    		    	 	   	{field: "sharing", width: "11%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
+	    		    	 	   	{field: "name", width: "35%", name: "Parent", formatter: gridFormatParent, styles: "text-align: left;"}
 	    		    	 	];
 
 	    	resetMetadataStore();
@@ -415,6 +418,7 @@
     		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){
     			refreshButtons();
     		});  		
+			dojo.connect(searchResultsGrid, 'onClick', function(e) {refreshSearchDialog()});
 		}
 		
 		function initWidgets() {
@@ -495,6 +499,7 @@
     		}
     		dialogMetadata.closeButtonNode.title = "Close";
     		dialogPermissions.closeButtonNode.title = "Close";
+    		dialogSearch.closeButtonNode.title = "Close";
 
     		var buttons = document.body.getElementsByTagName('BUTTON');
     		// The following seems to be necessary for mozilla based browsers on linux. Some buttons start disabled for some reason.
@@ -629,6 +634,18 @@
 		function gridFormatFileDestination(value) {
 			return gridFormatFile(value, destinationStore, "destinationStore", false);
 		}
+		function gridFormatParent(value) {
+			if (value.type == "bottom")
+				return "";
+			var parent = value.parent;
+//			if (parent == '/')
+//				parent = '';
+			var s = '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+	           'onclick="listingStore.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(parent)))+'\', true); return false" '+
+	           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(parent)))+'">'+
+	           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;<small><small>'+parent+'</small></small></a>';
+	          return s;
+		}
 
 		function gridFormatFile(value, store, storeName, addToHistory) {
 			var filename = decodeURIComponent(value.name);
@@ -659,7 +676,7 @@
 		function gridFormatDate(value) {
 			if (value.type == "top" || value.type == "bottom") // Static row?
 				return "";
-			return '<small><small>'+value.value/*.toUTCString()*/+'</small></small>';
+			return '<span style="font-size:xx-small;">'+value.value/*.toUTCString()*/+'</span>';
 		}
 
 		function gridFormatSize(value) {
@@ -2221,11 +2238,16 @@
 			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
 			var fileKeyword = dojo.byId('searchFileInputBox').value;
 			var pathKeyword = dojo.byId('searchPathInputBox').value;
-			var metadataKeyword = dojo.byId('searchMetadataInputBox').value;
+			var metadataNameKeyword = dojo.byId('searchMetadataNameInputBox').value;
+			var metadataValueKeyword = dojo.byId('searchMetadataValueInputBox').value;
 			var fileMatch = dojo.byId('searchFileExactRadioButton').checked ? "exact" : "inexact";
 			var pathMatch = dojo.byId('searchPathExactRadioButton').checked ? "exact" : "inexact";
+			var metadataNameMatch = dojo.byId('searchMetadataNameExactRadioButton').checked ? "exact" : "inexact";
+			var metadataValueMatch = dojo.byId('searchMetadataValueExactRadioButton').checked ? "exact" : "inexact";
 		  	dojo.xhrPost({
-	    		url: "?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword+"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadata="+metadataKeyword,
+	    		url: listingStore.getCurrentDirectory()+"?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword
+	    		      +"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadataName="+metadataNameKeyword+"&metadataValue="+metadataValueKeyword
+	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
 	    		load: function(responseObject, ioArgs){    
 	 					cursorBusy(false);
 						searchResultsStore=new dojo.data.ItemFileWriteStore({data: responseObject});
@@ -2241,6 +2263,23 @@
 	    		sync: synchronous,
 	    		handleAs: "json"
 	  		});		
+		}
+
+		function refreshSearchDialog() {
+			showSearchItemDetails();
+		}
+
+		function showSearchItemDetails() {
+			var i = searchResultsGrid.selection.selected.length;
+			var s = "";
+			if (i > 0) {
+				var item = searchResultsGrid.selection.getFirstSelected();
+				s = "<br>Item details:<br><br>";
+				s += "Path: "+item.name[0].parent+"/"+item.name[0].name+"<br>";
+				s += "Last Modified: "+item.date[0].value+" &nbsp;&nbsp;&nbsp;&nbsp;";
+				s += "Size: "+humanReadable(item.size[0].size);
+			}
+			dojo.html.set(dojo.byId("searchDetails"), s);
 		}
 
 		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
@@ -2549,7 +2588,7 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 85%; max-height:90%;">
+<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%;">
 	<table style="width: 100%; border: 0px solid red;">
 		<tr>
 			<td>
@@ -2568,7 +2607,7 @@
 									<td><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
 								</tr>
 								<tr>
-									<td><i>Show all files:</i></td>
+									<td><i>Show files:</i></td>
 									<td><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
 									<td><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
 								</tr>
@@ -2582,19 +2621,22 @@
 								<tr>
         							<td><i>File/Collection&nbsp;keyword:</i></td>
 									<td><input id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
-									<td><input type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase</td>
-									<td><input type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i>Path&nbsp;keyword:</i></td>
 									<td><input id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
-									<td><input type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase</td>
-									<td><input type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i>Metadata&nbsp;keyword:</i></td>
-									<td><input id="searchMetadataInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
-									<td width="100%" align="right"><button align="right" "type="button" id="startSearchButton" onclick="startSearch()">Search</button></td>
+        							<td><i>Metadata&nbsp;name&nbsp;keyword:</i></td>
+									<td><input id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+								<tr>
+        							<td><i>Metadata&nbsp;value&nbsp;keyword:</i></td>
+									<td><input id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 							</table>
         				</td>
@@ -2604,17 +2646,18 @@
 		</tr>
 		<tr><td>&nbsp;</td></tr>
 		<tr>
-			<td colspan="3" style="border: lightgray groove;">
-				<div style="width: 100%; min-height: 100px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single" onRowClick=""></div>
+			<td style="border: lightgray groove;">
+				<div style="width: 100%; min-height: 200px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single"></div>
 			</td>
 		</tr>
 		<tr>
-			<td><br>Item details:<br><span id="searchDetails"></span></td>
+			<td><span id="searchDetails"></span></td>
 		</tr>
 		<tr><td>&nbsp;</td></tr>
 		<tr>
 			<td colspan="3" align="right" valign="bottom">
-				<button type="button" onclick="dialogSearch.hide()">Cancel</button>
+				<button align="right" "type="button" id="startSearchButton" onclick="startSearch()">Search</button>
+				<button type="button" onclick="dialogSearch.hide()">Close</button>
 			</td>
 		</tr>
 	</table>
