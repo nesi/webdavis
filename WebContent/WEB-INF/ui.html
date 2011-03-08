@@ -1741,6 +1741,11 @@
 			var data=listToJSON();
 			data = data.substring(0, data.length-2);	// Trim '}]' off end 
 			data += ",\"metadata\":[";
+			
+		  if (metadataGrid.rowCount > 0) {
+			  metadataGrid.doclick(metadataGrid.getItem(0));
+		  }
+						
 			for (var i = 0; i < metadataGrid.rowCount; i++){
 				if (i > 0) 
 					data += ",";
