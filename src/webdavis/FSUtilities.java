@@ -91,7 +91,6 @@ public class FSUtilities {
         if (dir) name = name.substring(0, name.length() - 1);
         StringBuffer buffer = new StringBuffer();
         char[] chars = name.toCharArray();
-        int count = chars.length;
         for (int i = 0; i < chars.length; i++) {
             if (chars[i] > 0x7f || ESCAPED[chars[i]]) {
                 byte[] bytes = new String(chars, i, 1).getBytes("UTF-8");
@@ -856,7 +855,7 @@ System.err.println("*****************start="+start);
 				if (values != null)
 					sharingValue = values.get(0);
 			}
-			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+escapeJSONArg(fileList[i].getParent())+"}"
+			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+"\""+escape/*JSONArg*/(fileList[i].getParent())+"\""+"}"
 					+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 					+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i].length())+",\"type\":"+escapeJSONArg(type)+"},"
 					+"\"sharing\":{\"value\":"+escapeJSONArg(sharingValue)+",\"type\":"+escapeJSONArg(type)+"},"
@@ -873,8 +872,8 @@ System.err.println("*****************start="+start);
 					for (int k = 0; k < values.size(); k++) {
 						if (k > 0)
 							json.append(",\n");
-						json.append("    {" + escapeJSONArg("name") + ":" + escapeJSONArg(name) + "," + escapeJSONArg("value") + ":"
-								+ escapeJSONArg(values.get(k)) + "}");
+						json.append("    {"+escapeJSONArg("name")+":"+"\""+escapeJSONArg(name)+"\""+","+escapeJSONArg("value")+":"
+								+"\""+escapeJSONArg(values.get(k))+"\""+"}");
 					}
 				}
 			}

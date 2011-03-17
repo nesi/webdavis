@@ -244,7 +244,7 @@
 	    	    ];	
     	    
 	    	searchResultsLayout = [
-	    		    	 	   	{field: "name", width: "25%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
+	    		    	 	   	{field: "name", width: "25%", name: "Name", formatter: gridFormatFileSearchResults, styles: "text-align: left;"},
 	    		    	 	   	{field: "date", width: "19%", name: "Last Modified", formatter: gridFormatDate, styles: "padding-right: 5px;"},
 	    		    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
 	    		    	 	   	{field: "sharing", width: "11%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
@@ -260,7 +260,7 @@
 			resetSearchResultsStore();
 
 			listingStore = new ListingStore({
-				id: "listingStore", // For debugging
+				id: "listingStore", 
 				grid: listingGrid,
 				lastSort : null,
 				directory: escape("<parameter url/>"),
@@ -342,7 +342,7 @@
 			listingGrid.setStore(listingStore);
 	    		    	
 			destinationStore = new ListingStore({
-				id: "destinationStore", // For debugging
+				id: "destinationStore", 
 				grid: destinationGrid,
 				directory:escape("<parameter url/>"),
 				_fetchItems: function(request) {
@@ -450,7 +450,7 @@
     				return false;
 
     			if (!directoryListing) 
-					if (inRowIndex == store._numRows-1) { // If last row
+					if (inRowIndex == /*store._numRows*/grid.rowCount-1) { // If last row
 //						if (store._numRows > 1)  // Can select last row if dir is definitely not empty - there won't be a "dir empty" row
 //							return true;
 //					 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
@@ -460,7 +460,8 @@
 	    				if (name.type == "bottom")
 	    					return false;
 	    				return true;
-					}
+					} else
+						return true;
 
     			if (inRowIndex == 0) // Can't select ... Parent Directory row
     				return false;
@@ -525,6 +526,7 @@
 		
 		function resetSearchResultsStore(fast) { 
 			searchResultsStore = resetStore(searchResultsStore, searchResultsGrid, searchResultsLayout, fast);
+			searchResultsStore.id = "searchResultsStore";
 		}
 		
 		function resetDomainsStore() { 
@@ -629,33 +631,42 @@
 		}
 		
 		function gridFormatFileListing(value) {
-			return gridFormatFile(value, listingStore, "listingStore", true);
+			return gridFormatFile(value, listingStore, /*"listingStore",*/ true, true);
 		}
 		function gridFormatFileDestination(value) {
-			return gridFormatFile(value, destinationStore, "destinationStore", false);
+			return gridFormatFile(value, destinationStore, /*"destinationStore",*/ false, true);
+		}
+		function gridFormatFileSearchResults(value) {
+			return gridFormatFile(value, listingStore, /*"listingStore",*/ true, false);
 		}
 		function gridFormatParent(value) {
 			if (value.type == "bottom")
 				return "";
-			var parent = value.parent;
+			var parent = decodeURIComponent(value.parent);
 //			if (parent == '/')
 //				parent = '';
 			var s = '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-	           'onclick="listingStore.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(parent)))+'\', true); return false" '+
-	           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(parent)))+'">'+
+	           'onclick="listingStore.gotoDirectory(\''+escapeString(encodeURIComponent(parent))+'\', true); return false" '+
+	           'href="'+baseURL+escapeString(encodeURI(parent))+'">'+
 	           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;<small><small>'+parent+'</small></small></a>';
 	          return s;
 		}
 
-		function gridFormatFile(value, store, storeName, addToHistory) {
+		function gridFormatFile(value, store, addToHistory, relativeToStore) {
 			var filename = decodeURIComponent(value.name);
+			var storeName = store.id;
+			var directory;
+			if (relativeToStore)
+				directory = store.getCurrentDirectory();
+			else
+				directory = value.parent;
 			var separator = '/';
-			if (store.getCurrentDirectory() == '/')
+			if (/*store.getCurrentDirectory()*/directory == '/')
 				separator = '';
 			if (value.type == "top" ) // "... Parent Directory" 
 				return '<a class="link" '+
-				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'\','+addToHistory+'); return false" '+
-				           'href="'+escapeString(encodeURI(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'">'+filename+'</a>';
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(/*store.getCurrentDirectory()*/directory))))+'\','+addToHistory+'); return false" '+
+				           'href="'+escapeString(encodeURI(getParent(decodeURIComponent(/*store.getCurrentDirectory()*/directory))))+'">'+filename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
 				return '<i>'+filename+'</i>';
 			var f = filename;
@@ -663,14 +674,15 @@
 				f = '';
 			if (value.type == "d") 
 				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURIComponent(f))+'\','+addToHistory+'); return false" '+
-				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURI(f))+'">'+
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(/*store.getCurrentDirectory()*/directory)))+separator+escapeString(encodeURIComponent(f))+'\','+addToHistory+'); return false" '+
+				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(/*store.getCurrentDirectory()*/directory)))+separator+escapeString(encodeURI(f))+'">'+
 				           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
-			else 
+			else {
 				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-				           'onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(value.name)+'\'); return false" '+
-				           'href="'+store.getCurrentDirectory()+separator+value.name+'">'+
+				           'onclick="window.open('+decodeURIComponent(directory)/*storeName+'.getCurrentDirectory()'*/+'+\'/'+escapeString(value.name)+'\'); return false" '+
+				           'href="'+/*store.getCurrentDirectory()*/decodeURIComponent(directory)+separator+value.name+'">'+
 				           '<img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
+			}
 		}
 		
 		function gridFormatDate(value) {
@@ -2270,12 +2282,12 @@
 		}
 
 		function showSearchItemDetails() {
-			var i = searchResultsGrid.selection.selected.length;
+			//var i = searchResultsGrid.selection.selected.length;
 			var s = "";
-			if (i > 0) {
+			if (searchResultsGrid.selection.selectedIndex > -1) {
 				var item = searchResultsGrid.selection.getFirstSelected();
 				s = "<br>Item details:<br><br>";
-				s += "Path: "+item.name[0].parent+"/"+item.name[0].name+"<br>";
+				s += "Path: "+decodeURIComponent(item.name[0].parent)+"/"+decodeURIComponent(item.name[0].name)+"<br>";
 				s += "Last Modified: "+item.date[0].value+" &nbsp;&nbsp;&nbsp;&nbsp;";
 				s += "Size: "+humanReadable(item.size[0].size);
 			}

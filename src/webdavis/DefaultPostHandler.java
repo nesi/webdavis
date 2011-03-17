@@ -1045,7 +1045,7 @@ System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+"
 
 				if (!fromRoot) {
 					String currentDir = file.getAbsolutePath();
-					System.err.println("$$$$$$$$$$$$ currentdir="+currentDir);
+System.err.println("$$$$$$$$$$$$ currentdir="+currentDir);
 					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, currentDir+"%"));
 					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, currentDir+"%"));
 				}
