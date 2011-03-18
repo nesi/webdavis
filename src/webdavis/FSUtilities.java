@@ -872,8 +872,8 @@ System.err.println("*****************start="+start);
 					for (int k = 0; k < values.size(); k++) {
 						if (k > 0)
 							json.append(",\n");
-						json.append("    {"+escapeJSONArg("name")+":"+"\""+escapeJSONArg(name)+"\""+","+escapeJSONArg("value")+":"
-								+"\""+escapeJSONArg(values.get(k))+"\""+"}");
+						json.append("    {"+escapeJSONArg("name")+":"+escapeJSONArg(name)+","+escapeJSONArg("value")+":"
+								+escapeJSONArg(values.get(k))+"}");
 					}
 				}
 			}
