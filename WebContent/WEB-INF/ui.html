@@ -190,7 +190,7 @@
 		var destinationStore;
 		var sharesStore;
 		var searchResultsStore;
-		
+
 		function initVariables() {
 			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
 		    	[{
@@ -331,7 +331,7 @@
 							if (name.type == "bottom")
 								items--;
 						}
-						setStatusPanel(items+" items listed, "+selectedItemsCount()+" items selected");
+						setStatusPanel(pluralItemsString(items)+" listed, "+pluralItemsString(selectedItemsCount())+" selected");
 					}
 					if (doMetadata)
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
@@ -412,13 +412,10 @@
     		dojo.connect(sharesGrid, 'onHeaderClick', function(e){
     			sharesGrid.selection.deselectAll(); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
     		});  		
-    		dojo.connect(dojo.byId("shareRadioButton"), 'onClick', function(e){
-    			refreshButtons();
-    		});  		
-    		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){
-    			refreshButtons();
-    		});  		
-			dojo.connect(searchResultsGrid, 'onClick', function(e) {refreshSearchDialog()});
+    		dojo.connect(dojo.byId("shareRadioButton"), 'onClick', function(e){refreshButtons();});  		
+    		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){refreshButtons();});  		
+			dojo.connect(searchResultsGrid, 'onClick', function(e) {refreshSearchDialog();});
+			dojo.connect(window, "onresize", function(e) {refreshSearchDialog();}); // Search results grid must auto resize when window resizes
 		}
 		
 		function initWidgets() {
@@ -478,26 +475,38 @@
 				}
     		};
     		// Re-enable the browser's native right click context menu in listingGrid's cells
-    		listingGrid.onRowContextMenu = function(e) {
-    		};
+    		listingGrid.onRowContextMenu = function(e) {};
+    		searchResultsGrid.onRowContextMenu = function(e) {}; // Note: this only seems to work if HeaderMenu is set
+    		
     		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
         		if (listingGrid.focus._colHeadNode)
       				listingGrid.focus.inherited("blurHeader", arguments);
     		}
     		listingGrid.fastScroll = false;
     		// This stops the column select menu from popping up when right clicking anywhere other than the header bar
-  			gridMenu._openMyself= function(e, cn, iframe){ 
+  			gridListingMenu._openMyself= function(e, cn, iframe){ 
 				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
-	 				gridMenu.inherited("_openMyself", arguments);
+	 				gridListingMenu.inherited("_openMyself", arguments);
+  			}
+  			searchResultsMenu._openMyself= function(e, cn, iframe){ 
+				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
+	 				searchResultsMenu.inherited("_openMyself", arguments);
   			}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the domNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
-    		columnMenu.oldUnReplace = columnMenu.unReplace;
-    		columnMenu.unReplace = function(destroy) {
+    		listingColumnMenu.oldUnReplace = listingColumnMenu.unReplace;
+    		listingColumnMenu.unReplace = function(destroy) {
     			if (this.domNode != null)
-    				columnMenu.oldUnReplace(destroy);
+    				listingColumnMenu.oldUnReplace(destroy);
     		}
+    		searchResultsColumnMenu.oldUnReplace = searchResultsColumnMenu.unReplace;
+    		searchResultsColumnMenu.unReplace = function(destroy) {
+    			if (this.domNode != null)
+    				searchResultsColumnMenu.oldUnReplace(destroy);
+    		}
+    		searchResultsGrid.setSortIndex(0, true);
+ 
     		dialogMetadata.closeButtonNode.title = "Close";
     		dialogPermissions.closeButtonNode.title = "Close";
     		dialogSearch.closeButtonNode.title = "Close";
@@ -527,6 +536,7 @@
 		function resetSearchResultsStore(fast) { 
 			searchResultsStore = resetStore(searchResultsStore, searchResultsGrid, searchResultsLayout, fast);
 			searchResultsStore.id = "searchResultsStore";
+			initSearchResultsStore();
 		}
 		
 		function resetDomainsStore() { 
@@ -556,6 +566,14 @@
 			grid.setStructure(layout);	
 			grid.setStore(store);	
 			return store;
+		}
+
+		function initSearchResultsStore() {
+//			searchResultsStore.comparatorMap = {};
+//			searchResultsStore.comparatorMap["name"] = function(a,b){
+//		//alert("here");
+//				return 1;
+//			}
 		}
 		
 		function addOption(selectName, value, text, title) {
@@ -678,10 +696,12 @@
 				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(/*store.getCurrentDirectory()*/directory)))+separator+escapeString(encodeURI(f))+'">'+
 				           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
 			else {
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-				           'onclick="window.open('+decodeURIComponent(directory)/*storeName+'.getCurrentDirectory()'*/+'+\'/'+escapeString(value.name)+'\'); return false" '+
+				var s = '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+				           'onclick="window.open(\''+decodeURIComponent(directory)+'/'+escapeString(value.name)+'\'); return false" '+
 				           'href="'+/*store.getCurrentDirectory()*/decodeURIComponent(directory)+separator+value.name+'">'+
 				           '<img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
+		//alert("s="+s);
+		return s;
 			}
 		}
 		
@@ -920,6 +940,14 @@
 			}
 	   		return Math.round(n)+multipliers[multiplier];
     	}
+
+    	function pluralItemsString(n) {
+			if (n == 0)
+				return "no items";
+			if (n == 1)
+				return "1 item";
+			return n+" items";
+        }
 
 		function getParent(dir) {
 			if (dir.length == 0)
@@ -1322,6 +1350,7 @@
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 			enableButton('unshareButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			enableButton('generateLinksButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
+			refreshSearchDialog();
 		}
 		
 		function setStatusPanel(html) {
@@ -2246,6 +2275,7 @@
 
 		function startSearch() {
 			cursorBusy(true);	
+			setSearchItemDetails("");
 			var from = dojo.byId('searchFromRootRadioButton').checked ? "root" : "current";
 			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
 			var fileKeyword = dojo.byId('searchFileInputBox').value;
@@ -2262,9 +2292,11 @@
 	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
 	    		load: function(responseObject, ioArgs){    
 	 					cursorBusy(false);
-						searchResultsStore=new dojo.data.ItemFileWriteStore({data: responseObject});
+						searchResultsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
+						initSearchResultsStore();
 						searchResultsGrid.setStore(searchResultsStore);	 
 						searchResultsGrid.selection.deselectAll();     			
+						refreshSearchDialog();
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
@@ -2278,19 +2310,57 @@
 		}
 
 		function refreshSearchDialog() {
+			searchResultsGrid.update();
+			enableButton('startSearchButton', listingStore.isValid());
 			showSearchItemDetails();
 		}
 
 		function showSearchItemDetails() {
-			//var i = searchResultsGrid.selection.selected.length;
-			var s = "";
+			var nResults = searchResultsGrid.rowCount;
+			if (nResults == 1) { // Might be "No matches"
+   				var name = searchResultsStore.getValue(searchResultsGrid.getItem(0), "name"); 
+   				if (name.type == "bottom")
+					nResults = 0;
+			}
+			var s = '<small><small><div style="margin:0px; padding:3px; background-color:#E8E8E8; border: 1px dotted grey; border-top-width:0px;">'+pluralItemsString(nResults)+' found</div><br>';
+			s += 'Current collection is: <span id="searchFromCurrentCollection"></span></small></small></b>';
+			
 			if (searchResultsGrid.selection.selectedIndex > -1) {
 				var item = searchResultsGrid.selection.getFirstSelected();
-				s = "<br>Item details:<br><br>";
-				s += "Path: "+decodeURIComponent(item.name[0].parent)+"/"+decodeURIComponent(item.name[0].name)+"<br>";
-				s += "Last Modified: "+item.date[0].value+" &nbsp;&nbsp;&nbsp;&nbsp;";
-				s += "Size: "+humanReadable(item.size[0].size);
+				s += '<table style="font-size:small; padding-top:10px;">';
+				//s +=        '<tr><td><b>Item details:</b><br></td></tr>';
+				s +=        '<tr>';
+				s +=        	'<td><i><b>Path:</b></i></td>';
+				s += 			'<td>'+decodeURIComponent(item.name[0].parent)+'/'+decodeURIComponent(item.name[0].name)+'</td></tr>';
+				s +=        '<tr>';
+				s +=        	'<td><i><b>Last Modified:</b></i></td>';
+				s += 			'<td>'+item.date[0].value+'</td></tr>';
+				s +=		'<tr>';
+				s +=			'<td><i><b>Size:</b></i></td>';
+				s +=			'<td>'+humanReadable(item.size[0].size)+'</td></tr>';
+				s +=		'<tr>';
+				s +=     		'<td valign="top"><b>Metadata:</b></td>';
+				//s +=        '<tr><td colspan="10" style="padding-left:30px;">';
+				s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px;">';
+				for (var i = 0; i < item.metadata.length; i++) {
+					for (var j = 0; j < item.metadata[i].values.length; j++) {
+						var m = item.metadata[i].values[j]
+						s +=     	'<tr style="white-space: nowrap;">';
+						s +=     		'<td style="padding-right:20px;"><i><b>Name: </b></i>'+decodeURIComponent(m.name)+'</td>';
+						s +=     		'<td><i><b>Value: </b></i>'+decodeURIComponent(m.value)+'</td>';
+						s += 		'</tr>';
+					}
+				}
+				s +=		'    </table></td></tr>';
+				s += '</table>';
 			}
+			setSearchItemDetails(s);
+			var o = dojo.byId("searchFromCurrentCollection");
+			if (o)
+				dojo.html.set(o, listingStore.getCurrentDirectory());
+		}
+
+		function setSearchItemDetails(s) {
 			dojo.html.set(dojo.byId("searchDetails"), s);
 		}
 
@@ -2489,6 +2559,12 @@
 
 
 <!-- -------------- Dialogs -------------- -->
+<div dojoType="dijit.Menu" jsId="gridListingMenu" id="gridListingMenu" style="display: none;">
+	<div jsId="listingColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+</div>
+<div dojoType="dijit.Menu" jsId="searchResultsMenu" id="searchResultsMenu" style="display: none;">
+	<div jsId="searchResultsColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+</div>
 <div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
 	<input name="directory" id="directoryInputBox" jsId="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -2601,53 +2677,41 @@
 	</table>
 </div>
 <div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%;">
-	<table style="width: 100%; border: 0px solid red;">
+	<table  cellpadding="0" cellspacing="0" style="width: 100%;">
 		<tr>
 			<td>
-				<table style="width: 100%;">
+				<table cellpadding="0" cellspacing="0" style="width: 100%; font-size:small; padding-bottom:10px;">
 					<tr>
 						<td>
-							<table>
-								<!-- <tr>
-									<td><i>Search:</i></td>
-									<td><input type="radio" name="searchWhatRadioButtons" value="files" onClick="refreshButtons()" checked >files and collections</td>
-									<td><input type="radio" name="searchWhatRadioButtons" value="metadata" onClick="refreshButtons()">metadata</td>
-								</tr>-->
-								<tr>
-									<td><i>Search from:</i></td>	
-									<td><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
-									<td><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
+							<table style="margin:0px; padding:0px;">
+								<tr style="padding:0px; margin:0px;">
+									<td nowrap="nowrap"><i><b>Search from:</b></i></td>	
+									<td nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
+									<td nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
 								</tr>
 								<tr>
-									<td><i>Show files:</i></td>
+									<td><i><b>Show files:</b></i></td>
 									<td><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
 									<td><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
 								</tr>
-							</table>
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<table style="width: 100%;">
-								<tr><td>&nbsp;</td></tr>
 								<tr>
-        							<td><i>File/Collection&nbsp;keyword:</i></td>
-									<td><input id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+        							<td><i><b>File/Collection&nbsp;keyword:</b></i></td>
+									<td colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i>Path&nbsp;keyword:</i></td>
-									<td><input id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+        							<td><i><b>Path&nbsp;keyword:</b></i></td>
+									<td colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i>Metadata&nbsp;name&nbsp;keyword:</i></td>
-									<td><input id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+        							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
+									<td colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i>Metadata&nbsp;value&nbsp;keyword:</i></td>
-									<td><input id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+        							<td><i><b>Metadata&nbsp;value&nbsp;keyword:</b></i></td>
+									<td colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 							</table>
@@ -2656,16 +2720,15 @@
 				</table>
 			</td>
 		</tr>
-		<tr><td>&nbsp;</td></tr>
 		<tr>
 			<td style="border: lightgray groove;">
-				<div style="width: 100%; min-height: 200px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single"></div>
+				<div style="width: 100%; min-height: 200px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" 
+					id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single" headerMenu="searchResultsMenu"></div>
 			</td>
 		</tr>
 		<tr>
-			<td><span id="searchDetails"></span></td>
+			<td id="searchDetails"></td>
 		</tr>
-		<tr><td>&nbsp;</td></tr>
 		<tr>
 			<td colspan="3" align="right" valign="bottom">
 				<button align="right" "type="button" id="startSearchButton" onclick="startSearch()">Search</button>
@@ -2674,15 +2737,6 @@
 		</tr>
 	</table>
 </div>
-<!-- <div dojoType="dijit.Dialog" jsId="dialogSearchResults" title="Search results">
-	<table>
-		<tr>
-			<td colspan="2" align="right" valign="bottom">
-				<button type="button" onclick="dialogSearchResults.hide()">Close</button>
-			</td>
-		</tr>
-	</table>
-</div>-->
 <div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
@@ -2755,14 +2809,10 @@
 		<button type="button" onclick="dialogHelp.hide()">Close</button>
 	</div>
 </div>					
-<div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
-	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
-</div>
 
 
 
 <!-- ---------Main body------------ -->			
-<!--<div style="width: 400px; height: 500px; border: 1px solid blue;" id="destinationGrid" jsId="destinationGrid" dojoType="dojox.grid.DataGrid" structure="destinationLayout" store="destinationStore" rowsPerPage="50"></div>-->
 <div jsId="borderContainer" dojoType="dijit.layout.BorderContainer" style="width: 100%; height: 100%; border: 0px; padding-top: 0px; padding-bottom: 0px;">
 	<div jsId="topContainer" id="topContainer" dojoType="dijit.layout.ContentPane" region="top" style="border: 0px;">
 		<span id="header">
@@ -2843,26 +2893,12 @@
 	    			<small><small><div class="text" id="displayMetadataHTML" style="padding-top:6px;"></div><br></small></small>
 	    			<div id="currentDirectoryButtonsHTML"></div>
 	    		</td>
-	    		<!-- <td align="right" valign="bottom">
-					<p>&nbsp;</p>
-					<p>&nbsp;</p>
-					<form id="form1" name="form1" method="post" action="">
-	        			<table border="0" cellspacing="2" cellpadding="4">
-	          				<tr>
-	          					<td>
-	          						<input name="search" type="text" id="search" size="30" />
-	          						<input type="submit" name="search_btn" id="search_btn" value="Search" />
-	          					</td>
-	          				</tr>
-	          			</table>
-	          		</form>
-	          	</td> -->
 	        </tr>
 	    </table>
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="center" style="border: 0px solid blue;">
  		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" 
- 				rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'
+ 				rowsPerPage="50" columnReordering="true" headerMenu="gridListingMenu" getColumnTogglingItems='return getColumnMenu()'
  				errorMessage="No Items Loaded"></div> 
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
