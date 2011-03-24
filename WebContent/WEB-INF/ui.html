@@ -101,7 +101,8 @@
 					var evt = this.ownerDocument.createEvent('MouseEvents');
 					evt.initMouseEvent('click', true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
 					this.dispatchEvent(evt);
-				}
+				}	  
+						
 		});
 
 		dojo.addOnUnload(function() {
@@ -2197,7 +2198,7 @@
 			result = listingGrid.inherited("getColumnTogglingItems", arguments);
 			if (listingLayout[listingLayoutMetadataField].hidden == true)
 				result.splice(listingLayoutMetadataField, 1);
-			return result;
+  		return result;
 		}
 
 		function doHelp() {
@@ -2239,6 +2240,25 @@
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
 		}
+	
+		function resetGridColumnsWidth() {
+			if (listingGrid.structure != undefined) {
+		    // Set column width by reading structure.
+		    for (i = 0; i < listingGrid.structure.length; i++) {
+		      var s = listingGrid.structure[i];
+	        listingGrid.setCellWidth(i, s.width); 
+		    }    		
+		    	
+		    // Update views.
+		    if (listingGrid.views != undefined) {
+		      for (i = 0; i < listingGrid.views.views.length; i++) {
+		    	  var w = dojo.query("#listingGrid>div>div.dojoxGridHeader").style('width');
+		    	  listingGrid.views.views[i].viewWidth = w + 'px';
+		    	  listingGrid.views.views[i].update();		    	    	
+		    	}
+		    }    	
+		  }
+		}	
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
 			directory:"",
@@ -2369,6 +2389,7 @@
 				return result;
 			}
 		});
+			
 	</script>
 <parameter includehead/>
 </head>
@@ -2571,10 +2592,10 @@
 	</div>
 </div>					
 <div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
-	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+  <div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div dojoType="dijit.MenuSeparator"></div>
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth();">Reset Columns Width</div>	
 </div>
-
-
 
 <!-- ---------Main body------------ -->			
 <!--<div style="width: 400px; height: 500px; border: 1px solid blue;" id="destinationGrid" jsId="destinationGrid" dojoType="dojox.grid.DataGrid" structure="destinationLayout" store="destinationStore" rowsPerPage="50"></div>-->
