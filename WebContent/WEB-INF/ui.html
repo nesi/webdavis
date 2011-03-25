@@ -2467,23 +2467,23 @@
 			//doDebug();
 		}
 	
-		function resetGridColumnsWidth() {
-			if (listingGrid.structure != undefined) {
-		    // Set column width by reading structure.
-		    for (i = 0; i < listingGrid.structure.length; i++) {
-		      var s = listingGrid.structure[i];
-	        listingGrid.setCellWidth(i, s.width); 
-		    }    		
-		    	
-		    // Update views.
-		    if (listingGrid.views != undefined) {
-		      for (i = 0; i < listingGrid.views.views.length; i++) {
-		    	  var w = dojo.query("#listingGrid>div>div.dojoxGridHeader").style('width');
-		    	  listingGrid.views.views[i].viewWidth = w + 'px';
-		    	  listingGrid.views.views[i].update();		    	    	
-		    	}
-		    }    	
-		  }
+		function resetGridColumnsWidth(grid) {
+			if (grid.structure != undefined) {
+			    // Set column width by reading structure.
+			    for (i = 0; i < grid.structure.length; i++) {
+			    	var s = grid.structure[i];
+		        	grid.setCellWidth(i, s.width); 
+			    }    		
+			    	
+			    // Update views.
+			    if (grid.views != undefined) {
+			      for (i = 0; i < grid.views.views.length; i++) {
+			    	  var w = dojo.query("#"+grid.id+">div>div.dojoxGridHeader").style('width');
+			    	  grid.views.views[i].viewWidth = w + 'px';
+			    	  grid.views.views[i].update();		    	    	
+			    	}
+			    }    	
+		    }
 		}	
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
@@ -2636,9 +2636,14 @@
 <!-- -------------- Dialogs -------------- -->
 <div dojoType="dijit.Menu" jsId="gridListingMenu" id="gridListingMenu" style="display: none;">
 	<div jsId="listingColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div dojoType="dijit.MenuSeparator"></div>
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(listingGrid);">Reset Column Widths</div>	
+</div>
 </div>
 <div dojoType="dijit.Menu" jsId="searchResultsMenu" id="searchResultsMenu" style="display: none;">
 	<div jsId="searchResultsColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div dojoType="dijit.MenuSeparator"></div>
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(searchResultsGrid);">Reset Column Widths</div>	
 </div>
 <div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
@@ -2884,11 +2889,6 @@
 		<button type="button" onclick="dialogHelp.hide()">Close</button>
 	</div>
 </div>					
-<div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
-  <div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
-	<div dojoType="dijit.MenuSeparator"></div>
-	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth();">Reset Columns Width</div>	
-</div>
 
 <!-- ---------Main body------------ -->			
 <div jsId="borderContainer" dojoType="dijit.layout.BorderContainer" style="width: 100%; height: 100%; border: 0px; padding-top: 0px; padding-bottom: 0px;">
