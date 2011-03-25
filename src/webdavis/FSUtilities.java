@@ -847,20 +847,20 @@ System.err.println("*****************start="+start);
 //				continue;
 //			}
 			String type = fileList[i].isDirectory() ? "d" : "f";
-			HashMap<String, ArrayList<String>> metadata = fileList[i].getMetadata();
-			String sharingValue = "";
+/*			String sharingValue = "";
 			String sharingKey = Davis.getConfig().getSharingKey();
 			if (metadata != null && sharingKey != null) {
 				ArrayList<String> values = metadata.get(sharingKey);
 				if (values != null)
 					sharingValue = values.get(0);
-			}
+			}*/
 			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+"\""+escape/*JSONArg*/(fileList[i].getParent())+"\""+"}"
 					+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 					+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i].length())+",\"type\":"+escapeJSONArg(type)+"},"
-					+"\"sharing\":{\"value\":"+escapeJSONArg(sharingValue)+",\"type\":"+escapeJSONArg(type)+"},"
+					+"\"sharing\":{\"value\":"+escapeJSONArg(/*sharingValue*/fileList[i].getSharingValue())+",\"type\":"+escapeJSONArg(type)+"},"
 					+"\"metadata\":{\"values\":[");
 
+			HashMap<String, ArrayList<String>> metadata = fileList[i].getMetadata();
 			if (metadata != null) {
 				json.append("\n");
 				String[] names = metadata.keySet().toArray(new String[0]);
