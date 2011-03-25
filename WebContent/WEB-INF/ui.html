@@ -416,6 +416,11 @@
     		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){refreshButtons();});  		
 			dojo.connect(searchResultsGrid, 'onClick', function(e) {refreshSearchDialog();});
 			dojo.connect(window, "onresize", function(e) {refreshSearchDialog();}); // Search results grid must auto resize when window resizes
+
+			dojo.connect(dojo.byId("searchFileInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchPathInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchMetadataNameInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchMetadataValueInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
 		}
 		
 		function initWidgets() {
@@ -536,6 +541,7 @@
 		function resetSearchResultsStore(fast) { 
 			searchResultsStore = resetStore(searchResultsStore, searchResultsGrid, searchResultsLayout, fast);
 			searchResultsStore.id = "searchResultsStore";
+			searchResultsStore.isValid = true;
 			initSearchResultsStore();
 		}
 		
@@ -2300,6 +2306,9 @@
 		function startSearch() {
 			cursorBusy(true);	
 			setSearchItemDetails("");
+			resetSearchResultsStore(false);
+			searchResultsStore.isValid = false;
+			refreshSearchDialog();
 			var from = dojo.byId('searchFromRootRadioButton').checked ? "root" : "current";
 			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
 			var fileKeyword = dojo.byId('searchFileInputBox').value;
@@ -2320,12 +2329,15 @@
 						initSearchResultsStore();
 						searchResultsGrid.setStore(searchResultsStore);	 
 						searchResultsGrid.selection.deselectAll();     			
+						searchResultsStore.isValid = true;
 						refreshSearchDialog();
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
+						searchResultsStore.isValid = true;
 	       				cursorBusy(false);
 	      				loadedAlert(errorMessage("search", ioArgs.xhr.status, ioArgs.xhr.statusText));
+						refreshSearchDialog();
 	      				return response;
 	    			},
 	    		sync: synchronous,
@@ -2335,8 +2347,13 @@
 
 		function refreshSearchDialog() {
 			searchResultsGrid.update();
-			enableButton('startSearchButton', listingStore.isValid());
+			refreshSearchButtons();
 			showSearchItemDetails();
+		}
+
+		function refreshSearchButtons() {
+			var reasonableSearch = (dojo.byId('searchFileInputBox').value+dojo.byId('searchPathInputBox').value+dojo.byId('searchMetadataNameInputBox').value+dojo.byId('searchMetadataValueInputBox').value).length > 0;
+			enableButton('startSearchButton', listingStore.isValid() && reasonableSearch && searchResultsStore.isValid);
 		}
 
 		function showSearchItemDetails() {
@@ -2346,10 +2363,12 @@
    				if (name.type == "bottom")
 					nResults = 0;
 			}
-			var s = '<small><small><div style="margin:0px; padding:3px; background-color:#E8E8E8; border: 1px dotted grey; border-top-width:0px;">'+pluralItemsString(nResults)+' found</div><br>';
-			s += 'Current collection is: <span id="searchFromCurrentCollection"></span></small></small></b>';
+			var s = '';
+			if (searchResultsStore.isValid) {
+				s += '<small><small><div style="margin:0px; padding:3px; background-color:#E8E8E8; border: 1px dotted grey; border-top-width:0px;">'+pluralItemsString(nResults)+' found</div><br>';
+				s += 'Current collection is: <span id="searchFromCurrentCollection"></span></br></br></small></small>';
 			
-			if (searchResultsGrid.selection.selectedIndex > -1) {
+			  if (searchResultsGrid.selection.selectedIndex > -1) {
 				var item = searchResultsGrid.selection.getFirstSelected();
 				s += '<table style="font-size:small; padding-top:10px;">';
 				//s +=        '<tr><td><b>Item details:</b><br></td></tr>';
@@ -2369,7 +2388,7 @@
 				for (var i = 0; i < item.metadata.length; i++) {
 					for (var j = 0; j < item.metadata[i].values.length; j++) {
 						var m = item.metadata[i].values[j]
-						s +=     	'<tr style="white-space: nowrap;">';
+						s +=     	'<tr>';
 						s +=     		'<td style="padding-right:20px;"><i><b>Name: </b></i>'+decodeURIComponent(m.name)+'</td>';
 						s +=     		'<td><i><b>Value: </b></i>'+decodeURIComponent(m.value)+'</td>';
 						s += 		'</tr>';
@@ -2377,6 +2396,7 @@
 				}
 				s +=		'    </table></td></tr>';
 				s += '</table>';
+			  }
 			}
 			setSearchItemDetails(s);
 			var o = dojo.byId("searchFromCurrentCollection");
@@ -2700,14 +2720,14 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%;">
+<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%; overflow:auto;">
 	<table  cellpadding="0" cellspacing="0" style="width: 100%;">
 		<tr>
 			<td>
 				<table cellpadding="0" cellspacing="0" style="width: 100%; font-size:small; padding-bottom:10px;">
 					<tr>
 						<td>
-							<table style="margin:0px; padding:0px;">
+							<table style="width: 100%; margin:0px; padding:0px;">
 								<tr style="padding:0px; margin:0px;">
 									<td nowrap="nowrap"><i><b>Search from:</b></i></td>	
 									<td nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
