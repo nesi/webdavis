@@ -1,16 +1,25 @@
 package webdavis;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.net.SocketException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.TimerTask;
 import java.util.Vector;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+
+import javax.swing.SwingUtilities;
 
 import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.GeneralMetaData;
@@ -39,6 +48,10 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  */
 public class FSUtilities {
 	
+	public static final int PINGTIMEOUT = 20*1000;	// Timeout for Jargon server-alive ping test in ms
+	
+	public static SimpleDateFormat dateFormat = new SimpleDateFormat("E dd MMM yyyy HH:mm:ss z");
+
 	private static final boolean[] ESCAPED;
 
     static {
@@ -70,6 +83,7 @@ public class FSUtilities {
         ESCAPED[':'] = false;
         ESCAPED['&'] = false;
         ESCAPED['!'] = false;
+		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
     public static String escape(String name) throws IOException {
@@ -77,7 +91,6 @@ public class FSUtilities {
         if (dir) name = name.substring(0, name.length() - 1);
         StringBuffer buffer = new StringBuffer();
         char[] chars = name.toCharArray();
-        int count = chars.length;
         for (int i = 0; i < chars.length; i++) {
             if (chars[i] > 0x7f || ESCAPED[chars[i]]) {
                 byte[] bytes = new String(chars, i, 1).getBytes("UTF-8");
@@ -546,12 +559,99 @@ public class FSUtilities {
 		return null;
 	}
 
+	public static CachedFile[] buildCache(MetaDataRecordList[] fileDetails, MetaDataRecordList[] dirDetails, RemoteFileSystem fileSystem, HashMap<String, FileMetadata> metadata, boolean sort, boolean getFiles, boolean getMetadata) {
+		
+		Comparator<Object> comparator = null;
+		if (sort)
+			comparator= new Comparator<Object>() {
+			public int compare(Object file1, Object file2) {
+				return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
+				}     			
+			};
+
+		if (fileDetails == null) 
+			fileDetails = new MetaDataRecordList[0];
+		if (dirDetails == null) 
+			dirDetails = new MetaDataRecordList[0];
+		Vector <CachedFile> fileList = new Vector();
+		CachedFile[] dirs = new CachedFile[dirDetails.length];
+		int i = 0;
+		Log.log(Log.DEBUG, "Length of file query result: "+fileDetails.length);
+		Log.log(Log.DEBUG, "Length of collections query result: "+dirDetails.length);
+		String lastName = null;
+		String lastParent = null;
+		if (getFiles)
+    		for (MetaDataRecordList p:fileDetails) {
+    			CachedFile file = new CachedFile(fileSystem, (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+    			if (file.getName().equals(lastName) && file.getParent().equals(lastParent)) {
+    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
+    					fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
+    				else
+    					continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
+    			}	
+    			lastName = file.getName();
+    			lastParent = file.getParent();
+    			fileList.add(file);
+    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
+    			file.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
+    			file.setDirFlag(false);
+				file.setCanWriteFlag(true);
+//				file.setCanonicalPath((String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+//System.err.println("######file="+file+" canon="+file.getCanonicalPath()+" parent="+file.getParent());
+				if (getMetadata && metadata != null) {
+					String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+					if (metadata.containsKey(path)) 
+						file.setMetadata(metadata.get(path).getMetadata());
+				}
+    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0")) {
+    				String s = "";
+    				if (file.length() == 0)
+    					s = " (its length is 0)";
+    				Log.log(Log.WARNING, "Using a dirty copy of "+file.getAbsolutePath()+s);
+    			}
+    			i++;
+    		}
+		CachedFile[] files = fileList.toArray(new CachedFile[0]);
+		if (sort)
+			Arrays.sort((Object[])files, comparator);
+		
+		i = 0;
+		for (MetaDataRecordList p:dirDetails) {
+			dirs[i] = new CachedFile(fileSystem, (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+			try {
+				dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
+			} catch (Exception e) {
+				Log.log(Log.ERROR, "failed to parse last modified time for "+dirs[i].getAbsolutePath()+": "+(String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE));
+				dirs[i].setLastModified(0);
+			}
+			dirs[i].setDirFlag(true);
+			dirs[i].setCanWriteFlag(true);
+//			dirs[i].setCanonicalPath((String)p.getValue(IRODSMetaDataSet.PARENT_DIRECTORY_NAME));
+//System.err.println("######dir="+dirs[i]+" canon="+dirs[i].getCanonicalPath()+" parent="+dirs[i].getParent());
+			if (getMetadata && metadata != null) {
+				String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+				if (metadata.containsKey(path)) 
+					dirs[i].setMetadata(metadata.get(path).getMetadata());
+			}
+			i++;
+		}
+		if (sort)
+			Arrays.sort((Object[])dirs, comparator);
+//System.err.println("************files:"+files.length);		
+//System.err.println("************dirs:"+dirs.length);		
+		CachedFile[] detailList = new CachedFile[files.length+dirs.length];
+		System.arraycopy(dirs, 0, detailList, 0, dirs.length);
+		System.arraycopy(files, 0, detailList, dirs.length, files.length);	
+		return detailList;
+	}
+	
 	public static RemoteFile[] getIRODSCollectionDetails(RemoteFile file){
 		
 		return getIRODSCollectionDetails(file, true, true, false);
 	}
 
 	public static CachedFile[] getIRODSCollectionDetails(RemoteFile collection, boolean sort, boolean getFiles, boolean getMetadata){
+		
 		// For files with multiple replicas, a clean replica will be returned in the result. If only a dirty copy is found, then that will be used.
 		HashMap<String, FileMetadata> metadata = null;
 		if (getMetadata)
@@ -585,112 +685,21 @@ public class FSUtilities {
 				IRODSMetaDataSet.DIRECTORY_TYPE,
 				IRODSMetaDataSet.DIRECTORY_CREATE_DATE,
 				IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
+				IRODSMetaDataSet.PARENT_DIRECTORY_NAME,
 //##				IRODSMetaDataSet.RESOURCE_NAME,
 //				IRODSMetaDataSet.META_COLL_ATTR_NAME,
 //				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
 //				IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
 			});
-		Comparator<Object> comparator = new Comparator<Object>() {
-			public int compare(Object file1, Object file2) {
-				return (((GeneralFile)file1).getName().toLowerCase().compareTo(((GeneralFile)file2).getName().toLowerCase()));
-			}     			
-		};
 		try {
 			MetaDataRecordList[] fileDetails = null;
 			if (getFiles)
 				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
     		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisUtilities.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
-
-    		if (fileDetails == null) fileDetails = new MetaDataRecordList[0];
-    		if (dirDetails == null) dirDetails = new MetaDataRecordList[0];
-    		Vector <CachedFile> fileList = new Vector();
-//    		Vector <CachedFile> dirList = new Vector();
-//    		CachedFile[] files = new CachedFile[fileDetails.length];
-    		CachedFile[] dirs = new CachedFile[dirDetails.length];
-    		int i = 0;
-    		Log.log(Log.DEBUG, "file num:"+fileDetails.length);
-    		String lastName = null;
-    		if (getFiles)
-	    		for (MetaDataRecordList p:fileDetails) {
-	    			CachedFile file = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-	    			if (file.getName().equals(lastName)) {
-	    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
-	    					fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
-	    				else
-	    					continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
-	    			}	
-	    			lastName = file.getName();
-	    			fileList.add(file);
-	    			file.setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
-	    			file.setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
-	    			file.setDirFlag(false);
-    				file.setCanWriteFlag(true);
-//	    			files[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-//	    			files[i].setLastModified(Long.parseLong((String) p.getValue(IRODSMetaDataSet.MODIFICATION_DATE))*1000);
-//	    			files[i].setLength(Long.parseLong((String)p.getValue(IRODSMetaDataSet.SIZE)));
-//	    			files[i].setDirFlag(false);
-//    				files[i].setCanWriteFlag(true);
-    				if (getMetadata) {
-    					String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
-    					if (metadata.containsKey(path)) 
-    						file.setMetadata(metadata.get(path).getMetadata());
-//    						files[i].setMetadata(metadata.get(path).getMetadata());
-    				}
-	    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0")) {
-	    				String s = "";
-	    				if (file.length() == 0)
-	    					s = " (its length is 0)";
-	    				Log.log(Log.WARNING, "Using a dirty copy of "+file.getAbsolutePath()+s);
-	    			}
-	    			i++;
-	    		}
-    		CachedFile[] files = fileList.toArray(new CachedFile[0]);
-    		if (sort)
-    			Arrays.sort((Object[])files, comparator);
-    		
-    		Log.log(Log.DEBUG, "number of collections:"+dirDetails.length);
-    		i = 0;
-    		lastName = null;
-    		for (MetaDataRecordList p:dirDetails) {
-//    			CachedFile dir = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-//    			if (dir.getName().equals(lastName))
-//    				continue;
-//    			lastName = dir.getName();
-//    			dirList.add(dir);
-//    			dir.setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
-//    			dir.setDirFlag(true);
-//    			dir.setCanWriteFlag(true);
-    			dirs[i] = new CachedFile((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-    			try {
-    				dirs[i].setLastModified(Long.parseLong((String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE))*1000);
-    			} catch (Exception e) {
-    				Log.log(Log.ERROR, "failed to parse last modified time for "+dirs[i].getAbsolutePath()+": "+(String)p.getValue(IRODSMetaDataSet.DIRECTORY_MODIFY_DATE));
-    				dirs[i].setLastModified(0);
-    			}
-    			dirs[i].setDirFlag(true);
-    			dirs[i].setCanWriteFlag(true);
-    			if (getMetadata) {
-    				String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
-    				if (metadata.containsKey(path)) 
-//    					dir.setMetadata(metadata.get(path).getMetadata());
-    					dirs[i].setMetadata(metadata.get(path).getMetadata());
-    			}
-    			i++;
-    		}
-//    		CachedFile[] dirs = dirList.toArray(new CachedFile[0]);
-    		if (sort)
-    			Arrays.sort((Object[])dirs, comparator);
-    		
-    		CachedFile[] detailList = new CachedFile[files.length+dirs.length];
-    		System.arraycopy(dirs, 0, detailList, 0, dirs.length);
-    		System.arraycopy(files, 0, detailList, dirs.length, files.length);
-    		
-    		return detailList;
+    		return buildCache(fileDetails, dirDetails, (RemoteFileSystem)collection.getFileSystem(), metadata, sort, getFiles, getMetadata);
 		} catch (NullPointerException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -702,29 +711,218 @@ public class FSUtilities {
 	 * @param davisSession
 	 * @return String Null if connection is ok, an exception message if not.
 	 */
-	public static String testConnection(DavisSession davisSession) {
+	public static String testConnection(final DavisSession davisSession) {
 		
 		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
 			return null;
 		
+//		Callable <String> callable = new Callable<String>() {
+//			public String call() throws java.io.InvalidObjectException {
+//				String message = "ok";
+				String message = null;
+				try {
+//System.err.println("********* calling miscserverinfo");
+					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+//System.err.println("********* finished miscserverinfo");
+				} catch (ProtocolException e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "ProtocolException";
+				} catch (SocketException e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "SocketException";
+				} catch (Exception e) {
+					message = e.getMessage();
+					if (message == null)
+						message = "Exception";
+					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+				}
+//System.err.println("********* returning message="+message);
+				return message;
+//			}
+//		};
+/*		
+		FutureTask <String>task = new FutureTask<String>(callable);
+System.err.println("********* running task");
+		task.run();
+System.err.println("********* task is running");
 		String message = null;
-
 		try {
-			((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-		} catch (ProtocolException e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "ProtocolException";
-		} catch (SocketException e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "SocketException";
+System.err.println("********* getting message");
+			message = task.get(PINGTIMEOUT, TimeUnit.MILLISECONDS);
+System.err.println("********* got message="+message);
 		} catch (Exception e) {
-			message = e.getMessage();
-			if (message == null)
-				message = "Exception";
-			Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+			message = "IOException";
 		}
-		return message;
+System.err.println("********* message is "+message);
+		if (message == null) {
+			task.cancel(true);
+			return "timeout";
+		}
+		if (message.equals("ok"))
+			message = null;
+		if (task.isDone())
+			return message;
+System.err.println("********* task not done");
+		return "timeout";
+		
+//		Runnable runnable = new Runnable() { 
+//			private String message = null;
+//			public void run() {  
+//				try {
+//					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+//				} catch (ProtocolException e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "ProtocolException";
+//				} catch (SocketException e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "SocketException";
+//				} catch (Exception e) {
+//					message = e.getMessage();
+//					if (message == null)
+//						message = "Exception";
+//					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+//				}
+//				thread.setMessage(message);
+//			}
+//		};
+//		MessageRunnable messageRunnable = new MessageRunnable(runnable);
+//		thread = new MessageThread(runnable);
+//
+////		thread.setDaemon(true);
+//		thread.start();				
+//		thread.join(PINGTIMEOUT);
+//		
+//		return thread.getMessage();
+*/
+
 	}
+	
+	public static String escapeJSONArg(String s) {
+		return "\""+escapeJSON(s)+"\"";
+	}
+
+	public static String escapeJSON(String s) {
+    	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
+	}
+	
+	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing) throws IOException {
+		
+		StringBuffer json = new StringBuffer();
+		boolean emptyDir = (fileList.length == 0);
+		if (!emptyDir && comparator != null)
+			Arrays.sort((Object[]) fileList, comparator);
+
+//		if (!directoryListing && start == 0)
+//			start = -1;
+		json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+(directoryListing ? 1:0)+(emptyDir ? 1:0)))+",");
+		if (requestUIHandle == null)
+			requestUIHandle = "null";
+		json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
+		if (collection != null)
+			json.append(escapeJSONArg("readOnly")+":"+escapeJSONArg(""+!collection.canWrite())+",");
+		json.append(escapeJSONArg("items")+":[\n");
+System.err.println("*****************start="+start);
+		if (directoryListing) {
+			json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\",\"parent\":\"..\"},"
+						+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
+						+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
+						+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
+						+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
+		}
+		for (int i = start; i < start + count; i++) {
+			if (i >= fileList.length)
+				break;
+			if (directoryListing || i > start)
+				json.append(",\n");
+//			if (i == 0) {
+//				json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
+//								+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
+//								+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
+//								+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
+//								+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
+//				continue;
+//			}
+			String type = fileList[i].isDirectory() ? "d" : "f";
+/*			String sharingValue = "";
+			String sharingKey = Davis.getConfig().getSharingKey();
+			if (metadata != null && sharingKey != null) {
+				ArrayList<String> values = metadata.get(sharingKey);
+				if (values != null)
+					sharingValue = values.get(0);
+			}*/
+			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+"\""+escape/*JSONArg*/(fileList[i].getParent())+"\""+"}"
+					+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
+					+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i].length())+",\"type\":"+escapeJSONArg(type)+"},"
+					+"\"sharing\":{\"value\":"+escapeJSONArg(/*sharingValue*/fileList[i].getSharingValue())+",\"type\":"+escapeJSONArg(type)+"},"
+					+"\"metadata\":{\"values\":[");
+
+			HashMap<String, ArrayList<String>> metadata = fileList[i].getMetadata();
+			if (metadata != null) {
+				json.append("\n");
+				String[] names = metadata.keySet().toArray(new String[0]);
+				for (int j = 0; j < names.length; j++) {
+					if (j > 0)
+						json.append(",\n");
+					String name = names[j];
+					ArrayList<String> values = metadata.get(name);
+					for (int k = 0; k < values.size(); k++) {
+						if (k > 0)
+							json.append(",\n");
+						json.append("    {"+escapeJSONArg("name")+":"+escapeJSONArg(name)+","+escapeJSONArg("value")+":"
+								+escapeJSONArg(values.get(k))+"}");
+					}
+				}
+			}
+			json.append("]");
+			if (metadata != null)
+				json.append("\n    ");
+			json.append(",\"type\":" + escapeJSONArg(type) + "}}");
+		}
+		if (emptyDir) {
+			if (directoryListing)
+				json.append(",\n");
+			json.append("{\"name\":{\"name\":\""	+ (!directoryListing ? "(No matches)" : "("+(directoriesOnly?"No directories found":"Directory is empty")+")")
+							+ "\",\"type\":\"bottom\",\"parent\":\"\"}," + "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
+							+ "\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
+							+ "\"sharing\":{\"value\":\"\",\"type\":\"bottom\"},"
+							+ "\"metadata\":{\"value\":\"\",\"type\":\"bottom\"}}");
+		}
+		json.append("\n]}");
+//System.err.println("!!!!!!!!!returning json:"+json);
+		return json.toString();
+	}
+
+	public static void dumpQueryResult(MetaDataRecordList[] results, String prefix) {
+
+		if (results == null)
+			return;
+		if (prefix == null)
+			prefix = "";
+		for (int i = 0; i < results.length; i++)
+			System.err.println(prefix+results[i]);
+	}
+//	private class MessageRunnable implements Runnable {
+//
+//		private String message = null;
+//		private Runnable run = null;
+//		
+//		public MessageRunnable(Runnable run) {
+//			this.run = run;
+//		}
+//		
+//		public void run() {this.run();}
+//
+//		public void setMessage(String message) {
+//			this.message = message;
+//		}
+//		
+//		public String getMessage() {
+//			return message;
+//		}
+//	}
 }
+

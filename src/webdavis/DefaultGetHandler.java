@@ -161,9 +161,7 @@ public class DefaultGetHandler extends AbstractHandler {
 	private PropertiesBuilder propertiesBuilder;
 	private String defaultUIHTMLContent;
 	private String uiLoadDate = "";
-	private SimpleDateFormat dateFormat = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss z");
-	private boolean sortAscending = true;
-	private String sortField = "name";
+	private ListingComparator comparator = new ListingComparator();
 
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -183,7 +181,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		// Load UI html into a string so that subsequent requests can use that
 		// directly
 		defaultUIHTMLContent = loadUI(UIHTMLLocation);
-		dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 	
 	private String loadUI(String fileName) {
@@ -204,7 +201,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //		} catch (IOException e) {
 //			Log.log(Log.CRITICAL, "Failed to read UI html file: " + e);
 //		}
-		uiLoadDate = dateFormat.format(new Date());
+		uiLoadDate = FSUtilities.dateFormat.format(new Date());
 		return /*result*/DavisUtilities.loadResource(fileName);
 	}
 
@@ -221,29 +218,6 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		super.destroy();
 	}
-
-	Comparator<Object> comparator = new Comparator<Object>() {
-		public int compare(Object file1, Object file2) {
-
-			if (sortField.equals("name")) { // File name column
-				if (((GeneralFile) file1).isDirectory()	&& !((GeneralFile) file2).isDirectory()) // Keep directories separate from files
-					return -1 * (sortAscending ? 1 : -1);
-				if (!((GeneralFile) file1).isDirectory() && ((GeneralFile) file2).isDirectory())
-					return (sortAscending ? 1 : -1);
-				return (((GeneralFile) file1).getName().toLowerCase().compareTo(((GeneralFile) file2).getName().toLowerCase()))	* (sortAscending ? 1 : -1);
-			} else if (sortField.equals("size")) {
-				if (((GeneralFile) file1).isDirectory()	&& !((GeneralFile) file2).isDirectory()) // Keep directories separate from files
-					return -1 * (sortAscending ? 1 : -1);
-				if (!((GeneralFile) file1).isDirectory() && ((GeneralFile) file2).isDirectory())
-					return (sortAscending ? 1 : -1);
-				return (new Long(((GeneralFile) file1).length()).compareTo(new Long(((GeneralFile) file2).length()))) * (sortAscending ? 1 : -1);
-			} else if (sortField.equals("date")) {
-				return (new Long(((GeneralFile) file1).lastModified()).compareTo(new Long(((GeneralFile) file2).lastModified()))) * (sortAscending ? 1 : -1);
-			}
-
-			return 0; // ###TBD comparator for metadata
-		}
-	};
 
 	/**
 	 * Services requests which use the HTTP GET method. This implementation
@@ -394,11 +368,11 @@ public class DefaultGetHandler extends AbstractHandler {
 				// Request is like ?method=dojoquery&name=*&start=0&count=30&sort=name
 				String sort = request.getParameter("sort");
 				if (sort != null) {
-					sortField = sort;
-					sortAscending = true;
+					comparator.setSortField(sort);
+					comparator.setSortAscending(true);
 					if (sort.startsWith("-")) {
-						sortAscending = false;
-						sortField = sort.substring(1);
+						comparator.setSortAscending(false);
+						comparator.setSortField(sort.substring(1));
 					}
 				}
 				String s = request.getParameter("start");
@@ -423,71 +397,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 
-				boolean emptyDir = (fileList.length == 0);
-				if (!emptyDir)
-					Arrays.sort((Object[]) fileList, comparator);
-
-				json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+1+(emptyDir ? 1 : 0)))+",");
-				json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
-				json.append(escapeJSONArg("readOnly")+":"+escapeJSONArg(""+!file.canWrite())+",");
-				json.append(escapeJSONArg("items")+":[\n");
-				for (int i = start; i < start + count; i++) {
-					if (i >= fileList.length + 1)
-						break;
-					if (i > start)
-						json.append(",\n");
-					if (i == 0) {json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
-										+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
-										+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
-										+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
-										+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
-						continue;
-					}
-					String type = fileList[i-1].isDirectory() ? "d" : "f";
-					HashMap<String, ArrayList<String>> metadata = fileList[i-1].getMetadata();
-					String sharingValue = "";
-					String sharingKey = Davis.getConfig().getSharingKey();
-					if (metadata != null && sharingKey != null) {
-						ArrayList<String> values = metadata.get(sharingKey);
-						if (values != null)
-							sharingValue = values.get(0);
-					}
-					json.append("{\"name\":{\"name\":"+/*escapeJSONArg(*/ "\""+FSUtilities.escape(fileList[i-1].getName())/*)*/+"\""+",\"type\":"+escapeJSONArg(type)+"}"
-							+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i-1].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
-							+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i-1].length())+",\"type\":"+escapeJSONArg(type)+"},"
-							+"\"sharing\":{\"value\":"+escapeJSONArg(sharingValue)+",\"type\":"+escapeJSONArg(type)+"},"
-							+"\"metadata\":{\"values\":[");
-
-					if (metadata != null) {
-						json.append("\n");
-						String[] names = metadata.keySet().toArray(new String[0]);
-						for (int j = 0; j < names.length; j++) {
-							if (j > 0)
-								json.append(",\n");
-							String name = names[j];
-							ArrayList<String> values = metadata.get(name);
-							for (int k = 0; k < values.size(); k++) {
-								if (k > 0)
-									json.append(",\n");
-								json.append("    {" + escapeJSONArg("name") + ":" + escapeJSONArg(name) + "," + escapeJSONArg("value") + ":"
-										+ escapeJSONArg(values.get(k)) + "}");
-							}
-						}
-					}
-					json.append("]");
-					if (metadata != null)
-						json.append("\n    ");
-					json.append(",\"type\":" + escapeJSONArg(type) + "}}");
-				}
-				if (emptyDir) {
-					boolean filtered = false;
-					json.append(",\n{\"name\":{\"name\":\""	+ (filtered ? "(No matches)" : "("+(directoriesOnly?"No directories found":"Directory is empty")+")")
-									+ "\",\"type\":\"bottom\"}," + "\"date\":{\"value\":\"0\",\"type\":\"bottom\"},"
-									+ "\"size\":{\"size\":\"0\",\"type\":\"bottom\"},"
-									+ "\"sharing\":{\"value\":\"\",\"type\":\"bottom\"},"
-									+ "\"metadata\":{\"value\":\"\",\"type\":\"bottom\"}}");
-				}
-				json.append("\n]}");
+				byte[] buf = FSUtilities.generateJSONListing(fileList, file, comparator, requestUIHandle, start, count, directoriesOnly, true).getBytes();
 				ServletOutputStream op = null;
 				try {
 					op = response.getOutputStream();
@@ -495,8 +405,8 @@ public class DefaultGetHandler extends AbstractHandler {
 					Log.log(Log.WARNING, "EOFException when preparing to send servlet response - client probably disconnected");
 					return;
 				}
-				byte[] buf = json.toString().getBytes();
-				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
+			//	byte[] buf = json.getBytes();
+				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + buf);
 				response.setContentType("text/json; charset=\"utf-8\"");
 				addNoCacheDirectives(response);
 				op.write(buf);
@@ -517,7 +427,7 @@ public class DefaultGetHandler extends AbstractHandler {
 					json.append("{"	+ escapeJSONArg("name")	+ ":" + escapeJSONArg(fileList[i].getName()) + ","
 							+ escapeJSONArg("type")	+ ":" + escapeJSONArg(type)	+ "," + escapeJSONArg("size") + ":"
 							+ escapeJSONArg("" + fileList[i].length()) + "," + escapeJSONArg("date") + ":"
-							+ escapeJSONArg(dateFormat.format(fileList[i].lastModified())) + "}");
+							+ escapeJSONArg(FSUtilities.dateFormat.format(fileList[i].lastModified())) + "}");
 				}
 				json.append("\n]}");
 				ServletOutputStream op = null;
@@ -958,7 +868,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		}
 		return false;
 	}
-
+	
 	private void writeFile(String url, HttpServletRequest request, HttpServletResponse response) throws IOException {
 		// URL u=request.getSession().getServletContext().getResource(url);
 		// u.get?

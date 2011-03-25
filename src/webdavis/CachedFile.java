@@ -104,6 +104,17 @@ public class CachedFile extends RemoteFile {
 		this.canonicalPath = canonicalPath;
 	}
 	
+	public String getSharingValue() {
+		String sharingValue = "";
+		String sharingKey = Davis.getConfig().getSharingKey();
+		if (metadata != null && sharingKey != null) {
+			ArrayList<String> values = metadata.get(sharingKey);
+			if (values != null)
+				sharingValue = values.get(0);
+		}
+		return sharingValue;
+	}
+	
 	public void setMetadata(HashMap<String, ArrayList<String>> metadata) {
 		this.metadata = metadata;
 	}

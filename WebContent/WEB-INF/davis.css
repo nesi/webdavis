@@ -41,7 +41,11 @@
 		#destinationGrid .dojoxGridRow {background: white;}
 		#destinationGrid .dojoxGridRowSelected {background: #C9D8E9;}
 		#destinationGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
-		.questionIcon {
+		#searchResultsGrid .dojoxGridHeader .dojoxGridCell {text-indent:10px; background: #459E00; font-size: 80%; text-align: center; border: 1px solid; border-color: white; padding-bottom: 4px;}
+		#searchResultsGrid .dojoxGridRow {background: white;}
+		#searchResultsGrid .dojoxGridRowSelected {background: #C9D8E9;}
+		#searchResultsGrid .dojoxGridCell {border: 0px; padding-right: 10px; text-align: right;}
+.questionIcon {
       		background-image: url('/images/help.png'); 
       		width: 32px;
       		height: 32px;

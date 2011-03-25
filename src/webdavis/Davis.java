@@ -98,7 +98,7 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		davisConfig = new DavisConfig();
 		getConfig().initConfig(config);
-		IRODSConstants.CONNECTION_TIMEOUT_VALUE = 30000;	// Jargon <-> irods socket operations should timeout after this many ms
+		IRODSConstants.CONNECTION_TIMEOUT_VALUE = /*30000*/3*60*1000;	// Jargon <-> irods socket operations should timeout after this many ms
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
@@ -380,16 +380,15 @@ public class Davis extends HttpServlet {
 					response.sendError(HttpServletResponse.SC_FORBIDDEN, errorMsg);
 					response.flushBuffer();
 					return;
-				} else {
-					Log.log(Log.DEBUG, "No session found, calling fail handler.");
-					fail(request, response);
-					return;
 				}
+				Log.log(Log.DEBUG, "No session found, calling fail handler.");
+				fail(request, response);
+				return;
 			}
-			String message = FSUtilities.testConnection(davisSession);
+	/*		String message = FSUtilities.testConnection(davisSession);
 			if (message == null || reset) 
-				break;
-			if (tries++ > MAXCONNECTIONRETRIES) {
+	*/			break;
+	/*		if (tries++ > MAXCONNECTIONRETRIES) {
 				Log.log(Log.DEBUG, "Can't reconnect to server, giving up.");
 				response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Can't reconnect to server.");
 				response.flushBuffer();
@@ -399,7 +398,7 @@ public class Davis extends HttpServlet {
 			reset = true;
 			davisSession = null;
 			try{Thread.sleep(CONNECTIONRETRYPAUSE*tries*tries);}catch(Exception e){} // Pause between connection retries grows exponentially 
-		}
+	*/	}
 		
 		Log.log(Log.DEBUG, "HTTPSession: "+httpSession);
 		if ((httpSession == null) || reset) {
