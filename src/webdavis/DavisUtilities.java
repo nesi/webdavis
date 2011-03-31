@@ -118,8 +118,6 @@ public class DavisUtilities {
         }
     }
     
-	public static final int JARGON_MAX_QUERY_NUM = 100000;
-
 	
     private DavisUtilities() { }
     

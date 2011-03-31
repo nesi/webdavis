@@ -2336,6 +2336,8 @@
 	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
 	    		load: function(responseObject, ioArgs){    
 	 					cursorBusy(false);
+	 					if (responseObject.truncated)
+		 					alert("Too many search results - the list will be truncated.\n\nPlease narrow you search.");
 						searchResultsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						initSearchResultsStore();
 						searchResultsGrid.setStore(searchResultsStore);	 

@@ -33,6 +33,7 @@ import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
 import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSConstants;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
@@ -47,8 +48,6 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  *
  */
 public class FSUtilities {
-	
-	public static final int PINGTIMEOUT = 20*1000;	// Timeout for Jargon server-alive ping test in ms
 	
 	public static SimpleDateFormat dateFormat = new SimpleDateFormat("E dd MMM yyyy HH:mm:ss z");
 
@@ -419,7 +418,7 @@ public class FSUtilities {
 		Log.log(Log.DEBUG, "getUsernames  from "+fs);
 		try {
 			recordList = fs.query(new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME), 
-									MetaDataSet.newSelection(IRODSMetaDataSet.USER_ZONE)}, DavisUtilities.JARGON_MAX_QUERY_NUM);
+									MetaDataSet.newSelection(IRODSMetaDataSet.USER_ZONE)}, DavisConfig.JARGON_MAX_QUERY_NUM);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -456,7 +455,7 @@ public class FSUtilities {
 //								  	          MetaDataCondition.EQUAL, fs.getMcatZone() ),
 									MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, file.getName())},
 								new MetaDataSelect[]{MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME),
-												MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, DavisUtilities.JARGON_MAX_QUERY_NUM);
+												MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT)}, DavisConfig.JARGON_MAX_QUERY_NUM);
 //			recordList = fs.query(MetaDataSet
 //					.newSelection(IRODSMetaDataSet.RESOURCE_NAME));
 
@@ -524,8 +523,8 @@ public class FSUtilities {
 				IRODSMetaDataSet.DIRECTORY_NAME
 			});
 		try {
-			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisUtilities.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
+			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisConfig.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
  			if (fileDetails == null) 
     			fileDetails = new MetaDataRecordList[0];
     		if (dirDetails == null) 
@@ -694,8 +693,8 @@ public class FSUtilities {
 		try {
 			MetaDataRecordList[] fileDetails = null;
 			if (getFiles)
-				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisUtilities.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
+				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisConfig.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
     		return buildCache(fileDetails, dirDetails, (RemoteFileSystem)collection.getFileSystem(), metadata, sort, getFiles, getMetadata);
 		} catch (NullPointerException e) {
 			e.printStackTrace();
@@ -809,7 +808,7 @@ System.err.println("********* task not done");
     	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
 	}
 	
-	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing) throws IOException {
+	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing, boolean truncated) throws IOException {
 		
 		StringBuffer json = new StringBuffer();
 		boolean emptyDir = (fileList.length == 0);
@@ -819,6 +818,8 @@ System.err.println("********* task not done");
 //		if (!directoryListing && start == 0)
 //			start = -1;
 		json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+(directoryListing ? 1:0)+(emptyDir ? 1:0)))+",");
+		if (truncated)
+			json.append(escapeJSONArg("truncated")+":"+escapeJSONArg("true")+",");
 		if (requestUIHandle == null)
 			requestUIHandle = "null";
 		json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
@@ -894,6 +895,16 @@ System.err.println("*****************start="+start);
 		json.append("\n]}");
 //System.err.println("!!!!!!!!!returning json:"+json);
 		return json.toString();
+	}
+	
+	final static Integer lock = new Integer(0);
+	
+	public static IRODSFileSystem createIRODSFileSystem(IRODSAccount account, int timeout) throws IOException {
+		
+		synchronized (lock) {
+			IRODSConstants.CONNECTION_TIMEOUT_VALUE = timeout;
+			return new IRODSFileSystem(account);
+		}
 	}
 
 	public static void dumpQueryResult(MetaDataRecordList[] results, String prefix) {

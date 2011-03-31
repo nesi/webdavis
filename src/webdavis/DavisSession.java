@@ -49,7 +49,11 @@ public class DavisSession implements Serializable{
 	}
 	
 	public void disconnect() throws RuntimeException {
-		if (remoteFileSystem!=null&&remoteFileSystem.isConnected()){
+		disconnect(remoteFileSystem);
+	}
+	
+	public void disconnect(RemoteFileSystem remoteFileSystem) throws RuntimeException {
+		if (remoteFileSystem != null && remoteFileSystem.isConnected()){
 			if (remoteFileSystem instanceof SRBFileSystem){
 				try {
 					((SRBFileSystem)remoteFileSystem).close();

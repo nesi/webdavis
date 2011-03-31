@@ -76,10 +76,6 @@ public class Davis extends HttpServlet {
 	
 	static Date profilingTimer = null;					// Used by DefaultGetHandler to measure time spent in parts of the code
 	static long lastLogTime = 0;  						// Used to log memory usage on a regular basis
-	static final long MEMORYLOGPERIOD = 60*60*1000;  	// How often log memory usage (in ms)
-	static final int MAXCONNECTIONRETRIES = 3;			// Max number of retries if irods connection lost. 
-														// Note: this may not do anything because the fail() handler might be called before a second reconnect is attempted.
-	static final int CONNECTIONRETRYPAUSE = 1000;		// Pause between connection retries
 	static long headroom = Long.MAX_VALUE;
 	
 //	static final String[] WEBDAVMETHODS = {"propfind", "proppatch", "mkcol", "copy", "move", "lock"};
@@ -98,7 +94,6 @@ public class Davis extends HttpServlet {
 		ServletConfig config = getServletConfig();
 		davisConfig = new DavisConfig();
 		getConfig().initConfig(config);
-		IRODSConstants.CONNECTION_TIMEOUT_VALUE = /*30000*/3*60*1000;	// Jargon <-> irods socket operations should timeout after this many ms
 		
 //		String logProviderName = Log.class.getName();
 //		String logProvider = config.getInitParameter(logProviderName);
@@ -385,10 +380,10 @@ public class Davis extends HttpServlet {
 				fail(request, response);
 				return;
 			}
-	/*		String message = FSUtilities.testConnection(davisSession);
+			String message = FSUtilities.testConnection(davisSession);
 			if (message == null || reset) 
-	*/			break;
-	/*		if (tries++ > MAXCONNECTIONRETRIES) {
+				break;
+			if (tries++ > DavisConfig.MAXCONNECTIONRETRIES) {
 				Log.log(Log.DEBUG, "Can't reconnect to server, giving up.");
 				response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Can't reconnect to server.");
 				response.flushBuffer();
@@ -397,8 +392,8 @@ public class Davis extends HttpServlet {
 			Log.log(Log.WARNING, "Connection to server appears to have been lost for session "+davisSession.getSessionID()+" (connection test returned: "+message+"). Trying reset...");
 			reset = true;
 			davisSession = null;
-			try{Thread.sleep(CONNECTIONRETRYPAUSE*tries*tries);}catch(Exception e){} // Pause between connection retries grows exponentially 
-	*/	}
+			try{Thread.sleep(DavisConfig.CONNECTIONRETRYPAUSE*tries*tries);}catch(Exception e){} // Pause between connection retries grows exponentially 
+		}
 		
 		Log.log(Log.DEBUG, "HTTPSession: "+httpSession);
 		if ((httpSession == null) || reset) {
@@ -413,7 +408,7 @@ public class Davis extends HttpServlet {
 
 		if (Runtime.getRuntime().freeMemory() < headroom)
 			headroom = Runtime.getRuntime().freeMemory();
-		if (currentTime - lastLogTime >= MEMORYLOGPERIOD) {
+		if (currentTime - lastLogTime >= DavisConfig.MEMORYLOGPERIOD) {
 			lastLogTime = currentTime;
 			Log.log(Log./*INFORMATION*/WARNING, getMemoryUsage());
 		}

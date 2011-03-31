@@ -24,11 +24,13 @@ import au.org.arcs.jshib.slcs.SLCSConfig;
 
 import edu.sdsc.grid.io.RemoteAccount;
 import edu.sdsc.grid.io.irods.IRODSAccount;
+import edu.sdsc.grid.io.irods.IRODSConstants;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 public class AuthorizationProcessor {
+
 	private Map<String, DavisSession> connectionPool;
 	private static AuthorizationProcessor self;
 	protected long nonceSecret=this.hashCode() ^ System.currentTimeMillis();
@@ -463,19 +465,19 @@ public class AuthorizationProcessor {
 			String[] resList = null;
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
 				Log.log(Log.DEBUG, "Creating IRODSFileSystem");
-				IRODSFileSystem irodsFileSystem = new IRODSFileSystem((IRODSAccount)account);
+				IRODSFileSystem irodsFileSystem = FSUtilities.createIRODSFileSystem((IRODSAccount)account, DavisConfig.JARGONIRODS_SOCKET_TIMEOUT);
 				Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
 				homeDir = irodsFileSystem.getHomeDirectory();
-				if (davisSession.getAccount()==null||davisSession.getAccount().equals("")){
+				if (davisSession.getAccount() == null || davisSession.getAccount().equals("")){
 					user = irodsFileSystem.getUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
-					if (user==null||user.equals("")){
+					if (user == null || user.equals(""))
 						return null;
-					}
 					Log.log(Log.DEBUG, "Found iRODS user '"+user+"' for GSI");
 					davisSession.setAccount(user);
 					homeDir = "/" + davisConfig.getZoneName() + "/home/" + davisSession.getAccount();
 				}
 				davisSession.setRemoteFileSystem(irodsFileSystem);
+
 				resList = null; //FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
 				if (homeDir == null)
 					homeDir = "/" + davisConfig.getZoneName() + "/home/" + user;

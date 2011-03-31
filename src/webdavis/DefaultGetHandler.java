@@ -397,7 +397,8 @@ public class DefaultGetHandler extends AbstractHandler {
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 
-				byte[] buf = FSUtilities.generateJSONListing(fileList, file, comparator, requestUIHandle, start, count, directoriesOnly, true).getBytes();
+				String jsonString = FSUtilities.generateJSONListing(fileList, file, comparator, requestUIHandle, start, count, directoriesOnly, true, false);
+				byte[] buf = jsonString.getBytes();				 
 				ServletOutputStream op = null;
 				try {
 					op = response.getOutputStream();
@@ -406,7 +407,7 @@ public class DefaultGetHandler extends AbstractHandler {
 					return;
 				}
 			//	byte[] buf = json.getBytes();
-				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + buf);
+				Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + jsonString);
 				response.setContentType("text/json; charset=\"utf-8\"");
 				addNoCacheDirectives(response);
 				op.write(buf);

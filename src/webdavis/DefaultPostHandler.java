@@ -52,6 +52,7 @@ import edu.sdsc.grid.io.RemoteFileOutputStream;
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.ResourceMetaData;
 import edu.sdsc.grid.io.UserMetaData;
+import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSException;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
@@ -81,8 +82,6 @@ import edu.sdsc.grid.io.srb.SRBMetaDataSet;
  */
 public class DefaultPostHandler extends AbstractHandler {
 	
-	final static int SEARCH_MAX_QUERY_NUM = 100;
-
 	private static Random random = new Random();
 	
 	/**
@@ -312,7 +311,7 @@ public class DefaultPostHandler extends AbstractHandler {
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_USER_ZONE),
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT),
 									MetaDataSet.newSelection(IRODSMetaDataSet.DIRECTORY_OWNER)}, 
-							DavisUtilities.JARGON_MAX_QUERY_NUM);
+							DavisConfig.JARGON_MAX_QUERY_NUM);
 					if (permissions != null && permissions.length > 0)
 						owner = (String)permissions[0].getValue(IRODSMetaDataSet.DIRECTORY_OWNER);
 				}else {
@@ -327,7 +326,7 @@ public class DefaultPostHandler extends AbstractHandler {
 									MetaDataSet.newSelection(IRODSMetaDataSet.USER_NAME),
 									MetaDataSet.newSelection(IRODSMetaDataSet.ACCESS_CONSTRAINT),
 									MetaDataSet.newSelection(IRODSMetaDataSet.OWNER)}, 
-							DavisUtilities.JARGON_MAX_QUERY_NUM);
+							DavisConfig.JARGON_MAX_QUERY_NUM);
 					if (permissions != null && permissions.length > 0)
 						owner = (String)permissions[0].getValue(IRODSMetaDataSet.OWNER);
 				}
@@ -1003,6 +1002,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
 				Log.log(Log.ERROR, "Searching is supported only for iRODS");
 			else {
+				IRODSFileSystem searchFileSystem = FSUtilities.createIRODSFileSystem((IRODSAccount)davisSession.getRemoteFileSystem().getAccount(), DavisConfig.JARGONIRODS_SEARCH_SOCKET_TIMEOUT);
 				String s = request.getParameter("from");
 				boolean fromRoot = (s == null || s.equals("root"));
 				s = request.getParameter("show");
@@ -1085,10 +1085,13 @@ System.err.println("$$$$$$$$$$$$ currentdir="+currentDir);
 					});
 				try {
 System.err.println("%%%%first query");
-					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, SEARCH_MAX_QUERY_NUM);
+					MetaDataRecordList[] fileDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS);
 System.err.println("%%%%second query");
-		    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, SEARCH_MAX_QUERY_NUM, Namespace.DIRECTORY);
+		    		MetaDataRecordList[] dirDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS, Namespace.DIRECTORY);
 System.err.println("%%%%second query");
+					boolean truncated = false;
+					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
+						truncated = true;
 
 					HashMap<String, FileMetadata> metadata = new HashMap<String, FileMetadata>();
 					
@@ -1120,17 +1123,6 @@ System.err.println("%%%%second query");
 						conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.LIKE, metadataValueKeyword));
 					}
 
-						
-	/*				} else {
-						conditionsFile = new MetaDataCondition[] {
-							MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-							MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
-						};
-						conditionsDir = new MetaDataCondition[] {
-							MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-							MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
-						};
-					}*/
 					selectsDir =
 						MetaDataSet.newSelection(new String[] {
 							IRODSMetaDataSet.META_COLL_ATTR_NAME,
@@ -1138,8 +1130,8 @@ System.err.println("%%%%second query");
 							IRODSMetaDataSet.DIRECTORY_NAME,
 							IRODSMetaDataSet.PARENT_DIRECTORY_NAME
 						});
-					MetaDataRecordList[] fileMetaDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, SEARCH_MAX_QUERY_NUM);
-					MetaDataRecordList[] dirMetaDetails = ((IRODSFileSystem)file.getFileSystem()).query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, SEARCH_MAX_QUERY_NUM, Namespace.DIRECTORY);
+					MetaDataRecordList[] fileMetaDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS*10);
+					MetaDataRecordList[] dirMetaDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS*10, Namespace.DIRECTORY);
 					if (fileMetaDetails == null) 
 						fileMetaDetails = new MetaDataRecordList[0];
 					if (dirMetaDetails == null) 
@@ -1163,8 +1155,6 @@ System.err.println("%%%%second query");
 						}
 						mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
 					}
-//					Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+((IRODSFileSystem)collection.getFileSystem()).getUserName()+"': \n"+results);
-
 
 FSUtilities.dumpQueryResult(fileDetails, ">file>");
 FSUtilities.dumpQueryResult(dirDetails, ">dir>");
@@ -1174,48 +1164,19 @@ FSUtilities.dumpQueryResult(dirMetaDetails, ">dirmeta>");
 System.err.println("%%%%build cache");
 					CachedFile[] fileList = FSUtilities.buildCache(fileDetails, dirDetails, (RemoteFileSystem)file.getFileSystem(), metadata, /*sort*/false, true, true);
 System.err.println("%%%%fileList.length="+fileList.length);
-					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false));
+					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated));
 				} catch (SocketTimeoutException e) {
 					s = "Search query took too long - aborted.";
 					response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT, s);
+					try {
+						searchFileSystem.close();
+					} catch (IOException ee) {}
 					return;
 				}
-
-				
-
-				
-////				String sharingKey = Davis.getConfig().getSharingKey();
-////				if (sharingKey != null) {		
-////					MetaDataSelect selectsFile[] = 
-////						MetaDataSet.newSelection(new String[] {
-////				//				IRODSMetaDataSet.FILE_ACCESS_NAME,
-////								//IRODSMetaDataSet.FILE_ACCESS_USER_ID,
-////								IRODSMetaDataSet.OWNER,							
-////								IRODSMetaDataSet.FILE_NAME,
-////								IRODSMetaDataSet.DIRECTORY_NAME
-////						});
-////					MetaDataCondition conditionsFile[];
-////					conditionsFile = new MetaDataCondition[] {
-////							MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, sharingKey),
-////							MetaDataSet.newCondition(IRODSMetaDataSet.OWNER, MetaDataCondition.EQUAL, davisSession.getAccount()), 
-////					};
-////					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
-//					MetaDataRecordList[] fileDetails = getShares(davisSession);
-//					if (fileDetails == null) 
-//		    			fileDetails = new MetaDataRecordList[0];	
-//		 			int i = 0;
-//		    		for (MetaDataRecordList p:fileDetails) {
-//		    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
-//		    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
-//		    			String sharingURL = (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE);
-//						if (i++ > 0) json.append(",\n");
-//						json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
-//						json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
-//						json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
-//		        	}
-////				}
+				try {
+					searchFileSystem.close();
+				} catch (IOException ee) {}
 			}
-//			json.append("\n]}");
 			
 		} else if (method.equalsIgnoreCase("userlist")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
@@ -1344,7 +1305,7 @@ System.err.println("%%%%fileList.length="+fileList.length);
 			return;
 		}
 		byte[] buf = json.toString().getBytes();
-		Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json);
+		Log.log(Log.DEBUG, "output(" + buf.length + "):\n" + json.toString());
 		op.write(buf);
 		op.flush();
 		op.close();
@@ -1383,7 +1344,7 @@ System.err.println("%%%%fileList.length="+fileList.length);
 				MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.EQUAL, fileName), 
 				MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, directory), 
 			};
-		return ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
+		return ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
 	}
 	
 	private String share(DavisSession davisSession, RemoteFile file, boolean share) {
