@@ -7,25 +7,18 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-
-import java.lang.reflect.Field;
-import java.net.URLEncoder;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 
 import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.SimpleTimeZone;
@@ -33,14 +26,9 @@ import java.util.StringTokenizer;
 import java.util.TimeZone;
 
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
 import org.w3c.dom.CharacterData;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;

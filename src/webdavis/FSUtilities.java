@@ -1,6 +1,5 @@
 package webdavis;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ProtocolException;
@@ -10,16 +9,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.TimerTask;
 import java.util.Vector;
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-
-import javax.swing.SwingUtilities;
 
 import edu.sdsc.grid.io.GeneralFile;
 import edu.sdsc.grid.io.GeneralMetaData;
@@ -715,14 +707,9 @@ public class FSUtilities {
 		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
 			return null;
 		
-//		Callable <String> callable = new Callable<String>() {
-//			public String call() throws java.io.InvalidObjectException {
-//				String message = "ok";
 				String message = null;
 				try {
-//System.err.println("********* calling miscserverinfo");
 					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-//System.err.println("********* finished miscserverinfo");
 				} catch (ProtocolException e) {
 					message = e.getMessage();
 					if (message == null)
@@ -737,67 +724,7 @@ public class FSUtilities {
 						message = "Exception";
 					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
 				}
-//System.err.println("********* returning message="+message);
 				return message;
-//			}
-//		};
-/*		
-		FutureTask <String>task = new FutureTask<String>(callable);
-System.err.println("********* running task");
-		task.run();
-System.err.println("********* task is running");
-		String message = null;
-		try {
-System.err.println("********* getting message");
-			message = task.get(PINGTIMEOUT, TimeUnit.MILLISECONDS);
-System.err.println("********* got message="+message);
-		} catch (Exception e) {
-			message = "IOException";
-		}
-System.err.println("********* message is "+message);
-		if (message == null) {
-			task.cancel(true);
-			return "timeout";
-		}
-		if (message.equals("ok"))
-			message = null;
-		if (task.isDone())
-			return message;
-System.err.println("********* task not done");
-		return "timeout";
-		
-//		Runnable runnable = new Runnable() { 
-//			private String message = null;
-//			public void run() {  
-//				try {
-//					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-//				} catch (ProtocolException e) {
-//					message = e.getMessage();
-//					if (message == null)
-//						message = "ProtocolException";
-//				} catch (SocketException e) {
-//					message = e.getMessage();
-//					if (message == null)
-//						message = "SocketException";
-//				} catch (Exception e) {
-//					message = e.getMessage();
-//					if (message == null)
-//						message = "Exception";
-//					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
-//				}
-//				thread.setMessage(message);
-//			}
-//		};
-//		MessageRunnable messageRunnable = new MessageRunnable(runnable);
-//		thread = new MessageThread(runnable);
-//
-////		thread.setDaemon(true);
-//		thread.start();				
-//		thread.join(PINGTIMEOUT);
-//		
-//		return thread.getMessage();
-*/
-
 	}
 	
 	public static String escapeJSONArg(String s) {
@@ -826,7 +753,6 @@ System.err.println("********* task not done");
 		if (collection != null)
 			json.append(escapeJSONArg("readOnly")+":"+escapeJSONArg(""+!collection.canWrite())+",");
 		json.append(escapeJSONArg("items")+":[\n");
-System.err.println("*****************start="+start);
 		if (directoryListing) {
 			json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\",\"parent\":\"..\"},"
 						+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
@@ -839,22 +765,7 @@ System.err.println("*****************start="+start);
 				break;
 			if (directoryListing || i > start)
 				json.append(",\n");
-//			if (i == 0) {
-//				json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\"},"
-//								+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
-//								+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
-//								+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
-//								+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
-//				continue;
-//			}
 			String type = fileList[i].isDirectory() ? "d" : "f";
-/*			String sharingValue = "";
-			String sharingKey = Davis.getConfig().getSharingKey();
-			if (metadata != null && sharingKey != null) {
-				ArrayList<String> values = metadata.get(sharingKey);
-				if (values != null)
-					sharingValue = values.get(0);
-			}*/
 			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+"\""+escape/*JSONArg*/(fileList[i].getParent())+"\""+"}"
 					+",\"date\":{\"value\":"+escapeJSONArg(dateFormat.format(fileList[i].lastModified()))+",\"type\":"+escapeJSONArg(type)+"},"
 					+"\"size\":{\"size\":"+escapeJSONArg(""+fileList[i].length())+",\"type\":"+escapeJSONArg(type)+"},"
@@ -916,24 +827,4 @@ System.err.println("*****************start="+start);
 		for (int i = 0; i < results.length; i++)
 			System.err.println(prefix+results[i]);
 	}
-//	private class MessageRunnable implements Runnable {
-//
-//		private String message = null;
-//		private Runnable run = null;
-//		
-//		public MessageRunnable(Runnable run) {
-//			this.run = run;
-//		}
-//		
-//		public void run() {this.run();}
-//
-//		public void setMessage(String message) {
-//			this.message = message;
-//		}
-//		
-//		public String getMessage() {
-//			return message;
-//		}
-//	}
 }
-

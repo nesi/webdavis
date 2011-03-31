@@ -1019,17 +1019,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				boolean metadataNameExact = (s == null || s.equals("exact"));
 				s = request.getParameter("metadataValueMatch");
 				boolean metadataValueExact = (s == null || s.equals("exact"));
-System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+" fileKeyword="+fileKeyword+" fileExact="+fileExact+" pathKeyword="+pathKeyword+" pathExact="+pathExact+" metadatanamekeyword="+metadataNameKeyword+" metadatavaluekeyword="+metadataValueKeyword+" metadatanameExact="+metadataNameExact+" metadatavalueExact="+metadataValueExact);				
+//System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+" fileKeyword="+fileKeyword+" fileExact="+fileExact+" pathKeyword="+pathKeyword+" pathExact="+pathExact+" metadatanamekeyword="+metadataNameKeyword+" metadatavaluekeyword="+metadataValueKeyword+" metadatanameExact="+metadataNameExact+" metadatavalueExact="+metadataValueExact);				
 				
 				String keyword = fileKeyword;
 				if (!fileExact)
 					keyword = "%"+fileKeyword+"%";
 				if (!pathExact)
 					pathKeyword = "%"+pathKeyword+"%";
-	//			HashMap<String, FileMetadata> metadata = null;
-	//			if (getMetadata)
-	//				metadata = getIRODSCollectionMetadata(collection);
-	//			Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
 				
 				ArrayList<MetaDataCondition> conditionsFile = new ArrayList<MetaDataCondition>();
 				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
@@ -1045,7 +1041,6 @@ System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+"
 
 				if (!fromRoot) {
 					String currentDir = file.getAbsolutePath();
-System.err.println("$$$$$$$$$$$$ currentdir="+currentDir);
 					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, currentDir+"%"));
 					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, currentDir+"%"));
 				}
@@ -1084,11 +1079,11 @@ System.err.println("$$$$$$$$$$$$ currentdir="+currentDir);
 						IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
 					});
 				try {
-System.err.println("%%%%first query");
+					Log.log(Log.DEBUG, "Search: querying files");
 					MetaDataRecordList[] fileDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS);
-System.err.println("%%%%second query");
+					Log.log(Log.DEBUG, "Search: querying directories");
 		    		MetaDataRecordList[] dirDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS, Namespace.DIRECTORY);
-System.err.println("%%%%second query");
+					Log.log(Log.DEBUG, "Search: querying complete");
 					boolean truncated = false;
 					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
 						truncated = true;
@@ -1130,8 +1125,10 @@ System.err.println("%%%%second query");
 							IRODSMetaDataSet.DIRECTORY_NAME,
 							IRODSMetaDataSet.PARENT_DIRECTORY_NAME
 						});
+					Log.log(Log.DEBUG, "Search: querying metadata");
 					MetaDataRecordList[] fileMetaDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS*10);
 					MetaDataRecordList[] dirMetaDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS*10, Namespace.DIRECTORY);
+					Log.log(Log.DEBUG, "Search: querying metadata complete");
 					if (fileMetaDetails == null) 
 						fileMetaDetails = new MetaDataRecordList[0];
 					if (dirMetaDetails == null) 
@@ -1156,14 +1153,12 @@ System.err.println("%%%%second query");
 						mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
 					}
 
-FSUtilities.dumpQueryResult(fileDetails, ">file>");
-FSUtilities.dumpQueryResult(dirDetails, ">dir>");
-FSUtilities.dumpQueryResult(fileMetaDetails, ">filemeta>");
-FSUtilities.dumpQueryResult(dirMetaDetails, ">dirmeta>");
+//FSUtilities.dumpQueryResult(fileDetails, ">file>");
+//FSUtilities.dumpQueryResult(dirDetails, ">dir>");
+//FSUtilities.dumpQueryResult(fileMetaDetails, ">filemeta>");
+//FSUtilities.dumpQueryResult(dirMetaDetails, ">dirmeta>");
 
-System.err.println("%%%%build cache");
 					CachedFile[] fileList = FSUtilities.buildCache(fileDetails, dirDetails, (RemoteFileSystem)file.getFileSystem(), metadata, /*sort*/false, true, true);
-System.err.println("%%%%fileList.length="+fileList.length);
 					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated));
 				} catch (SocketTimeoutException e) {
 					s = "Search query took too long - aborted.";
