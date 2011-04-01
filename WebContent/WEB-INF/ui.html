@@ -101,7 +101,6 @@
 					evt.initMouseEvent('click', true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
 					this.dispatchEvent(evt);
 				}	  
-						
 		});
 
 		dojo.addOnUnload(function() {
@@ -284,6 +283,7 @@
 					listingStore.directory = listingStore.getCurrentDirectory(); // Put directory back to last successful one
 					listingStore.setURL(listingStore.lastURL.dir, listingStore.lastURL.noCache, listingStore.lastURL.postfix); // Put url back to last successful one
 					listingStore.refreshDisplay(false);
+					setNoticeDialog();
 				},
 				onFetchSuccess: function() {
 					if (firstRender)
@@ -298,10 +298,12 @@
 						firstRender = false;
 					} else
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
+					setNoticeDialog();
 				},
 				gotoDirectory: function(dir, addToHistory) {
 					if (!listingStore.isValid()) // Don't do another chdir if already doing one 
 						return;
+					setNoticeDialog("Fetching contents of "+decodeURIComponent(dir)+" ...");
 					dir = unescapePath(dir); // Seems to be necessary when apache is in front of jetty - restores forward slashes in path
 					listingStore.inherited("gotoDirectory", arguments);
 //					if (cursorBusy())
@@ -698,7 +700,7 @@
 	           'onclick="listingStore.gotoDirectory(\''+escapeString(encodeURIComponent(parent))+'\', true); return false" '+
 	           'href="'+baseURL+escapeString(encodeURI(parent))+'">'+
 	           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;<small><small>'+parent+'</small></small></a>';
-	          return s;
+	        return s;
 		}
 
 		function gridFormatFile(value, store, addToHistory, relativeToStore) {
@@ -2316,6 +2318,7 @@
 
 		function startSearch() {
 			cursorBusy(true);	
+			setNoticeDialog("Searching ...");
 			setSearchItemDetails("");
 			resetSearchResultsStore(false);
 			searchResultsStore.isValid = false;
@@ -2335,9 +2338,10 @@
 	    		      +"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadataName="+metadataNameKeyword+"&metadataValue="+metadataValueKeyword
 	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
 	    		load: function(responseObject, ioArgs){    
+						setNoticeDialog();
 	 					cursorBusy(false);
 	 					if (responseObject.truncated)
-		 					alert("Too many search results - the list will be truncated.\n\nPlease narrow you search.");
+		 					alert("Too many search results ("+responseObject.totalResults+" total includingfile replicas) - the list will be truncated.\n\nPlease narrow you search.");
 						searchResultsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
 						initSearchResultsStore();
 						searchResultsGrid.setStore(searchResultsStore);	 
@@ -2347,6 +2351,7 @@
 	       				return responseObject;
 	    			},
 	    		error: function(response, ioArgs){
+						setNoticeDialog();
 						searchResultsStore.isValid = true;
 	       				cursorBusy(false);
 	      				loadedAlert(errorMessage("search", ioArgs.xhr.status, ioArgs.xhr.statusText));
@@ -2419,6 +2424,15 @@
 
 		function setSearchItemDetails(s) {
 			dojo.html.set(dojo.byId("searchDetails"), s);
+		}
+
+		function setNoticeDialog(s) {
+			if (s) {
+				dojo.html.set(dojo.byId("noticeDialog"), s);
+				noticeDialog.layout();
+				noticeDialog.show(); 
+			} else 
+				noticeDialog.hide();
 		}
 
 		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
@@ -2647,6 +2661,8 @@
 	<div dojoType="dijit.MenuSeparator"></div>
 	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(searchResultsGrid);">Reset Column Widths</div>	
 </div>
+<div jsId="noticeDialog" id="noticeDialog" dojoType="dijit.Dialog" title="" style="font-size:small; padding: 20px; max-width: 80%; word-wrap: break-word; break-word: break-all; background-color: #F0F0F0;">
+</div>
 <div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
 	<input name="directory" id="directoryInputBox" jsId="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -2768,33 +2784,33 @@
 							<table style="width: 100%; margin:0px; padding:0px;">
 								<tr style="padding:0px; margin:0px;">
 									<td nowrap="nowrap"><i><b>Search from:</b></i></td>	
-									<td nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
-									<td nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
+									<td title="Search all collections within /<parameter zone/>" nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
+									<td title="Search only within the current collection" nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
 								</tr>
 								<tr>
 									<td><i><b>Show files:</b></i></td>
-									<td><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
-									<td><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
+									<td title="Limit search to items that I have read access to"><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
+									<td title="Limit search to items that I own"><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
 								</tr>
 								<tr>
         							<td><i><b>File/Collection&nbsp;keyword:</b></i></td>
-									<td colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
-									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+									<td title="Limit search to items containing this keyword in their name. File names exclude their parent collection name and collection names include their full path." colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the name of the item" type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the name of the item exactly" type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i><b>Path&nbsp;keyword:</b></i></td>
-									<td colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
-									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+        							<td><i><b>Parent path&nbsp;keyword:</b></i></td>
+									<td title="Limit search to items containing this keyword in their parent path" colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
-									<td colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
-									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+									<td title="Limit search to items with metadata where the name attribute contains this keyword" colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata name attribute" type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata name attribute exactly" type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;value&nbsp;keyword:</b></i></td>
-									<td colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
-									<td width="100%" style="padding-left:3%;"><input type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+									<td title="Limit search to items with metadata where the value attribute contains this keyword" colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata value attribute" type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata value attribute exactly" type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 							</table>
         				</td>

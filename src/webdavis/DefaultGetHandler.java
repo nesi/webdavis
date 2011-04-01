@@ -397,7 +397,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				} else
 					Log.log(Log.DEBUG, "Fetching directory contents from cache");
 
-				String jsonString = FSUtilities.generateJSONListing(fileList, file, comparator, requestUIHandle, start, count, directoriesOnly, true, false);
+				String jsonString = FSUtilities.generateJSONListing(fileList, file, comparator, requestUIHandle, start, count, directoriesOnly, true, false, -1);
 				byte[] buf = jsonString.getBytes();				 
 				ServletOutputStream op = null;
 				try {
@@ -495,6 +495,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				Hashtable<String, String> substitutions = new Hashtable<String, String>();
 				substitutions.put("dojoroot", dojoroot);
 				substitutions.put("servertype", getServerType());
+				substitutions.put("zone", davisSession.getZone());
 				substitutions.put("href", requestUrl);
 				substitutions.put("url", file.getAbsolutePath().replace("\\", "\\\\").replace("\"", "\\\"")); // Escape " chars - ui uses this string inside double quotes
 				substitutions.put("unc", file.toString());

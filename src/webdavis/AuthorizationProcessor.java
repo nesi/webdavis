@@ -146,14 +146,15 @@ public class AuthorizationProcessor {
     protected GSSCredential myproxyLogin(String user, char[] password, String host)
     {
         Log.log(Log.DEBUG,"logging in with myproxy: "+ host);
-        if (host==null||host.equals("")){
+        if (host == null || host.equals(""))
             return null;
-        }
+        
         try{
             MyProxy mp = new MyProxy(host, 7512);
             GetParams getRequest = new GetParams();
             getRequest.setCredentialName(null);
-            getRequest.setLifetime(3600);
+//            getRequest.setLifetime(3600);
+            getRequest.setLifetime(DavisConfig.GSSCREDENTIALLIFETIME);
             getRequest.setPassphrase(new String(password));
             getRequest.setUserName(user);
             GSSCredential gssCredential = mp.get(null,getRequest);
@@ -170,11 +171,11 @@ public class AuthorizationProcessor {
             return gssCredential;
         }
         catch(MyProxyException e){
-        	Log.log(Log.DEBUG, "Caught MyProxy exception: "+e);
+        	Log.log(Log.ERROR, "Caught MyProxy exception: "+e);
             return null;
         }
         catch(Exception e){
-        	Log.log(Log.DEBUG, "Caught exception during myproxy login: "+e);
+        	Log.log(Log.ERROR, "Caught exception during myproxy login: "+e);
         	return null;
         }
     }

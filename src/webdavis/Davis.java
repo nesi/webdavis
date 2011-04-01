@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 
 import org.apache.commons.codec.binary.Base64;
 
+import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSConstants;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 
@@ -405,7 +406,9 @@ public class Davis extends HttpServlet {
 		Log.log(Log.INFORMATION, "Final davisSession: " + davisSession);
 		long currentTime = new Date().getTime();
 		Log.log(Log.DEBUG, "Time after establishing session: "+(currentTime-profilingTimer.getTime()));
-
+//try {
+//System.err.println("XXXXXXXXXXXXXXXXXXXXXXXXX proxy time remaining: "+((IRODSAccount)((IRODSFileSystem)davisSession.getRemoteFileSystem()).getAccount()).getGSSCredential().getRemainingLifetime());
+//} catch (Exception e) {System.err.println(e);}
 		if (Runtime.getRuntime().freeMemory() < headroom)
 			headroom = Runtime.getRuntime().freeMemory();
 		if (currentTime - lastLogTime >= DavisConfig.MEMORYLOGPERIOD) {

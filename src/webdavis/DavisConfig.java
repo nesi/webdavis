@@ -29,12 +29,12 @@ public class DavisConfig {
 	public final static int JARGONIRODS_SOCKET_TIMEOUT = 1*60*1000;			// Jargon <-> irods normal socket operations should timeout after this many ms
 	public final static int JARGONIRODS_SEARCH_SOCKET_TIMEOUT = 2*60*1000;	// Jargon <-> irods search socket operations should timeout after this many ms
 	public final static int JARGON_MAX_QUERY_NUM = 100000;					// Max results returned by regular Jargon queries
-	public final static int SEARCH_MAX_QUERY_RESULTS = 10;					// Max results returned by search functions
+	public final static int SEARCH_MAX_QUERY_RESULTS = 500;					// Max results returned by search functions
 	public final static long MEMORYLOGPERIOD = 60*60*1000;  				// How often to log memory usage (in ms)
 	public final static int MAXCONNECTIONRETRIES = 3;						// Max number of retries if irods connection lost. 
 																			// Note: this may not do anything because the fail() handler might be called before a second reconnect is attempted.
 	public final static int CONNECTIONRETRYPAUSE = 1000;					// Pause between connection retries
-
+	public final static int GSSCREDENTIALLIFETIME = 8*60*60;				// Lifetime for GSS credentials (myproxy)
 
 	/**
 	 * The name of the servlet context attribute containing the charset used to

@@ -1002,7 +1002,15 @@ public class DefaultPostHandler extends AbstractHandler {
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
 				Log.log(Log.ERROR, "Searching is supported only for iRODS");
 			else {
-				IRODSFileSystem searchFileSystem = FSUtilities.createIRODSFileSystem((IRODSAccount)davisSession.getRemoteFileSystem().getAccount(), DavisConfig.JARGONIRODS_SEARCH_SOCKET_TIMEOUT);
+				IRODSFileSystem searchFileSystem = null;
+				try {
+					searchFileSystem = FSUtilities.createIRODSFileSystem((IRODSAccount)davisSession.getRemoteFileSystem().getAccount(), DavisConfig.JARGONIRODS_SEARCH_SOCKET_TIMEOUT);
+				} catch (java.lang.SecurityException e) { // GSI credentials expired
+					Log.log(Log.WARNING, "Search failed due to "+e+"   This is likely to be because the user's GSI credentials expired. User will be asked to reauthenticate.");
+					response.sendError(HttpServletResponse.SC_GONE, "Access denied - you are not currently logged in");
+					response.flushBuffer();
+					return;
+				}
 				String s = request.getParameter("from");
 				boolean fromRoot = (s == null || s.equals("root"));
 				s = request.getParameter("show");
@@ -1084,10 +1092,27 @@ public class DefaultPostHandler extends AbstractHandler {
 					Log.log(Log.DEBUG, "Search: querying directories");
 		    		MetaDataRecordList[] dirDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS, Namespace.DIRECTORY);
 					Log.log(Log.DEBUG, "Search: querying complete");
-					boolean truncated = false;
-					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
-						truncated = true;
-
+					int totalResults = 0;
+					int nResults = 0;
+					if (fileDetails != null && fileDetails.length > 0) {
+						nResults += fileDetails.length;
+//System.err.println("####################file size="+fileDetails[0].getRecordCount());
+						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(fileDetails);
+						if (l != null && l.length > 0) 
+							totalResults += l.length;
+//System.err.println("#################### Search: file items returned: "+fileDetails.length+"  total file items found: "+l.length);
+					}
+					if (dirDetails != null && dirDetails.length > 0) {
+						nResults += dirDetails.length;
+//System.err.println("####################dir size="+dirDetails[0].getRecordCount());
+						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(dirDetails);
+						if (l != null && l.length > 0)
+							totalResults += l.length;
+//System.err.println("#################### Search: dir items returned: "+dirDetails.length+"  total dir items found: "+l.length);
+					}
+//					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
+//						truncated = true;
+					boolean truncated = (nResults != totalResults);
 					HashMap<String, FileMetadata> metadata = new HashMap<String, FileMetadata>();
 					
 					selectsFile = 
@@ -1159,7 +1184,7 @@ public class DefaultPostHandler extends AbstractHandler {
 //FSUtilities.dumpQueryResult(dirMetaDetails, ">dirmeta>");
 
 					CachedFile[] fileList = FSUtilities.buildCache(fileDetails, dirDetails, (RemoteFileSystem)file.getFileSystem(), metadata, /*sort*/false, true, true);
-					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated));
+					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated, totalResults));
 				} catch (SocketTimeoutException e) {
 					s = "Search query took too long - aborted.";
 					response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT, s);

@@ -575,10 +575,12 @@ public class FSUtilities {
     		for (MetaDataRecordList p:fileDetails) {
     			CachedFile file = new CachedFile(fileSystem, (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
     			if (file.getName().equals(lastName) && file.getParent().equals(lastParent)) {
-    				if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("1")) // Clean replica - replace previous replica in list
-    					fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
-    				else
-    					continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
+    				String replica = (String)p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS);
+    				if (replica != null)
+    					if (replica.equals("1")) // Clean replica - replace previous replica in list
+    						fileList.removeElementAt(fileList.size()-1);	// Delete last item so that this replica replaces it
+    					else
+    						continue;	// Dirty replica. Given we already have a dirty or clean replica, just discard it
     			}	
     			lastName = file.getName();
     			lastParent = file.getParent();
@@ -594,7 +596,8 @@ public class FSUtilities {
 					if (metadata.containsKey(path)) 
 						file.setMetadata(metadata.get(path).getMetadata());
 				}
-    			if (p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS).equals("0")) {
+				String replica = (String)p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS);
+    			if (replica != null && replica.equals("0")) {
     				String s = "";
     				if (file.length() == 0)
     					s = " (its length is 0)";
@@ -735,7 +738,7 @@ public class FSUtilities {
     	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
 	}
 	
-	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing, boolean truncated) throws IOException {
+	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing, boolean truncated, int totalResults) throws IOException {
 		
 		StringBuffer json = new StringBuffer();
 		boolean emptyDir = (fileList.length == 0);
@@ -747,6 +750,8 @@ public class FSUtilities {
 		json.append("{\n"+escapeJSONArg("numRows")+":"+escapeJSONArg(""+(fileList.length+(directoryListing ? 1:0)+(emptyDir ? 1:0)))+",");
 		if (truncated)
 			json.append(escapeJSONArg("truncated")+":"+escapeJSONArg("true")+",");
+		if (totalResults > -1)
+			json.append(escapeJSONArg("totalResults")+":"+escapeJSONArg(""+totalResults)+",");
 		if (requestUIHandle == null)
 			requestUIHandle = "null";
 		json.append(escapeJSONArg("uiHandle")+":"+escapeJSONArg(requestUIHandle)+",");
