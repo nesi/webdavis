@@ -2794,22 +2794,22 @@
 								</tr>
 								<tr>
         							<td><i><b>File/Collection&nbsp;keyword:</b></i></td>
-									<td title="Limit search to items containing this keyword in their name. File names exclude their parent collection name and collection names include their full path." colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td title="Limit search to items containing this keyword in their name. File names exclude their parent collection name and collection names include their full path. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""></></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the name of the item" type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the name of the item exactly" type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i><b>Parent path&nbsp;keyword:</b></i></td>
-									<td title="Limit search to items containing this keyword in their parent path" colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td title="Limit search to items containing this keyword in their parent path. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
-									<td title="Limit search to items with metadata where the name attribute contains this keyword" colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td title="Limit search to items with metadata where the name attribute contains this keyword. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata name attribute" type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata name attribute exactly" type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;value&nbsp;keyword:</b></i></td>
-									<td title="Limit search to items with metadata where the value attribute contains this keyword" colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td title="Limit search to items with metadata where the value attribute contains this keyword. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata value attribute" type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata value attribute exactly" type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 							</table>
