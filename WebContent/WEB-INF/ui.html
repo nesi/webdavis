@@ -15,6 +15,7 @@
 		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
 		@import "<parameter stylesheet/>";
+		@import "<parameter stylesheetoverride/>";
     </style>	
 	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
 <!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
@@ -2574,7 +2575,7 @@
 			<table width="100%" border="0px" cellspacing="0" cellpadding="0">
 				<tr>
 		    		<td valign="bottom">
-						<h1 class="text"> <img src="<parameter organisationlogo/>" alt="" width="<parameter organisationlogowidth/>" height="<parameter organisationlogoheight/>" />&nbsp;<parameter authenticationrealm/></h1>
+						<h1 class="text"><img src="<parameter organisationlogo/>" alt="" width="<parameter organisationlogowidth/>" height="<parameter organisationlogoheight/>" />&nbsp;<parameter authenticationrealm/></h1>
 					</td>
 					<td align="right" valign="top">
 						<table border="0" cellspacing="0" cellpadding="0">
@@ -2586,11 +2587,11 @@
 			        				<tr>
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
-			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/ic_refresh.gif" width="32" height="32"/></a>
-											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/ic_home.gif" width="28" height="32"/></a></span>
-											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/ic_trash.gif" width="28" height="32"/></a></span>
+			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
+											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/trash.png" width="28" height="32"/></a></span>
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="Login with authentication" src="/images/login.png" width="26" height="32"/></a></span>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/ic_logout.gif" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/logout.png" width="26" height="32"/></a></span>
 											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="Show your shared files" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >

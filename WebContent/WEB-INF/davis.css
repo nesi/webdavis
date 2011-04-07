@@ -17,7 +17,7 @@
 		.linkOver{text-decoration:underline;}
 		.link:hover{text-decoration:underline; color:#04E;}
 		.darklink:hover{text-decoration:underline; color:black;}
-		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
+		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%; border:1px solid #CCC;}
 		.activeItem:hover{background:#83C500; color:white;}
 		.activeItem:active{background:white; color:#83C500;}
 		.inactiveItem{background:#459E00; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}

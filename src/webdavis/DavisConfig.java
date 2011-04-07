@@ -95,7 +95,7 @@ public class DavisConfig {
     private List<String> webdavUserAgents = new ArrayList<String>();
     private List<String> browserUserAgents = new ArrayList<String>();
     private String insecureLoginText;
-    private String styleSheet;
+    private String styleSheet1, styleSheet2;
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	private Hashtable<String, String> generalSubstitutions;
@@ -362,7 +362,8 @@ public class DavisConfig {
 		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
 		shibInitPath = getInitParameter("shib-init-path", "/Shibboleth.sso/DS").trim();
 		insecureLoginText = getInitParameter("insecure-login-text", "via HTTP").trim();
-		styleSheet = getInitParameter("davis-style-sheet", "/include/davis.css").trim();
+		styleSheet1 = getInitParameter("davis-style-sheet", "/include/davis.css").trim();
+		styleSheet2 = getInitParameter("davis-style-sheet-override", "/include/davis-override.css").trim();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
@@ -415,7 +416,8 @@ public class DavisConfig {
 		includeSubstitutions.put("includehead", ""+getUIIncludeHead());
 		includeSubstitutions.put("includebodyheader", ""+getUIIncludeBodyHeader());
 		includeSubstitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
-		includeSubstitutions.put("stylesheet", ""+getStyleSheet());
+		includeSubstitutions.put("stylesheet", ""+getStyleSheetPath());
+		includeSubstitutions.put("stylesheetoverride", ""+getStyleSheetOverridePath());
 	}
 
 	public void refresh() {
@@ -779,7 +781,11 @@ public class DavisConfig {
 		return insecureLoginText;
 	}
 	
-	public String getStyleSheet() {
-		return styleSheet;
+	public String getStyleSheetPath() {
+		return styleSheet1;
+	}
+
+	public String getStyleSheetOverridePath() {
+		return styleSheet2;
 	}
 }
