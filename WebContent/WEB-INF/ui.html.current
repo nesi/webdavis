@@ -81,7 +81,6 @@
 					dojo.html.set(dojo.byId("sharesButton"), '');
 				
 				listingLayout[listingLayoutMetadataField].hidden = true;
-		//		listingGrid.setStructure(listingLayout);
 			}
 											
 			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
@@ -101,7 +100,7 @@
 					var evt = this.ownerDocument.createEvent('MouseEvents');
 					evt.initMouseEvent('click', true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
 					this.dispatchEvent(evt);
-				}
+				}	  
 		});
 
 		dojo.addOnUnload(function() {
@@ -180,6 +179,7 @@
     	var listingLayout;
     	var destinationLayout;
     	var sharesLayout;
+    	var searchResultsLayout;
     	
 		var metadataStore;
 		var permissionsStore;
@@ -189,7 +189,8 @@
 		var listingStore;
 		var destinationStore;
 		var sharesStore;
-		
+		var searchResultsStore;
+
 		function initVariables() {
 			metadataLayout = ("<parameter servertype/>" == 'irods') ? 
 		    	[{
@@ -232,14 +233,23 @@
 		    listingLayoutMetadataField = 4; // This MUST be the layout row for "metadata" below
 	    	listingLayout = [
 	    	 	   	{field: "name", width: "50%", name: "Name", formatter: gridFormatFileListing, styles: "text-align: left;"},
-	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate},
+	    	 	   	{field: "date", width: "25%", name: "Last Modified", formatter: gridFormatDate, styles: "padding-right: 5px;"},
 	    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
 	    	 	   	{field: "sharing", width: "15%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
 	    	 	   	{field: "metadata", width: "15%", name: " ", formatter: gridFormatMetadata, hidden: false}
 	    	 	];
+    	 	
 	    	destinationLayout = [
-	    	        {field: "name", width: "50%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
+	    	        {field: "name", width: "100%", name: "Name", formatter: gridFormatFileDestination, styles: "text-align: left;"}
 	    	    ];	
+    	    
+	    	searchResultsLayout = [
+	    		    	 	   	{field: "name", width: "25%", name: "Name", formatter: gridFormatFileSearchResults, styles: "text-align: left;"},
+	    		    	 	   	{field: "date", width: "19%", name: "Last Modified", formatter: gridFormatDate, styles: "padding-right: 5px;"},
+	    		    	 	   	{field: "size", width: "10%", name: "Size", formatter: gridFormatSize},
+	    		    	 	   	{field: "sharing", width: "11%", name: "QuickShare", formatter: gridFormatSharing, hidden: false},
+	    		    	 	   	{field: "name", width: "35%", name: "Parent", formatter: gridFormatParent, styles: "text-align: left;"}
+	    		    	 	];
 
 	    	resetMetadataStore();
 			resetPermissionsStore();
@@ -247,9 +257,10 @@
 			resetUsersStore();
 			resetReplicasStore();
 			resetSharesStore(false);
+			resetSearchResultsStore();
 
 			listingStore = new ListingStore({
-				id: "listingStore", // For debugging
+				id: "listingStore", 
 				grid: listingGrid,
 				lastSort : null,
 				directory: escape("<parameter url/>"),
@@ -272,6 +283,7 @@
 					listingStore.directory = listingStore.getCurrentDirectory(); // Put directory back to last successful one
 					listingStore.setURL(listingStore.lastURL.dir, listingStore.lastURL.noCache, listingStore.lastURL.postfix); // Put url back to last successful one
 					listingStore.refreshDisplay(false);
+					setNoticeDialog();
 				},
 				onFetchSuccess: function() {
 					if (firstRender)
@@ -286,10 +298,12 @@
 						firstRender = false;
 					} else
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
+					setNoticeDialog();
 				},
 				gotoDirectory: function(dir, addToHistory) {
 					if (!listingStore.isValid()) // Don't do another chdir if already doing one 
 						return;
+					setNoticeDialog("Fetching contents of "+decodeURIComponent(dir)+" ...");
 					dir = unescapePath(dir); // Seems to be necessary when apache is in front of jetty - restores forward slashes in path
 					listingStore.inherited("gotoDirectory", arguments);
 //					if (cursorBusy())
@@ -320,7 +334,7 @@
 							if (name.type == "bottom")
 								items--;
 						}
-						setStatusPanel(items+" items listed, "+selectedItemsCount()+" items selected");
+						setStatusPanel(pluralItemsString(items)+" listed, "+pluralItemsString(selectedItemsCount())+" selected");
 					}
 					if (doMetadata)
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
@@ -331,7 +345,7 @@
 			listingGrid.setStore(listingStore);
 	    		    	
 			destinationStore = new ListingStore({
-				id: "destinationStore", // For debugging
+				id: "destinationStore", 
 				grid: destinationGrid,
 				directory:escape("<parameter url/>"),
 				_fetchItems: function(request) {
@@ -401,12 +415,15 @@
     		dojo.connect(sharesGrid, 'onHeaderClick', function(e){
     			sharesGrid.selection.deselectAll(); // Clear selections if change of sort (because selections aren't recalculated to match new row order)
     		});  		
-    		dojo.connect(dojo.byId("shareRadioButton"), 'onClick', function(e){
-    			refreshButtons();
-    		});  		
-    		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){
-    			refreshButtons();
-    		});  		
+    		dojo.connect(dojo.byId("shareRadioButton"), 'onClick', function(e){refreshButtons();});  		
+    		dojo.connect(dojo.byId("unshareRadioButton"), 'onClick', function(e){refreshButtons();});  		
+			dojo.connect(searchResultsGrid, 'onClick', function(e) {refreshSearchDialog();});
+			dojo.connect(window, "onresize", function(e) {refreshSearchDialog();}); // Search results grid must auto resize when window resizes
+
+			dojo.connect(dojo.byId("searchFileInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchPathInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchMetadataNameInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dojo.byId("searchMetadataValueInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
 		}
 		
 		function initWidgets() {
@@ -425,14 +442,32 @@
         	}
 //    		listingGrid.setSortIndex(0, true);
     		listingGrid.onCanSelect = function(inRowIndex) {
-    			return canSelect(inRowIndex, listingStore, listingGrid);
+    			return canSelect(inRowIndex, listingStore, listingGrid, true);
     		};
     		destinationGrid.onCanSelect = function(inRowIndex) {
-    			return canSelect(inRowIndex, destinationStore, destinationGrid);
+    			return canSelect(inRowIndex, destinationStore, destinationGrid, true);
     		};
-    		function canSelect(inRowIndex, store, grid){
+    		searchResultsGrid.onCanSelect = function(inRowIndex) {
+    			return canSelect(inRowIndex, searchResultsStore, searchResultsGrid, false);
+    		};
+    		function canSelect(inRowIndex, store, grid, directoryListing){
     			if (!store)
     				return false;
+
+    			if (!directoryListing) 
+					if (inRowIndex == /*store._numRows*/grid.rowCount-1) { // If last row
+//						if (store._numRows > 1)  // Can select last row if dir is definitely not empty - there won't be a "dir empty" row
+//							return true;
+//					 	// Have to be careful here. QueryReadStore.getValue will throw an exception if item hasn't been loaded yet (eg for a
+//						// dir listing with more than a page's worth of items. 
+//						// If 0 or 1 item, should be safe to call getValue to check the row's type.
+	    				var name = store.getValue(grid.getItem(inRowIndex), "name"); 
+	    				if (name.type == "bottom")
+	    					return false;
+	    				return true;
+					} else
+						return true;
+
     			if (inRowIndex == 0) // Can't select ... Parent Directory row
     				return false;
 				if (inRowIndex == store._numRows-1) { // If last row
@@ -448,28 +483,41 @@
 				}
     		};
     		// Re-enable the browser's native right click context menu in listingGrid's cells
-    		listingGrid.onRowContextMenu = function(e) {
-    		};
+    		listingGrid.onRowContextMenu = function(e) {};
+    		searchResultsGrid.onRowContextMenu = function(e) {}; // Note: this only seems to work if HeaderMenu is set
+    		
     		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
         		if (listingGrid.focus._colHeadNode)
       				listingGrid.focus.inherited("blurHeader", arguments);
     		}
     		listingGrid.fastScroll = false;
     		// This stops the column select menu from popping up when right clicking anywhere other than the header bar
-  			gridMenu._openMyself= function(e, cn, iframe){ 
+  			gridListingMenu._openMyself= function(e, cn, iframe){ 
 				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
-	 				gridMenu.inherited("_openMyself", arguments);
+	 				gridListingMenu.inherited("_openMyself", arguments);
+  			}
+  			searchResultsMenu._openMyself= function(e, cn, iframe){ 
+				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
+	 				searchResultsMenu.inherited("_openMyself", arguments);
   			}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
     		// The following hack prevents the menu items being destroyed if the domNode is null. The other time unReplace is
     		// called is when column order is changed, but domNode is valid then, so call the original unReplace.
-    		columnMenu.oldUnReplace = columnMenu.unReplace;
-    		columnMenu.unReplace = function(destroy) {
+    		listingColumnMenu.oldUnReplace = listingColumnMenu.unReplace;
+    		listingColumnMenu.unReplace = function(destroy) {
     			if (this.domNode != null)
-    				columnMenu.oldUnReplace(destroy);
+    				listingColumnMenu.oldUnReplace(destroy);
     		}
+    		searchResultsColumnMenu.oldUnReplace = searchResultsColumnMenu.unReplace;
+    		searchResultsColumnMenu.unReplace = function(destroy) {
+    			if (this.domNode != null)
+    				searchResultsColumnMenu.oldUnReplace(destroy);
+    		}
+    		searchResultsGrid.setSortIndex(0, true);
+ 
     		dialogMetadata.closeButtonNode.title = "Close";
     		dialogPermissions.closeButtonNode.title = "Close";
+    		dialogSearch.closeButtonNode.title = "Close";
 
     		var buttons = document.body.getElementsByTagName('BUTTON');
     		// The following seems to be necessary for mozilla based browsers on linux. Some buttons start disabled for some reason.
@@ -491,6 +539,13 @@
 		
 		function resetSharesStore(fast) { 
 			sharesStore = resetStore(sharesStore, sharesGrid, sharesLayout, fast);
+		}
+		
+		function resetSearchResultsStore(fast) { 
+			searchResultsStore = resetStore(searchResultsStore, searchResultsGrid, searchResultsLayout, fast);
+			searchResultsStore.id = "searchResultsStore";
+			searchResultsStore.isValid = true;
+			initSearchResultsStore();
 		}
 		
 		function resetDomainsStore() { 
@@ -520,6 +575,38 @@
 			grid.setStructure(layout);	
 			grid.setStore(store);	
 			return store;
+		}
+
+		function initSearchResultsStore() {
+			searchResultsStore.comparatorMap = {};
+			searchResultsStore.comparatorMap["name"] = function(a,b){
+				if (searchResultsGrid.getSortIndex() > 1) { // Sort on parent column
+					return a.parent[0].toLowerCase().localeCompare(b.parent[0].toLowerCase());
+				} else { // Sort on name column
+					if ((a.type[0] == "d") && !(b.type[0] == "d")) // Keep directories separate from files
+						return -1;
+					if (!(a.type[0] == "d") && (b.type[0] == "d"))
+						return 1;
+					return a.name[0].toLowerCase().localeCompare(b.name[0].toLowerCase());
+				}
+			}
+			searchResultsStore.comparatorMap["date"] = function(a,b){
+				return compareInt(new Date(a.value[0]), new Date(b.value[0]));
+			}
+			searchResultsStore.comparatorMap["size"] = function(a,b){
+				return compareInt(parseInt(a.size[0]), parseInt(b.size[0]));
+			}
+			searchResultsStore.comparatorMap["sharing"] = function(a,b){
+				return a.value[0].localeCompare(b.value[0]);
+			}
+		}
+
+		function compareInt(a, b) {
+			if (a == b)
+				return 0;
+			if (a < b)
+				return -1;
+			return 1; 
 		}
 		
 		function addOption(selectName, value, text, title) {
@@ -555,14 +642,14 @@
 				'<table border="0" cellspacing="0" cellpadding="2">'+
         		'	<tr class="text">'+
           		'		<td>'+
-				'			<table id="uploadButton" class="activeItem" cellspacing="0" cellpadding="4">'+
+				'			<table id="uploadButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
              	'				<tr>'+
                 '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); setUploadStatus(\'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
           		'		<td>'+
-				'			<table id="createDirectoryButton" class="activeItem" cellspacing="0" cellpadding="4">'+
+				'			<table id="createDirectoryButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
             	'				<tr>'+
               	'					<td onclick="if (!activeItemIsEnabled(\'createDirectoryButton\')) return; dialogCreateDir.show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>'+
             	'				</tr>'+
@@ -595,21 +682,42 @@
 		}
 		
 		function gridFormatFileListing(value) {
-			return gridFormatFile(value, listingStore, "listingStore", true);
+			return gridFormatFile(value, listingStore, /*"listingStore",*/ true, true);
 		}
 		function gridFormatFileDestination(value) {
-			return gridFormatFile(value, destinationStore, "destinationStore", false);
+			return gridFormatFile(value, destinationStore, /*"destinationStore",*/ false, true);
+		}
+		function gridFormatFileSearchResults(value) {
+			return gridFormatFile(value, listingStore, /*"listingStore",*/ true, false);
+		}
+		function gridFormatParent(value) {
+			if (value.type == "bottom")
+				return "";
+			var parent = decodeURIComponent(value.parent);
+//			if (parent == '/')
+//				parent = '';
+			var s = '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+	           'onclick="listingStore.gotoDirectory(\''+escapeString(encodeURIComponent(parent))+'\', true); return false" '+
+	           'href="'+baseURL+escapeString(encodeURI(parent))+'">'+
+	           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;<small><small>'+parent+'</small></small></a>';
+	        return s;
 		}
 
-		function gridFormatFile(value, store, storeName, addToHistory) {
+		function gridFormatFile(value, store, addToHistory, relativeToStore) {
 			var filename = decodeURIComponent(value.name);
+			var storeName = store.id;
+			var directory;
+			if (relativeToStore)
+				directory = store.getCurrentDirectory();
+			else
+				directory = value.parent;
 			var separator = '/';
-			if (store.getCurrentDirectory() == '/')
+			if (/*store.getCurrentDirectory()*/directory == '/')
 				separator = '';
 			if (value.type == "top" ) // "... Parent Directory" 
 				return '<a class="link" '+
-				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'\','+addToHistory+'); return false" '+
-				           'href="'+escapeString(encodeURI(getParent(decodeURIComponent(store.getCurrentDirectory()))))+'">'+filename+'</a>';
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(getParent(decodeURIComponent(/*store.getCurrentDirectory()*/directory))))+'\','+addToHistory+'); return false" '+
+				           'href="'+escapeString(encodeURI(getParent(decodeURIComponent(/*store.getCurrentDirectory()*/directory))))+'">'+filename+'</a>';
 			if (value.type == "bottom" ) // "Directory empty"
 				return '<i>'+filename+'</i>';
 			var f = filename;
@@ -617,20 +725,23 @@
 				f = '';
 			if (value.type == "d") 
 				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURIComponent(f))+'\','+addToHistory+'); return false" '+
-				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(store.getCurrentDirectory())))+separator+escapeString(encodeURI(f))+'">'+
+				           'onclick="'+storeName+'.gotoDirectory(\''+escapeString(encodeURIComponent(decodeURIComponent(/*store.getCurrentDirectory()*/directory)))+separator+escapeString(encodeURIComponent(f))+'\','+addToHistory+'); return false" '+
+				           'href="'+baseURL+escapeString(encodeURI(decodeURIComponent(/*store.getCurrentDirectory()*/directory)))+separator+escapeString(encodeURI(f))+'">'+
 				           '<img src="/images/folder.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
-			else 
-				return '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
-				           'onclick="window.open('+storeName+'.getCurrentDirectory()+\'/'+escapeString(value.name)+'\'); return false" '+
-				           'href="'+store.getCurrentDirectory()+separator+value.name+'">'+
+			else {
+				var s = '<a style="word-wrap: break-word; break-word: break-all;" class="darklink" '+
+				           'onclick="window.open(\''+decodeURIComponent(directory)+'/'+escapeString(value.name)+'\'); return false" '+
+				           'href="'+/*store.getCurrentDirectory()*/decodeURIComponent(directory)+separator+value.name+'">'+
 				           '<img src="/images/page.gif" width="16" height="16" border="0"/>&nbsp;'+filename+'</a>';
+		//alert("s="+s);
+		return s;
+			}
 		}
 		
 		function gridFormatDate(value) {
 			if (value.type == "top" || value.type == "bottom") // Static row?
 				return "";
-			return '<small><small>'+value.value/*.toUTCString()*/+'</small></small>';
+			return '<span style="font-size:xx-small;">'+value.value/*.toUTCString()*/+'</span>';
 		}
 
 		function gridFormatSize(value) {
@@ -863,6 +974,14 @@
 	   		return Math.round(n)+multipliers[multiplier];
     	}
 
+    	function pluralItemsString(n) {
+			if (n == 0)
+				return "no items";
+			if (n == 1)
+				return "1 item";
+			return n+" items";
+        }
+
 		function getParent(dir) {
 			if (dir.length == 0)
 				return '/';
@@ -942,7 +1061,7 @@
 					if (object.objectType == "button") 
 						buttonSessionHTML +=
 			      			'<td>'+
-							'	<table id="'+object.name+'" class="activeItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			         		'		<tr>'+
 			            	'			<td>&nbsp;'+object.displayTitle+'</td>'+
 			          		'		</tr>'+
@@ -952,7 +1071,7 @@
 				if (location == "selection") {
 					if (object.objectType == "button") 
 						buttonSelectionHTML +=
-							'<table width="100%" class="hoverBorderSide"  cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'<table width="100%" class="hoverBorderSide" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 				    		'	<tr>'+
 				      		'		<td class="activeItem" id="'+object.name+'"">'+object.displayTitle+'</td>'+
 				    		'	</tr>'+
@@ -962,7 +1081,7 @@
 					if (object.objectType == "button") 
 						buttonCollectionHTML +=
 		          			'<td>'+
-		          			'	<table id="'+object.name+'" class="activeItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+		          			'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 	         				'		<tr>'+
 	            			'			<td><img src="/images/1px.png" alt="" style="height:16px; width:0px;" />&nbsp;'+object.displayTitle+'</td>'+
 	            			'		</tr>'+
@@ -1218,7 +1337,7 @@
 			if (inTrash) {
 				if (trashEmpty)
 					dojo.html.set(trashEmpty, 
-							'<table id="emptyTrashButton" class="activeItem" cellspacing="0" cellpadding="4">'+
+							'<table id="emptyTrashButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
 							'	<tr>'+
 							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; selectAll(true); deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+
@@ -1264,6 +1383,7 @@
 			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 			enableButton('unshareButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			enableButton('generateLinksButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
+			refreshSearchDialog();
 		}
 		
 		function setStatusPanel(html) {
@@ -1741,6 +1861,11 @@
 			var data=listToJSON();
 			data = data.substring(0, data.length-2);	// Trim '}]' off end 
 			data += ",\"metadata\":[";
+			
+		  if (metadataGrid.rowCount > 0) {
+			  metadataGrid.doclick(metadataGrid.getItem(0));
+		  }
+						
 			for (var i = 0; i < metadataGrid.rowCount; i++){
 				if (i > 0) 
 					data += ",";
@@ -1852,10 +1977,14 @@
 	  		});		
 		}
 
+		function setPermissionsOwner(owner) {
+			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+owner+")</small>");
+		}
+					
 		function populatePermission(permissions){
 			permissionsStore = new dojo.data.ItemFileWriteStore({data: permissions});
 			permissionsGrid.setStore(permissionsStore);
-			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+permissions.owner+")</small>");
+			setPermissionsOwner(permissions.owner);
 			if (permissions.sticky != null){
 				if (permissions.sticky == "true")
 					dojo.html.set(dojo.byId("stickyControl"), "This directory is sticky <button type=\"button\" id=\"stickyPermissionsButton\" onclick=\"setSticky(false, dojo.byId('recursive').checked)\">Unset</button>");
@@ -1870,6 +1999,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstSelectedItem()/*)*/; 
+			setPermissionsOwner("");
 			enableButton('recursive', (directoryIsSelected() || unknownIsSelected()));	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
@@ -2182,12 +2312,135 @@
 	  		});
 		}
 
+		function showSearch() {
+			dialogSearch.show();
+		}
+
+		function startSearch() {
+			cursorBusy(true);	
+			setNoticeDialog("Searching ...");
+			setSearchItemDetails("");
+			resetSearchResultsStore(false);
+			searchResultsStore.isValid = false;
+			refreshSearchDialog();
+			var from = dojo.byId('searchFromRootRadioButton').checked ? "root" : "current";
+			var show = dojo.byId('searchShowReadRadioButton').checked ? "read" : "own";
+			var fileKeyword = dojo.byId('searchFileInputBox').value;
+			var pathKeyword = dojo.byId('searchPathInputBox').value;
+			var metadataNameKeyword = dojo.byId('searchMetadataNameInputBox').value;
+			var metadataValueKeyword = dojo.byId('searchMetadataValueInputBox').value;
+			var fileMatch = dojo.byId('searchFileExactRadioButton').checked ? "exact" : "inexact";
+			var pathMatch = dojo.byId('searchPathExactRadioButton').checked ? "exact" : "inexact";
+			var metadataNameMatch = dojo.byId('searchMetadataNameExactRadioButton').checked ? "exact" : "inexact";
+			var metadataValueMatch = dojo.byId('searchMetadataValueExactRadioButton').checked ? "exact" : "inexact";
+		  	dojo.xhrPost({
+	    		url: listingStore.getCurrentDirectory()+"?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword
+	    		      +"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadataName="+metadataNameKeyword+"&metadataValue="+metadataValueKeyword
+	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
+	    		load: function(responseObject, ioArgs){    
+						setNoticeDialog();
+	 					cursorBusy(false);
+	 					if (responseObject.truncated)
+		 					alert("Too many search results ("+responseObject.totalResults+" total includingfile replicas) - the list will be truncated.\n\nPlease narrow you search.");
+						searchResultsStore = new dojo.data.ItemFileWriteStore({data: responseObject});
+						initSearchResultsStore();
+						searchResultsGrid.setStore(searchResultsStore);	 
+						searchResultsGrid.selection.deselectAll();     			
+						searchResultsStore.isValid = true;
+						refreshSearchDialog();
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+						setNoticeDialog();
+						searchResultsStore.isValid = true;
+	       				cursorBusy(false);
+	      				loadedAlert(errorMessage("search", ioArgs.xhr.status, ioArgs.xhr.statusText));
+						refreshSearchDialog();
+	      				return response;
+	    			},
+	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});		
+		}
+
+		function refreshSearchDialog() {
+			searchResultsGrid.update();
+			refreshSearchButtons();
+			showSearchItemDetails();
+		}
+
+		function refreshSearchButtons() {
+			var reasonableSearch = (dojo.byId('searchFileInputBox').value+dojo.byId('searchPathInputBox').value+dojo.byId('searchMetadataNameInputBox').value+dojo.byId('searchMetadataValueInputBox').value).length > 0;
+			enableButton('startSearchButton', listingStore.isValid() && reasonableSearch && searchResultsStore.isValid);
+		}
+
+		function showSearchItemDetails() {
+			var nResults = searchResultsGrid.rowCount;
+			if (nResults == 1) { // Might be "No matches"
+   				var name = searchResultsStore.getValue(searchResultsGrid.getItem(0), "name"); 
+   				if (name.type == "bottom")
+					nResults = 0;
+			}
+			var s = '';
+			if (searchResultsStore.isValid) {
+				s += '<small><small><div style="margin:0px; padding:3px; background-color:#E8E8E8; border: 1px dotted grey; border-top-width:0px;">'+pluralItemsString(nResults)+' found</div><br>';
+				s += 'Current collection is: <span id="searchFromCurrentCollection"></span></br></br></small></small>';
+			
+			  if (searchResultsGrid.selection.selectedIndex > -1) {
+				var item = searchResultsGrid.selection.getFirstSelected();
+				s += '<table style="font-size:small; padding-top:10px;">';
+				//s +=        '<tr><td><b>Item details:</b><br></td></tr>';
+				s +=        '<tr>';
+				s +=        	'<td><i><b>Path:</b></i></td>';
+				s += 			'<td>'+decodeURIComponent(item.name[0].parent)+'/'+decodeURIComponent(item.name[0].name)+'</td></tr>';
+				s +=        '<tr>';
+				s +=        	'<td><i><b>Last Modified:</b></i></td>';
+				s += 			'<td>'+item.date[0].value+'</td></tr>';
+				s +=		'<tr>';
+				s +=			'<td><i><b>Size:</b></i></td>';
+				s +=			'<td>'+humanReadable(item.size[0].size)+'</td></tr>';
+				s +=		'<tr>';
+				s +=     		'<td valign="top"><b>Metadata:</b></td>';
+				//s +=        '<tr><td colspan="10" style="padding-left:30px;">';
+				s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px;">';
+				for (var i = 0; i < item.metadata.length; i++) {
+					for (var j = 0; j < item.metadata[i].values.length; j++) {
+						var m = item.metadata[i].values[j]
+						s +=     	'<tr>';
+						s +=     		'<td style="padding-right:20px;"><i><b>Name: </b></i>'+decodeURIComponent(m.name)+'</td>';
+						s +=     		'<td><i><b>Value: </b></i>'+decodeURIComponent(m.value)+'</td>';
+						s += 		'</tr>';
+					}
+				}
+				s +=		'    </table></td></tr>';
+				s += '</table>';
+			  }
+			}
+			setSearchItemDetails(s);
+			var o = dojo.byId("searchFromCurrentCollection");
+			if (o)
+				dojo.html.set(o, listingStore.getCurrentDirectory());
+		}
+
+		function setSearchItemDetails(s) {
+			dojo.html.set(dojo.byId("searchDetails"), s);
+		}
+
+		function setNoticeDialog(s) {
+			if (s) {
+				dojo.html.set(dojo.byId("noticeDialog"), s);
+				noticeDialog.layout();
+				noticeDialog.show(); 
+			} else 
+				noticeDialog.hide();
+		}
+
 		// This overrides listingGrid.getColumnTogglingItems() so that the checkbox for the metadata column can be omitted. 
 		function getColumnMenu() {
 			result = listingGrid.inherited("getColumnTogglingItems", arguments);
 			if (listingLayout[listingLayoutMetadataField].hidden == true)
 				result.splice(listingLayoutMetadataField, 1);
-			return result;
+  		return result;
 		}
 
 		function doHelp() {
@@ -2229,6 +2482,25 @@
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
 		}
+	
+		function resetGridColumnsWidth(grid) {
+			if (grid.structure != undefined) {
+			    // Set column width by reading structure.
+			    for (i = 0; i < grid.structure.length; i++) {
+			    	var s = grid.structure[i];
+		        	grid.setCellWidth(i, s.width); 
+			    }    		
+			    	
+			    // Update views.
+			    if (grid.views != undefined) {
+			      for (i = 0; i < grid.views.views.length; i++) {
+			    	  var w = dojo.query("#"+grid.id+">div>div.dojoxGridHeader").style('width');
+			    	  grid.views.views[i].viewWidth = w + 'px';
+			    	  grid.views.views[i].update();		    	    	
+			    	}
+			    }    	
+		    }
+		}	
 		
 		dojo.declare("ListingStore", dojox.data.QueryReadStore, {
 			directory:"",
@@ -2359,6 +2631,7 @@
 				return result;
 			}
 		});
+			
 	</script>
 <parameter includehead/>
 </head>
@@ -2377,6 +2650,19 @@
 
 
 <!-- -------------- Dialogs -------------- -->
+<div dojoType="dijit.Menu" jsId="gridListingMenu" id="gridListingMenu" style="display: none;">
+	<div jsId="listingColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div dojoType="dijit.MenuSeparator"></div>
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(listingGrid);">Reset Column Widths</div>	
+</div>
+</div>
+<div dojoType="dijit.Menu" jsId="searchResultsMenu" id="searchResultsMenu" style="display: none;">
+	<div jsId="searchResultsColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
+	<div dojoType="dijit.MenuSeparator"></div>
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(searchResultsGrid);">Reset Column Widths</div>	
+</div>
+<div jsId="noticeDialog" id="noticeDialog" dojoType="dijit.Dialog" title="" style="font-size:small; padding: 20px; max-width: 80%; word-wrap: break-word; break-word: break-all; background-color: #F0F0F0;">
+</div>
 <div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
 	<input name="directory" id="directoryInputBox" jsId="directoryInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
@@ -2488,6 +2774,67 @@
 		</tr>
 	</table>
 </div>
+<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%; overflow:auto;">
+	<table  cellpadding="0" cellspacing="0" style="width: 100%;">
+		<tr>
+			<td>
+				<table cellpadding="0" cellspacing="0" style="width: 100%; font-size:small; padding-bottom:10px;">
+					<tr>
+						<td>
+							<table style="width: 100%; margin:0px; padding:0px;">
+								<tr style="padding:0px; margin:0px;">
+									<td nowrap="nowrap"><i><b>Search from:</b></i></td>	
+									<td title="Search all collections within /<parameter zone/>" nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" id="searchFromRootRadioButton" value="root" onClick="refreshButtons()" checked >root collection</td>
+									<td title="Search only within the current collection" nowrap="nowrap"><input type="radio" name="searchFromRadioButtons" value="current" onClick="refreshButtons()">current collection</td>
+								</tr>
+								<tr>
+									<td><i><b>Show files:</b></i></td>
+									<td title="Limit search to items that I have read access to"><input type="radio" name="searchShowRadioButtons" id="searchShowReadRadioButton" value="read" onClick="refreshButtons()" checked >I can read</td>
+									<td title="Limit search to items that I own"><input type="radio" name="searchShowRadioButtons" value="own" onClick="refreshButtons()">I own</td>
+								</tr>
+								<tr>
+        							<td><i><b>File/Collection&nbsp;keyword:</b></i></td>
+									<td title="Limit search to items containing this keyword in their name. File names exclude their parent collection name and collection names include their full path. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchFileInputBox" dojoType="dijit.form.TextBox" trim="true" value=""></></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the name of the item" type="radio" name="searchFileMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the name of the item exactly" type="radio" name="searchFileMatchRadioButtons" id="searchFileExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+								<tr>
+        							<td><i><b>Parent path&nbsp;keyword:</b></i></td>
+									<td title="Limit search to items containing this keyword in their parent path. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+								<tr>
+        							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
+									<td title="Limit search to items with metadata where the name attribute contains this keyword. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata name attribute" type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata name attribute exactly" type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+								<tr>
+        							<td><i><b>Metadata&nbsp;value&nbsp;keyword:</b></i></td>
+									<td title="Limit search to items with metadata where the value attribute contains this keyword. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchMetadataValueInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
+									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata value attribute" type="radio" name="searchMetadataValueMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata value attribute exactly" type="radio" name="searchMetadataValueMatchRadioButtons" id="searchMetadataValueExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
+								</tr>
+							</table>
+        				</td>
+            		</tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td style="border: lightgray groove;">
+				<div style="width: 100%; min-height: 200px;" columnReordering="true" structure="searchResultsLayout" dojoType="dojox.grid.DataGrid" 
+					id="searchResultsGrid" jsId="searchResultsGrid" selectionMode="single" headerMenu="searchResultsMenu"></div>
+			</td>
+		</tr>
+		<tr>
+			<td id="searchDetails"></td>
+		</tr>
+		<tr>
+			<td colspan="3" align="right" valign="bottom">
+				<button align="right" "type="button" id="startSearchButton" onclick="startSearch()">Search</button>
+				<button type="button" onclick="dialogSearch.hide()">Close</button>
+			</td>
+		</tr>
+	</table>
+</div>
 <div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
@@ -2560,21 +2907,15 @@
 		<button type="button" onclick="dialogHelp.hide()">Close</button>
 	</div>
 </div>					
-<div dojoType="dijit.Menu" jsId="gridMenu" id="gridMenu" style="display: none;">
-	<div jsId="columnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
-</div>
-
-
 
 <!-- ---------Main body------------ -->			
-<!--<div style="width: 400px; height: 500px; border: 1px solid blue;" id="destinationGrid" jsId="destinationGrid" dojoType="dojox.grid.DataGrid" structure="destinationLayout" store="destinationStore" rowsPerPage="50"></div>-->
 <div jsId="borderContainer" dojoType="dijit.layout.BorderContainer" style="width: 100%; height: 100%; border: 0px; padding-top: 0px; padding-bottom: 0px;">
 	<div jsId="topContainer" id="topContainer" dojoType="dijit.layout.ContentPane" region="top" style="border: 0px;">
 		<span id="header">
 			<table width="100%" border="0px" cellspacing="0" cellpadding="0">
 				<tr>
 		    		<td valign="bottom">
-						<h1 class="text"> <img src="<parameter organisationlogo/>" alt="" width="<parameter organisationlogowidth/>" height="<parameter organisationlogoheight/>" />&nbsp;<parameter authenticationrealm/></h1>
+						<h1 class="text"><img src="<parameter organisationlogo/>" alt="" width="<parameter organisationlogowidth/>" height="<parameter organisationlogoheight/>" />&nbsp;<parameter authenticationrealm/></h1>
 					</td>
 					<td align="right" valign="top">
 						<table border="0" cellspacing="0" cellpadding="0">
@@ -2586,12 +2927,13 @@
 			        				<tr>
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
-			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/ic_refresh.gif" width="32" height="32"/></a>
-											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/ic_home.gif" width="28" height="32"/></a></span>
-											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/ic_trash.gif" width="28" height="32"/></a></span>
+			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
+											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/trash.png" width="28" height="32"/></a></span>
 											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="Login with authentication" src="/images/login.png" width="26" height="32"/></a></span>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/ic_logout.gif" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/logout.png" width="26" height="32"/></a></span>
 											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="Show your shared files" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
+											<span id="searchButton"><a title="Search for items" onclick="showSearch(); return false" href="search"><img border="0" alt="Search for items" src="/images/search.png" width="28" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
@@ -2647,26 +2989,12 @@
 	    			<small><small><div class="text" id="displayMetadataHTML" style="padding-top:6px;"></div><br></small></small>
 	    			<div id="currentDirectoryButtonsHTML"></div>
 	    		</td>
-	    		<!-- <td align="right" valign="bottom">
-					<p>&nbsp;</p>
-					<p>&nbsp;</p>
-					<form id="form1" name="form1" method="post" action="">
-	        			<table border="0" cellspacing="2" cellpadding="4">
-	          				<tr>
-	          					<td>
-	          						<input name="search" type="text" id="search" size="30" />
-	          						<input type="submit" name="search_btn" id="search_btn" value="Search" />
-	          					</td>
-	          				</tr>
-	          			</table>
-	          		</form>
-	          	</td> -->
 	        </tr>
 	    </table>
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="center" style="border: 0px solid blue;">
  		<div id="listingGrid" jsId="listingGrid" dojoType="dojox.grid.DataGrid" structure="listingLayout" store="listingStore" 
- 				rowsPerPage="50" columnReordering="true" headerMenu="gridMenu" getColumnTogglingItems='return getColumnMenu()'
+ 				rowsPerPage="50" columnReordering="true" headerMenu="gridListingMenu" getColumnTogglingItems='return getColumnMenu()'
  				errorMessage="No Items Loaded"></div> 
 	</div>
 	<div dojoType="dijit.layout.ContentPane" region="right" style="width: 15%; border: 0px solid yellow; overflow:hidden;">
