@@ -15,6 +15,7 @@
 		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
 		@import "<parameter stylesheet/>";
+		@import "<parameter stylesheetoverride/>";
     </style>	
 	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
 <!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
@@ -642,14 +643,14 @@
 				'<table border="0" cellspacing="0" cellpadding="2">'+
         		'	<tr class="text">'+
           		'		<td>'+
-				'			<table id="uploadButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
+				'			<table id="uploadButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
              	'				<tr>'+
                 '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); setUploadStatus(\'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
           		'		<td>'+
-				'			<table id="createDirectoryButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
+				'			<table id="createDirectoryButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
             	'				<tr>'+
               	'					<td onclick="if (!activeItemIsEnabled(\'createDirectoryButton\')) return; dialogCreateDir.show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>'+
             	'				</tr>'+
@@ -1061,9 +1062,9 @@
 					if (object.objectType == "button") 
 						buttonSessionHTML +=
 			      			'<td>'+
-							'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'	<table id="'+object.name+'" class="activeItem borderItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			         		'		<tr>'+
-			            	'			<td>&nbsp;'+object.displayTitle+'</td>'+
+			            	'			<td><nobr>&nbsp;'+object.displayTitle+'</nobr></td>'+
 			          		'		</tr>'+
 			      			'	</table>'+
 							'</td>';
@@ -1071,7 +1072,7 @@
 				if (location == "selection") {
 					if (object.objectType == "button") 
 						buttonSelectionHTML +=
-							'<table width="100%" class="hoverBorderSide" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'<table width="100%" class="hoverBorderSide"  cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 				    		'	<tr>'+
 				      		'		<td class="activeItem" id="'+object.name+'"">'+object.displayTitle+'</td>'+
 				    		'	</tr>'+
@@ -1081,7 +1082,7 @@
 					if (object.objectType == "button") 
 						buttonCollectionHTML +=
 		          			'<td>'+
-		          			'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+		          			'	<table id="'+object.name+'" class="activeItem borderItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 	         				'		<tr>'+
 	            			'			<td><img src="/images/1px.png" alt="" style="height:16px; width:0px;" />&nbsp;'+object.displayTitle+'</td>'+
 	            			'		</tr>'+
@@ -1337,7 +1338,7 @@
 			if (inTrash) {
 				if (trashEmpty)
 					dojo.html.set(trashEmpty, 
-							'<table id="emptyTrashButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
+							'<table id="emptyTrashButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
 							'	<tr>'+
 							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; selectAll(true); deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+

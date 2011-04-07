@@ -11,13 +11,14 @@
 		#hor_rule{margin: 0px -12px -12px 0px;}
 		#table.HoverGreen {background:#509C52; color:#FFF;}
 		#table.HoverGrey {background:#CCC; color:#FFF; border:1px solid #CCC;}
+		.borderItem{border: 1px solid #CCC;}
 		.hoverBorderSide {margin: 2px; border: 1px solid #CCC;}
 		.link{text-decoration:none; color:#04E;}
 		.darklink{text-decoration:none; color:black;}
 		.linkOver{text-decoration:underline;}
 		.link:hover{text-decoration:underline; color:#04E;}
 		.darklink:hover{text-decoration:underline; color:black;}
-		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
+		.activeItem{background:#459E00; color:white; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%;}
 		.activeItem:hover{background:#83C500; color:white;}
 		.activeItem:active{background:white; color:#83C500;}
 		.inactiveItem{background:#459E00; color:#AFAFAF; font-family:Arial, Helvetica, sans-serif; font-weight:bold; font-size:90%}
