@@ -15,7 +15,6 @@
 		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
 		@import "<parameter stylesheet/>";
-		@import "<parameter stylesheetoverride/>";
     </style>	
 	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
 <!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
@@ -38,7 +37,6 @@
 		dojo.require("dojox.widget.PlaceholderMenuItem");
 		dojo.require("dijit.form.DropDownButton");
 		dojo.require("dijit.form.Form");
-		dojo.require("dojo.dnd.Source");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -47,7 +45,6 @@
 		var queryParams;
 		var listingLayoutSharingField;
 		var listingLayoutMetadataField;
-		var tags;
 		var baseURL = '';
 		
 		dojo.addOnLoad(function() {
@@ -645,14 +642,14 @@
 				'<table border="0" cellspacing="0" cellpadding="2">'+
         		'	<tr class="text">'+
           		'		<td>'+
-				'			<table id="uploadButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
+				'			<table id="uploadButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
              	'				<tr>'+
                 '					<td onclick="if (!activeItemIsEnabled(\'uploadButton\')) return; enableButton(\'uploadCancelButton\', true); enableButton(\'uploadStartButton\', true); setUploadStatus(\'\'); showUploadDialog(true)"><img src="/images/arrow_up.gif" alt="" width="16" height="16" />&nbsp;Upload File</td>'+
               	'				</tr>'+
           		'			</table>'+
 				'		</td>'+
           		'		<td>'+
-				'			<table id="createDirectoryButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
+				'			<table id="createDirectoryButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
             	'				<tr>'+
               	'					<td onclick="if (!activeItemIsEnabled(\'createDirectoryButton\')) return; dialogCreateDir.show()"><img src="/images/folder_new.gif" alt="" width="16" height="16" />&nbsp;Create Directory</td>'+
             	'				</tr>'+
@@ -1064,9 +1061,9 @@
 					if (object.objectType == "button") 
 						buttonSessionHTML +=
 			      			'<td>'+
-							'	<table id="'+object.name+'" class="activeItem borderItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 			         		'		<tr>'+
-			            	'			<td><nobr>&nbsp;'+object.displayTitle+'</nobr></td>'+
+			            	'			<td>&nbsp;'+object.displayTitle+'</td>'+
 			          		'		</tr>'+
 			      			'	</table>'+
 							'</td>';
@@ -1074,7 +1071,7 @@
 				if (location == "selection") {
 					if (object.objectType == "button") 
 						buttonSelectionHTML +=
-							'<table width="100%" class="hoverBorderSide"  cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+							'<table width="100%" class="hoverBorderSide" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 				    		'	<tr>'+
 				      		'		<td class="activeItem" id="'+object.name+'"">'+object.displayTitle+'</td>'+
 				    		'	</tr>'+
@@ -1084,7 +1081,7 @@
 					if (object.objectType == "button") 
 						buttonCollectionHTML +=
 		          			'<td>'+
-		          			'	<table id="'+object.name+'" class="activeItem borderItem" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
+		          			'	<table id="'+object.name+'" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4" onclick="if (!activeItemIsEnabled(\''+object.name+'\')) return; dynamicButtonHandler('+i+')">'+
 	         				'		<tr>'+
 	            			'			<td><img src="/images/1px.png" alt="" style="height:16px; width:0px;" />&nbsp;'+object.displayTitle+'</td>'+
 	            			'		</tr>'+
@@ -1340,7 +1337,7 @@
 			if (inTrash) {
 				if (trashEmpty)
 					dojo.html.set(trashEmpty, 
-							'<table id="emptyTrashButton" class="activeItem borderItem" cellspacing="0" cellpadding="4">'+
+							'<table id="emptyTrashButton" class="activeItem" style="border:1px solid #CCC;" cellspacing="0" cellpadding="4">'+
 							'	<tr>'+
 							'		<td onclick="if (!activeItemIsEnabled(\'emptyTrashButton\')) return; selectAll(true); deleteSelection()"><strong><img src="/images/delete.png" alt="" width="16" height="16" />&nbsp;Empty Trash</strong></td>'+
 							'	</tr>'+
@@ -1954,28 +1951,6 @@
 	  		});
 		}
 
-		function getTags() {
-			cursorBusy(true);	
-		  	dojo.xhrPost({
-	    		url: "?method=tags&uihandle="+listingStore.uiHandle,
-	    		load: function(responseObject, ioArgs){    
-	 					cursorBusy(false);
-	 					tags = responseObject.items;
-	 					refreshSimpleMetadataDialog(tags);
-	       				return responseObject;
-	    			},
-	    		error: function(response, ioArgs){
-	      				loadedAlert(errorMessage("tags", ioArgs.xhr.status, "Error fetching tags:\n\n"+ioArgs.xhr.statusText));
-	       				cursorBusy(false);
-	       				tags = null;
-	       				refreshSimpleMetadataDialog(tags);
-	      				return response;
-	    			},
-	    		sync: /*true*/false,
-	    		handleAs: "json"
-	  		});
-		}
-
 		function getPermission(url, data){
 			if (typeof data === "undefined")
 				data = "";
@@ -2399,32 +2374,6 @@
 			enableButton('startSearchButton', listingStore.isValid() && reasonableSearch && searchResultsStore.isValid);
 		}
 
-		function getAssignedTags() {
-			var tags;
-			var i = 0;
-			assignedTagsList.forInItems(function(item, id, map) {
-				tags[i++] = item.data;
-			});
-		}
-
-		function refreshSimpleMetadataDialog() {
-			dojo.html.set(dojo.byId("availableTagsList"), "");
-			if (tags != null) {
-				var assigned = getAssignedTags();
-				var array = new Array();
-				for (var i = 0; i < assigned.length; i++) {
-					if (!dojo.indexOf(tags, assigned[i]))
-						array.push(assigned[i]);
-				}
-				availableTagsList.insertNodes(false, array);
-			}
-		}
-
-		function showSimpleMetadata() {
-			getTags();
-			dialogSimpleMetadata.show();
-		}
-
 		function showSearchItemDetails() {
 			var nResults = searchResultsGrid.rowCount;
 			if (nResults == 1) { // Might be "No matches"
@@ -2528,11 +2477,10 @@
 	  		});
 		}
 
-		var enableDebugButton = true;
+		var enableDebugButton = false;
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
-			
 		}
 	
 		function resetGridColumnsWidth(grid) {
@@ -2767,32 +2715,6 @@
 </div>					
 <div dojoType="dijit.Dialog" jsId="dynamicDialog" style="width: 600px;">
 </div>					
-<div dojoType="dijit.Dialog" jsId="dialogSimpleMetadata" title="Metadata" style="max-height:99%; overflow:auto;">
-	<table cellpadding="0" cellspacing="0" style="font-size:small;">
-		<tr>
-			<td valign="top" style="padding:0px 20px 30px 30px;">
-				<div class="tagListHead" title="Tags currently assigned to selected items.">Assigned Tags</div>
-				<div dojoType="dojo.dnd.Source" jsId="assignedTagsList" title="Drag and drop tags between lists" class="tagList">
-					<div class="dojoDndItem">Item X which is long</div>
-					<div class="dojoDndItem">Item Y</div>
-					<div class="dojoDndItem">Item Z</div>
-				</div>
-			</td>
-			<td valign="top" style="padding:0px 30px 30px 20px;" >
-				<div class="tagListHead" title="Tags not currently assigned to selected items.">Available Tags</div>
-				<div dojoType="dojo.dnd.Source" jsId="availableTagsList" id="availableTagsList" title="Drag and drop tags between lists" class="tagList"></div>
-			</td>
-		</tr>
-		<tr>
-			<td colspan="50" align="right" valign="bottom">
-				<button align="right" "type="button" id="newTagButton">New tag</button>
-				<button align="right" "type="button" id="advancedMetadataButton">Advanced</button>
-				<button align="right" "type="button" id="advancedMetadataButton">Search</button>
-				<button type="button" onclick="dialogSimpleMetadata.hide()">Close</button>
-			</td>
-		</tr>
-	</table>
-</div>
 <div dojoType="dijit.Dialog" jsId="dialogMetadata" title="Metadata">
 	<table>
 		<tr>
@@ -2879,11 +2801,6 @@
         							<td><i><b>Parent path&nbsp;keyword:</b></i></td>
 									<td title="Limit search to items containing this keyword in their parent path. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchPathInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
-								</tr>
-								<tr>
-        							<td><i><b>Tags:</b></i></td>
-									<td title="Limit search to items with these tags." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="true"/></td>
-									<td width="100%" style="padding-left:3%;"><input title="Items must possess all tags" type="radio" name="searchTagMatchRadioButtons" value="all" onClick="refreshButtons()" checked >all<input title="Items must possess at least one of the tags" type="radio" name="searchTagMatchRadioButtons" id="searchTagAnyRadioButton" value="any" onClick="refreshButtons()">any</td>
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
@@ -3098,7 +3015,7 @@
 	    </table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
-	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showSimpleMetadata()">Metadata</td>
+	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
  	    <span id="replicasButtonHolder">

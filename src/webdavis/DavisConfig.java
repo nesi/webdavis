@@ -35,6 +35,7 @@ public class DavisConfig {
 																			// Note: this may not do anything because the fail() handler might be called before a second reconnect is attempted.
 	public final static int CONNECTIONRETRYPAUSE = 1000;					// Pause between connection retries
 	public final static int GSSCREDENTIALLIFETIME = 8*60*60;				// Lifetime for GSS credentials (myproxy)
+	public final static String TAGMETAKEY = "DavisTagMeta";					// The key used by Davis for tag metadata
 
 	/**
 	 * The name of the servlet context attribute containing the charset used to

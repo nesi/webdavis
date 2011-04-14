@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -889,22 +890,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
 				Log.log(Log.ERROR, "Sharing is only supported for iRODS");
 			else {
-//				String sharingKey = Davis.getConfig().getSharingKey();
-//				if (sharingKey != null) {		
-//					MetaDataSelect selectsFile[] = 
-//						MetaDataSet.newSelection(new String[] {
-//				//				IRODSMetaDataSet.FILE_ACCESS_NAME,
-//								//IRODSMetaDataSet.FILE_ACCESS_USER_ID,
-//								IRODSMetaDataSet.OWNER,							
-//								IRODSMetaDataSet.FILE_NAME,
-//								IRODSMetaDataSet.DIRECTORY_NAME
-//						});
-//					MetaDataCondition conditionsFile[];
-//					conditionsFile = new MetaDataCondition[] {
-//							MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, sharingKey),
-//							MetaDataSet.newCondition(IRODSMetaDataSet.OWNER, MetaDataCondition.EQUAL, davisSession.getAccount()), 
-//					};
-//					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
 					MetaDataRecordList[] fileDetails = getShares(davisSession);
 					if (fileDetails == null) 
 		    			fileDetails = new MetaDataRecordList[0];	
@@ -917,6 +902,22 @@ public class DefaultPostHandler extends AbstractHandler {
 						json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
 						json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
 						json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
+		        	}
+//				}
+			}
+			json.append("\n]}");
+			
+			
+		} else if (method.equalsIgnoreCase("tags")) {
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
+			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
+				Log.log(Log.ERROR, "Tags are only supported for iRODS");
+			else {
+					String[] tags = getTags(davisSession, DavisConfig.TAGMETAKEY);
+		 			int i = 0;
+		    		for (String s:tags) {
+						if (i++ > 0) json.append(",\n");
+						json.append("{"+escapeJSONArg("data")+":\""+FSUtilities.escape(s)+"\"}");
 		        	}
 //				}
 			}
@@ -1333,12 +1334,14 @@ public class DefaultPostHandler extends AbstractHandler {
 	
 	private MetaDataRecordList[] getShares(DavisSession davisSession) throws IOException{
 		
-		return getShares(davisSession, null, null);
+		return getShares(davisSession, null, null, null);
 	}
 
-	private MetaDataRecordList[] getShares(DavisSession davisSession, String directory, String fileName) throws IOException{
+	private MetaDataRecordList[] getShares(DavisSession davisSession, String directory, String fileName, String key) throws IOException{
 		
-		String sharingKey = Davis.getConfig().getSharingKey();
+		String sharingKey = key;
+		if (sharingKey == null)
+			sharingKey = Davis.getConfig().getSharingKey();
 		if (sharingKey == null)
 			return null;		
 
@@ -1365,6 +1368,21 @@ public class DefaultPostHandler extends AbstractHandler {
 				MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, directory), 
 			};
 		return ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
+	}
+	
+	private String[] getTags(DavisSession davisSession, String key) throws IOException{
+		
+		MetaDataSelect selects[] = MetaDataSet.newSelection(new String[] {IRODSMetaDataSet.META_DATA_ATTR_VALUE});
+		MetaDataCondition[] conditions = new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, key)};
+			
+		MetaDataRecordList[] results = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditions, selects, DavisConfig.JARGON_MAX_QUERY_NUM);
+		if (results == null)
+			return new String[0];
+		Vector<String> tags = new Vector<String>();
+		for (MetaDataRecordList result:results) {
+			tags.add((String)result.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
+		}
+		return tags.toArray(new String[0]);
 	}
 	
 	private String share(DavisSession davisSession, RemoteFile file, boolean share) {
@@ -1411,7 +1429,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					}else 
 					if (fileSystem instanceof IRODSFileSystem) {
 						if (share) {
-							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName());
+							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName(), null);
 							if (!(fileDetails == null || fileDetails.length == 0)) {
 								Log.log(Log.DEBUG, file.getPath()+" is already shared - ignoring");
 								return null;
