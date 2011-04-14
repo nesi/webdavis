@@ -1185,7 +1185,7 @@ public class DefaultPostHandler extends AbstractHandler {
 //FSUtilities.dumpQueryResult(dirMetaDetails, ">dirmeta>");
 
 					CachedFile[] fileList = FSUtilities.buildCache(fileDetails, dirDetails, (RemoteFileSystem)file.getFileSystem(), metadata, /*sort*/false, true, true);
-					json = new StringBuffer(FSUtilities.generateJSONListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated, totalResults));
+					json = new StringBuffer(FSUtilities.generateJSONFileListing(fileList, /*file*/null, /*comparator*/null, /*requestUIHandle*/null, /*start*/0, /*count*/Integer.MAX_VALUE, /*directoriesOnly*/false, false, truncated, totalResults));
 				} catch (SocketTimeoutException e) {
 					s = "Search query took too long - aborted.";
 					response.sendError(HttpServletResponse.SC_GATEWAY_TIMEOUT, s);

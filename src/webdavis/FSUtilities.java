@@ -738,7 +738,7 @@ public class FSUtilities {
     	return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
 	}
 	
-	public static String generateJSONListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing, boolean truncated, int totalResults) throws IOException {
+	public static String generateJSONFileListing(CachedFile[] fileList, RemoteFile collection, Comparator<Object> comparator, String requestUIHandle, int start, int count, boolean directoriesOnly, boolean directoryListing, boolean truncated, int totalResults) throws IOException {
 		
 		StringBuffer json = new StringBuffer();
 		boolean emptyDir = (fileList.length == 0);
@@ -758,17 +758,20 @@ public class FSUtilities {
 		if (collection != null)
 			json.append(escapeJSONArg("readOnly")+":"+escapeJSONArg(""+!collection.canWrite())+",");
 		json.append(escapeJSONArg("items")+":[\n");
-		if (directoryListing) {
+		if (directoryListing && start == 0) {
 			json.append("{\"name\":{\"name\":\"... Parent Directory\",\"type\":\"top\",\"parent\":\"..\"},"
 						+ "\"date\":{\"value\":\"0\",\"type\":\"top\"},"
 						+ "\"size\":{\"size\":\"0\",\"type\":\"top\"},"
 						+ "\"sharing\":{\"value\":\"\",\"type\":\"top\"},"
 						+ "\"metadata\":{\"value\":\"\",\"type\":\"top\"}}");
+			count--;
 		}
+		if (directoryListing && start > 0)
+			start--;
 		for (int i = start; i < start + count; i++) {
 			if (i >= fileList.length)
 				break;
-			if (directoryListing || i > start)
+			if ((directoryListing && start == 0) || i > start)
 				json.append(",\n");
 			String type = fileList[i].isDirectory() ? "d" : "f";
 			json.append("{\"name\":{\"name\":"+"\""+FSUtilities.escape(fileList[i].getName())+"\""+",\"type\":"+escapeJSONArg(type)+",\"parent\":"+"\""+escape/*JSONArg*/(fileList[i].getParent())+"\""+"}"
