@@ -1021,6 +1021,8 @@ public class DefaultPostHandler extends AbstractHandler {
 				boolean pathExact = (s == null || s.equals("exact"));
 				String fileKeyword = request.getParameter("file");
 				String pathKeyword = request.getParameter("path");
+				boolean fileKeywordPresent = (fileKeyword.length() > 0);
+				boolean pathKeywordPresent = (pathKeyword.length() > 0);
 				String metadataNameKeyword = request.getParameter("metadataName");
 				String metadataValueKeyword = request.getParameter("metadataValue");
 				s = request.getParameter("metadataNameMatch");
@@ -1036,16 +1038,20 @@ public class DefaultPostHandler extends AbstractHandler {
 					pathKeyword = "%"+pathKeyword+"%";
 				
 				ArrayList<MetaDataCondition> conditionsFile = new ArrayList<MetaDataCondition>();
-				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
-				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+				if (fileKeywordPresent)
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
+				if (pathKeywordPresent)
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
 
 				keyword = "%/"+fileKeyword;
 				if (!fileExact)
 					keyword = "%"+fileKeyword+"%";
 
 				ArrayList<MetaDataCondition> conditionsDir = new ArrayList<MetaDataCondition>();
-				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
-				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+				if (fileKeywordPresent)
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
+				if (pathKeywordPresent)
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
 
 				if (!fromRoot) {
 					String currentDir = file.getAbsolutePath();
@@ -1087,9 +1093,9 @@ public class DefaultPostHandler extends AbstractHandler {
 						IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
 					});
 				try {
-					Log.log(Log.DEBUG, "Search: querying files");
+					Log.log(Log.DEBUG, "Search: querying files with "+conditionsFile);
 					MetaDataRecordList[] fileDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS);
-					Log.log(Log.DEBUG, "Search: querying directories");
+					Log.log(Log.DEBUG, "Search: querying directories with "+conditionsDir);
 		    		MetaDataRecordList[] dirDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS, Namespace.DIRECTORY);
 					Log.log(Log.DEBUG, "Search: querying complete");
 					int totalResults = 0;
