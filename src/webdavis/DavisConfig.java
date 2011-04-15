@@ -430,6 +430,7 @@ public class DavisConfig {
 		includeSubstitutions.put("includebodyfooter", ""+getUIIncludeBodyFooter());
 		includeSubstitutions.put("stylesheet", ""+getStyleSheetPath());
 		includeSubstitutions.put("stylesheetoverride", ""+getStyleSheetOverridePath());
+		includeSubstitutions.put("tagmetakey", TAGMETAKEY);
 	}
 
 	public void refresh() {
