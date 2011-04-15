@@ -368,9 +368,13 @@ public class DavisConfig {
 		String admins = getInitParameter("administrators", "").trim();
 		if (admins != null) 
 			administrators = new ArrayList<String>(Arrays.asList(admins.split(" *, *")));
-		uiIncludeHead = getInitParameter("ui-include-head", "").trim();
-		uiIncludeBodyHeader = getInitParameter("ui-include-body-header", "").trim();
-		uiIncludeBodyFooter = getInitParameter("ui-include-body-footer", "").trim();
+				
+		DavisUtilities.init(this.servletConfig);
+		
+		uiIncludeHead = DavisUtilities.loadUIInclude(getInitParameter("ui-include-head", "").trim());
+		uiIncludeBodyHeader = DavisUtilities.loadUIInclude(getInitParameter("ui-include-body-header", "").trim());
+		uiIncludeBodyFooter = DavisUtilities.loadUIInclude(getInitParameter("ui-include-body-footer", "").trim());
+				
 		shibInitPath = getInitParameter("shib-init-path", "/Shibboleth.sso/DS").trim();
 		insecureLoginText = getInitParameter("insecure-login-text", "via HTTP").trim();
 		styleSheet1 = getInitParameter("davis-style-sheet", "/include/davis.css").trim();
@@ -388,7 +392,7 @@ public class DavisConfig {
 		}
 		initSubstitutions();
 	}
-
+	
 	private void initSubstitutions() {
 		
 		includeSubstitutions = new Hashtable<String, String>();
