@@ -197,15 +197,15 @@
 		    	[{
 					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
 					rows: [
-	        			{field: "name", width: "150px", name: "Name", editable: true},
-	        			{field: "value", width: "auto", name: "Value", editable: true},
-	        			{field: "unit", width: "50px", name: "Unit", editable: true}
+	        			{field: "name", width: "150px", name: "Name", editable: true, formatter: replaceWhiteSpaces},
+	        			{field: "value", width: "auto", name: "Value", editable: true, formatter: replaceWhiteSpaces},
+	        			{field: "unit", width: "50px", name: "Unit", editable: true, formatter: replaceWhiteSpaces}
 	        	]}] : 
 	    	    [{
 					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
 					rows: [
-						{field: "name", width: "150px", name: "Name", editable: true},
-						{field: "value", width: "auto", name: "Value", editable: true}
+						{field: "name", width: "150px", name: "Name", editable: true, formatter: replaceWhiteSpaces},
+						{field: "value", width: "auto", name: "Value", editable: true, formatter: replaceWhiteSpaces}
 				]}];
 
 	    	permissionsLayout = ("<parameter servertype/>" == 'irods') ?
@@ -2486,6 +2486,10 @@
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
+		}
+		
+		function replaceWhiteSpaces(value) {
+	    return value.replace(/ /g, '&nbsp;');		
 		}
 	
 		function resetGridColumnsWidth(grid) {
