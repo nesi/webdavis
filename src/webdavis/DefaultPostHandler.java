@@ -1129,12 +1129,15 @@ public class DefaultPostHandler extends AbstractHandler {
 								IRODSMetaDataSet.DIRECTORY_NAME
 						});
 					conditionsFile = new ArrayList<MetaDataCondition>();
-					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
-					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
-	
 					conditionsDir = new ArrayList<MetaDataCondition>();
-					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
-					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+					if (fileKeywordPresent) {
+						conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
+						conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
+					}
+					if (pathKeywordPresent) {
+						conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+						conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+					}	
 	
 					if (metadataNameKeyword != null && metadataNameKeyword.length() > 0) {
 						if (!metadataNameExact)

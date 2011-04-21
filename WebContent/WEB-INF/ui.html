@@ -2315,6 +2315,7 @@
 
 		function showSearch() {
 			dialogSearch.show();
+			refreshButtons();
 		}
 
 		function startSearch() {
@@ -2407,13 +2408,13 @@
 					else
 						s +=     		'<td valign="top"><b>Metadata:</b></td>';
 					//s +=        '<tr><td colspan="10" style="padding-left:30px;">';
-					s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px;">';
+					s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px; border-collapse:collapse;">';
 					for (var i = 0; i < item.metadata.length; i++) {
-						for (var j = 0; j < item.metadata[i].values.length; j++) {
+						for (var j = 0; j < item.metadata[i].values.length; j++) {								
 							var m = item.metadata[i].values[j]
-							s +=     	'<tr>';
-							s +=     		'<td style="padding-right:20px;"><i><b>Name: </b></i>'+decodeURIComponent(m.name)+'</td>';
-							s +=     		'<td><i><b>Value: </b></i>'+decodeURIComponent(m.value)+'</td>';
+							s +=     	'<tr style="border-bottom: 1px dotted #C0C0C0;">';
+							s +=     		'<td valign="top" style="padding-right:20px;"><i><b>Name:&nbsp;</b></i>'+decodeURIComponent(m.name)+'</td>';
+							s +=     		'<td valign="top"><i><b>Value:&nbsp;</b></i>'+decodeURIComponent(m.value)+'</td>';
 							s += 		'</tr>';
 						}
 					}
