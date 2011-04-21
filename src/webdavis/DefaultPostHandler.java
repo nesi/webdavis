@@ -954,13 +954,19 @@ System.err.println("*************file="+file);
 				boolean pathExact = (s == null || s.equals("exact"));
 				String fileKeyword = request.getParameter("file");
 				String pathKeyword = request.getParameter("path");
+				boolean fileKeywordPresent = (fileKeyword.length() > 0);
+				boolean pathKeywordPresent = (pathKeyword.length() > 0);
 				String metadataNameKeyword = request.getParameter("metadataName");
 				String metadataValueKeyword = request.getParameter("metadataValue");
 				s = request.getParameter("metadataNameMatch");
 				boolean metadataNameExact = (s == null || s.equals("exact"));
 				s = request.getParameter("metadataValueMatch");
 				boolean metadataValueExact = (s == null || s.equals("exact"));
-//System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+" fileKeyword="+fileKeyword+" fileExact="+fileExact+" pathKeyword="+pathKeyword+" pathExact="+pathExact+" metadatanamekeyword="+metadataNameKeyword+" metadatavaluekeyword="+metadataValueKeyword+" metadatanameExact="+metadataNameExact+" metadatavalueExact="+metadataValueExact);				
+
+				String[] tags = {};
+				String tagString = request.getParameter("tags");
+				if (tagString != null && tagString.length() > 0)
+					tags = tagString.split(", *");
 				
 				String keyword = fileKeyword;
 				if (!fileExact)
@@ -969,16 +975,20 @@ System.err.println("*************file="+file);
 					pathKeyword = "%"+pathKeyword+"%";
 				
 				ArrayList<MetaDataCondition> conditionsFile = new ArrayList<MetaDataCondition>();
-//				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
-//				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+				if (fileKeywordPresent)
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
+				if (pathKeywordPresent)
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
 
 				keyword = "%/"+fileKeyword;
 				if (!fileExact)
 					keyword = "%"+fileKeyword+"%";
 
 				ArrayList<MetaDataCondition> conditionsDir = new ArrayList<MetaDataCondition>();
-//				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
-//				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+				if (fileKeywordPresent)
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
+				if (pathKeywordPresent)
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
 
 				if (!fromRoot) {
 					String currentDir = file.getAbsolutePath();
@@ -1003,15 +1013,19 @@ System.err.println("*************file="+file);
 					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.LIKE, metadataValueKeyword));
 					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.LIKE, metadataValueKeyword));
 				}
-				String[] tags = {"dir", "newtag", "newtag2"};
 				if (tags != null && tags.length > 0) {
-//					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
-					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.IN, tags));
-//					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
-					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.IN, tags));
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
+//###TBD switch the two blocks below to enable multiple tag searching when jargon is fixed
+	//				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.IN, tags));
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.EQUAL, tags[0]));
+
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
+
+	//				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.IN, tags));
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.EQUAL, tags[0]));
 				}
-System.err.println("**************conditionsFile="+conditionsFile);
-System.err.println("**************conditionsDir="+conditionsDir);
+//System.err.println("**************conditionsFile="+conditionsFile);
+//System.err.println("**************conditionsDir="+conditionsDir);
 				MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
 						IRODSMetaDataSet.FILE_NAME,
 						IRODSMetaDataSet.DIRECTORY_NAME,
@@ -1028,31 +1042,26 @@ System.err.println("**************conditionsDir="+conditionsDir);
 						IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
 					});
 				try {
-					Log.log(Log.DEBUG, "Search: querying files");
+					Log.log(Log.DEBUG, "Search: querying files with "+conditionsFile);
 					MetaDataRecordList[] fileDetails = searchFileSystem.query(conditionsFile.toArray(new MetaDataCondition[0]), selectsFile, DavisConfig.SEARCH_MAX_QUERY_RESULTS);
-					Log.log(Log.DEBUG, "Search: querying directories");
+					Log.log(Log.DEBUG, "Search: querying directories with "+conditionsDir);
 		    		MetaDataRecordList[] dirDetails = searchFileSystem.query(conditionsDir.toArray(new MetaDataCondition[0]), selectsDir, DavisConfig.SEARCH_MAX_QUERY_RESULTS, Namespace.DIRECTORY);
 					Log.log(Log.DEBUG, "Search: querying complete");
 					int totalResults = 0;
 					int nResults = 0;
 					if (fileDetails != null && fileDetails.length > 0) {
 						nResults += fileDetails.length;
-//System.err.println("####################file size="+fileDetails[0].getRecordCount());
 						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(fileDetails);
 						if (l != null && l.length > 0) 
 							totalResults += l.length;
-//System.err.println("#################### Search: file items returned: "+fileDetails.length+"  total file items found: "+l.length);
 					}
 					if (dirDetails != null && dirDetails.length > 0) {
 						nResults += dirDetails.length;
-//System.err.println("####################dir size="+dirDetails[0].getRecordCount());
 						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(dirDetails);
 						if (l != null && l.length > 0)
 							totalResults += l.length;
-//System.err.println("#################### Search: dir items returned: "+dirDetails.length+"  total dir items found: "+l.length);
 					}
-//					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
-//						truncated = true;
+
 					boolean truncated = (nResults != totalResults);
 					HashMap<String, FileMetadata> metadata = new HashMap<String, FileMetadata>();
 					
@@ -1064,12 +1073,15 @@ System.err.println("**************conditionsDir="+conditionsDir);
 								IRODSMetaDataSet.DIRECTORY_NAME
 						});
 					conditionsFile = new ArrayList<MetaDataCondition>();
-					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
-					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
-	
 					conditionsDir = new ArrayList<MetaDataCondition>();
-					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
-					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+					if (fileKeywordPresent) {
+						conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.FILE_NAME, MetaDataCondition.LIKE, keyword));
+						conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, keyword));
+					}
+					if (pathKeywordPresent) {
+						conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+						conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.LIKE, pathKeyword));
+					}	
 	
 					if (metadataNameKeyword != null && metadataNameKeyword.length() > 0) {
 						if (!metadataNameExact)

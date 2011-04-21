@@ -198,15 +198,15 @@
 		    	[{
 					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
 					rows: [
-	        			{field: "name", width: "150px", name: "Name", editable: true},
-	        			{field: "value", width: "auto", name: "Value", editable: true},
-	        			{field: "unit", width: "50px", name: "Unit", editable: true}
+	        			{field: "name", width: "150px", name: "Name", editable: true, formatter: replaceWhiteSpaces},
+	        			{field: "value", width: "auto", name: "Value", editable: true, formatter: replaceWhiteSpaces},
+	        			{field: "unit", width: "50px", name: "Unit", editable: true, formatter: replaceWhiteSpaces}
 	        	]}] : 
 	    	    [{
 					defaultCell: {editable: true, type: dojox.grid.cells._Widget, styles: 'text-align: left;'},
 					rows: [
-						{field: "name", width: "150px", name: "Name", editable: true},
-						{field: "value", width: "auto", name: "Value", editable: true}
+						{field: "name", width: "150px", name: "Name", editable: true, formatter: replaceWhiteSpaces},
+						{field: "value", width: "auto", name: "Value", editable: true, formatter: replaceWhiteSpaces}
 				]}];
 
 	    	permissionsLayout = ("<parameter servertype/>" == 'irods') ?
@@ -428,7 +428,7 @@
 			dojo.connect(dojo.byId("searchMetadataValueInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
 			dojo.connect(dijit.byId("searchTagInputBox"), 'onChange', function(e) {refreshSearchButtons()});
 			var showSearchTagsListDialog = function(e) {
-				dojo.byId("searchTagAnyRadioButton").focus(); 
+				dojo.byId("searchMetadataNameInputBox").focus(); //Take focus off tag input box
 				dojo.html.set(dojo.byId("searchTagsList"), ""); 
 				searchTagsList.clearItems(); 
 				getAvailableTags(); 
@@ -2388,6 +2388,7 @@
 
 		function showSearch() {
 			dialogSearch.show();
+			refreshButtons();
 		}
 
 		function startSearch() {
@@ -2407,10 +2408,11 @@
 			var pathMatch = dojo.byId('searchPathExactRadioButton').checked ? "exact" : "inexact";
 			var metadataNameMatch = dojo.byId('searchMetadataNameExactRadioButton').checked ? "exact" : "inexact";
 			var metadataValueMatch = dojo.byId('searchMetadataValueExactRadioButton').checked ? "exact" : "inexact";
+			var tags = dojo.byId('searchTagInputBox').value; //###TBD when jargon search bug fixed, handle multiple tags here
 		  	dojo.xhrPost({
 	    		url: listingStore.getCurrentDirectory()+"?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword
 	    		      +"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadataName="+metadataNameKeyword+"&metadataValue="+metadataValueKeyword
-	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
+	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch+"&tags="+tags,
 	    		load: function(responseObject, ioArgs){    
 						setNoticeDialog();
 	 					cursorBusy(false);
@@ -2526,35 +2528,39 @@
 				s += '<small><small><div style="margin:0px; padding:3px; background-color:#E8E8E8; border: 1px dotted grey; border-top-width:0px;">'+pluralItemsString(nResults)+' found</div><br>';
 				s += 'Current collection is: <span id="searchFromCurrentCollection"></span></br></br></small></small>';
 			
-			  if (searchResultsGrid.selection.selectedIndex > -1) {
-				var item = searchResultsGrid.selection.getFirstSelected();
-				s += '<table style="font-size:small; padding-top:10px;">';
-				//s +=        '<tr><td><b>Item details:</b><br></td></tr>';
-				s +=        '<tr>';
-				s +=        	'<td><i><b>Path:</b></i></td>';
-				s += 			'<td>'+decodeURIComponent(item.name[0].parent)+'/'+decodeURIComponent(item.name[0].name)+'</td></tr>';
-				s +=        '<tr>';
-				s +=        	'<td><i><b>Last Modified:</b></i></td>';
-				s += 			'<td>'+item.date[0].value+'</td></tr>';
-				s +=		'<tr>';
-				s +=			'<td><i><b>Size:</b></i></td>';
-				s +=			'<td>'+humanReadable(item.size[0].size)+'</td></tr>';
-				s +=		'<tr>';
-				s +=     		'<td valign="top"><b>Metadata:</b></td>';
-				//s +=        '<tr><td colspan="10" style="padding-left:30px;">';
-				s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px;">';
-				for (var i = 0; i < item.metadata.length; i++) {
-					for (var j = 0; j < item.metadata[i].values.length; j++) {
-						var m = item.metadata[i].values[j]
-						s +=     	'<tr>';
-						s +=     		'<td style="padding-right:20px;"><i><b>Name: </b></i>'+decodeURIComponent(m.name)+'</td>';
-						s +=     		'<td><i><b>Value: </b></i>'+decodeURIComponent(m.value)+'</td>';
-						s += 		'</tr>';
+			  	if (searchResultsGrid.selection.selectedIndex > -1) {
+					var item = searchResultsGrid.selection.getFirstSelected();
+					s += '<table style="font-size:small; padding-top:10px;">';
+					//s +=        '<tr><td><b>Item details:</b><br></td></tr>';
+					s +=        '<tr>';
+					s +=        	'<td><i><b>Path:</b></i></td>';
+					s += 			'<td>'+decodeURIComponent(item.name[0].parent)+'/'+decodeURIComponent(item.name[0].name)+'</td></tr>';
+					s +=        '<tr>';
+					s +=        	'<td><i><b>Last Modified:</b></i></td>';
+					s += 			'<td>'+item.date[0].value+'</td></tr>';
+					s +=		'<tr>';
+					s +=			'<td><i><b>Size:</b></i></td>';
+					s +=			'<td>'+humanReadable(item.size[0].size)+'</td></tr>';
+					s +=		'<tr>';
+					var metadataSearch = (dojo.byId('searchMetadataNameInputBox').value+dojo.byId('searchMetadataValueInputBox').value).length > 0;
+					if (metadataSearch)
+						s +=     		'<td valign="top"><b>Matching metadata:&nbsp;</b></td>';
+					else
+						s +=     		'<td valign="top"><b>Metadata:</b></td>';
+					//s +=        '<tr><td colspan="10" style="padding-left:30px;">';
+					s +=		'    <td valign="top"><table style="border: 1px solid gray; padding-right:50px; border-collapse:collapse;">';
+					for (var i = 0; i < item.metadata.length; i++) {
+						for (var j = 0; j < item.metadata[i].values.length; j++) {								
+							var m = item.metadata[i].values[j]
+							s +=     	'<tr style="border-bottom: 1px dotted #C0C0C0;">';
+							s +=     		'<td valign="top" style="padding-right:20px;"><i><b>Name:&nbsp;</b></i>'+decodeURIComponent(m.name)+'</td>';
+							s +=     		'<td valign="top"><i><b>Value:&nbsp;</b></i>'+decodeURIComponent(m.value)+'</td>';
+							s += 		'</tr>';
+						}
 					}
+					s +=		'    </table></td></tr>';
+					s += '</table>';
 				}
-				s +=		'    </table></td></tr>';
-				s += '</table>';
-			  }
 			}
 			setSearchItemDetails(s);
 			var o = dojo.byId("searchFromCurrentCollection");
@@ -2622,6 +2628,10 @@
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
 			
+		}
+		
+		function replaceWhiteSpaces(value) {
+	    	return value.replace(/ /g, '&nbsp;');		
 		}
 	
 		function resetGridColumnsWidth(grid) {
@@ -2981,9 +2991,11 @@
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
-        							<td><i><b>Tags:</b></i></td>
-									<td title="Limit search to items with these tags." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>
-									<td width="100%" style="padding-left:3%;"><input title="Items must possess all tags" type="radio" name="searchTagMatchRadioButtons" value="all" onClick="refreshButtons()" checked >all<input title="Items must possess at least one of the tags" type="radio" name="searchTagMatchRadioButtons" id="searchTagAnyRadioButton" value="any" onClick="refreshButtons()">any</td>
+        	<!--						<td><i><b>Tags:</b></i></td>-->
+        							<td><i><b>Tag:</b></i></td>
+			<!--						<td title="Limit search to items with these tags." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>-->
+									<td title="Limit search to items with this tag." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>
+			<!--						<td width="100%" style="padding-left:3%;"><input title="Items must possess all tags" type="radio" name="searchTagMatchRadioButtons" value="all" onClick="refreshButtons()" checked >all<input title="Items must possess at least one of the tags" type="radio" name="searchTagMatchRadioButtons" id="searchTagAnyRadioButton" value="any" onClick="refreshButtons()">any</td>-->
 								</tr>
 								<tr>
         							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
@@ -3018,10 +3030,12 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogSelectTags" title="Select Tags">
+<!--<div dojoType="dijit.Dialog" jsId="dialogSelectTags" title="Select Tags"> -->
+<div dojoType="dijit.Dialog" jsId="dialogSelectTags" title="Select Tag">
     <!--Select Tags:<br>-->
     <div class="tagListHead">Available Tags</div>
-	<div dojoType="dojo.dnd.Source" jsId="searchTagsList" id="searchTagsList" class="tagList" isSource="false"></div> 
+	<!--<div dojoType="dojo.dnd.Source" jsId="searchTagsList" id="searchTagsList" class="tagList" isSource="false"></div>--> 
+	<div dojoType="dojo.dnd.Source" jsId="searchTagsList" id="searchTagsList" class="tagList" isSource="false" singular="true"></div> 
 	<br/><br/>
 	<div style="text-align: right;">
 	<!--	<button type="button" >Clear</button>-->

@@ -553,4 +553,27 @@ public class DavisUtilities {
     public static String iPermissionToPermission(String p) {
     	return permMap.get(p);
     }
+    
+  	public static String loadUIInclude(String uiIncludeString) {
+
+  		if (isUIIncludeAFile(uiIncludeString)) {
+  			uiIncludeString = DavisUtilities.loadResource(uiIncludeString);
+  		}
+ 	  
+  		return uiIncludeString;	
+  	}
+  	
+  	// This method checks whether a uiInclude is a file name or content string
+  	private static boolean isUIIncludeAFile(String uiInclude) {
+
+  		boolean isFile = false;	
+  		
+  		if (uiInclude != null && !uiInclude.isEmpty()) {
+  			if (!uiInclude.startsWith("<")) {
+  				isFile = true;	
+  			}
+  		}
+  	  
+  		return isFile;
+  	}
 }
