@@ -38,6 +38,7 @@
 		dojo.require("dojox.widget.PlaceholderMenuItem");
 		dojo.require("dijit.form.DropDownButton");
 		dojo.require("dijit.form.Form");
+		dojo.require("dojo.dnd.Source");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -425,6 +426,16 @@
 			dojo.connect(dojo.byId("searchPathInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
 			dojo.connect(dojo.byId("searchMetadataNameInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
 			dojo.connect(dojo.byId("searchMetadataValueInputBox"), 'onkeyup', function(e) {refreshSearchButtons()});
+			dojo.connect(dijit.byId("searchTagInputBox"), 'onChange', function(e) {refreshSearchButtons()});
+			var showSearchTagsListDialog = function(e) {
+				dojo.byId("searchMetadataNameInputBox").focus(); //Take focus off tag input box
+				dojo.html.set(dojo.byId("searchTagsList"), ""); 
+				searchTagsList.clearItems(); 
+				getAvailableTags(); 
+				dialogSelectTags.show();
+			}
+			dojo.connect(dojo.byId("searchTagInputBox"), 'onkeypress', showSearchTagsListDialog);			
+			dojo.connect(dojo.byId("searchTagInputBox"), 'onclick', showSearchTagsListDialog);			
 		}
 		
 		function initWidgets() {
@@ -1817,9 +1828,8 @@
 			var metadataURL = "";
 			resetMetadataStore(true);
 			if (!batch){
-//				resetMetadataStore(true);
-				metadataURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstSelectedItem()/*)*/;
-				loadMetadataFromServer(metadataURL);
+				metadataURL = listingStore.getCurrentDirectory()+"/"+getFirstSelectedItem();
+				refreshMetadata(metadataURL);
 			}
 			dialogMetadata.attr("url", metadataURL);
 			enableButton('refreshMetadataButton', !batch);	// Don't want the refresh button active in batch mode
@@ -1853,7 +1863,51 @@
 	            }); 
 	        } 
 		}
-		
+
+		// Saves tag metadata for selected items and then fetches tags list for first selected item. 
+		// If tags isn't given, just fetch the tags.
+		function putTags(tags) {
+			if (selectedItemsCount() == 0)
+				return;
+
+			//json format is: [{"indices":["fileindex1","fileindex2"...],"tags":["tag1", "tag2"...]}]
+			var data=listToJSON();
+			data = data.substring(0, data.length-2);	// Trim '}]' off end 
+
+			if (tags) {
+				data += ",\"tags\":[";
+				for (var i = 0; i < tags.length; i++){
+					if (i > 0) 
+						data += ",";
+					data += "\""+escapeJSON(tags[i])+"\"";
+				}
+				data += "]";
+			}
+			data += "}]";
+			cursorBusy(true);
+		  	dojo.rawXhrPost({
+	    		url: listingStore.getCurrentDirectory()+"?method=puttags&uihandle="+listingStore.uiHandle,
+			    headers: {
+			        "content-length": data.length,
+			        "content-type": "text/x-json"
+			    },
+			    postData: data,
+	    		load: function(responseObject, ioArgs){
+			    		cursorBusy(false);
+	 					var assignedTags = responseObject.items;			    		
+			    		updateAssignedTagsList(assignedTags);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	    				cursorBusy(false);
+	      				loadedAlert(errorMessage("metadata", ioArgs.xhr.status, "Error when updating tags metadata:\n\n"+ioArgs.xhr.statusText));
+	      				return response;
+	    			},
+	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});
+		}
+
 		function saveMetadata(){
 			if (selectedItemsCount() == 0)
 				return;
@@ -1863,9 +1917,8 @@
 			data = data.substring(0, data.length-2);	// Trim '}]' off end 
 			data += ",\"metadata\":[";
 			
-		  if (metadataGrid.rowCount > 0) {
-			  metadataGrid.doclick(metadataGrid.getItem(0));
-		  }
+		  	if (metadataGrid.rowCount > 0) 
+				metadataGrid.doclick(metadataGrid.getItem(0));
 						
 			for (var i = 0; i < metadataGrid.rowCount; i++){
 				if (i > 0) 
@@ -1948,6 +2001,26 @@
 	      				return response;
 	    			},
 	    		sync: synchronous,
+	    		handleAs: "json"
+	  		});
+		}
+
+		function getAvailableTags() {
+			cursorBusy(true);	
+		  	dojo.xhrPost({
+	    		url: "?method=alltags&uihandle="+listingStore.uiHandle,
+	    		load: function(responseObject, ioArgs){    
+	 					var availableTags = responseObject.items;
+	 					updateAvailableTagsList(availableTags);
+	 					cursorBusy(false);
+	       				return responseObject;
+	    			},
+	    		error: function(response, ioArgs){
+	      				loadedAlert(errorMessage("alltags", ioArgs.xhr.status, "Error fetching tags:\n\n"+ioArgs.xhr.statusText));
+	       				cursorBusy(false);
+	      				return response;
+	    			},
+	    		sync: /*true*/false,
 	    		handleAs: "json"
 	  		});
 		}
@@ -2335,10 +2408,11 @@
 			var pathMatch = dojo.byId('searchPathExactRadioButton').checked ? "exact" : "inexact";
 			var metadataNameMatch = dojo.byId('searchMetadataNameExactRadioButton').checked ? "exact" : "inexact";
 			var metadataValueMatch = dojo.byId('searchMetadataValueExactRadioButton').checked ? "exact" : "inexact";
+			var tags = dojo.byId('searchTagInputBox').value; //###TBD when jargon search bug fixed, handle multiple tags here
 		  	dojo.xhrPost({
 	    		url: listingStore.getCurrentDirectory()+"?method=search&uihandle="+listingStore.uiHandle+"&from="+from+"&show="+show+"&file="+fileKeyword+"&path="+pathKeyword
 	    		      +"&fileMatch="+fileMatch+"&pathMatch="+pathMatch+"&metadataName="+metadataNameKeyword+"&metadataValue="+metadataValueKeyword
-	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch,
+	    		      +"&metadataNameMatch="+metadataNameMatch+"&metadataValueMatch="+metadataValueMatch+"&tags="+tags,
 	    		load: function(responseObject, ioArgs){    
 						setNoticeDialog();
 	 					cursorBusy(false);
@@ -2372,10 +2446,76 @@
 		}
 
 		function refreshSearchButtons() {
-			var reasonableSearch = (dojo.byId('searchFileInputBox').value+dojo.byId('searchPathInputBox').value+dojo.byId('searchMetadataNameInputBox').value+dojo.byId('searchMetadataValueInputBox').value).length > 0;
+			var reasonableSearch = (dojo.byId('searchFileInputBox').value+dojo.byId('searchPathInputBox').value+dojo.byId('searchTagInputBox').value
+									+dojo.byId('searchMetadataNameInputBox').value+dojo.byId('searchMetadataValueInputBox').value).length > 0;
 			enableButton('startSearchButton', listingStore.isValid() && reasonableSearch && searchResultsStore.isValid);
 		}
 
+		function getTagsListTags(tagsList) {
+			tagsList.tags = new Array();
+			tagsList.forInItems(function(item, id, map) {
+				tagsList.tags.push(item.data);
+			});
+			return tagsList.tags;
+		}
+
+		function getSelectedTagsListTags(tagsList) {
+			var array = new Array();
+			var selection = tagsList.getSelectedNodes();
+			for (var i = 0; i < selection.length; i++) 
+				if (selection[i] != null)
+					array.push(selection[i].textContent);
+			return array;
+		}
+
+		function updateAssignedTagsList(assignedTags) {
+			dojo.html.set(dojo.byId("assignedTagsList"), "");
+			assignedTagsList.clearItems();
+			assignedTagsList.insertNodes(false, assignedTags);
+			getAvailableTags();
+		}
+
+		function updateAvailableTagsList(availableTags) {	
+			dojo.html.set(dojo.byId("availableTagsList"), "");
+			availableTagsList.clearItems();
+			// Assumes assignedTagsList is valid
+			var assigned = getTagsListTags(assignedTagsList);
+			var array = new Array();
+			for (var i = 0; i < availableTags.length; i++) {
+				if (dojo.indexOf(assigned, availableTags[i].data) < 0)
+					array.push(availableTags[i].data);
+			}
+			availableTagsList.insertNodes(false, array);
+			dojo.html.set(dojo.byId("searchTagsList"), "");
+			searchTagsList.clearItems();
+			searchTagsList.insertNodes(false, availableTags);
+		}
+
+		function showSimpleMetadata() {
+			dojo.html.set(dojo.byId("assignedTagsList"), "");
+			assignedTagsList.clearItems();
+			dojo.html.set(dojo.byId("availableTagsList"), "");
+			availableTagsList.clearItems();
+			putTags(); // Fetch tags for first selected item
+			dialogSimpleMetadata.show();
+		}
+
+		function newTag(tag) {
+			var array = new Array();
+			array.push(tag);
+			assignedTagsList.insertNodes(false, array); 
+		}
+
+		function setSearchTagsTextBox(tagsArray) {
+			var text = "";
+			for (var i = 0; i < tagsArray.length; i++) {
+				if (i > 0)
+					text += ", ";	
+				text += tagsArray[i];
+			}
+			dijit.byId('searchTagInputBox').attr('value', text);
+		}
+		
 		function showSearchItemDetails() {
 			var nResults = searchResultsGrid.rowCount;
 			if (nResults == 1) { // Might be "No matches"
@@ -2487,6 +2627,11 @@
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
 			//doDebug();
+			
+		}
+		
+		function replaceWhiteSpaces(value) {
+	    	return value.replace(/ /g, '&nbsp;');		
 		}
 		
 		function replaceWhiteSpaces(value) {
@@ -2704,6 +2849,15 @@
 		<button type="button" onclick="dialogRename.hide()">Cancel</button>
 	</div>
 </div>					
+<div dojoType="dijit.Dialog" jsId="dialogNewTag" title="New Tag">
+    New tag name:
+	<input name="newtag" id="newTagInputBox" dojoType="dijit.form.TextBox" trim="true" value=""/>
+	<br/><br/>
+	<div style="text-align: right;">
+		<button type="button" onclick="dialogNewTag.hide(); newTag(dojo.byId('newTagInputBox').value)">Apply</button>
+		<button type="button" onclick="dialogNewTag.hide()">Cancel</button>
+	</div>
+</div>					
 <div dojoType="dijit.Dialog" jsId="dialogMoveCopy" title="Move/Copy Items">
 	<table>
 		<tr>
@@ -2725,6 +2879,34 @@
 </div>					
 <div dojoType="dijit.Dialog" jsId="dynamicDialog" style="width: 600px;">
 </div>					
+<div dojoType="dijit.Dialog" jsId="dialogSimpleMetadata" title="Metadata" style="max-height:99%; overflow:auto;">
+	<table cellpadding="0" cellspacing="0" style="font-size:small;">
+		<tr>
+			<!--<td valign="top" style="padding:0px 20px 30px 30px;">-->
+			<td valign="top" style="padding:0px 0px 30px 30px;">
+				<div class="tagListHead" title="Tags currently assigned to selected items.">Assigned Tags</div>
+				<div dojoType="dojo.dnd.Source" jsId="assignedTagsList" id="assignedTagsList" title="Drag and drop tags between lists" class="tagList"></div>
+			</td>
+			<td>
+			<img alt="drag n drop" title="Drag and drop tags between lists" src="/images/exchange.png" wwidth="32" hheight="32"/>
+			</td>
+			<!--<td valign="top" style="padding:0px 30px 30px 20px;">-->
+			<td valign="top" style="padding:0px 30px 30px 0px;">
+				<div class="tagListHead" title="Tags not currently assigned to selected items.">Available Tags</div>
+				<div dojoType="dojo.dnd.Source" jsId="availableTagsList" id="availableTagsList" title="Drag and drop tags between lists" class="tagList"></div>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="50" align="right" valign="bottom">
+				<button title="Create a new tag and asign it." align="right" "type="button" onclick="dojo.byId('newTagInputBox').value = ''; dialogNewTag.show();">New tag</button>
+				<button title="Show the advanced metadata dialog." align="right" "type="button" onclick="dialogSimpleMetadata.hide(); showMetadata();">Advanced</button>
+				<button title="Show the search dialog." align="right" "type="button" onclick="dialogSimpleMetadata.hide(); showSearch();">Search</button>
+				<button title="Apply changes." align="right" "type="button" id="applyTagsButton" onclick="putTags(getTagsListTags(assignedTagsList)); dialogSimpleMetadata.hide();">Apply</button>
+				<button type="button" onclick="dialogSimpleMetadata.hide()">Cancel</button>
+			</td>
+		</tr>
+	</table>
+</div>
 <div dojoType="dijit.Dialog" jsId="dialogMetadata" title="Metadata">
 	<table>
 		<tr>
@@ -2813,6 +2995,13 @@
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the item's parent path" type="radio" name="searchPathMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the item's parent path exactly" type="radio" name="searchPathMatchRadioButtons" id="searchPathExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
 								</tr>
 								<tr>
+        	<!--						<td><i><b>Tags:</b></i></td>-->
+        							<td><i><b>Tag:</b></i></td>
+			<!--						<td title="Limit search to items with these tags." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>-->
+									<td title="Limit search to items with this tag." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>
+			<!--						<td width="100%" style="padding-left:3%;"><input title="Items must possess all tags" type="radio" name="searchTagMatchRadioButtons" value="all" onClick="refreshButtons()" checked >all<input title="Items must possess at least one of the tags" type="radio" name="searchTagMatchRadioButtons" id="searchTagAnyRadioButton" value="any" onClick="refreshButtons()">any</td>-->
+								</tr>
+								<tr>
         							<td><i><b>Metadata&nbsp;name&nbsp;keyword:</b></i></td>
 									<td title="Limit search to items with metadata where the name attribute contains this keyword. Searches are case-sensitive." colspan="2"><input style="width:100%;" id="searchMetadataNameInputBox" dojoType="dijit.form.TextBox" trim="false" value=""/></td>
 									<td width="100%" style="padding-left:3%;"><input title="Keyword must appear somewhere within the metadata name attribute" type="radio" name="searchMetadataNameMatchRadioButtons" value="phrase" onClick="refreshButtons()" checked >phrase<input title="Keyword must match the metadata name attribute exactly" type="radio" name="searchMetadataNameMatchRadioButtons" id="searchMetadataNameExactRadioButton" value="exact" onClick="refreshButtons()">exact</td>
@@ -2845,6 +3034,19 @@
 		</tr>
 	</table>
 </div>
+<!--<div dojoType="dijit.Dialog" jsId="dialogSelectTags" title="Select Tags"> -->
+<div dojoType="dijit.Dialog" jsId="dialogSelectTags" title="Select Tag">
+    <!--Select Tags:<br>-->
+    <div class="tagListHead">Available Tags</div>
+	<!--<div dojoType="dojo.dnd.Source" jsId="searchTagsList" id="searchTagsList" class="tagList" isSource="false"></div>--> 
+	<div dojoType="dojo.dnd.Source" jsId="searchTagsList" id="searchTagsList" class="tagList" isSource="false" singular="true"></div> 
+	<br/><br/>
+	<div style="text-align: right;">
+	<!--	<button type="button" >Clear</button>-->
+		<button type="button" title="Place the selection in the Tag box of the search window." onclick="dialogSelectTags.hide(); setSearchTagsTextBox(getSelectedTagsListTags(searchTagsList));">Apply</button>
+		<button type="button" id="selectTagsCancelButton" onclick="dialogSelectTags.hide()">Cancel</button>
+	</div>
+</div>					
 <div dojoType="dijit.Dialog" jsId="dialogReplicas" title="Replicas" onCancel="/*setCursor(false, true)*/">
 	<table>
 		<tr>
@@ -2938,12 +3140,12 @@
 			        					<td id="sessionButtonsHTML" style="width:auto;" align="right" valign="top"></td>
 			        					<td align="right" style="width:100%;" valign="top">
 			        						<a title="Refresh this page" onclick="refreshCurrentDirectory(); listingStore.refreshDisplay(true); return false" href="Refresh this page"><img border="0" alt="refresh" src="/images/refresh.png" width="32" height="32"/></a>
-											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="Go to your home folder" src="/images/home.png" width="28" height="32"/></a></span>
-											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="Go to your trash folder" src="/images/trash.png" width="28" height="32"/></a></span>
-											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="Login with authentication" src="/images/login.png" width="26" height="32"/></a></span>
-											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="Logout of this session" src="/images/logout.png" width="26" height="32"/></a></span>
-											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="Show your shared files" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
-											<span id="searchButton"><a title="Search for items" onclick="showSearch(); return false" href="search"><img border="0" alt="Search for items" src="/images/search.png" width="28" height="32"/></a></span>
+											<span id="homeButton"><a title="Go to your home folder" onclick="listingStore.gotoDirectory('<parameter home/>', true); return false" href="<parameter home/>"><img border="0" alt="home" src="/images/home.png" width="28" height="32"/></a></span>
+											<span id="trashButton"><a title="Go to your trash folder" onclick="listingStore.gotoDirectory('<parameter trash/>', true); return false" href="<parameter trash/>"><img border="0" alt="trash" src="/images/trash.png" width="28" height="32"/></a></span>
+											<span id="loginButton"><a title="Login with authentication" onclick="login(); return false" href="login"><img border="0" alt="login" src="/images/login.png" width="26" height="32"/></a></span>
+											<span id="logoutButton"><a title="Logout of this session" onclick="logout(); return false" href="logout"><img border="0" alt="logout" src="/images/logout.png" width="26" height="32"/></a></span>
+											<span id="sharesButton"><a title="Show your shared files" onclick="showShares(true); return false" href="shares"><img border="0" alt="sharing" src="/images/unshare.png" width="32" height="32"/></a></span>	        					
+											<span id="searchButton"><a title="Search for items" onclick="showSearch(); return false" href="search"><img border="0" alt="search" src="/images/search.png" width="28" height="32"/></a></span>
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
@@ -3025,7 +3227,7 @@
 	    </table>
 	    <table width="100%" class="hoverBorderSide" border="0" cellspacing="0" cellpadding="4">
 	    	<tr>
-	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showMetadata()">Metadata</td>
+	    		<td class="activeItem" id="metadataButton" onclick="if (!activeItemIsEnabled('metadataButton')) return; showSimpleMetadata()">Metadata</td>
 	    	</tr>
 	    </table> 
  	    <span id="replicasButtonHolder">

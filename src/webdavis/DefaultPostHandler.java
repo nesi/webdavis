@@ -14,9 +14,11 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -107,17 +109,6 @@ public class DefaultPostHandler extends AbstractHandler {
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		Log.log(Log.DEBUG, "url:" + url + " method:" + method);
 
-//		try {  //### Not needed anymore because of above test?
-//			file.getPermissions(); // Test server connection
-//		} catch (SocketException e) {
-//			connected = false;
-//			message = e.getMessage();
-//		} catch (IRODSException e) {
-//			message = e.getMessage();
-//   			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
-//   				connected = false;
-//		}
-
 		RemoteFile file = null;
 		try {
 			file = getRemoteFile(request, davisSession);
@@ -141,40 +132,9 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			return;
 		}
-//		try {
-//			file = getRemoteFile(request, davisSession);
-//		} catch (SocketException e) {
-//			lostConnection(response, e.getMessage());
-//			return;
-//		}
-//		Log.log(Log.DEBUG, "GET Request for resource \"{0}\".", file);
 		if (!file.exists()) {
-//			boolean connected = true;
 			String message = "";
-//			if (davisSession.getRemoteFileSystem() instanceof IRODSFileSystem) {
-//				try {
-//					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-//				} catch (ProtocolException e) {
-//					connected = false;
-//					message = e.getMessage();
-//				} catch (SocketException e) {
-//					connected = false;
-//					message = e.getMessage();
-//				} catch (Exception e) {
-//					Log.log(Log.WARNING, "Jargon exception when testing for connection (get): "+e);					
-//				}
 				message = FSUtilities.testConnection(davisSession);
-//			}
-//			try {  //### Not needed anymore because of above test?
-//				file.getPermissions(); // Test server connection
-//			} catch (SocketException e) {
-//				connected = false;
-//				message = e.getMessage();
-//			} catch (IRODSException e) {
-//				message = e.getMessage();
-//       			if (message.contains("IRODS error occured -816000")) // Invalid Argument seems to indicate dropped connection too
-//       				connected = false;
-//			}
 			if (message != null) {
 				lostConnection(response, message);
 				return;
@@ -219,12 +179,8 @@ public class DefaultPostHandler extends AbstractHandler {
 				} catch (Exception _e) {}
 				Log.log(Log.DEBUG, "recursive="+recursive);
 				String sticky = request.getParameter("sticky");
-//				for (int j = 0; j < filesArray.size(); j++) {
 				for (int j = 0; j < fileList.size(); j++) {
-//					String fileName = (String)filesArray.get(j);
-//					RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 					RemoteFile selectedFile = fileList.get(j);
-//					if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
 					if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 						file = selectedFile;
 					try {
@@ -273,9 +229,6 @@ public class DefaultPostHandler extends AbstractHandler {
 				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
-						// for (MetaDataField f:p.getFields()){
-						// Log.log(Log.DEBUG, f.getName()+" "+p.getValue(f));
-						// }
 						if (i > 0)
 							json.append(",\n");
 						else
@@ -301,8 +254,6 @@ public class DefaultPostHandler extends AbstractHandler {
 						stickyBit = stickBitStr != null && stickBitStr.equals("1");
 					}
 					json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+stickyBit)+",\n");
-//					permissions = ((IRODSFile) file).query(new String[]{IRODSMetaDataSet.DIRECTORY_USER_NAME, IRODSMetaDataSet.DIRECTORY_USER_ZONE,
-//							IRODSMetaDataSet.DIRECTORY_ACCESS_CONSTRAINT});
 					permissions = file.getFileSystem().query(
 							new MetaDataCondition[] {
 									MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getAbsolutePath())},
@@ -315,7 +266,6 @@ public class DefaultPostHandler extends AbstractHandler {
 					if (permissions != null && permissions.length > 0)
 						owner = (String)permissions[0].getValue(IRODSMetaDataSet.DIRECTORY_OWNER);
 				}else {
-//					permissions = ((IRODSFile) file).query(new String[]{UserMetaData.USER_NAME,	GeneralMetaData.ACCESS_CONSTRAINT});
 					permissions = file.getFileSystem().query( 
 							new MetaDataCondition[] {
 									MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
@@ -335,9 +285,6 @@ public class DefaultPostHandler extends AbstractHandler {
 				json.append(escapeJSONArg("items")+":[");
 				if (permissions != null) {
 					for (int i = 0; i < permissions.length; i++) {
-//						for (MetaDataField f:permissions[i].getFields()){
-//						Log.log(Log.DEBUG, f.getName()+" "+permissions[i].getValue(f));
-//						}
 						if (i > 0)
 							json.append(",\n");
 						else
@@ -364,43 +311,18 @@ public class DefaultPostHandler extends AbstractHandler {
 		} else if (method.equalsIgnoreCase("metadata")) {
 			if (request.getContentLength() > 0) {	// write metadata if given in request
 				JSONArray jsonArray = getJSONContent(request);			
-//		        InputStream input = request.getInputStream();
-//		        byte[] buf = new byte[request.getContentLength()];
-//		        int count=input.read(buf);
-//		        Log.log(Log.DEBUG, "read:"+count);
-//		        Log.log(Log.DEBUG, "received metadata: " + new String(buf));
-//
-//				// for testing
-////				String line = null;
-////				StringBuffer buffer = new StringBuffer();
-////				while ((line = reader.readLine()) != null) {
-////					buffer.append(line);
-////				}
-////				Log.log(Log.DEBUG, "received metadata: " + buffer);
-//
-//				JSONArray jsonArray=(JSONArray)JSONValue.parse(new String(buf));
 				if (jsonArray != null) {	
 
 			    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-//			    	try {
-			    		getFileList(request, davisSession, fileList, jsonArray);
-//			    	} catch (ServletException e) {
-//			    		if (!checkClientInSync(response, e))
-//			    			return;
-//			    	}
+			    	getFileList(request, davisSession, fileList, jsonArray);
 				
 					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
-//					JSONArray filesArray = (JSONArray)jsonObject.get("files");
 					JSONArray metadataArray = (JSONArray)jsonObject.get("metadata");
 					GeneralFileSystem fileSystem = file.getFileSystem();
 					
-//					for (int j = 0; j < filesArray.size(); j++) {
 					for (int j = 0; j < fileList.size(); j++) {
-//						String fileName = (String)filesArray.get(j);
-//						RemoteFile selectedFile = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 						RemoteFile selectedFile = fileList.get(j);
 						Log.log(Log.DEBUG, "changing metadata for: "+selectedFile);
-//						if (j == filesArray.size()-1)		// Use the last file in the list for returning metadata below
 						if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 							file = selectedFile;
 
@@ -432,9 +354,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		
 							}else if (fileSystem instanceof IRODSFileSystem) {
 								//delete all metadata, uses wildcards
-		//						try{
 								((IRODSFile)selectedFile).deleteMetaData(new String[]{"%","%","%"});
-		//						}catch (Exception _e){}
 								
 								String[][] definableMetaDataValues = new String[metadataArray.size()][3];
 		
@@ -447,7 +367,7 @@ public class DefaultPostHandler extends AbstractHandler {
 		    						((IRODSFile)selectedFile).modifyMetaData(metadata);
 							}
 						} catch (IOException e){
-				        	Log.log(Log.DEBUG, "Set permissions failed: "+e);
+				        	Log.log(Log.DEBUG, "Set metadata failed: "+e);
 				        	String s = e.getMessage();
 				        	if (s.endsWith("-818000")) 
 				        		s = "you don't have permission"; // irods error -818000 
@@ -464,10 +384,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			json.append("{\n"+escapeJSONArg("items")+":[");
 			boolean b = false;
 			if (file.getFileSystem() instanceof SRBFileSystem) {
-				// conditions = new MetaDataCondition[0];
-				// conditions[0] = MetaDataSet.newCondition(
-				// SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES, metaDataTable );
-
 				if (!file.isDirectory()){
 					selects = new MetaDataSelect[1];
 					// "definable metadata for files"
@@ -482,11 +398,6 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 				if (rl != null) { // Nothing in the database matched the query
 					for (int i = 0; i < rl.length; i++) {
-//						if (i > 0)
-//							json.append(",\n");
-//						else
-//							json.append("\n");
-
 						int metaDataIndex;
 						if (file.isDirectory())
 							metaDataIndex = rl[i].getFieldIndex(SRBMetaDataSet.DEFINABLE_METADATA_FOR_DIRECTORIES);
@@ -505,30 +416,6 @@ public class DefaultPostHandler extends AbstractHandler {
 								b = true;
 							}
 						}
-
-						// "definable metadata for files"
-						// String[]
-						// lines=rl[i].getValue(SRBMetaDataSet.DEFINABLE_METADATA_FOR_FILES).toString().split("\n");
-						// boolean b=false;
-						// for (int j=0;j<lines.length;j++){
-						// if (b)
-						// str.append(",\n");
-						// else
-						// str.append("\n");
-						// if (lines[j].length()>0){
-						// str.append("{name:'");
-						// str.append(lines[j].replaceAll(" = ",
-						// "', value:'").trim());
-						// str.append("'}");
-						// b=true;
-						// }
-						// }
-						// str.append("{name:'").append(rl[i].).append("', ");
-						// str.append("value:'").append(permissions[i].getValue("file access constraint")).append("'}");
-						// for (int j=0;j<rl[i].getFieldCount();j++){
-						// System.out.println("field name: "+rl[i].getFieldName(j));
-						// System.out.println("value: "+rl[i].getValue(j));
-						// }
 					}
 				}
 
@@ -544,17 +431,8 @@ public class DefaultPostHandler extends AbstractHandler {
 					selects[2] = MetaDataSet.newSelection( IRODSMetaDataSet.META_DATA_ATTR_UNITS );    
 				}
 				rl = file.query( selects );
-//				selects = new MetaDataSelect[1];
-//				// "definable metadata for files"
-//				selects[0] = MetaDataSet
-//						.newSelection(IRODSMetaDataSet.GROUP_DEFINABLE_METADATA);
-//				rl = file.query( selects );
 				if (rl != null) { // Nothing in the database matched the query
 					for (int i = 0; i < rl.length; i++) {
-//						if (i > 0)
-//							json.append(",\n");
-//						else
-//							json.append("\n");
 						if (i>0) json.append(",\n");
 						if (file.isDirectory()){
 							json.append("{"+escapeJSONArg("name")+":");
@@ -572,6 +450,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("upload")) {
 			response.setContentType("text/html");
 			if (!ServletFileUpload.isMultipartContent(request)) // Returns json wrapped in an HTML textarea 
@@ -667,6 +546,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			        }
 	            }
 	        }
+			
 		} else if (method.equalsIgnoreCase("uploadstatus")) {	
 			Tracker tracker = null;
             ClientInstance client = davisSession.getClientInstance(requestUIHandle);
@@ -687,6 +567,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					json.append("{"+escapeJSONArg("transferred")+":"+transferred+','+escapeJSONArg("total")+":"+total+"}");
 			}
 			json.append("\n");
+			
 		} else if (method.equalsIgnoreCase("domains")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] domains=FSUtilities.getDomains((SRBFileSystem)davisSession.getRemoteFileSystem());
@@ -695,6 +576,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(domains[i])+"}");
 			}
 			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("dynamicobjects")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			Enumeration<JSONObject> dynamicObjects = Davis.getConfig().getDynamicObjects().elements();
@@ -705,6 +587,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				json.append(dynamicObject.toString()); // No escaping required - the whole dynamic object declaration is sent verbatim
 			}
 			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("resources")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] resources = null;
@@ -717,6 +600,7 @@ public class DefaultPostHandler extends AbstractHandler {
 				json.append("{"+escapeJSONArg("name")+":"+escapeJSONArg(resources[i])+"}");
 			}
 			json.append("\n]}");
+			
 		} else if (method.equalsIgnoreCase("collectionmetadata")) {
 			json.append("{"+escapeJSONArg("items")+":[\n");
 			HashMap<String, FileMetadata> files = null;
@@ -744,12 +628,13 @@ public class DefaultPostHandler extends AbstractHandler {
 				}
 			}
 			json.append("]}");
+			
 		} else if (method.equalsIgnoreCase("execbutton")) {
 			JSONArray jsonArray = getJSONContent(request);
 	    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
-	    	boolean batch = true;
+//	    	boolean batch = true;
 //	    	try {
-	    		batch = batch = getFileList(request, davisSession, fileList, jsonArray);
+//	    		batch = batch = getFileList(request, davisSession, fileList, jsonArray);
 //	    	} catch (ServletException e) {
 //	    		if (!checkClientInSync(response, e))
 //	    			return;
@@ -889,22 +774,6 @@ public class DefaultPostHandler extends AbstractHandler {
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
 				Log.log(Log.ERROR, "Sharing is only supported for iRODS");
 			else {
-//				String sharingKey = Davis.getConfig().getSharingKey();
-//				if (sharingKey != null) {		
-//					MetaDataSelect selectsFile[] = 
-//						MetaDataSet.newSelection(new String[] {
-//				//				IRODSMetaDataSet.FILE_ACCESS_NAME,
-//								//IRODSMetaDataSet.FILE_ACCESS_USER_ID,
-//								IRODSMetaDataSet.OWNER,							
-//								IRODSMetaDataSet.FILE_NAME,
-//								IRODSMetaDataSet.DIRECTORY_NAME
-//						});
-//					MetaDataCondition conditionsFile[];
-//					conditionsFile = new MetaDataCondition[] {
-//							MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, sharingKey),
-//							MetaDataSet.newCondition(IRODSMetaDataSet.OWNER, MetaDataCondition.EQUAL, davisSession.getAccount()), 
-//					};
-//					MetaDataRecordList[] fileDetails = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisUtilities.JARGON_MAX_QUERY_NUM);
 					MetaDataRecordList[] fileDetails = getShares(davisSession);
 					if (fileDetails == null) 
 		    			fileDetails = new MetaDataRecordList[0];	
@@ -921,6 +790,72 @@ public class DefaultPostHandler extends AbstractHandler {
 //				}
 			}
 			json.append("\n]}");
+			
+			
+		} else if (method.equalsIgnoreCase("alltags")) {
+			json.append("{\n"+escapeJSONArg("items")+":[\n");
+			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
+				Log.log(Log.ERROR, "Tags are only supported for iRODS");
+			else {
+					String[] tags = getTags(null, davisSession, DavisConfig.TAGMETAKEY);
+		 			int i = 0;
+		    		for (String s:tags) {
+						if (i++ > 0) json.append(",\n");
+						json.append("{"+escapeJSONArg("data")+":\""+FSUtilities.escape(s)+"\"}");
+		        	}
+//				}
+			}
+			json.append("\n]}");
+			
+		} else if (method.equalsIgnoreCase("puttags")) {
+	    	boolean batch = false;
+			if (request.getContentLength() > 0) {	// write tag metadata if present in request			
+				JSONArray jsonArray = getJSONContent(request);			
+				if (jsonArray != null) { 					
+			    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+			    	getFileList(request, davisSession, fileList, jsonArray);				
+			    	batch = (fileList.size() > 1);
+					JSONObject jsonObject = (JSONObject)jsonArray.get(0);
+					JSONArray tagsArray = (JSONArray)jsonObject.get("tags");
+					
+					for (int j = 0; j < fileList.size(); j++) {						
+						RemoteFile selectedFile = fileList.get(j);
+				//		if (j == fileList.size()-1)		
+							file = selectedFile;	// Use first/last file in the list for returning metadata below
+						if (tagsArray == null)
+							break;
+						Log.log(Log.DEBUG, "Changing tag metadata for: "+selectedFile+" to: "+tagsArray);
+						try {
+							//delete all tag metadata, uses wildcards
+							((IRODSFile)selectedFile).deleteMetaData(new String[]{DavisConfig.TAGMETAKEY,"%","%"});
+							
+							String[] metadata = new String[] {DavisConfig.TAGMETAKEY, "", ""};
+							for (int i = 0; i < tagsArray.size(); i++) {
+								metadata[1] = (String)tagsArray.get(i);
+								((IRODSFile)selectedFile).modifyMetaData(metadata);
+							}
+						} catch (IOException e){
+				        	Log.log(Log.DEBUG, "Set tag metadata failed: "+e);
+				        	String s = e.getMessage();
+				        	if (s.endsWith("-818000")) 
+				        		s = "you don't have permission"; // irods error -818000 
+		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+		        			return;
+						}
+					}
+				}
+			}
+				
+			// Get and return tags for given item
+	    	String[] tags = {};
+	    	if (!batch)
+	    		tags = getTags(file, davisSession, DavisConfig.TAGMETAKEY);
+			json.append("{\n"+escapeJSONArg("items")+":[");
+			for (int i = 0; i < tags.length; i++) {
+				if (i>0) json.append(",\n");
+				json.append("{"+escapeJSONArg("data")+":"+escapeJSONArg(tags[i])+"}");
+			}
+			json.append("\n]}");			
 			
 		} else if (method.equalsIgnoreCase("unshareall")) {
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
@@ -1029,7 +964,11 @@ public class DefaultPostHandler extends AbstractHandler {
 				boolean metadataNameExact = (s == null || s.equals("exact"));
 				s = request.getParameter("metadataValueMatch");
 				boolean metadataValueExact = (s == null || s.equals("exact"));
-//System.err.println("**************** fromroot="+fromRoot+" showread="+showRead+" fileKeyword="+fileKeyword+" fileExact="+fileExact+" pathKeyword="+pathKeyword+" pathExact="+pathExact+" metadatanamekeyword="+metadataNameKeyword+" metadatavaluekeyword="+metadataValueKeyword+" metadatanameExact="+metadataNameExact+" metadatavalueExact="+metadataValueExact);				
+
+				String[] tags = {};
+				String tagString = request.getParameter("tags");
+				if (tagString != null && tagString.length() > 0)
+					tags = tagString.split(", *");
 				
 				String keyword = fileKeyword;
 				if (!fileExact)
@@ -1076,7 +1015,19 @@ public class DefaultPostHandler extends AbstractHandler {
 					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.LIKE, metadataValueKeyword));
 					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.LIKE, metadataValueKeyword));
 				}
+				if (tags != null && tags.length > 0) {
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
+//###TBD switch the two blocks below to enable multiple tag searching when jargon is fixed
+	//				conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.IN, tags));
+					conditionsFile.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_VALUE, MetaDataCondition.EQUAL, tags[0]));
 
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, DavisConfig.TAGMETAKEY));
+
+	//				conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.IN, tags));
+					conditionsDir.add(MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_VALUE, MetaDataCondition.EQUAL, tags[0]));
+				}
+//System.err.println("**************conditionsFile="+conditionsFile);
+//System.err.println("**************conditionsDir="+conditionsDir);
 				MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
 						IRODSMetaDataSet.FILE_NAME,
 						IRODSMetaDataSet.DIRECTORY_NAME,
@@ -1102,22 +1053,17 @@ public class DefaultPostHandler extends AbstractHandler {
 					int nResults = 0;
 					if (fileDetails != null && fileDetails.length > 0) {
 						nResults += fileDetails.length;
-//System.err.println("####################file size="+fileDetails[0].getRecordCount());
 						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(fileDetails);
 						if (l != null && l.length > 0) 
 							totalResults += l.length;
-//System.err.println("#################### Search: file items returned: "+fileDetails.length+"  total file items found: "+l.length);
 					}
 					if (dirDetails != null && dirDetails.length > 0) {
 						nResults += dirDetails.length;
-//System.err.println("####################dir size="+dirDetails[0].getRecordCount());
 						MetaDataRecordList[] l = MetaDataRecordList.getAllResults(dirDetails);
 						if (l != null && l.length > 0)
 							totalResults += l.length;
-//System.err.println("#################### Search: dir items returned: "+dirDetails.length+"  total dir items found: "+l.length);
 					}
-//					if ((fileDetails != null && fileDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS) || (dirDetails != null) && dirDetails.length == DavisConfig.SEARCH_MAX_QUERY_RESULTS)
-//						truncated = true;
+
 					boolean truncated = (nResults != totalResults);
 					HashMap<String, FileMetadata> metadata = new HashMap<String, FileMetadata>();
 					
@@ -1297,15 +1243,8 @@ public class DefaultPostHandler extends AbstractHandler {
 				System.err.println("************ Exception in debug method handler: "+e);
 				e.printStackTrace();
 			}
+			
 		} else if (method.equalsIgnoreCase("logout")) { 
-//			Cookie[] cookies = request.getCookies();
-//			if (cookies != null) // Delete shib cookies if present
-//				for (Cookie cookie:cookies)
-//					if (cookie.getName().startsWith("_shibstate") || cookie.getName().startsWith("_shibsession") || cookie.getName().startsWith("_saml_idp")) {
-//						cookie.setPath("/");
-//						cookie.setMaxAge(0);	// Browser should delete cookie
-//						response.addCookie(cookie);
-//					}
 			HttpSession session = request.getSession(true);
 			request.getSession().removeAttribute(Davis.FORMAUTHATTRIBUTENAME); // Discard auth attribute (if there is one)
 			session.invalidate();
@@ -1324,6 +1263,8 @@ public class DefaultPostHandler extends AbstractHandler {
 					returnURL = "?return="+returnURL;
 				json.append("{"+escapeJSONArg("redirect")+":"+escapeJSONArg("https://"+request.getServerName()+"/Shibboleth.sso/Logout"+returnURL)+"}");
 			}
+		} else { 
+			throw new ServletException("Internal error: unnknown method");			
 		}
 		
 		ServletOutputStream op = null;
@@ -1342,12 +1283,14 @@ public class DefaultPostHandler extends AbstractHandler {
 	
 	private MetaDataRecordList[] getShares(DavisSession davisSession) throws IOException{
 		
-		return getShares(davisSession, null, null);
+		return getShares(davisSession, null, null, null);
 	}
 
-	private MetaDataRecordList[] getShares(DavisSession davisSession, String directory, String fileName) throws IOException{
+	private MetaDataRecordList[] getShares(DavisSession davisSession, String directory, String fileName, String key) throws IOException{
 		
-		String sharingKey = Davis.getConfig().getSharingKey();
+		String sharingKey = key;
+		if (sharingKey == null)
+			sharingKey = Davis.getConfig().getSharingKey();
 		if (sharingKey == null)
 			return null;		
 
@@ -1374,6 +1317,43 @@ public class DefaultPostHandler extends AbstractHandler {
 				MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_NAME, MetaDataCondition.EQUAL, directory), 
 			};
 		return ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
+	}
+	
+	private String[] getTags(RemoteFile file, DavisSession davisSession, String key) throws IOException{
+		
+		HashSet<String> tags = new HashSet<String>();
+
+		MetaDataSelect[] selects = MetaDataSet.newSelection(new String[] {IRODSMetaDataSet.DIRECTORY_NAME, IRODSMetaDataSet.META_DATA_ATTR_VALUE});
+		MetaDataCondition[] conditions = new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, key)};
+			
+		MetaDataRecordList[] results = null;
+		if (file == null)
+			results = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditions, selects, DavisConfig.JARGON_MAX_QUERY_NUM);
+		else
+			results = file.query(conditions, selects);
+
+		if (results != null)
+			for (MetaDataRecordList result:results) {
+//	System.err.println("$$$$$$$$$$$$result:"+result);
+				tags.add((String)result.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
+			}
+		
+		selects = MetaDataSet.newSelection(new String[] {IRODSMetaDataSet.DIRECTORY_NAME, IRODSMetaDataSet.META_COLL_ATTR_VALUE});
+		conditions = new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, key)};
+		if (file == null)
+			results = ((IRODSFileSystem)davisSession.getRemoteFileSystem()).query(conditions, selects, DavisConfig.JARGON_MAX_QUERY_NUM);
+		else
+			results = file.query(conditions, selects);
+
+		if (results != null)
+			for (MetaDataRecordList result:results) {
+//	System.err.println("$$$$$$$$$$$$result:"+result);
+				String tag = (String)result.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE);
+		//		if (!tags.contains(tag)) // Keep list unique
+					tags.add(tag);
+			}
+		
+		return tags.toArray(new String[0]);
 	}
 	
 	private String share(DavisSession davisSession, RemoteFile file, boolean share) {
@@ -1420,7 +1400,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					}else 
 					if (fileSystem instanceof IRODSFileSystem) {
 						if (share) {
-							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName());
+							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName(), null);
 							if (!(fileDetails == null || fileDetails.length == 0)) {
 								Log.log(Log.DEBUG, file.getPath()+" is already shared - ignoring");
 								return null;
