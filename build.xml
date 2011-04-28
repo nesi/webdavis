@@ -209,15 +209,18 @@
     <jar jarfile="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/lib/${app.name}.jar">
   	  <fileset dir="${build.home}/WEB-INF/classes/"/>
     </jar>
+    <jar destfile="${build.home}/${app.name}-${app.version}/webapps/root/WEB-INF/lib/davisapplets.jar" basedir="${build.home}/WEB-INF/classes/"
+    	includes="au/**">
+    </jar>
     <mkdir dir="${build.home}/${app.name}-${app.version}/etc/patches/"/>
   	<copy todir="${build.home}/${app.name}-${app.version}/etc/patches/">
    	  <fileset dir="${basedir}/etc/patches"/>
    	</copy>
-  	<delete dir="${build.home}/META-INF"/>
+<!--  	<delete dir="${build.home}/META-INF"/>
   	<delete dir="${build.home}/WEB-INF"/>
   	<delete dir="${build.home}/dojoroot"/>
   	<delete dir="${build.home}/images"/>
-  	<delete dir="${build.home}/include"/>
+  	<delete dir="${build.home}/include"/>-->
 	<tar destfile="${dist.home}/${app.name}-${app.version}.tar">
 	  <!--<tarfileset dir="${build.home}" filemode="755">
 	  	<include name="${app.name}-${app.version}/bin/davis-configure.sh"/>

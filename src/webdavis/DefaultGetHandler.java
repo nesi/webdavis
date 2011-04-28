@@ -253,7 +253,7 @@ public class DefaultGetHandler extends AbstractHandler {
 //		}
 		String url = getRemoteURL(request, getRequestURL(request), getRequestURICharset());
 		// Check for non remote-server requests (eg dojo files) and return them if so
-		if (url.startsWith("/dojoroot") || url.startsWith("/applets.jar")) {
+		if (url.startsWith("/dojoroot") || url.startsWith("/davisapplets.jar")) {
 			Log.log(Log.DEBUG, "Returning contents of " + url);
 			writeFile(url, request, response);
 			return;
