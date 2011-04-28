@@ -2887,15 +2887,16 @@
 				<div class="tagListHead" title="Tags currently assigned to selected items.">Assigned Tags</div>
 				<div dojoType="dojo.dnd.Source" jsId="assignedTagsList" id="assignedTagsList" title="Drag and drop tags between lists" class="tagList"></div>
 			</td>
-			<td>
-			<img alt="drag n drop" title="Drag and drop tags between lists" src="/images/exchange.png" wwidth="32" hheight="32"/>
-			</td>
+			<td style="padding:0px 20px">
+			<!--<img alt="drag n drop" title="Drag and drop tags between lists" src="/images/exchange.png" wwidth="32"/>-->
+			</td> 
 			<!--<td valign="top" style="padding:0px 30px 30px 20px;">-->
 			<td valign="top" style="padding:0px 30px 30px 0px;">
 				<div class="tagListHead" title="Tags not currently assigned to selected items.">Available Tags</div>
 				<div dojoType="dojo.dnd.Source" jsId="availableTagsList" id="availableTagsList" title="Drag and drop tags between lists" class="tagList"></div>
 			</td>
 		</tr>
+		<tr><td colspan="50" align="center" style="padding:0px 0px 30px 0px;">Drag and drop tags between columns</td></tr>
 		<tr>
 			<td colspan="50" align="right" valign="bottom">
 				<button title="Create a new tag and asign it." align="right" "type="button" onclick="dojo.byId('newTagInputBox').value = ''; dialogNewTag.show();">New tag</button>
