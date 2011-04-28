@@ -436,6 +436,7 @@
 			}
 			dojo.connect(dojo.byId("searchTagInputBox"), 'onkeypress', showSearchTagsListDialog);			
 			dojo.connect(dojo.byId("searchTagInputBox"), 'onclick', showSearchTagsListDialog);			
+	//		dojo.connect(assignedTagsList, 'onDrop', getAvailableTags());			
 		}
 		
 		function initWidgets() {
@@ -535,6 +536,9 @@
     		// The following seems to be necessary for mozilla based browsers on linux. Some buttons start disabled for some reason.
     		for (var i = 0; i < buttons.length; i++) 
     			buttons[i].disabled = false;
+
+    		assignedTagsList.copyState = function() {return false;};
+    		availableTagsList.copyState = function() {return false;};
 		}
 		
 		function resetPermissionsStore(fast) {
@@ -2481,10 +2485,9 @@
 			// Assumes assignedTagsList is valid
 			var assigned = getTagsListTags(assignedTagsList);
 			var array = new Array();
-			for (var i = 0; i < availableTags.length; i++) {
+			for (var i = 0; i < availableTags.length; i++) 
 				if (dojo.indexOf(assigned, availableTags[i].data) < 0)
 					array.push(availableTags[i].data);
-			}
 			availableTagsList.insertNodes(false, array);
 			dojo.html.set(dojo.byId("searchTagsList"), "");
 			searchTagsList.clearItems();
