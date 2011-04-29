@@ -2775,6 +2775,7 @@
 				this.readOnly = (data.readOnly == "true");
 				if (this.addToHistory)
 					addToHistory(this.directory);
+				this.addToHistory = false;
 				// Next line prevents a null node problem for Firefox in store._xhrFetchHandler - second last line
 				// Not necessary? Also - causes problem in Chrome!
 				//this.grid.focus.focusHeader(); 
