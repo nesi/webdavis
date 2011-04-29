@@ -50,7 +50,7 @@
 		var baseURL = '';
 		
 		dojo.addOnLoad(function() {
-			baseURL = location.href.substring(0, location.href.indexOf('/', 14));
+  		baseURL = location.href.substring(0, location.href.indexOf('/', 14));
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
 				dojo.html.set(dojo.byId("header"), ''); // Hide header section
@@ -96,6 +96,8 @@
 			borderContainer.layout();
 			listingStore.refreshDisplay(true);
 			sharesGrid.setSortIndex(1, true);
+		
+			dojo.connect(window, "onresize", resetGridColumnsWidth);
 			
 			if (dojo.isMozilla)
 				HTMLElement.prototype.click = function() { // Add a click() method to all elements
@@ -2644,7 +2646,8 @@
 	    return value.replace(/ /g, '&nbsp;');		
 		}
 	
-		function resetGridColumnsWidth(grid) {
+		function resetGridColumnsWidth() {
+		  grid = listingGrid;	
 			if (grid.structure != undefined) {
 			    // Set column width by reading structure.
 			    for (i = 0; i < grid.layout.cells.length; i++) {
@@ -2662,7 +2665,7 @@
 			    }			        		
 			    	
 			    // Update views.
-			    if (grid.views != undefined) {
+			    if (grid.views != undefined) {	
 			      for (i = 0; i < grid.views.views.length; i++) {
 			    	  var w = dojo.query("#"+grid.id+">div>div.dojoxGridHeader").style('width');
 			    	  grid.views.views[i].viewWidth = w + 'px';
@@ -2824,7 +2827,7 @@
 <div dojoType="dijit.Menu" jsId="gridListingMenu" id="gridListingMenu" style="display: none;">
 	<div jsId="listingColumnMenu" dojoType="dojox.widget.PlaceholderMenuItem" label="GridColumns"></div>
 	<div dojoType="dijit.MenuSeparator"></div>
-	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(listingGrid);">Reset Column Widths</div>	
+	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth();">Reset Column Widths</div>	
 </div>
 </div>
 <div dojoType="dijit.Menu" jsId="searchResultsMenu" id="searchResultsMenu" style="display: none;">
