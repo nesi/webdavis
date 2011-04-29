@@ -2647,10 +2647,19 @@
 		function resetGridColumnsWidth(grid) {
 			if (grid.structure != undefined) {
 			    // Set column width by reading structure.
-			    for (i = 0; i < grid.structure.length; i++) {
-			    	var s = grid.structure[i];
-		        	grid.setCellWidth(i, s.width); 
-			    }    		
+			    for (i = 0; i < grid.layout.cells.length; i++) {
+    	      cell = grid.getCell(i);
+			    	
+			    	if (cell != undefined) {
+			    		for (j = 0; j < grid.structure.length; j++) {
+					    	var s = grid.structure[j];
+					    	
+					    	if (cell.name == s.name) {
+				      		 grid.setCellWidth(i, s.width);
+				        } 
+					    }	
+			    	}	
+			    }			        		
 			    	
 			    // Update views.
 			    if (grid.views != undefined) {
@@ -2919,7 +2928,7 @@
 	<table>
 		<tr>
 			<td>
-	        	<button type="button" id="refreshMetadataButton" onclick="refreshMetadata(dialogMetadata.attr('url'))">Refresh</button>
+	        <button type="button" id="refreshMetadataButton" onclick="refreshMetadata(dialogMetadata.attr('url'))">Refresh</button>
 	    		<button type="button" id="addMetadataButton" onclick="addMetadata()" >Add Metadata</button>
 	    		<button type="button" onclick="metadataGrid.removeSelectedRows()">Remove Metadata</button>
 	    		<button type="button" id="saveMetadataButton" onclick="saveMetadata()">Save</button>
