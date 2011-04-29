@@ -2056,7 +2056,10 @@
 		}
 
 		function setPermissionsOwner(owner) {
-			dojo.html.set(dojo.byId("permissionsOwner"), "<small><br>(Owner is: "+owner+")</small>");
+			s = "";
+			if (owner)
+				s = "<small><br>(Owner is: "+owner+")</small>";
+			dojo.html.set(dojo.byId("permissionsOwner"), s);
 		}
 					
 		function populatePermission(permissions){
@@ -2077,7 +2080,7 @@
 			var sourceURL = listingStore.getCurrentDirectory();
 			if (!batch)
 				sourceURL = listingStore.getCurrentDirectory()+"/"+/*escape(*/getFirstSelectedItem()/*)*/; 
-			setPermissionsOwner("");
+			setPermissionsOwner(null);
 			enableButton('recursive', (directoryIsSelected() || unknownIsSelected()));	// Enable if any dirs in list
 	        if ("<parameter servertype/>" == 'srb') 
 				getDomains(sourceURL+"?method=domains");
