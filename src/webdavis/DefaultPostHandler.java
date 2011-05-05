@@ -193,7 +193,7 @@ public class DefaultPostHandler extends AbstractHandler {
 						/*		if (recursive) 
 									iRODSSetPermission((IRODSFile)selectedFile, permission, username);
 								else*/
-									((IRODSFile)selectedFile).changePermissions(permission, username, recursive);
+								((IRODSFile)selectedFile).changePermissions(permission, username, selectedFile.isDirectory() && recursive);
 							}
 						}
 						if (sticky!=null) {
