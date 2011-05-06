@@ -2,7 +2,8 @@
 
   <property name="app.name"      value="davis"/>
   <property name="app.version"   value="0.9.6.dev"/>
-  <property name="dojo.version"	 value="1.4.2"/>
+<!--  <property name="dojo.version"	 value="1.4.2"/> -->
+  <property name="dojo.version"	 value="1.6.0"/>
   <property name="build.home"    value="${basedir}/build"/>
   <property name="dist.home"     value="${basedir}/dist"/>
   <property name="src.home"      value="${basedir}/src"/>
@@ -242,14 +243,14 @@
   	<delete dir="${web.home}/dojoroot"/>
   	<mkdir dir="${web.home}/dojoroot"/>
   	<untar src="${basedir}/ext/dojo-release-${dojo.version}.tar.gz" dest="${web.home}/dojoroot" compression="gzip"/>
-  	<untar src="${basedir}/ext/dojo-release-${dojo.version}-src.tar.gz" dest="${web.home}/dojoroot" compression="gzip"/>
+  <!--	<untar src="${basedir}/ext/dojo-release-${dojo.version}-src.tar.gz" dest="${web.home}/dojoroot" compression="gzip"/> -->
   	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojo"/>
   	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dijit"/>
   	<move todir="${web.home}/dojoroot" file="${web.home}/dojoroot/dojo-release-${dojo.version}/dojox"/>
-  	<mkdir dir="${web.home}/dojoroot/util"/>
-  	<move todir="${web.home}/dojoroot/util" file="${web.home}/dojoroot/dojo-release-${dojo.version}-src/util/doh"/>
+ <!--	<mkdir dir="${web.home}/dojoroot/util"/> -->
+ <!-- 	<move todir="${web.home}/dojoroot/util" file="${web.home}/dojoroot/dojo-release-${dojo.version}-src/util/doh"/> -->
   	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}"/>
-  	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}-src"/>
+ <!-- 	<delete dir="${web.home}/dojoroot/dojo-release-${dojo.version}-src"/> -->
   	
   	<!-- Make davis.version -->
   	<echo message="appVersion=${app.version}${line.separator}requiredDojoVersion=${dojo.version}" file="${web.home}/WEB-INF/davis.version"/>

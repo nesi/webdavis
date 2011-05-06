@@ -2582,7 +2582,7 @@
 
 		function setNoticeDialog(s) {
 			if (s) {
-				dojo.html.set(dojo.byId("noticeDialog"), s);
+				dojo.html.set(dojo.byId("noticeDialogMessage"), s);
 				noticeDialog.layout();
 				noticeDialog.show(); 
 			} else 
@@ -2835,7 +2835,8 @@
 	<div dojoType="dijit.MenuSeparator"></div>
 	<div dojoType="dijit.MenuItem" onClick="resetGridColumnsWidth(searchResultsGrid);">Reset Column Widths</div>	
 </div>
-<div jsId="noticeDialog" id="noticeDialog" dojoType="dijit.Dialog" title="" style="font-size:small; padding: 20px; max-width: 80%; word-wrap: break-word; break-word: break-all; background-color: #F0F0F0;">
+<div class="noticeDialog" jsId="noticeDialog" id="noticeDialog" dojoType="dijit.Dialog" closable="false" draggable="false" title="" style="font-size:small; padding: 20px; max-width: 80%; word-wrap: break-word; break-word: break-all; background-color: #F0F0F0;">
+	<div style="padding:0px; margin:0px; background-color: #F0F0F0;" id="noticeDialogMessage"></div>
 </div>
 <div dojoType="dijit.Dialog" id="dialogCreateDir" jsId="dialogCreateDir" title="Create Directory">
 	New directory name:
