@@ -2473,7 +2473,8 @@
 			var selection = tagsList.getSelectedNodes();
 			for (var i = 0; i < selection.length; i++) 
 				if (selection[i] != null)
-					array.push(selection[i].textContent);
+//					array.push(selection[i].textContent);
+					array.push(selection[i].innerHTML); // Is there a better way for all browsers?
 			return array;
 		}
 

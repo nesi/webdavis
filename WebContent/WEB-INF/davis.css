@@ -55,7 +55,7 @@ input {background-color:white;}
 .dojoDndItemSelected {background-color: #C9D8E9;}
 .dojoDndItemAnchor {background-color: #C9D8E9;}
 .tagListHead {padding: 0px 30px 10px 30px; font-weight:bold; font-size:medium; font-family:Arial, Helvetica, sans-serif; text-align:center; white-space: nowrap;}
-.tagList {height:20em; border:inset grey; text-align:left; font-family:Arial, Helvetica, sans-serif; overflow:auto; background-color:#F8F8F8;}
+.tagList {height:20em; border:inset grey; text-align:left; font-size:medium; font-family:Arial, Helvetica, sans-serif; overflow:auto; background-color:#F8F8F8; min-width: 170px;}
 .noticeDialog .dijitDialogCloseIcon {display:none;}
 .noticeDialog .dijitDialogTitleBar {display:none;}
 .noticeDialog .dijitDialogTitle {display:none;}
