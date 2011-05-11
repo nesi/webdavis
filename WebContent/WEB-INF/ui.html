@@ -2579,6 +2579,7 @@
 
 		function setSearchItemDetails(s) {
 			dojo.html.set(dojo.byId("searchDetails"), s);
+			dialogSearch.layout();
 		}
 
 		function setNoticeDialog(s) {
@@ -2988,7 +2989,7 @@
 		</tr>
 	</table>
 </div>
-<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; max-height:90%; overflow:auto;">
+<div dojoType="dijit.Dialog" jsId="dialogSearch" title="Search" style="width: 98%; overflow:auto;">
 	<table  cellpadding="0" cellspacing="0" style="width: 100%;">
 		<tr>
 			<td>
@@ -3018,9 +3019,9 @@
 								</tr>
 								<tr>
         	<!--						<td><i><b>Tags:</b></i></td>-->
-        							<td><i><b>Tag:</b></i></td>
+        							<td class="searchTagTextBox"><i><b>Tag:</b></i></td>
 			<!--						<td title="Limit search to items with these tags." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>-->
-									<td title="Limit search to items with this tag." colspan="2"><input style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>
+									<td class="searchTagTextBox" title="Limit search to items with this tag." colspan="2"><input class="searchTagTextBox" style="width:100%;" id="searchTagInputBox" dojoType="dijit.form.TextBox" trim="false" value="" readOnly="false"/></td>
 			<!--						<td width="100%" style="padding-left:3%;"><input title="Items must possess all tags" type="radio" name="searchTagMatchRadioButtons" value="all" onClick="refreshButtons()" checked >all<input title="Items must possess at least one of the tags" type="radio" name="searchTagMatchRadioButtons" id="searchTagAnyRadioButton" value="any" onClick="refreshButtons()">any</td>-->
 								</tr>
 								<tr>
