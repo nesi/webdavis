@@ -504,18 +504,18 @@
     		listingGrid.onRowContextMenu = function(e) {};
     		searchResultsGrid.onRowContextMenu = function(e) {}; // Note: this only seems to work if HeaderMenu is set
     		
-//    		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
+//    		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox ### what was the bug?
 //        		if (listingGrid.focus._colHeadNode)
 //      				listingGrid.focus.inherited("blurHeader", arguments);
 //    		}
     		listingGrid.fastScroll = false;
     		// This stops the column select menu from popping up when right clicking anywhere other than the header bar
   			gridListingMenu._openMyself= function(e, cn, iframe){ 
-				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
+				if (e.target.className.indexOf("dojoxGridSortNode") > -1 || e.target.className.indexOf("dojoxGridColCaption") > -1)
 	 				gridListingMenu.inherited("_openMyself", arguments);
   			}
   			searchResultsMenu._openMyself= function(e, cn, iframe){ 
-				if (e.target.className.indexOf("dojoxGridSortNode") > -1)
+				if (e.target.className.indexOf("dojoxGridSortNode") > -1 || e.target.className.indexOf("dojoxGridColCaption") > -1)
 	 				searchResultsMenu.inherited("_openMyself", arguments);
   			}
     		// PlaceHolderMenuItem causes a "this.domNode.parentNode is null" in IE when this script is unloaded/reloaded.
