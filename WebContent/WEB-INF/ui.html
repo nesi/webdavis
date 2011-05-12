@@ -324,6 +324,9 @@
 					refreshButtons();
 //					dojo.html.set(dojo.byId("dialogDeleteBulk"), warnBulk(true));
 //					dojo.html.set(dojo.byId("dialogRestoreBulk"), warnBulk(/*true*/)+'<br>');
+					var handle = listingStore.uihandle;
+					if (!listingStore.handle)
+						handle = "null";
 		    		dojo.html.set(dojo.byId('aboutUIHandle'), listingStore.uiHandle);
 					var items = -1;
 					if (listingStore != null)
@@ -451,7 +454,7 @@
             	addOption('formPerm', 't', 'annotate', 'annotate');
         	} else {
             	addOption('formPerm', 'all', 'read and write', 'own');
-            	addOption('formPerm', 'w', 'write only', 'modify object');
+            	addOption('formPerm', 'w', 'write only', 'modify object');<!-- -->
             	addOption('formPerm', 'r', 'read only', 'read object');
             	addOption('formPerm', 'n', 'no access', 'null');
         	}
@@ -501,10 +504,10 @@
     		listingGrid.onRowContextMenu = function(e) {};
     		searchResultsGrid.onRowContextMenu = function(e) {}; // Note: this only seems to work if HeaderMenu is set
     		
-    		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
-        		if (listingGrid.focus._colHeadNode)
-      				listingGrid.focus.inherited("blurHeader", arguments);
-    		}
+//    		listingGrid.focus.blurHeader = function() { // This fixes a bug in Firefox
+//        		if (listingGrid.focus._colHeadNode)
+//      				listingGrid.focus.inherited("blurHeader", arguments);
+//    		}
     		listingGrid.fastScroll = false;
     		// This stops the column select menu from popping up when right clicking anywhere other than the header bar
   			gridListingMenu._openMyself= function(e, cn, iframe){ 
@@ -3172,7 +3175,7 @@
 			        					</td>
 			        					<td align="left" valign="top" style="width:1px; padding-left:2px;" >
  		 	        						<button dojoType="dijit.form.DropDownButton" showLabel="false" type="button" title="Help" baseClass="iconButton" iconClass="questionIcon">
-<!-- needed for dojo 1.4.2-->					<div dojoType="dijit.Menu" style="display: none;"><!-- -->
+												<div dojoType="dijit.Menu" style="display: none;">
 <!-- needed for dojo 1.5.0						<div dojoType="dijit.Menu" > -->
 													<div dojoType="dijit.MenuItem" onClick="doHelp()">Help</div>
 													<div dojoType="dijit.MenuItem" onClick="dialogAbout.show()">About</div>
