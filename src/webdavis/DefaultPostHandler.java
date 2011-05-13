@@ -464,6 +464,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	            if (contentLength < 0) 
 	            	json.append(wrapJSONInHTML(escapeJSONArg("status")+":"+escapeJSONArg("failed")+","+escapeJSONArg("message")+":"+escapeJSONArg("Your browser can't upload files larger than 2Gb")));
 	            else {
+	            	Log.log(Log.DEBUG, "Upload contentlength="+contentLength);
 	                Tracker tracker = createTracker(contentLength);
 	                ClientInstance client = davisSession.getClientInstance(requestUIHandle);
 	                if (client != null)
@@ -478,10 +479,18 @@ public class DefaultPostHandler extends AbstractHandler {
 	//	      		upload.setSizeMax(getSizeLimit(request));	// Set maximum file size allowed for transfer
 	
 			        try {
+			        	
+			        	Enumeration<String> paramEnum = request.getParameterNames();
+			        	paramEnum.hasMoreElements();
+			        	String postContent = (String) paramEnum.nextElement();
+
 			        	boolean result = false;
 			            FileItemIterator iter = uploadProcessor.getItemIterator(request);
+	System.err.println("iter="+iter.toString());
+	System.err.println("hasnext="+iter.hasNext()); 
 			            if (iter.hasNext()) {
 			                FileItemStream fileItemStream = iter.next();
+	System.err.println("############# fileitemstream="+fileItemStream);
 			                if (!fileItemStream.isFormField()) {
 			                	InputStream inputStream = fileItemStream.openStream();
 			                	String fileName = fileItemStream.getName();
@@ -491,6 +500,7 @@ public class DefaultPostHandler extends AbstractHandler {
 			                	int j = fileName.lastIndexOf(c); 
 			                	if (j >= 0)
 			                		fileName = fileName.substring(j+1);
+				                Log.log(Log.DEBUG, "Uploading file: "+fileName);
 		                        file = getRemoteFile(file.getAbsolutePath()+file.getPathSeparator()+fileName, davisSession);
 		                        boolean existsCurrently = file.exists();
 		                        if (existsCurrently /*&& !file.isFile()*/) {

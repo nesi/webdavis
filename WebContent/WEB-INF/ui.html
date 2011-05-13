@@ -11,13 +11,14 @@
 		@import "<parameter dojoroot/>dojoroot/dijit/themes/tundra/tundra.css";
 		@import "<parameter dojoroot/>dojoroot/dojox/grid/resources/Grid.css";
 		@import "<parameter dojoroot/>dojoroot/dojox/grid/resources/tundraGrid.css";
+		@import "<parameter dojoroot/>dojoroot/dojox/form/resources/UploaderFileList.css";
 		/*@import "<parameter dojoroot/>dojoroot/dojo/resources/dojo.css"; This is disabled. Note that dojo.css has never actually been
 		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
 		@import "<parameter stylesheet/>";
 		@import "<parameter stylesheetoverride/>";
     </style>	
-	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script>
+	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false, ioPublish: true"></script>
 <!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
 <!--<script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script> -->
     <script type="text/javascript">
@@ -39,6 +40,9 @@
 		dojo.require("dijit.form.DropDownButton");
 		dojo.require("dijit.form.Form");
 		dojo.require("dojo.dnd.Source");
+		dojo.require("dojox.form.Uploader");
+		dojo.require("dojox.form.uploader.FileList");
+		dojo.require("dojox.form.uploader.plugins.Flash");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -62,6 +66,15 @@
 			pageLoaded = true;
 //			showDebug();
 			initVariables();
+//			dojo.subscribe("/dojo/io/start", function(message){
+//				debugMessage("start: I got:");
+//				dump(message);
+//			});
+			dojo.subscribe("/dojo/io/send", function(message){
+				debugMessage("send notification for:"+message.ioArgs.url+"  filename="+message.ioArgs.args.fileName);
+				if (message.ioArgs.args.iframe)
+					uploadStarted();
+			});
 
 			if ("<parameter disablereplicasbutton/>" == "true" && "<parameter isadmin/>" == "false")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
@@ -1401,7 +1414,7 @@
 			
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
-			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
+//			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
 			enableButton('unshareButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			enableButton('generateLinksButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			refreshSearchDialog();
@@ -1542,17 +1555,25 @@
 	  		});
 		}
 		
+		function uploadStarted() {
+//			setUploadStatus("Uploading...");
+//			uploadInProgress = true;
+//			progressTimer = setInterval("updateTransferStatus()", timerInterval);
+		}
+		
 		function uploadFile(){ 		
-			var statusField = 
 			setUploadStatus("Uploading...");
 			uploadInProgress = true;
 			progressTimer = setInterval("updateTransferStatus()", timerInterval);
+			var fileName = "testing";
 			dojo.io.iframe.send({
 				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
-	    		sync: synchronous,
+//	    		sync: synchronous,
+				iframe: true,
+				fileName: fileName,
 				handle: function(response, ioArgs){
 							showUploadDialog(false);
 //alert("ioargs1= "+dojo.toJson(ioArgs, true));
@@ -2853,10 +2874,17 @@
 	</div>
 </div>		
 <div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload" onCancel="enableButton('uploadCancelButton', false); uploadCancel();">
- 	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return /*validateUploadForm()*/ false;">
+	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
    		File to upload:
    		<input id="uploadTextField" type="file" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
- 	</form>
+ 	</form> 
+<!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
+   		File to upload:
+			<input name="uploadedfile" style="width:90px; fontsize: small;" multiple="true" type="file" dojoType="dojox.form.Uploader" label="Browse..." isDebug="true" id="uploader">
+			<div id="files" style="font-size:small;" dojoType="dojox.form.uploader.FileList" uploaderId="uploader"></div>
+			<button type="button" onClick="dijit.byId('uploader').reset();">Clear</button> 
+			<button type="button" onclick="uploadFile();">Upload</button> 
+ 	</form>-->
  	<br/>
 	<div id="uploadStatusField"></div>
 	<br/><small>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.</small><br/><br/>
