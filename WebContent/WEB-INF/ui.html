@@ -35,6 +35,7 @@
 		dojo.require("dojo.io.iframe");
 		dojo.require("dijit.ProgressBar");
 		dojo.require("dojo.back");
+		dojo.require("dojo.hash");
 		dojo.require("dijit.layout.BorderContainer");
 		dojo.require("dojox.widget.PlaceholderMenuItem");
 		dojo.require("dijit.form.DropDownButton");
@@ -52,7 +53,11 @@
 		var listingLayoutSharingField;
 		var listingLayoutMetadataField;
 		var baseURL = '';
-		
+		var loadNewListingData = true; 
+		// It is used in dojo.hash to support back and bookmark functions and only used to keep compatability for current dojo.back implementation. 
+		//This is a indicator to show whether to load new data via ajax from server.
+		//Only after user clicked refresh, or entered a bookmarked URL or copied and pasted a URL should load new data.
+				
 		dojo.addOnLoad(function() {
   		baseURL = location.href.substring(0, location.href.indexOf('/', 14));
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
@@ -96,11 +101,14 @@
 					dojo.html.set(dojo.byId("sharesButton"), '');
 				
 				listingLayout[listingLayoutMetadataField].hidden = true;
-			}
-											
-			dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
+			}				
+								
+			dojo.subscribe("/dojo/hashchange", backStateHandler);				
+		    //addToHistory(escape("<parameter url/>"));		
+			//dojo.back.setInitialState(newBackState(escape("<parameter url/>")));
 			initDynamicObjects();
-//			gotoDirectory(escape("<parameter url/>"), false);
+			//gotoDirectory(escape("<parameter url/>"), false);
+			
 			setToggleButtonState(true);
 			refreshButtons();
 			initConnects();
@@ -109,15 +117,13 @@
 			borderContainer.layout();
 			listingStore.refreshDisplay(true);
 			sharesGrid.setSortIndex(1, true);
-		
-			dojo.connect(window, "onresize", resetGridColumnsWidth);
-			
+						
 			if (dojo.isMozilla)
 				HTMLElement.prototype.click = function() { // Add a click() method to all elements
 					var evt = this.ownerDocument.createEvent('MouseEvents');
 					evt.initMouseEvent('click', true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
 					this.dispatchEvent(evt);
-				}	  
+				}
 		});
 
 		dojo.addOnUnload(function() {
@@ -171,6 +177,20 @@
 			} catch(e) {
 				debugMessage("dump: error dumping: "+object+" - "+e);
 			}
+		}
+		
+		function backStateHandler(url) {
+		  if (loadNewListingData) {
+			  url = dojo.hash();
+			  
+			  if (url == undefined || url == '') {
+				  url = escape("<parameter url/>");
+				}
+			  
+			  listingStore.gotoDirectory(url, false);
+		  } else {
+			  loadNewListingData = true;
+		  }
 		}
 		
 		function newBackState(url) {
@@ -268,7 +288,9 @@
 	    		    	 	   	{field: "name", width: "35%", name: "Parent", formatter: gridFormatParent, styles: "text-align: left;"}
 	    		    	 	];
 
-	    	resetMetadataStore();
+	    
+	    	
+	        resetMetadataStore();
 			resetPermissionsStore();
 			resetDomainsStore();
 			resetUsersStore();
@@ -360,10 +382,19 @@
 						doDisplayCollectionMetadata(); // This will do a re-layout of root container. Must be done in here because it's asynchronous.
 				}
 			});
-			listingStore.setURL(escape("<parameter url/>"), false),
+						
+			url = dojo.hash();
+			
+			if (dojo.hash() == undefined || dojo.hash() == '') {	
+		    url = escape("<parameter url/>");
+		  } else {
+			  listingStore.setCurrentDirectory(url);
+		  }
+		
+			listingStore.setURL(url, false);
 			listingStore.setLastURL(listingStore.urlFields);
 			listingGrid.setStore(listingStore);
-	    		    	
+						
 			destinationStore = new ListingStore({
 				id: "destinationStore", 
 				grid: destinationGrid,
@@ -406,7 +437,14 @@
 					dojo.html.set(dojo.byId("destinationBreadcrumb"), toBreadcrumb(destinationStore.getCurrentDirectory(), "destinationStore", false));
 				}
 			});
-			destinationStore.setURL(escape("<parameter url/>"), false, "&directoriesonly");
+					
+			if (dojo.hash() == undefined || dojo.hash() == '') {	
+			  url = escape("<parameter url/>");
+			} else {
+				destinationStore.setCurrentDirectory(url);
+			} 
+						
+			destinationStore.setURL(url, false, "&directoriesonly");
 			destinationStore.setLastURL(destinationStore.urlFields);
 			destinationGrid.setStructure(destinationLayout);
 			destinationGrid.setStore(destinationStore);
@@ -455,6 +493,8 @@
 			dojo.connect(dojo.byId("searchTagInputBox"), 'onkeypress', showSearchTagsListDialog);			
 			dojo.connect(dojo.byId("searchTagInputBox"), 'onclick', showSearchTagsListDialog);			
 	//		dojo.connect(assignedTagsList, 'onDrop', getAvailableTags());			
+	
+			dojo.connect(window, "onresize", resetGridColumnsWidth);
 		}
 		
 		function initWidgets() {
@@ -1348,7 +1388,14 @@
 		}
 		
 		function refreshButtons() {
-			var inTrash = isTrash(listingStore.getCurrentDirectory());
+			var inTrash;
+			
+			if (dojo.hash() == undefined || dojo.hash() == '') {
+			  inTrash = isTrash(listingStore.getCurrentDirectory());	
+			} else {
+			  inTrash = isTrash(dojo.hash());	
+			}			
+			
 			var readOnly = listingStore.readOnly;
 			enableActiveItem('uploadButton', !isAnonymous() && ! inTrash && !readOnly);
 			enableActiveItem('createDirectoryButton', !isAnonymous() && !inTrash && !readOnly);
@@ -1472,8 +1519,9 @@
 		}
 				
 		function addToHistory(url) {
-//			debugMessage("addtohistory:"+url);
-			dojo.back.addToHistory(newBackState(url));
+//		debugMessage("addtohistory:"+url);
+			//dojo.back.addToHistory(newBackState(url));
+			dojo.hash(url);
 		}
 
 		function refreshCurrentDirectory() {
@@ -2814,8 +2862,12 @@
 				}
 				this.setCurrentDirectory(this.directory);
 				this.readOnly = (data.readOnly == "true");
-				if (this.addToHistory)
+				
+				if (this.addToHistory) { 
+					loadNewListingData = false;
 					addToHistory(this.directory);
+				}
+				
 				this.addToHistory = false;
 				// Next line prevents a null node problem for Firefox in store._xhrFetchHandler - second last line
 				// Not necessary? Also - causes problem in Chrome!
