@@ -18,9 +18,8 @@
 		@import "<parameter stylesheet/>";
 		@import "<parameter stylesheetoverride/>";
     </style>	
-	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false, ioPublish: true"></script>
-<!--<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>-->
-<!--<script type="text/javascript" src="/dojoroot/dojo/dojo.js" djConfig="isDebug: false, parseOnLoad: true, preventBackButtonFix: false"></script> -->
+<!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false, ioPublish: true"></script>-->
+	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>
     <script type="text/javascript">
     	dojo.require("dojox.grid.DataGrid");
     	dojo.require("dojo.data.ItemFileWriteStore");
@@ -43,7 +42,9 @@
 		dojo.require("dojo.dnd.Source");
 		dojo.require("dojox.form.Uploader");
 		dojo.require("dojox.form.uploader.FileList");
-		dojo.require("dojox.form.uploader.plugins.Flash");
+//		dojo.require("dojox.form.uploader.plugins.HTML5");
+//		dojo.require("dojox.form.uploader.plugins.Flash");
+		dojo.require("dojox.form.uploader.plugins.IFrame");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -75,11 +76,11 @@
 //				debugMessage("start: I got:");
 //				dump(message);
 //			});
-			dojo.subscribe("/dojo/io/send", function(message){
+/*			dojo.subscribe("/dojo/io/send", function(message){
 				debugMessage("send notification for:"+message.ioArgs.url+"  filename="+message.ioArgs.args.fileName);
 				if (message.ioArgs.args.iframe)
 					uploadStarted();
-			});
+			});*/
 
 			if ("<parameter disablereplicasbutton/>" == "true" && "<parameter isadmin/>" == "false")
 				dojo.html.set(dojo.byId("replicasButtonHolder"), '');  // Hide replicas button
@@ -338,6 +339,7 @@
 					} else
 						listingStore.refreshDisplay(false); // Update stuff like status panel even if dir hasn't changed
 					setNoticeDialog();
+dojo.byId('uploadForm').action=listingStore.getCurrentDirectory()+'?method=upload&uihandle='+listingStore.uiHandle; 
 				},
 				gotoDirectory: function(dir, addToHistory) {
 					if (!listingStore.isValid()) // Don't do another chdir if already doing one 
@@ -495,6 +497,16 @@
 	//		dojo.connect(assignedTagsList, 'onDrop', getAvailableTags());			
 	
 			dojo.connect(window, "onresize", resetGridColumnsWidth);
+
+//alert("uploader.onComplete before="+dojo.toJson(dijit.byId("uploader"), true));
+			dojo.connect(dijit.byId("uploader"), 'onComplete', function(e) {uploadComplete(e);});
+//			dojo.connect(dijit.byId("uploader"), 'onComplete', function() {alert("****oncomplete called via connect"); });
+//alert("uploader.onComplete="+dojo.toJson(dijit.byId("uploader"), true));
+			dojo.connect(dijit.byId("uploader"), 'onAbort', function(e) {uploadComplete(e);});
+			dojo.connect(dijit.byId("uploader"), 'onError', function(e) {uploadComplete(e);});
+	//		dojo.connect(dojo.byId("uploader"), 'onchange', function(a) {alert("change="+a)});
+	//		dojo.connect(dijit.byId("uploader"), 'onBegin', function() {alert("begin dijit")});
+	//		dojo.connect(dijit.byId("uploader"), 'onProgress', function() {debugMessage("progress")});
 		}
 		
 		function initWidgets() {
@@ -567,7 +579,7 @@
 				if (e.target.className.indexOf("dojoxGridSortNode") > -1 || e.target.className.indexOf("dojoxGridColCaption") > -1)
 	 				gridListingMenu.inherited("_openMyself", arguments);
   			}
-  			searchResultsMenu._openMyself= function(e, cn, iframe){ 
+  			searchResultsMenu._openMyself = function(e, cn, iframe){ 
 				if (e.target.className.indexOf("dojoxGridSortNode") > -1 || e.target.className.indexOf("dojoxGridColCaption") > -1)
 	 				searchResultsMenu.inherited("_openMyself", arguments);
   			}
@@ -597,6 +609,15 @@
 
     		assignedTagsList.copyState = function() {return false;};
     		availableTagsList.copyState = function() {return false;};
+    		
+//    		var uploader = dijit.byId("uploader");
+//    		uploader.upload = function(data) {
+//    			alert("upload!");
+//    			uploader.inherited("upload", arguments);
+//    		}
+
+			if (isMultipleUploader())
+				dijit.byId("uploader").button.set("label", "Select Files");
 		}
 		
 		function resetPermissionsStore(fast) {
@@ -1461,7 +1482,7 @@
 			
 			// TBD: For some reason, addMetadataButton would sometimes appear disabled. This is to prevent that. Need to investigate why.
 			enableButton('addMetadataButton', true); 
-//			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploadTextField').value.length > 0));
+//			enableButton('uploadStartButton', !uploadInProgress && (dojo.byId('uploader').value.length > 0));
 			enableButton('unshareButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			enableButton('generateLinksButton', sharesGrid.rowCount > 0 && sharesGrid.selection.getSelectedCount() > 0);
 			refreshSearchDialog();
@@ -1563,8 +1584,8 @@
 		}
 
 		function validateUploadForm() {
-			if ((dojo.byId("uploadTextField").value.length == 0) || !isValidFileName(dojo.byId("uploadTextField").value, true)) 
-				return false;
+//			if ((dojo.byId("uploader").value.length == 0) || !isValidFileName(dojo.byId("uploader").value, true)) 
+//				return false;
 			return true;
 		}
 
@@ -1609,31 +1630,41 @@
 //			progressTimer = setInterval("updateTransferStatus()", timerInterval);
 		}
 		
-		function uploadFile(){ 		
+		function isMultipleUploader() {
+			
+			return dijit.byId("uploader").supports("multiple");
+		}
+		
+		function uploadFile(){
 			setUploadStatus("Uploading...");
 			uploadInProgress = true;
 			progressTimer = setInterval("updateTransferStatus()", timerInterval);
-			var fileName = "testing";
+// 			if (isMultipleUploader()) {	// HTML5 upload
+// 				dijit.byId("uploader").submit(dojo.byId("uploadForm"));
+// 				return;
+// 			}
+			alert("upload with iframe");
+//			var fileName = "testing";
 			dojo.io.iframe.send({
-				url: listingStore.getCurrentDirectory()+"?method=upload&uihandle="+listingStore.uiHandle,
+				url: listingStore.getCurrentDirectory()+"?method=upload&iframe=true&uihandle="+listingStore.uiHandle,
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
 //	    		sync: synchronous,
 				iframe: true,
-				fileName: fileName,
+//				fileName: fileName,
 				handle: function(response, ioArgs){
-							showUploadDialog(false);
-//alert("ioargs1= "+dojo.toJson(ioArgs, true));
-//alert("response1="+dojo.toJson(response, true));
+							showUploadDialog(false)
+alert("ioargs= "+dojo.toJson(ioArgs, true));
+alert("response="+dojo.toJson(response, true));
 							if (response.name == "TypeError")	// IE bad upload
 								alert("Failed to upload file: The server refused or cancelled the transfer, or your browser can't upload files that large.");
 							else
 							if (response.status == "success") {
 								//alert("Successfully transferred "+response.message+" bytes");
 								window.status="Successfully transferred "+response.message+" bytes";
-							}else 
-								alert("Failed to upload file: "+response.message);
+							} else 
+								alert("Upload failed: "+response.message);
 							refreshCurrentDirectory();						
 							uploadInProgress = false;
 				      		listingStore.refreshDisplay(false);
@@ -1666,7 +1697,25 @@
 			}
       		listingStore.refreshDisplay(false);
 		}
-
+		
+		function uploadComplete(result) {
+alert("uploadcomplete result.status="+result.status);
+			if (result.status == "success") {
+				showUploadDialog(false);
+//				if (response.name == "TypeError")	// IE bad upload
+//						alert("Failed to upload file: The server refused or cancelled the transfer, or your browser can't upload files that large.");
+//					else
+//					if (response.status == "success") {
+//				window.status="Successfully transferred "+response.message+" bytes";
+			} else 
+				alert("Upload failed: "+result.message);
+			refreshCurrentDirectory();						
+//			uploadInProgress = false;
+	   		listingStore.refreshDisplay(false);
+//			clearInterval(progressTimer);
+//			timerInterval = TIMERDEFAULT;
+		}
+		
 		var emptyTrashInProgress = false;
 
 		function deleteSelection() {
@@ -2668,7 +2717,7 @@
 			result = listingGrid.inherited("getColumnTogglingItems", arguments);
 			if (listingLayout[listingLayoutMetadataField].hidden == true)
 				result.splice(listingLayoutMetadataField, 1);
-  		return result;
+  			return result;
 		}
 
 		function doHelp() {
@@ -2686,7 +2735,9 @@
 //			dojox.grid.DataGrid.prototype.onStyleRow.apply(this, arguments);
 //		}
 		
-		function doDebug() {
+		function doDebug(doNothing) {
+			if (doNothing)
+				return;
 			cursorBusy(true);	
 		  	dojo.xhrPost({
 	    		url: "?method=debug&uihandle="+listingStore.uiHandle,
@@ -2704,7 +2755,7 @@
 	    		handleAs: "json"
 	  		});
 		}
-
+		
 		var enableDebugButton = false;
 		function debugButtonHandler() {
 		//	listingStore.gotoDirectory(listingStore.getCurrentDirectory()+"blah");
@@ -2717,23 +2768,22 @@
 		}
 		
 		function replaceWhiteSpaces(value) {
-	    return value.replace(/ /g, '&nbsp;');		
+	    	return value.replace(/ /g, '&nbsp;');		
 		}
 	
 		function resetGridColumnsWidth() {
-		  grid = listingGrid;	
+		  	grid = listingGrid;	
 			if (grid.structure != undefined) {
 			    // Set column width by reading structure.
 			    for (i = 0; i < grid.layout.cells.length; i++) {
-    	      cell = grid.getCell(i);
+    	      		cell = grid.getCell(i);
 			    	
 			    	if (cell != undefined) {
 			    		for (j = 0; j < grid.structure.length; j++) {
-					    	var s = grid.structure[j];
-					    	
+					    	var s = grid.structure[j];					    	
 					    	if (cell.name == s.name) {
 				      		 grid.setCellWidth(i, s.width);
-				        } 
+				        	} 
 					    }	
 			    	}	
 			    }			        		
@@ -2882,15 +2932,14 @@
 					this.onFetchSuccess();
 				return result;
 			}
-		});
-			
+		});		
 	</script>
 <parameter includehead/>
 </head>
 
 <body class="tundra">
 <parameter includebodyheader/>
-<script>dojo.back.init();</script>
+<script>/*dojo.back.init();*/</script>
 
 
 <!--<script src="http://www.java.com/js/deployJava.js"></script>
@@ -2926,9 +2975,20 @@
 	</div>
 </div>		
 <div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload" onCancel="enableButton('uploadCancelButton', false); uploadCancel();">
-	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
-   		File to upload:
-   		<input id="uploadTextField" type="file" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
+<!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;"> -->
+<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="doStuff(); return true"> -->
+<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="doDebug(true);alert('submit action='+dojo.byId('uploadForm').action); return true;">--> 
+<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" action="ARCS/home/rowan/-up">--> 
+	<form id="uploadForm" enctype="multipart/form-data" method="post">
+		<fieldset>
+			<div id="uploadList" dojoType="dojox.form.uploader.FileList" uploaderId="uploader"></div>
+   			<input style="width:100px;" multiple="true" dojoType="dojox.form.Uploader" label="Add file" id="uploader" type="file" isDebug="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
+<!--   		<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" name="uploadFileName" onComplete="uploadComplete()"/>-->
+<!--   			<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" force="iframe" isDebug="true" devMode="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>-->
+<!--   			<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" force="flash" isDebug="true" devMode="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>-->
+<!--			<button type="button" onclick="uploadFile();">Upload</button>-->
+			<!--<input type="submit" value="submit" />-->
+ 	  </fieldset>
  	</form> 
 <!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
    		File to upload:

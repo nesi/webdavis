@@ -64,3 +64,6 @@ input {background-color:white;}
 .searchTagTextBox .dijitTextBox:hover {background:#D0D0D0; border: 1px dotted black;}
 .searchTagTextBox .dijitTextBox:active {background:white; border: 1px solid #E0E0E0;}
 .searchTagTextBox .dijitInputInner {cursor: s-resize !important} /* Need this for dojo 1.6 */
+#uploadList .dojoxUploaderIcon {display:none;}
+#uploadList .dojoxUploaderIndex {display:none;}
+
