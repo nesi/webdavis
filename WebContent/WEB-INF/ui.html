@@ -13,7 +13,7 @@
 		@import "<parameter dojoroot/>dojoroot/dojox/grid/resources/tundraGrid.css";
 		@import "<parameter dojoroot/>dojoroot/dojox/form/resources/UploaderFileList.css";
 		/*@import "<parameter dojoroot/>dojoroot/dojo/resources/dojo.css"; This is disabled. Note that dojo.css has never actually been
-		 * 																	used in WEBDavis because it wasn't followed by a ';'. Importing
+		 * 																	used in WEBDavis because originally it wasn't followed by a ';'. Importing
 		 * 																	it changes the layout dramatically.*/
 		@import "<parameter stylesheet/>";
 		@import "<parameter stylesheetoverride/>";
@@ -44,7 +44,7 @@
 		dojo.require("dojox.form.uploader.FileList");
 //		dojo.require("dojox.form.uploader.plugins.HTML5");
 //		dojo.require("dojox.form.uploader.plugins.Flash");
-		dojo.require("dojox.form.uploader.plugins.IFrame");
+//		dojo.require("dojox.form.uploader.plugins.IFrame");
 		   
 		var dynamicObjects = new Array();
 		var firstRender = true;
@@ -507,6 +507,8 @@ dojo.byId('uploadForm').action=listingStore.getCurrentDirectory()+'?method=uploa
 	//		dojo.connect(dojo.byId("uploader"), 'onchange', function(a) {alert("change="+a)});
 	//		dojo.connect(dijit.byId("uploader"), 'onBegin', function() {alert("begin dijit")});
 	//		dojo.connect(dijit.byId("uploader"), 'onProgress', function() {debugMessage("progress")});
+//dijit.byId("uploader").domNode.focus = function() {alert("focus");dijit.byId("uploader").domNode.inherited("focus", arguments);};
+
 		}
 		
 		function initWidgets() {
@@ -610,7 +612,7 @@ dojo.byId('uploadForm').action=listingStore.getCurrentDirectory()+'?method=uploa
     		assignedTagsList.copyState = function() {return false;};
     		availableTagsList.copyState = function() {return false;};
     		
-//    		var uploader = dijit.byId("uploader");
+    		var uploader = dijit.byId("uploader");
 //    		uploader.upload = function(data) {
 //    			alert("upload!");
 //    			uploader.inherited("upload", arguments);
@@ -1643,16 +1645,14 @@ dojo.byId('uploadForm').action=listingStore.getCurrentDirectory()+'?method=uploa
 // 				dijit.byId("uploader").submit(dojo.byId("uploadForm"));
 // 				return;
 // 			}
-			alert("upload with iframe");
-//			var fileName = "testing";
+//			alert("upload with iframe");
+//alert("form values="+dojo.toJson(dijit.byId("uploadForm").getValues(), true));
 			dojo.io.iframe.send({
 				url: listingStore.getCurrentDirectory()+"?method=upload&iframe=true&uihandle="+listingStore.uiHandle,
 				method: "POST",
 				form: "uploadForm",
 				handleAs: "json",
-//	    		sync: synchronous,
 				iframe: true,
-//				fileName: fileName,
 				handle: function(response, ioArgs){
 							showUploadDialog(false)
 alert("ioargs= "+dojo.toJson(ioArgs, true));
@@ -2439,6 +2439,7 @@ alert("uploadcomplete result.status="+result.status);
 		}
 
 		function showUploadDialog(show) {
+    		dojo.style(dojo.byId("uploader"), "height", "auto"); // Override widget's internal height calculation so it looks like a normal button
 			if (show) {
 				dialogUpload.show();
 				refreshButtons();
@@ -2975,20 +2976,21 @@ alert("uploadcomplete result.status="+result.status);
 	</div>
 </div>		
 <div dojoType="dijit.Dialog" id="dialogUpload" jsId="dialogUpload" title="Upload" onCancel="enableButton('uploadCancelButton', false); uploadCancel();">
-<!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;"> -->
-<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="doStuff(); return true"> -->
-<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="doDebug(true);alert('submit action='+dojo.byId('uploadForm').action); return true;">--> 
-<!--	<form id="uploadForm" enctype="multipart/form-data" method="post" action="ARCS/home/rowan/-up">--> 
-	<form id="uploadForm" enctype="multipart/form-data" method="post">
-		<fieldset>
-			<div id="uploadList" dojoType="dojox.form.uploader.FileList" uploaderId="uploader"></div>
-   			<input style="width:100px;" multiple="true" dojoType="dojox.form.Uploader" label="Add file" id="uploader" type="file" isDebug="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
-<!--   		<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" name="uploadFileName" onComplete="uploadComplete()"/>-->
-<!--   			<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" force="iframe" isDebug="true" devMode="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>-->
-<!--   			<input multiple="true" dojoType="dojox.form.Uploader" label="Select some files" id="uploader" type="file" force="flash" isDebug="true" devMode="true" name="uploadFileName" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>-->
-<!--			<button type="button" onclick="uploadFile();">Upload</button>-->
-			<!--<input type="submit" value="submit" />-->
- 	  </fieldset>
+<!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post">-->
+	<form id="uploadForm" enctype="multipart/form-data" method="post" style="border: 0px; padding:0px; margin: 0px;">
+		<fieldset style="border: 0px; padding:0px; margin: 0px;">
+			<table style="padding:0px; margin: 0px;">
+				<tr>
+					<td width="100%" valign="top" style="padding:0px; margin: 0px;">
+						<div style="min-height: 100px; border: inset; padding:0px 2px 0px 0px;" id="uploadList" dojoType="dojox.form.uploader.FileList" uploaderId="uploader" name="uploadList"></div>
+					</td>
+					<td valign="bottom" style="text-align: center;">
+   						<input baseClass="fixedWidth100" class="greyButton" style="width:100px; border: 1px outset; padding: 0px; margin: 0px;" multiple="true" dojoType="dojox.form.Uploader" label="Add file" id="uploader" type="file" isDebug="true" name="uploadFileNames" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
+						<button baseClass="fixedWidth100" class="greyButton" style="border: 1px outset; padding: 0px; margin: 5px 0px 0px 0px;" dojoType="dijit.form.Button" type="button" onClick="dijit.byId('uploader').reset();">Clear</button> 
+					</td>
+				<tr>
+			</table>				
+ 	 	</fieldset>
  	</form> 
 <!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
    		File to upload:

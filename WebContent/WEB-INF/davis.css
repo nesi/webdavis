@@ -2,7 +2,7 @@ body, html {width:100%; height:100%; margin:0; padding:0;}
 .text{font-family:Arial, Helvetica, sans-serif;}
 .text_small{font-family:Arial, Helvetica, sans-serif; font-size:small;}
 .text_small_small{font-family:Arial, Helvetica, sans-serif; font-size:x-small;}
-h1{margin:0px;}
+h1 {margin:0px;}
 button {background-color:lightGrey;} 
 input {background-color:white;}
 #button_table{margin: 0px 0px 0px -4px;}
@@ -66,4 +66,17 @@ input {background-color:white;}
 .searchTagTextBox .dijitInputInner {cursor: s-resize !important} /* Need this for dojo 1.6 */
 #uploadList .dojoxUploaderIcon {display:none;}
 #uploadList .dojoxUploaderIndex {display:none;}
+.greyButton .dijitInline {background:lightGrey;}
+/*.greyButton .dijitInline:hover {background:lightGrey;}*/
+.greyButton {background:lightGrey;}
+#uploader .dijitButtonNode {background:lightGrey;}
+.greyButton .dijitReset {cursor:default;}
+.greyButton {font-family:Arial, Helvetica, sans-serif;}
+#uploadList th {background-color: #459E00; border-top-style:none; border-bottom-style:none; border-left-style:solid; border-right-style:none; border-width:4px; border-color:white;}
+#uploadList {font-family:Arial, Helvetica, sans-serif;}
+#uploadList .dojoxUploaderFileListTable {margin-top:2px;}
+.fixedWidth100 .dijitButtonNode
+{
+   width: 100px !important;
+}
 

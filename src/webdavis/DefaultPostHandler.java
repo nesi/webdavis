@@ -514,6 +514,7 @@ public class DefaultPostHandler extends AbstractHandler {
 //	System.err.println("#### name="+fileItemStream.getName());
 //	System.err.println("#### isformfield="+fileItemStream.isFormField());
 		                	String fileName = fileItemStream.getName();
+	                    	Log.log(Log.DEBUG, "Upload item:"+fileName);
 			                if (!fileItemStream.isFormField() && fileName.length() > 0) {
 				                // ###TBD flash upload is not implemented currently
 			                	InputStream inputStream = fileItemStream.openStream();
