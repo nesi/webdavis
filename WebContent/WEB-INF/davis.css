@@ -59,7 +59,7 @@ input {background-color:white;}
 .noticeDialog .dijitDialogCloseIcon {display:none;}
 .noticeDialog .dijitDialogTitleBar {display:none;}
 .noticeDialog .dijitDialogTitle {display:none;}
-.noticeDialog .dijitDialogPaneContent {padding:0; margin:0; border:0}
+.noticeDialog .dijitDialogPaneContent {padding:0; margin:0; border:0;}
 .searchTagTextBox .dijitTextBox {cursor: s-resize !important; border: 1px dotted #808080; background:#E0E0E0; color: black;}
 .searchTagTextBox .dijitTextBox:hover {background:#D0D0D0; border: 1px dotted black;}
 .searchTagTextBox .dijitTextBox:active {background:white; border: 1px solid #E0E0E0;}
@@ -78,4 +78,4 @@ input {background-color:white;}
 {
    width: 100px !important;
 }
-
+#noticeDialog .dijitDialogPaneContent {background-color: inherit; border-top: 0px;} /* For webkit on Windows */

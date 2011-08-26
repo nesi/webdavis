@@ -67,7 +67,7 @@
 		//Only after user clicked refresh, or entered a bookmarked URL or copied and pasted a URL should load new data.
 				
 		dojo.addOnLoad(function() {
-  		baseURL = location.href.substring(0, location.href.indexOf('/', 14));
+  			baseURL = location.href.substring(0, location.href.indexOf('/', 14));
 			queryParams = dojo.queryToObject(window.location.search.slice(1));		
 			if (queryParams.embed == "true") {
 				dojo.html.set(dojo.byId("header"), ''); // Hide header section
@@ -125,7 +125,7 @@
 			borderContainer.layout();
 			listingStore.refreshDisplay(true);
 			sharesGrid.setSortIndex(1, true);
-						
+
 			if (dojo.isMozilla)
 				HTMLElement.prototype.click = function() { // Add a click() method to all elements
 					var evt = this.ownerDocument.createEvent('MouseEvents');
