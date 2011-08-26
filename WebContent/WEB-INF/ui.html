@@ -8,6 +8,7 @@
     <meta HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
     <meta HTTP-EQUIV="Expires" CONTENT="0">
     <style type="text/css">
+		@import "<parameter dojoroot/>dojoroot/dijit/themes/dijit.css";
 		@import "<parameter dojoroot/>dojoroot/dijit/themes/tundra/tundra.css";
 		@import "<parameter dojoroot/>dojoroot/dojox/grid/resources/Grid.css";
 		@import "<parameter dojoroot/>dojoroot/dojox/grid/resources/tundraGrid.css";
@@ -18,6 +19,12 @@
 		@import "<parameter stylesheet/>";
 		@import "<parameter stylesheetoverride/>";
     </style>	
+<!--[if IE]> 
+    <style type="text/css"> /* Hide size column in IE - IE always says 0 */
+    	#uploadList .dojoxUploaderFileSize {display:none;}
+		#uploadList .dojoxUploaderSize {display:none;}    
+	</style>
+<![endif]-->    
 <!--	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false, ioPublish: true"></script>-->
 	<script type="text/javascript" src="<parameter dojoroot/>dojoroot/dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true, preventBackButtonFix: false"></script>
     <script type="text/javascript">
@@ -1632,8 +1639,7 @@ dojo.byId('uploadForm').action=listingStore.getCurrentDirectory()+'?method=uploa
 //			progressTimer = setInterval("updateTransferStatus()", timerInterval);
 		}
 		
-		function isMultipleUploader() {
-			
+		function isMultipleUploader() {			
 			return dijit.byId("uploader").supports("multiple");
 		}
 		
@@ -2439,7 +2445,7 @@ alert("uploadcomplete result.status="+result.status);
 		}
 
 		function showUploadDialog(show) {
-    		dojo.style(dojo.byId("uploader"), "height", "auto"); // Override widget's internal height calculation so it looks like a normal button
+    		dojo.style(dojo.byId("uploader"), "height", "auto"); // Override widget's internal height calculation so it looks like a normal button (has to be done here to override the plugin mechanism)
 			if (show) {
 				dialogUpload.show();
 				refreshButtons();
@@ -2981,24 +2987,17 @@ alert("uploadcomplete result.status="+result.status);
 		<fieldset style="border: 0px; padding:0px; margin: 0px;">
 			<table style="padding:0px; margin: 0px;">
 				<tr>
-					<td width="100%" valign="top" style="padding:0px; margin: 0px;">
+					<td width="80%" valign="top" style="padding:0px; margin: 0px;">
 						<div style="min-height: 100px; border: inset; padding:0px 2px 0px 0px;" id="uploadList" dojoType="dojox.form.uploader.FileList" uploaderId="uploader" name="uploadList"></div>
 					</td>
 					<td valign="bottom" style="text-align: center;">
-   						<input baseClass="fixedWidth100" class="greyButton" style="width:100px; border: 1px outset; padding: 0px; margin: 0px;" multiple="true" dojoType="dojox.form.Uploader" label="Add file" id="uploader" type="file" isDebug="true" name="uploadFileNames" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
-						<button baseClass="fixedWidth100" class="greyButton" style="border: 1px outset; padding: 0px; margin: 5px 0px 0px 0px;" dojoType="dijit.form.Button" type="button" onClick="dijit.byId('uploader').reset();">Clear</button> 
+   						<input baseClass="fixedWidth100" class="greyButton" style="width:106px;" multiple="true" dojoType="dojox.form.Uploader" label="Add file" id="uploader" type="file" isDebug="true" name="uploadFileNames" onChange="refreshButtons()" onKeyPress="if (isEnterKey(event)) {enableButton('uploadStartButton', false); if (validateUploadForm()) uploadFile();}"/>
+						<button baseClass="fixedWidth100" class="greyButton" style="margin: 5px 0px 0px 0px;" type="button" dojoType="dijit.form.Button" onClick="dijit.byId('uploader').reset();">Clear</button> 
 					</td>
 				<tr>
 			</table>				
  	 	</fieldset>
  	</form> 
-<!--	<form dojoType="dijit.form.Form" id="uploadForm" enctype="multipart/form-data" method="post" onSubmit="return false;">
-   		File to upload:
-			<input name="uploadedfile" style="width:90px; fontsize: small;" multiple="true" type="file" dojoType="dojox.form.Uploader" label="Browse..." isDebug="true" id="uploader">
-			<div id="files" style="font-size:small;" dojoType="dojox.form.uploader.FileList" uploaderId="uploader"></div>
-			<button type="button" onClick="dijit.byId('uploader').reset();">Clear</button> 
-			<button type="button" onclick="uploadFile();">Upload</button> 
- 	</form>-->
  	<br/>
 	<div id="uploadStatusField"></div>
 	<br/><small>Please note that most browsers can't upload files greater than 2GB,<br>and some can't upload zero-byte files.</small><br/><br/>

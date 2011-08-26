@@ -64,14 +64,13 @@ input {background-color:white;}
 .searchTagTextBox .dijitTextBox:hover {background:#D0D0D0; border: 1px dotted black;}
 .searchTagTextBox .dijitTextBox:active {background:white; border: 1px solid #E0E0E0;}
 .searchTagTextBox .dijitInputInner {cursor: s-resize !important} /* Need this for dojo 1.6 */
-#uploadList .dojoxUploaderIcon {display:none;}
+#uploadList .dojoxUploaderIcon {display:none;} /* Hide unwanted uploadList columns */
 #uploadList .dojoxUploaderIndex {display:none;}
 .greyButton .dijitInline {background:lightGrey;}
-/*.greyButton .dijitInline:hover {background:lightGrey;}*/
-.greyButton {background:lightGrey;}
 #uploader .dijitButtonNode {background:lightGrey;}
 .greyButton .dijitReset {cursor:default;}
-.greyButton {font-family:Arial, Helvetica, sans-serif;}
+.greyButton {font-family:Arial, Helvetica, sans-serif; border: 1px outset !important;}
+.border2p {border: 2px outset !important;}
 #uploadList th {background-color: #459E00; border-top-style:none; border-bottom-style:none; border-left-style:solid; border-right-style:none; border-width:4px; border-color:white;}
 #uploadList {font-family:Arial, Helvetica, sans-serif;}
 #uploadList .dojoxUploaderFileListTable {margin-top:2px;}
