@@ -69,13 +69,10 @@ input {background-color:white;}
 .greyButton .dijitInline {background:lightGrey;}
 #uploader .dijitButtonNode {background:lightGrey;}
 .greyButton .dijitReset {cursor:default;}
-.greyButton {font-family:Arial, Helvetica, sans-serif; border: 1px outset !important;}
+.greyButton {font-family:Arial, Helvetica, sans-serif; border: 1px outset !important; font-size:small;}
 .border2p {border: 2px outset !important;}
 #uploadList th {background-color: #459E00; border-top-style:none; border-bottom-style:none; border-left-style:solid; border-right-style:none; border-width:4px; border-color:white;}
 #uploadList {font-family:Arial, Helvetica, sans-serif;}
 #uploadList .dojoxUploaderFileListTable {margin-top:2px;}
-.fixedWidth100 .dijitButtonNode
-{
-   width: 100px !important;
-}
+.fixedWidth79 .dijitButtonNode {width: 79px !important;}
 #noticeDialog .dijitDialogPaneContent {background-color: inherit; border-top: 0px;} /* For webkit on Windows */
