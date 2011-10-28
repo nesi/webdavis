@@ -690,7 +690,8 @@ public class DefaultGetHandler extends AbstractHandler {
 	    			response.flushBuffer();
 	    			return;
     			}
-    			Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
+    			if (Davis.getConfig().getLogDirtyReplicas())
+    				Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
     		}
     		
     		boolean found = false;

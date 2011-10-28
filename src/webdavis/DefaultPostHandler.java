@@ -885,7 +885,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					throw new ServletException("Internal error reading file list: error parsing JSON");			
 			}
 			
-		} else if (method.equalsIgnoreCase("share")) {
+		} else if (method.equalsIgnoreCase("share")) { // share or unshare
 			if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem)) 
 				Log.log(Log.ERROR, "Sharing is only supported for iRODS");
 			else {
@@ -907,21 +907,22 @@ public class DefaultPostHandler extends AbstractHandler {
 								IRODSMetaDataSet.OWNER,							
 						});
 					String s= null;
-					try {
-						MetaDataRecordList[] details = ((IRODSFile)file).query(selectsFile);
-			 			if (details == null) 
-			    			details = new MetaDataRecordList[0];	
-			    		for (MetaDataRecordList p:details) {
-	//System.err.println("##########p="+p);
-			    			String owner = (String)p.getValue(IRODSMetaDataSet.OWNER);
-			    			if (!owner.equals(davisSession.getAccount())) 
-			    				s = "you are not the owner";
-			        	}
-					} catch (IOException e) {
-						s = "Internal error: can't determine the owner of the resource";
-						Log.log(Log.ERROR, s);
-						Log.log(Log.ERROR, e);
-					}
+					if (Davis.getConfig().getQuickShareOwnerOnly()) // Do we care if this user owns the file?
+						try {
+							MetaDataRecordList[] details = ((IRODSFile)file).query(selectsFile);
+				 			if (details == null) 
+				    			details = new MetaDataRecordList[0];	
+				    		for (MetaDataRecordList p:details) {
+		//System.err.println("##########p="+p);
+				    			String owner = (String)p.getValue(IRODSMetaDataSet.OWNER);
+				    			if (!owner.equals(davisSession.getAccount())) 
+				    				s = "you are not the owner";
+				        	}
+						} catch (IOException e) {
+							s = "Internal error: can't determine the owner of the resource";
+							Log.log(Log.ERROR, s);
+							Log.log(Log.ERROR, e);
+						}
 	       	
 					if (s == null)
 						s = share(davisSession, file, action.equals("share"));

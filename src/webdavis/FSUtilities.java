@@ -597,7 +597,7 @@ public class FSUtilities {
 						file.setMetadata(metadata.get(path).getMetadata());
 				}
 				String replica = (String)p.getValue(IRODSMetaDataSet.FILE_REPLICA_STATUS);
-    			if (replica != null && replica.equals("0")) {
+    			if (Davis.getConfig().getLogDirtyReplicas() && replica != null && replica.equals("0")) {
     				String s = "";
     				if (file.length() == 0)
     					s = " (its length is 0)";

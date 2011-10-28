@@ -108,6 +108,9 @@ public class DavisConfig {
     private List<String> browserUserAgents = new ArrayList<String>();
     private String insecureLoginText;
     private String styleSheet1, styleSheet2;
+    private boolean quickShareOwnerOnly;
+    private boolean logDirtyReplicas;
+    
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	private Hashtable<String, String> generalSubstitutions;
@@ -380,6 +383,8 @@ public class DavisConfig {
 		insecureLoginText = getInitParameter("insecure-login-text", "via HTTP").trim();
 		styleSheet1 = getInitParameter("davis-style-sheet", "/include/davis.css").trim();
 		styleSheet2 = getInitParameter("davis-style-sheet-override", "/include/davis-override.css").trim();
+		quickShareOwnerOnly = Boolean.valueOf(getInitParameter("quickshare-owner-only", "true").trim()).booleanValue();
+		logDirtyReplicas = Boolean.valueOf(getInitParameter("log-dirty-replicas", "true").trim()).booleanValue();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
@@ -720,6 +725,14 @@ public class DavisConfig {
 	
 	public boolean getDisableReplicasButton() {
 		return disableReplicasButton;
+	}
+	
+	public boolean getQuickShareOwnerOnly() {
+		return quickShareOwnerOnly;
+	}
+	
+	public boolean getLogDirtyReplicas() {
+		return logDirtyReplicas;
 	}
 	
 	public int getGhostBreadcrumb() {
