@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -320,7 +321,10 @@ public class ShibUtil {
 		java.io.ByteArrayInputStream inputStream =
 	        new java.io.ByteArrayInputStream(rule.getBytes());
 	    try {
-			java.util.HashMap outputParameters = 
+//int i = 0;
+//if (i == 0)
+//throw(new SocketTimeoutException());
+	    	java.util.HashMap outputParameters = 
 			    fs.executeRule( inputStream );
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

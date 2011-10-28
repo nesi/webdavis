@@ -6,6 +6,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
@@ -345,6 +346,9 @@ public class Davis extends HttpServlet {
 			// If auth info in header (basic/form auth) but not shib (http or https)
 			if (authorization != null) {
 				Log.log(Log.DEBUG, "Not shib login but auth info present. Looking for existing session...");
+//int i = 0;
+//if (i == 0)
+//throw new SocketTimeoutException();
 				davisSession = authorizationProcessor.getDavisSession(authorization, reset);
 			}
 			

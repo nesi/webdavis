@@ -710,24 +710,24 @@ public class FSUtilities {
 		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
 			return null;
 		
-				String message = null;
-				try {
-					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
-				} catch (ProtocolException e) {
-					message = e.getMessage();
-					if (message == null)
-						message = "ProtocolException";
-				} catch (SocketException e) {
-					message = e.getMessage();
-					if (message == null)
-						message = "SocketException";
-				} catch (Exception e) {
-					message = e.getMessage();
-					if (message == null)
-						message = "Exception";
-					Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
-				}
-				return message;
+		String message = null;
+		try {
+			((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+		} catch (ProtocolException e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "ProtocolException";
+		} catch (SocketException e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "SocketException";
+		} catch (Exception e) {
+			message = e.getMessage();
+			if (message == null)
+				message = "Exception";
+			Log.log(Log.WARNING, "Jargon exception when testing for connection: "+e+DavisUtilities.getStackTrace(e));					
+		}
+		return message;
 	}
 	
 	public static String escapeJSONArg(String s) {
