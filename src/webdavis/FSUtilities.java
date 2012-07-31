@@ -821,7 +821,8 @@ public class FSUtilities {
 	public static IRODSFileSystem createIRODSFileSystem(IRODSAccount account, int timeout) throws IOException {
 		
 		synchronized (lock) {
-			IRODSConstants.CONNECTION_TIMEOUT_VALUE = timeout;
+            // Jargon Classic API 3.0 changed it to be final.
+			// IRODSConstants.CONNECTION_TIMEOUT_VALUE = timeout;
 			return new IRODSFileSystem(account);
 		}
 	}
