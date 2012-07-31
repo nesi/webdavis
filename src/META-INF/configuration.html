@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <title>Davenport - Directory View Configuration</title>
+        <style>
+    body {
+        font-family: Verdana, Tahoma, Helvetica, Arial, sans-serif;
+        background: white;
+        font-size: 10pt;
+    }
+    p {
+        font-size: 10pt;
+        width: 400px;
+    }
+    .label {
+        font-weight: bold;
+        color: green;
+    }
+    tr {
+        vertical-align: top;
+    }
+    tr.userinput {
+        vertical-align: middle;
+    }
+    td {
+        font-family: Verdana, Tahoma, Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+    }
+    td.stylesheet {
+        font-family: monospace;
+    }
+    .title {
+        font-size: 16pt;
+        font-weight: bold;
+        color: green;
+    }
+    .subtitle {
+        font-size: 8pt;
+        font-weight: bold;
+        color: black;
+    }
+    input.textfield {
+        font-family: monospace;
+        font-size: 8pt;
+    }
+    input.button {
+        background: #ccddbb;
+    }
+        </style>
+        <script language="JavaScript">
+            function getView() {
+                var query = document.location.search;
+                var start = query.indexOf("view=");
+                if (start == -1) {
+                    start = document.cookie.indexOf("view=");
+                    if (start == -1) return "";
+                    query = document.cookie;
+                }
+                start += "view=".length;
+                var end = query.indexOf(";", start);
+                if (end == -1) end = query.length;
+                return unescape(query.substring(start, end));
+            }
+            function populate() {
+                document.configure.view.value = getView();
+            }
+        </script>
+    </head>
+    <body onLoad="populate()">
+    <form name="configure">
+        <span class="title">Davenport</span><br>
+        <span class="subtitle">Directory View Configuration</span>
+        <p>
+        Enter the location of a directory view stylesheet.  To use
+        the default stylesheet, simply leave this field empty.
+        </p>
+        <p>
+        The following stylesheets are included with Davenport
+        by default:
+        </p>
+        <table cellpadding="4">
+        <tr>
+            <td nowrap class="stylesheet">/META-INF/directory.xsl</td>
+            <td>
+            The default Davenport stylesheet.
+            </td>
+        </tr>
+        <tr>
+            <td nowrap class="stylesheet">/META-INF/dos.xsl</td>
+            <td>
+            DOS look and feel.
+            </td>
+        </tr>
+        </table>
+        <p>
+        <table cellpadding="4">
+        <tr class="userinput">
+            <td class="label">Stylesheet:</td>
+            <td><input class="textfield" name="view" size="30"></td>
+        </tr>
+        </table>
+        
+        <p>
+        <input class="button" type="submit" value="Apply">
+        </p>
+    </form>
+    </body>
+</html>

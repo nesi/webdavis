@@ -1,0 +1,16 @@
+
+About
+=====
+
+This is the patch for allowing the acAclPolicy rule access to the username variable.
+
+Note: only works for irods login (ie not for GSI, Kerberos.)
+
+Applying
+========
+
+Copy the .patch file into the root iRODS/ source directory, and in that directory run:
+
+patch -p0 -i aclpolicy_username.patch
+
+Then recompile/install the server.
