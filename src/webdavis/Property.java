@@ -16,6 +16,7 @@ import edu.sdsc.grid.io.RemoteFile;
  *
  * @author Shunde Zhang
  * @author Eric Glass
+ * @author Jani Heikkinen <jani.heikkinen @ csc.fi> - CSC, National Research Data project (TTA), Finland
  */
 public interface Property {
 
@@ -30,6 +31,7 @@ public interface Property {
      * The WebDAV namespace URI, "<code>DAV:</code>".
      */
     public static final String DAV_NAMESPACE = "DAV:";
+    public static final String DAV_PREFIX = "D";
 
     /**
      * The Web Folders attribute namespace URI,

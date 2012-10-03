@@ -43,6 +43,7 @@ import edu.sdsc.grid.io.RemoteFile;
  *
  * @author Shunde Zhang
  * @author Eric Glass
+ * @author Jani Heikkinen <jani.heikkinen @ csc.fi> - CSC, National Research Data project (TTA), Finland
  */
 public class DefaultLockHandler extends AbstractHandler {
 
@@ -160,12 +161,13 @@ public class DefaultLockHandler extends AbstractHandler {
                     getPrincipal(request), lockInfo);
             output = createDocument();
             Element prop = output.createElementNS(Property.DAV_NAMESPACE,
-                    "prop");
+            		Property.DAV_PREFIX + ":prop");
             prop.setAttributeNS(Property.XMLNS_NAMESPACE, "xmlns",
                     Property.DAV_NAMESPACE);
+            prop.setPrefix(Property.DAV_PREFIX);
             output.appendChild(prop);
             Element destination = output.createElementNS(Property.DAV_NAMESPACE,
-                    "lockdiscovery");
+            		Property.DAV_PREFIX + ":lockdiscovery");
             DavisUtilities.lockDiscovery(resource, lockManager, destination);
             prop.appendChild(destination);
             response.setStatus(HttpServletResponse.SC_OK);
@@ -187,12 +189,13 @@ public class DefaultLockHandler extends AbstractHandler {
                                     request.getHeader("Timeout")));
             output = createDocument();
             Element prop = output.createElementNS(Property.DAV_NAMESPACE,
-                    "prop");
+            		Property.DAV_PREFIX + ":prop");
             prop.setAttributeNS(Property.XMLNS_NAMESPACE, "xmlns",
                     Property.DAV_NAMESPACE);
+            prop.setPrefix(Property.DAV_PREFIX);
             output.appendChild(prop);
             Element destination = output.createElementNS(Property.DAV_NAMESPACE,
-                    "lockdiscovery");
+            		Property.DAV_PREFIX + ":lockdiscovery");
             DavisUtilities.lockDiscovery(resource, lockManager, destination);
             prop.appendChild(destination);
             response.setStatus(HttpServletResponse.SC_OK);
