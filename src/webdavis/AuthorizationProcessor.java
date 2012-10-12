@@ -1,5 +1,7 @@
 package webdavis;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
@@ -26,6 +28,7 @@ import edu.sdsc.grid.io.RemoteAccount;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSConstants;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.local.LocalFile;
 import edu.sdsc.grid.io.srb.SRBAccount;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
 
@@ -191,6 +194,7 @@ public class AuthorizationProcessor {
 		String serverName=davisConfig.getServerName();
 		GSSCredential gssCredential=null;
 		String sessionID=null;
+		boolean shibUseAdminLogin = davisConfig.getShibUseAdminLogin();
 		
 		if (sharedToken !=null && commonName !=null && sharedToken.length() > 0 && commonName.length() > 0){ // Shib session?
 			sessionID = "|"+SimpleMD5.MD5(sharedToken+":"+shibSessionID) + "*shib|";
@@ -198,8 +202,8 @@ public class AuthorizationProcessor {
 			Map result;
 			if (sharedToken !=null && commonName !=null && (result=shibUtil.passInShibSession(sharedToken,commonName)) != null){  //found shib session, get username/password
 				user=(String) result.get("username");
-				password=(char[]) result.get("password");
-				Log.log(Log.DEBUG,"shibUtil got user "+user+" and generated a new password.");
+				password=(char[]) result.get("password"); // password may be null when using shibUseAdminLogin
+				Log.log(Log.DEBUG,"shibUtil got user "+user+(password!=null ? " and generated a new password." : " and returned a null password - for a clientUserName login"));
 			}
 		}else 
 		if (authorization.regionMatches(true, 0, "Basic ", 0, 6)) { // Basic
@@ -437,10 +441,33 @@ public class AuthorizationProcessor {
 				}
 			}
 			Log.log(Log.DEBUG, "Davis session created.");
-		}else if (user!=null&&password!=null){
+		}else if (user!=null&& (shibUseAdminLogin || password!=null)){
 			Log.log(Log.DEBUG,"login with username/password");
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
-				account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), defaultResource);
+				if (!shibUseAdminLogin) {
+					account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), defaultResource);					
+				} else {
+					try {
+						String adminCredsDir = davisConfig.getInitParameter("admin-creds-dir", true);
+						if (adminCredsDir == null) {
+							// TODO: or not exists
+							Log.log(Log.ERROR, "Error: shib-use-admin-login is used without specifying admin-creds-dir");
+							return null;
+						}
+						// needs a directory with a .irodsEnv file with settings and a .irodsA file with password 
+						account = new IRODSAccount(new LocalFile(adminCredsDir));
+						account.setHost(davisConfig.getServerName());
+						account.setPort(davisConfig.getServerPort());
+						account.setHomeDirectory("/" + davisConfig.getZoneName() + "/home/" + user);
+						((IRODSAccount)account).setZone(davisConfig.getZoneName());
+						((IRODSAccount)account).setDefaultStorageResource(defaultResource);
+						((IRODSAccount)account).setClientUserName(user);
+					} catch (IOException e) {
+						e.printStackTrace();
+						Log.log(Log.ERROR, e);
+						return null;
+					}
+				}
 				davisSession = new DavisSession();
 				davisSession.setServerName(davisConfig.getServerName());
 				davisSession.setServerPort(davisConfig.getServerPort());

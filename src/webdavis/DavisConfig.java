@@ -110,6 +110,8 @@ public class DavisConfig {
     private String styleSheet1, styleSheet2;
     private boolean quickShareOwnerOnly;
     private boolean logDirtyReplicas;
+	private String adminCredsDir;
+	private boolean shibUseAdminLogin;
     
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
@@ -385,6 +387,8 @@ public class DavisConfig {
 		styleSheet2 = getInitParameter("davis-style-sheet-override", "/include/davis-override.css").trim();
 		quickShareOwnerOnly = Boolean.valueOf(getInitParameter("quickshare-owner-only", "true").trim()).booleanValue();
 		logDirtyReplicas = Boolean.valueOf(getInitParameter("log-dirty-replicas", "true").trim()).booleanValue();
+		adminCredsDir = getInitParameter("admin-creds-dir", "").trim();
+		shibUseAdminLogin = Boolean.valueOf(getInitParameter("shib-use-admin-login", "false").trim()).booleanValue();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
@@ -817,5 +821,13 @@ public class DavisConfig {
 
 	public String getStyleSheetOverridePath() {
 		return styleSheet2;
+	}
+
+	public String getAdminCredsDir() {
+		return adminCredsDir;
+	}
+
+	public boolean getShibUseAdminLogin() {
+		return shibUseAdminLogin;
 	}
 }

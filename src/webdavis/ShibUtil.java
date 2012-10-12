@@ -221,6 +221,51 @@ public class ShibUtil {
         return in;
 
     }
+    public String lookupUsernameByST(IRODSFileSystem irodsFileSystem, String sharedToken) throws IOException {
+    	String username = null;
+        
+        String[] selectFieldNames = {
+				IRODSMetaDataSet.USER_NAME,
+			};
+		MetaDataCondition conditions[] = {
+							MetaDataSet.newCondition(
+									IRODSMetaDataSet.USER_INFO,	MetaDataCondition.LIKE, "%<ST>"+sharedToken+"</ST>%")
+						};
+		MetaDataSelect selects[] =
+				MetaDataSet.newSelection( selectFieldNames );
+		MetaDataRecordList[] userDetails = irodsFileSystem.query(conditions,selects,1);
+//		IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
+		if (userDetails!=null) {
+			username=(String) userDetails[0].getValue(IRODSMetaDataSet.USER_NAME);
+//			password=getRandomPassword(12);
+//			admin.USER.modifyPassword(username, new String(password));
+//			changePasswordRule(irodsFileSystem, username, new String(password));
+		}else {
+			return null;
+//			String[] names=commonName.split(" ");
+//			String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
+//			for (int i=0;i<20;i++){
+//				if (i>0) 
+//					username=base+i;
+//				else
+//					username=base;
+//				conditions[0] = MetaDataSet.newCondition(
+//								IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
+//				userDetails = irodsFileSystem.query(conditions,selects,1);
+//				if (userDetails==null||userDetails.length==0){
+//					Log.log(Log.DEBUG, "Creating new user "+username);
+//					admin.USER.addUser(username, "rodsuser");
+//					admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
+//					password=getRandomPassword(12);
+////					admin.USER.modifyPassword(username, new String(password));
+//					changePasswordRule(irodsFileSystem, username, new String(password));
+//					break;
+//				}
+//			}
+		}
+		return username;
+    
+    }
     public Map passInShibSession(String sharedToken, String commonName){
     	String username=null;
     	char[] password=null;
@@ -228,6 +273,8 @@ public class ShibUtil {
     	if (sharedToken==null) return null;
 		GlobusCredential adminCred;
 		DavisConfig config=Davis.getConfig();
+		boolean shibUseAdminLogin = config.getShibUseAdminLogin();
+		
 		try {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
@@ -237,51 +284,22 @@ public class ShibUtil {
 		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
 		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
 		        
-		        password=getRandomPassword(12);
-		        createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
+		        if (shibUseAdminLogin) {
+		        	username = lookupUsernameByST(irodsFileSystem, sharedToken);
+		        };
 		        
-		        String[] selectFieldNames = {
-						IRODSMetaDataSet.USER_NAME,
-					};
-				MetaDataCondition conditions[] = {
-									MetaDataSet.newCondition(
-											IRODSMetaDataSet.USER_INFO,	MetaDataCondition.LIKE, "%<ST>"+sharedToken+"</ST>%")
-								};
-				MetaDataSelect selects[] =
-						MetaDataSet.newSelection( selectFieldNames );
-				MetaDataRecordList[] userDetails = irodsFileSystem.query(conditions,selects,1);
-//				IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
-				if (userDetails!=null) {
-					username=(String) userDetails[0].getValue(IRODSMetaDataSet.USER_NAME);
-//					password=getRandomPassword(12);
-//					admin.USER.modifyPassword(username, new String(password));
-//					changePasswordRule(irodsFileSystem, username, new String(password));
-				}else {
+		        if (!shibUseAdminLogin || username == null) {
+		        	password=getRandomPassword(12);
+		        	createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
+			        username = lookupUsernameByST(irodsFileSystem, sharedToken);
+		        };
+		        if (username == null) {
 					irodsFileSystem.close();
-					return null;
-//					String[] names=commonName.split(" ");
-//					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
-//					for (int i=0;i<20;i++){
-//						if (i>0) 
-//							username=base+i;
-//						else
-//							username=base;
-//						conditions[0] = MetaDataSet.newCondition(
-//										IRODSMetaDataSet.USER_NAME,	MetaDataCondition.LIKE, username);
-//						userDetails = irodsFileSystem.query(conditions,selects,1);
-//						if (userDetails==null||userDetails.length==0){
-//							Log.log(Log.DEBUG, "Creating new user "+username);
-//							admin.USER.addUser(username, "rodsuser");
-//							admin.USER.modifyInfo(username, "<ST>"+sharedToken+"</ST>");
-//							password=getRandomPassword(12);
-////							admin.USER.modifyPassword(username, new String(password));
-//							changePasswordRule(irodsFileSystem, username, new String(password));
-//							break;
-//						}
-//					}
-				}
+			       	return null;		        	
+		        }
+		        		        
 				result.put("username", username);
-				result.put("password", password);
+				result.put("password", password); // password may be null when using shibUseAdminLogin
 				irodsFileSystem.close();
 		       	return result;
 	        }
