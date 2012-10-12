@@ -7,7 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * Default implementation of a handler for requests using the HTTP HEAD method.
@@ -35,7 +35,7 @@ public class DefaultHeadHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, davisSession);
+    	IRODSFile file = getIRODSFile(request, davisSession);
         if (!file.exists()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;

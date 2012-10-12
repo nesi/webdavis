@@ -5,10 +5,9 @@ import java.io.IOException;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 /**
  * Represents a WebDAV property.  This provides an interface for retrieving
@@ -16,6 +15,7 @@ import edu.sdsc.grid.io.RemoteFile;
  *
  * @author Shunde Zhang
  * @author Eric Glass
+ * @author Jani Heikkinen <jani.heikkinen @ csc.fi> - CSC, National Research Data project (TTA), Finland
  */
 public interface Property {
 
@@ -30,6 +30,7 @@ public interface Property {
      * The WebDAV namespace URI, "<code>DAV:</code>".
      */
     public static final String DAV_NAMESPACE = "DAV:";
+    public static final String DAV_PREFIX = "D";
 
     /**
      * The Web Folders attribute namespace URI,
@@ -94,7 +95,7 @@ public interface Property {
      * be returned.
      * @throws IOException If an IO error occurs while creating the element.
      */
-    public Element createElement(Document document, RemoteFile file)
+    public Element createElement(Document document, IRODSFile file)
             throws IOException;
 
     /**
@@ -109,7 +110,7 @@ public interface Property {
      * @throws IOException If an IO error occurs while updating the
      * property value.
      */
-    public int update(RemoteFile file, Element element)
+    public int update(IRODSFile file, Element element)
             throws IOException;
 
     /**
@@ -145,7 +146,7 @@ public interface Property {
      * @throws IOException If an IO error occurs while retrieving the
      * property value.
      */
-    public int retrieve(RemoteFile file, Element element)
+    public int retrieve(IRODSFile file, Element element)
             throws IOException;
 
 }

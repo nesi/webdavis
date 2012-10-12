@@ -4,20 +4,21 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Hashtable;
 
+import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.DataObjectAO;
+import org.irods.jargon.core.pub.DataTransferOperations;
+import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.UserAO;
+import org.irods.jargon.core.pub.io.IRODSFileFactory;
 
 import webdavis.DefaultPostHandler.Tracker;
-
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
-
 /**
  * A wrapper class of session information
  * @author Shunde Zhang
  */
 public class DavisSession implements Serializable{
-	private RemoteFileSystem remoteFileSystem;
+	private IRODSAccount iRODSAccount;
 	private String username;
 	private String defaultResource;
 	private String homeDirectory;
@@ -43,32 +44,18 @@ public class DavisSession implements Serializable{
 				return "basic";
 			return null;
 		}
-		if (Davis.getConfig().getServerType().equalsIgnoreCase("irods"))
-			return ((IRODSFileSystem)remoteFileSystem).getAuthenticationScheme();
-		return null;
+		return iRODSAccount.getAuthenticationScheme().name();
 	}
 	
 	public void disconnect() throws RuntimeException {
-		disconnect(remoteFileSystem);
-	}
-	
-	public void disconnect(RemoteFileSystem remoteFileSystem) throws RuntimeException {
-		if (remoteFileSystem != null && remoteFileSystem.isConnected()){
-			if (remoteFileSystem instanceof SRBFileSystem){
-				try {
-					((SRBFileSystem)remoteFileSystem).close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			} else if (remoteFileSystem instanceof IRODSFileSystem){
-				try {
-					((IRODSFileSystem)remoteFileSystem).close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			fileSystem.getIrodsSession().currentConnection(iRODSAccount).disconnect();
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
 		}
 	}
 	
@@ -127,16 +114,6 @@ public class DavisSession implements Serializable{
 		currentRoot=null;
 		sharedSessionNumber=0;
 	}
-	public RemoteFileSystem getRemoteFileSystem() {
-		if (!remoteFileSystem.isConnected()){
-			Log.log(Log.DEBUG, "DavisSession: connection disconnected.");
-			return null;
-		}
-		return remoteFileSystem;
-	}
-	public void setRemoteFileSystem(RemoteFileSystem remoteFileSystem) {
-		this.remoteFileSystem = remoteFileSystem;
-	}
 	public String getUsername() {
 		return username;
 	}
@@ -154,9 +131,7 @@ public class DavisSession implements Serializable{
 //		buffer.append("");
 //		buffer.append(username);
 //		buffer.append("^");
-		if (remoteFileSystem instanceof SRBFileSystem) buffer.append("srb");
-		if (remoteFileSystem instanceof IRODSFileSystem) buffer.append("irods");
-		buffer.append("://").append(account);
+		buffer.append("irods://").append(account);
 		if (domain!=null) buffer.append(".").append(domain);
 		buffer.append("@").append(serverName).append(":").append(serverPort);
 		buffer.append("{").append(defaultResource).append("}");
@@ -187,12 +162,61 @@ public class DavisSession implements Serializable{
 		return sharedSessionNumber>0;
 	}
 	public boolean isConnected() {
-		return remoteFileSystem.isConnected();
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			return fileSystem.getIrodsSession().currentConnection(iRODSAccount).isConnected();
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
 	}
 	public ClientInstance getClientInstance(String clientID) {
 		return clientInstances.get(clientID);
 	}
 	public Hashtable<String, ClientInstance> getClientInstances() {
 		return clientInstances;
+	}
+
+	public IRODSAccount getIRODSAccount() {
+		return iRODSAccount;
+	}
+
+	public void setIRODSAccount(IRODSAccount iRODSAccount) {
+		this.iRODSAccount = iRODSAccount;
+	}
+	public IRODSFileFactory getFileFactory() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			return fileSystem.getIRODSFileFactory(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public DataObjectAO getDataObjectAO() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getDataObjectAO(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public DataTransferOperations getDataTransferOperations() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getDataTransferOperations(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
 	}
 }

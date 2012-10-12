@@ -7,8 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * Default implementation of a handler for requests using the HTTP OPTIONS
@@ -35,7 +34,7 @@ public class DefaultOptionsHandler extends AbstractHandler {
         boolean lockSupport = (getLockManager() != null);
         response.setHeader("DAV", lockSupport ? "1,2" : "1");  
         response.setHeader("MS-Author-Via", "DAV");
-        RemoteFile file = getRemoteFile(request, davisSession);
+        IRODSFile file = getIRODSFile(request, davisSession);
         StringBuffer allow = new StringBuffer();
         if (file.exists()) {
             allow.append("OPTIONS, HEAD, GET, DELETE, PROPFIND");

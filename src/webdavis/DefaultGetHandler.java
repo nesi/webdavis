@@ -45,31 +45,13 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import org.irods.jargon.core.connection.IRODSServerProperties;
+import org.irods.jargon.core.pub.io.FileIOOperations.SeekWhenceType;
+import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.core.pub.io.IRODSFileFactory;
+import org.irods.jargon.core.pub.io.IRODSFileInputStream;
+import org.irods.jargon.core.pub.io.IRODSRandomAccessFile;
 import org.w3c.dom.Document;
-
-import edu.sdsc.grid.io.GeneralFile;
-import edu.sdsc.grid.io.GeneralFileSystem;
-import edu.sdsc.grid.io.GeneralMetaData;
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.Namespace;
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileInputStream;
-import edu.sdsc.grid.io.RemoteRandomAccessFile;
-import edu.sdsc.grid.io.ResourceMetaData;
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSException;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileInputStream;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
-import edu.sdsc.grid.io.irods.IRODSRandomAccessFile;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileInputStream;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
-import edu.sdsc.grid.io.srb.SRBRandomAccessFile;
 
 /**
  * Default implementation of a handler for requests using the HTTP GET method.
@@ -258,9 +240,9 @@ public class DefaultGetHandler extends AbstractHandler {
 			writeFile(url, request, response);
 			return;
 		}
-		RemoteFile file = null;
+		IRODSFile file = null;
 		try {
-			file = getRemoteFile(request, davisSession);
+			file = getIRODSFile(request, davisSession);
 		} catch (NullPointerException e) {
 			Log.log(Log.CRITICAL, "Caught a NullPointerException in DefaultGethandler.service. request=" + request.getRequestURI() + " session=" + davisSession
 							+ "\nAborting request. Exception is:"+DavisUtilities.getStackTrace(e));
@@ -346,10 +328,6 @@ public class DefaultGetHandler extends AbstractHandler {
 			Log.log(Log.DEBUG, "Time before creating dynamic html: " + (new Date().getTime() - Davis.profilingTimer.getTime()));
 			String method = request.getParameter("method");
 			if (method != null && method.equals("dojoquery")) { // Dojo QueryReadStore request (ie ajax directory listing)
-				if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem) {
-					Log.log(Log.ERROR, "dojoquery method not implemented for SRB");
-					return;
-				}
 				boolean noCache = false;
 				if (request.getParameter("nocache") != null)
 					noCache = true;				
@@ -419,7 +397,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			String format = request.getParameter("format");
 			if (format != null && format.equals("json")) { // List directory contents as JSON
-				RemoteFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
+				IRODSFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
 				json.append("{\n" + escapeJSONArg("items") + ":[\n");
 				for (int i = 0; i < fileList.length; i++) {
 					if (i > 0)
@@ -509,10 +487,7 @@ public class DefaultGetHandler extends AbstractHandler {
 				substitutions.put("authscheme", /*davisSession.getAuthenticationScheme()*/auth);
 				substitutions.put("uiloaddate", uiLoadDate);
 				String version = "";
-				if (file.getFileSystem() instanceof IRODSFileSystem) 
-					version = ((IRODSFileSystem)file.getFileSystem()).getVersion();
-				else
-					version = ((SRBFileSystem)file.getFileSystem()).getVersion();
+				version = IRODSServerProperties.getJargonVersion();
 				substitutions.put("jargonversion", version);
 				substitutions.put("disablereplicasbutton", ""+config.getDisableReplicasButton());
 				substitutions.put("sharinguser", ""+config.getSharingUser());
@@ -657,68 +632,67 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			return;
 		}
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
 
 		// Request for file
 		// For files with multiple replicas, a clean replica will be returned. If only a dirty copy is found, then that will be used.
-		if (file.getFileSystem() instanceof IRODSFileSystem) {	
-			// Find first clean replica of file for download
-			MetaDataCondition conditions[] = {
-				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
-				MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
-				MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
-			};
-			MetaDataSelect selects[] = MetaDataSet.newSelection(new String[]{
-					IRODSMetaDataSet.RESOURCE_STATUS,
-					IRODSMetaDataSet.RESOURCE_NAME
-				});
-			MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
+		// Find first clean replica of file for download
+		MetaDataCondition conditions[] = {
+			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+			MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
+			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
+		};
+		MetaDataSelect selects[] = MetaDataSet.newSelection(new String[]{
+				IRODSMetaDataSet.RESOURCE_STATUS,
+				IRODSMetaDataSet.RESOURCE_NAME
+			});
+		MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
 
-    		if (fileDetails == null || fileDetails.length < 1) {
-    			Log.log(Log.WARNING, "No clean replicas found for "+file.getAbsolutePath());
+		if (fileDetails == null || fileDetails.length < 1) {
+			Log.log(Log.WARNING, "No clean replicas found for "+file.getAbsolutePath());
+		
+			// No clean replicas, try *any* replicas
+			conditions = new MetaDataCondition[] {
+					MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
+					MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())
+				};
+			fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
     		
-    			// No clean replicas, try *any* replicas
-    			conditions = new MetaDataCondition[] {
-    					MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
-    					MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())
-    				};
-    			fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
-        		
-    			if (fileDetails == null || fileDetails.length < 1) {
-	    			String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
-	    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
-	    			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
-	    			response.flushBuffer();
-	    			return;
-    			}
-    			if (Davis.getConfig().getLogDirtyReplicas())
-    				Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
-    		}
-    		
-    		boolean found = false;
-    		for (int i = 0; i < fileDetails.length; i++) {
-        		MetaDataRecordList p = fileDetails[i]; 
-        		String status = (String)p.getValue(IRODSMetaDataSet.RESOURCE_STATUS);
-        		if (status == null)
-        			Log.log(Log.WARNING, "status of resource "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+" was null");
-//  System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
-        		if (status == null || status.length() == 0 || status.toLowerCase().contains("up")) { // Empty status string = up
-            		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-            		try {
-            			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-            		} catch (Exception e) {
-            			Log.log(Log.ERROR, "failed to set resource for get of "+file.getName()+" to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+": "+e);
-            		}
-            		found = true;
-            		break;
-        		}
-    		}
-    		if (!found) {
-    			String s= "No replicas are available because a resource is down: "+file.getAbsolutePath();
-    			Log.log(Log.ERROR, s);
+			if (fileDetails == null || fileDetails.length < 1) {
+    			String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
+    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
     			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
     			response.flushBuffer();
     			return;
+			}
+			if (Davis.getConfig().getLogDirtyReplicas())
+				Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
+		}
+		
+		boolean found = false;
+		for (int i = 0; i < fileDetails.length; i++) {
+    		MetaDataRecordList p = fileDetails[i]; 
+    		String status = (String)p.getValue(IRODSMetaDataSet.RESOURCE_STATUS);
+    		if (status == null)
+    			Log.log(Log.WARNING, "status of resource "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+" was null");
+//  System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
+    		if (status == null || status.length() == 0 || status.toLowerCase().contains("up")) { // Empty status string = up
+        		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+        		try {
+        			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
+        		} catch (Exception e) {
+        			Log.log(Log.ERROR, "failed to set resource for get of "+file.getName()+" to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+": "+e);
+        		}
+        		found = true;
+        		break;
     		}
+		}
+		if (!found) {
+			String s= "No replicas are available because a resource is down: "+file.getAbsolutePath();
+			Log.log(Log.ERROR, s);
+			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
+			response.flushBuffer();
+			return;
 		}
 
 		String etag = DavisUtilities.getETag(file);
@@ -787,16 +761,11 @@ public class DefaultGetHandler extends AbstractHandler {
 		long startTime = new Date().getTime();
 		Log.log(Log.DEBUG, "Downloading file from " + offset + " max inactive interval:" + interval + " starting at:" + new Date(startTime));
 		if (offset > 0) {
-			RemoteRandomAccessFile input = null;
+			IRODSRandomAccessFile input = null;
 			try {
-				if (file.getFileSystem() instanceof SRBFileSystem) {
-					// input = new SRBFileInputStream((SRBFile)file);
-					input = new SRBRandomAccessFile((SRBFile) file, "r");
-				} else if (file.getFileSystem() instanceof IRODSFileSystem) {
-					Log.log(Log.DEBUG, "file can read?:" + file.canRead());
-					input = new IRODSRandomAccessFile((IRODSFile) file, "r");
-				}
-				input.seek(offset);
+				Log.log(Log.DEBUG, "file can read?:" + file.canRead());
+				input = fileFactory.instanceIRODSRandomAccessFile(file);
+				input.seek(offset, SeekWhenceType.SEEK_START);
 				// try{
 				while ((count = input.read(buf)) > 0) {
 					// Log.log(Log.DEBUG, "read "+count);
@@ -817,14 +786,10 @@ public class DefaultGetHandler extends AbstractHandler {
 			if (input != null)
 				input.close();
 		} else {
-			RemoteFileInputStream input = null;
+			IRODSFileInputStream input = null;
 			try {
-				if (file.getFileSystem() instanceof SRBFileSystem)
-					input = new SRBFileInputStream((SRBFile) file);
-				else if (file.getFileSystem() instanceof IRODSFileSystem) {
-					Log.log(Log.DEBUG, "file can read?:" + file.canRead());
-					input = new IRODSFileInputStream((IRODSFile) file);
-				}
+				Log.log(Log.DEBUG, "file can read?:" + file.canRead());
+				input = fileFactory.instanceIRODSFileInputStream(file);
 				while (true) {
 					try {
 						count = input.read(buf);

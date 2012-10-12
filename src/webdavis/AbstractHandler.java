@@ -21,16 +21,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.core.pub.io.IRODSFileFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * An abstract implementation of the <code>MethodHandler</code> interface.
@@ -235,7 +232,7 @@ public abstract class AbstractHandler implements MethodHandler {
 //			return target;
 //		}
 
-//        RemoteFile file = new RemoteFile("smb:/" + unescape(httpUrl, charset));
+//        IRODSFile file = new IRODSFile("smb:/" + unescape(httpUrl, charset));
 //        String server = file.getServer();
 //        base = file.getCanonicalPath();
 //        if (server != null && KNOWN_WORKGROUPS.contains(server.toUpperCase())) {
@@ -255,12 +252,12 @@ public abstract class AbstractHandler implements MethodHandler {
     	String uri=getRemoteURL(request,httpUrl,charset);
     	return uri.substring(0,uri.lastIndexOf("/"));
     }
-    protected RemoteFile getRemoteParentFile(HttpServletRequest request,
+    protected IRODSFile getRemoteParentFile(HttpServletRequest request,
     		DavisSession davisSession) throws IOException {
         String url = getRequestURL(request);
-        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
         Log.log(Log.DEBUG, "url:"+url);
-        RemoteFile file = null;
+        IRODSFile file = null;
         IOException exception = null;
         boolean exists = false;
         String charset = getRequestURICharset();
@@ -272,16 +269,16 @@ public abstract class AbstractHandler implements MethodHandler {
     			uri=uri.replaceAll("/~",davisSession.getHomeDirectory());
     			Log.log(Log.INFORMATION,"changed path to '"+uri+"'");
     		}
-            if (rfs instanceof SRBFileSystem){
-            	file=new SRBFile((SRBFileSystem) rfs,uri);
-            }else if (rfs instanceof IRODSFileSystem){
-            	file=new IRODSFile((IRODSFileSystem) rfs,uri);
-            }
+            file=fileFactory.instanceIRODSFile(uri);
             exists = file.exists();
         } catch (IOException ex) {
         	ex.printStackTrace();
             exception = ex;
-        }
+        } catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
         if (exists) return file;
         Log.log(Log.WARNING, "Returning null getRemoteParentFile (server connection lost?).");
         return null;
@@ -327,11 +324,11 @@ public abstract class AbstractHandler implements MethodHandler {
      * @throws IOException If the <code>SmbFile</code> targeted by
      * the specified request could not be created.
      */
-    protected RemoteFile getRemoteFile(HttpServletRequest request, DavisSession davisSession) throws IOException {
+    protected IRODSFile getIRODSFile(HttpServletRequest request, DavisSession davisSession) throws IOException {
         String url = getRequestURL(request);
-        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
         Log.log(Log.DEBUG, "url:"+url);
-        RemoteFile file = null;
+        IRODSFile file = null;
         IOException exception = null;
         boolean exists = false;
         String charset = getRequestURICharset();
@@ -345,16 +342,16 @@ public abstract class AbstractHandler implements MethodHandler {
 			}
     		Log.log(Log.DEBUG,"uri: "+uri);
             
-            if (rfs instanceof SRBFileSystem){
-            	file=new SRBFile((SRBFileSystem) rfs,uri);
-            }else if (rfs instanceof IRODSFileSystem){
-            	file=new IRODSFile((IRODSFileSystem) rfs,uri);
-            }
+            file=fileFactory.instanceIRODSFile(uri);
             exists = file.exists();
             Log.log(Log.DEBUG,"uri exists: "+exists);
         } catch (IOException ex) {
             exception = ex;
-        }
+        } catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
         if (exists) return file;
 //        if (charset.equals("UTF-8")) {
 //            if (exception != null) {
@@ -363,11 +360,11 @@ public abstract class AbstractHandler implements MethodHandler {
 //            }
 //            return file;
 //        }
-//        RemoteFile utf8 = null;
+//        IRODSFile utf8 = null;
 //        IOException utf8Exception = null;
 //        try {
 //            String uri=getRemoteURL(request, url, charset);
-//            utf8 = createRemoteFile(getRemoteURL(request, url, "UTF-8"), rfs);
+//            utf8 = createIRODSFile(getRemoteURL(request, url, "UTF-8"), rfs);
 //            exists = utf8.exists();
 //        } catch (IOException ex) {
 //            utf8Exception = ex;
@@ -391,92 +388,25 @@ public abstract class AbstractHandler implements MethodHandler {
             Log.log(Log.ERROR, exception);
             throw exception;
         }
-        Log.log(Log.WARNING, "Returning null RemoteFile (server connection lost?).");
+        Log.log(Log.WARNING, "Returning null IRODSFile (server connection lost?).");
         return null;
     }
-    protected RemoteFile getRemoteFile(String path,	DavisSession davisSession) throws IOException {
+    protected IRODSFile getIRODSFile(String path,	DavisSession davisSession) throws IOException {
         Log.log(Log.DEBUG, "path:"+path);
-        RemoteFileSystem rfs=davisSession.getRemoteFileSystem();
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
 		if (path.startsWith("/~")) {
             Log.log(Log.DEBUG,"path(b4 changing home dir,~):"+path);
 			path=path.replaceAll("/~",davisSession.getHomeDirectory());
 			Log.log(Log.DEBUG,"changed path to "+path);
 		}
-        RemoteFile file = null;
+        IRODSFile file = null;
         try {
-            if (rfs instanceof SRBFileSystem){
-            	file=new SRBFile((SRBFileSystem) rfs,path);
-            }else if (rfs instanceof IRODSFileSystem){
-            	file=new IRODSFile((IRODSFileSystem) rfs,path);
-            }
+            file=fileFactory.instanceIRODSFile(path);
         } catch (Exception ex) {
             Log.log(Log.ERROR, ex);
             throw new IOException(ex.getMessage());
        }
        return file;
-    }
-    /**
-     * Convenience method to create an <code>SmbFile</code> object
-     * from a specified SMB URL and authentication information.
-     * The <code>SmbFile</code> returned will automatically be adjusted
-     * to include a trailing slash ("/") in the event that it refers to a
-     * directory, share, server, or workgroup.
-     *
-     * @param smbUrl The SMB URL from which the <code>SmbFile</code> object
-     * will be created.
-     * @param authentication The authentication information to apply to the
-     * <code>SmbFile</code> object.
-     * @throws IOException If an <code>SmbFile</code> object could not be
-     * created from the provided information.
-     */
-    protected RemoteFile createRemoteFile(String remoteUrl,
-    		RemoteFileSystem rfs) throws IOException {
-        try {
-            Log.log(Log.DEBUG,
-                    "Creating remote file for \"{0}\" with credentials \"{1}\".",
-                            new Object[] { remoteUrl, rfs });
-            RemoteFile remoteFile = null;
-            if (rfs instanceof SRBFileSystem){
-            	remoteFile=new SRBFile((SRBFileSystem) rfs,remoteUrl);
-            }else if (rfs instanceof IRODSFileSystem){
-            	remoteFile=new IRODSFile((IRODSFileSystem) rfs,remoteUrl);
-            }
-            Log.log(Log.DEBUG,"remoteFile: {0}",remoteFile);
-            if (remoteFile.exists()) return remoteFile;
-    		if (!remoteFile.createNewFile())
-    			throw new IOException("cannot create file: " + remoteUrl);
-//            if (!remoteUrl.endsWith("/") && needsSeparator(smbFile)) {
-//            	remoteUrl += "/";
-//            	remoteFile = (authentication != null) ?
-//                        new SmbFile(smbUrl, authentication) :
-//                                new SmbFile(remoteUrl);
-//            }
-//            if (smbFile.getType() == SmbFile.TYPE_WORKGROUP) {
-//                String server = smbFile.getServer();
-//                if (server != null) {
-//                    Log.log(Log.INFORMATION,
-//                            "Adding \"{0}\" to the set of known workgroups.",
-//                                    server);
-//                    KNOWN_WORKGROUPS.add(server.toUpperCase());
-//                }
-//            }
-//            SmbFileFilter filter = getFilter();
-//            if (filter != null && !filter.accept(smbFile)) {
-//                Log.log(Log.INFORMATION, "Filter blocked access to \"{0}\".",
-//                        smbFile);
-//                smbFile = new BlockedFile(smbFile);
-//            }
-            Log.log(Log.DEBUG, "Created remote file \"{0}\".", remoteFile);
-            return remoteFile;
-//        } catch (SmbException ex) {
-//            Log.log(Log.DEBUG, ex);
-//            throw ex;
-        } catch (IOException ex) {
-            String message = DavisUtilities.getResource(AbstractHandler.class,
-                    "cantCreateSmbFile", new Object[] { ex }, null);
-            Log.log(Log.ERROR, message + "\n{0}", ex);
-            throw new IOException(message);
-        }
     }
 
     /**
@@ -510,7 +440,7 @@ public abstract class AbstractHandler implements MethodHandler {
      * @throws SmbException If an error occurs while examining the resource.
      */
     protected int checkConditionalRequest(HttpServletRequest request,
-            RemoteFile file) throws IOException {
+            IRODSFile file) throws IOException {
         Enumeration values = request.getHeaders("If-None-Match");
         if (values.hasMoreElements()) {
             String etag = DavisUtilities.getETag(file);
@@ -616,7 +546,7 @@ public abstract class AbstractHandler implements MethodHandler {
      * @return An <code>int</code> containing the return HTTP status code.
      * @throws IOException If an IO error occurs.
      */ 
-    protected int checkLockOwnership(HttpServletRequest request, RemoteFile file)
+    protected int checkLockOwnership(HttpServletRequest request, IRODSFile file)
             throws IOException {
         LockManager lockManager = getLockManager();
         if (lockManager == null) return HttpServletResponse.SC_OK;
@@ -652,7 +582,7 @@ public abstract class AbstractHandler implements MethodHandler {
         return SC_LOCKED;
     }
 
-    private int checkLockCondition(HttpServletRequest request, RemoteFile file)
+    private int checkLockCondition(HttpServletRequest request, IRODSFile file)
             throws IOException {
         Enumeration values = request.getHeaders("If");
         if (!values.hasMoreElements()) return HttpServletResponse.SC_OK;
@@ -692,7 +622,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
 
     private int processNoTagList(String noTagList, HttpServletRequest request,
-            RemoteFile file) throws IOException {
+            IRODSFile file) throws IOException {
         Log.log(Log.DEBUG, "Processing No-tag-list against \"{0}\": {1}",
                 new Object[] { file, noTagList });
         boolean inQuote = false;
@@ -835,7 +765,7 @@ public abstract class AbstractHandler implements MethodHandler {
     }
 
     private int processTaggedList(String taggedList, HttpServletRequest request,
-    		RemoteFile file) throws IOException {
+    		IRODSFile file) throws IOException {
         Log.log(Log.DEBUG, "Processing Tagged-list against \"{0}\": {1}",
                 new Object[] { file, taggedList });
         boolean inQuote = false;
@@ -903,18 +833,14 @@ public abstract class AbstractHandler implements MethodHandler {
                 getRelativeFile(request, file, resource.toString().trim()));
     }
 
-    private RemoteFile getRelativeFile(HttpServletRequest request, RemoteFile base,
+    private IRODSFile getRelativeFile(HttpServletRequest request, IRODSFile base,
             String httpUrl) throws IOException {
-    	RemoteFile file = null;
+    	IRODSFile file = null;
         IOException exception = null;
         boolean exists = false;
         String charset = getRequestURICharset();
         try {
-        	if (base.getFileSystem() instanceof SRBFileSystem){
-                file = new SRBFile((SRBFile)base, getRemoteURL(request, httpUrl, charset));
-        	}else if (base.getFileSystem() instanceof IRODSFileSystem){
-                file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, charset));
-        	}
+            file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, charset));
             exists = file.exists();
         } catch (IOException ex) {
             exception = ex;
@@ -927,14 +853,10 @@ public abstract class AbstractHandler implements MethodHandler {
             }
             return file;
         }
-        RemoteFile utf8 = null;
+        IRODSFile utf8 = null;
         IOException utf8Exception = null;
         try {
-        	if (base.getFileSystem() instanceof SRBFileSystem){
-                file = new SRBFile((SRBFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
-        	}else if (base.getFileSystem() instanceof IRODSFileSystem){
-                file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
-        	}
+            file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
             exists = utf8.exists();
         } catch (IOException ex) {
             utf8Exception = ex;
@@ -962,7 +884,7 @@ public abstract class AbstractHandler implements MethodHandler {
         return null;
     }
 
-    private boolean needsSeparator(RemoteFile file) throws IOException {
+    private boolean needsSeparator(IRODSFile file) throws IOException {
         if (file.getName().endsWith("/")) return true;
 //        int type = file.getType();
 //        if (type == SmbFile.TYPE_WORKGROUP || type == SmbFile.TYPE_SERVER ||
@@ -1022,15 +944,15 @@ public abstract class AbstractHandler implements MethodHandler {
 		return (JSONArray)JSONValue.parse(s);
     }
 
-//    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList) throws IOException, ServletException {
+//    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<IRODSFile> fileList) throws IOException, ServletException {
 //    	
 //    	return getFileList(request, davisSession, fileList, getJSONContent(request));
 //    }
     
-    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<RemoteFile> fileList, JSONArray jsonArray) throws IOException, ServletException {
+    protected boolean getFileList(HttpServletRequest request, DavisSession davisSession, ArrayList<IRODSFile> fileList, JSONArray jsonArray) throws IOException, ServletException {
     
     	boolean batch = false;
-    	RemoteFile uriFile = getRemoteFile(request, davisSession);
+    	IRODSFile uriFile = getIRODSFile(request, davisSession);
         if (request.getContentLength() <= 0) 
         	fileList.add(uriFile);
         else {
@@ -1051,7 +973,7 @@ public abstract class AbstractHandler implements MethodHandler {
 						String name = (String)fileNamesArray.get(i);
 						if (name.trim().length() == 0)
 							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
-						fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
+						fileList.add(getIRODSFile(uriFile.getAbsolutePath()+IRODSFile.PATH_SEPARATOR+name, davisSession));
 					}			
 			} else
 				throw new ServletException("Internal error reading file list: error parsing JSON");
@@ -1069,8 +991,8 @@ public abstract class AbstractHandler implements MethodHandler {
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {
-    			RemoteFile file = files[indicesList.get(i).intValue()];
-    			fileList.add(getRemoteFile(file.getAbsolutePath(), davisSession));
+    			IRODSFile file = files[indicesList.get(i).intValue()];
+    			fileList.add(getIRODSFile(file.getAbsolutePath(), davisSession));
     		}
     	}
     	Log.log(Log.DEBUG, "file list is: "+fileList);

@@ -4,10 +4,9 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.AbstractProperty;
 import webdavis.DavisUtilities;
@@ -20,13 +19,13 @@ import webdavis.DavisUtilities;
  */
 public class GetLastModifiedProperty extends AbstractProperty {
 
-    public Element createElement(Document document, RemoteFile file)
+    public Element createElement(Document document, IRODSFile file)
             throws IOException {
         return (file.lastModified() == 0) ? null :
                 super.createElement(document, file);
     }
 
-    public int retrieve(RemoteFile file, Element element)
+    public int retrieve(IRODSFile file, Element element)
             throws IOException {
         long modified = file.lastModified();
         if (modified == 0) return HttpServletResponse.SC_NOT_FOUND;

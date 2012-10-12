@@ -9,14 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileOutputStream;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * Default implementation of a handler for requests using the WebDAV
@@ -55,7 +48,7 @@ public class DefaultMoveHandler extends AbstractHandler {
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
  
     	response.setContentType("text/html; charset=\"utf-8\"");
-        ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+        ArrayList<IRODSFile> fileList = new ArrayList<IRODSFile>();
     	boolean batch = getFileList(request, davisSession, fileList, getJSONContent(request));
     	String destinationField = request.getHeader("Destination");
     	if (destinationField.indexOf("://") < 0)	// If destination field is a relative path, prepend a protocol for getRemoteURL()
@@ -65,11 +58,11 @@ public class DefaultMoveHandler extends AbstractHandler {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
-        RemoteFile destinationFile = getRemoteFile(destination, davisSession);
-        Iterator<RemoteFile> iterator = fileList.iterator();
+		IRODSFile destinationFile = getIRODSFile(destination, davisSession);
+        Iterator<IRODSFile> iterator = fileList.iterator();
         int result = 0;
         while (iterator.hasNext()) {
-        	RemoteFile sourceFile = iterator.next();
+        	IRODSFile sourceFile = iterator.next();
 			Log.log(Log.DEBUG, "moving: "+sourceFile+" to "+destinationFile);
             if (destinationFile.getAbsolutePath().equals(sourceFile.getAbsolutePath())) {
             	if (batch)
@@ -91,14 +84,14 @@ public class DefaultMoveHandler extends AbstractHandler {
 		response.flushBuffer();
     }
     
-    private int moveFile(HttpServletRequest request, DavisSession davisSession, RemoteFile file, RemoteFile destinationFile, boolean batch) throws IOException {
+    private int moveFile(HttpServletRequest request, DavisSession davisSession, IRODSFile file, IRODSFile destinationFile, boolean batch) throws IOException {
     	
         if (!file.exists()) 
             return HttpServletResponse.SC_NOT_FOUND;
         
         if (batch) {
         	destinationFile.mkdirs(); // Make sure destination directory exists
-            destinationFile = getRemoteFile(destinationFile.getAbsolutePath()+destinationFile.getPathSeparator()+file.getName(), davisSession);
+            destinationFile = getIRODSFile(destinationFile.getAbsolutePath()+IRODSFile.PATH_SEPARATOR+file.getName(), davisSession);
         } else {
             int result = checkLockOwnership(request, file);
         	if (result != HttpServletResponse.SC_OK) 
@@ -129,10 +122,7 @@ public class DefaultMoveHandler extends AbstractHandler {
                 return HttpServletResponse.SC_PRECONDITION_FAILED;
         }
     	if (davisSession.getDefaultResource() != null && davisSession.getDefaultResource().length() > 0) {
-	        if (file.getFileSystem() instanceof SRBFileSystem) {
-	        	((SRBFile)file).setResource(davisSession.getDefaultResource());
-	        	((SRBFile)destinationFile).setResource(davisSession.getDefaultResource());
-	        } //else 
+//else 
 	//        if (file.getFileSystem() instanceof IRODSFileSystem) {
 	//        	        	((IRODSFile)file).setResource(davisSession.getDefaultResource());
 	//        	        	((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());

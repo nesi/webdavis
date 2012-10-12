@@ -1,7 +1,6 @@
 package webdavis;
 
 import java.io.IOException;
-
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,20 +13,13 @@ import java.util.Vector;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
-
 import javax.servlet.http.HttpServletResponse;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.w3c.dom.CharacterData;
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.properties.CreationDateProperty;
 import webdavis.properties.DisplayNameProperty;
@@ -48,6 +40,7 @@ import webdavis.properties.SupportedLockProperty;
  *
  * @author Shunde Zhang
  * @author Eric Glass
+ * @author Jani Heikkinen <jani.heikkinen @ csc.fi> - CSC, National Research Data project (TTA), Finland
  */
 public class DefaultPropertiesBuilder implements PropertiesBuilder {
 
@@ -68,7 +61,7 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         this.config = null;
     }
 
-    public void addPropNames(Document document, RemoteFile file, String href)
+    public void addPropNames(Document document, IRODSFile file, String href)
             throws IOException {
         Element response = document.createElementNS(Property.DAV_NAMESPACE,
                 "response");
@@ -92,7 +85,7 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         document.getDocumentElement().appendChild(response);
     }
 
-    public void addAllProps(Document document, RemoteFile file, String href)
+    public void addAllProps(Document document, IRODSFile file, String href)
             throws IOException {
         List list = new Vector();
         Iterator iterator = properties.iterator();
@@ -104,7 +97,7 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         addProps0(document, file, href, (Element[]) list.toArray(new Element[0]));
     }
     
-    public void addProps(Document document, RemoteFile file, String href,
+    public void addProps(Document document, IRODSFile file, String href,
             Element[] props) throws IOException {
         addProps0(document, file, href, props);
     }
@@ -119,11 +112,12 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
             builder.setEntityResolver(BlockedEntityResolver.INSTANCE);
             Document document = builder.newDocument();
             Element multistatus = document.createElementNS(
-                    Property.DAV_NAMESPACE, "multistatus");
+            		Property.DAV_NAMESPACE, Property.DAV_PREFIX + ":multistatus");
             multistatus.setAttributeNS(XMLNS_NAMESPACE, "xmlns",
                     Property.DAV_NAMESPACE);
-            multistatus.setAttributeNS(XMLNS_NAMESPACE, "xmlns:w",
-                    Property.WEB_FOLDERS_NAMESPACE);
+            /*multistatus.setAttributeNS(XMLNS_NAMESPACE, "xmlns:w",
+                    Property.WEB_FOLDERS_NAMESPACE);*/
+            multistatus.setPrefix(Property.DAV_PREFIX);
             document.appendChild(multistatus);
             return document;
         } catch (Exception ex) {
@@ -143,20 +137,24 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         return config;
     }
 
-    private void addProps0(Document document, RemoteFile file, String href,
+    private void addProps0(Document document, IRODSFile file, String href,
             Element[] props) throws IOException {
 
     	Element response = document.createElementNS(Property.DAV_NAMESPACE,
-                "response");
+    			Property.DAV_PREFIX + ":response");
+    	response.setPrefix(Property.DAV_PREFIX);
         Element hrefElem = document.createElementNS(Property.DAV_NAMESPACE,
-                "href");
+        		Property.DAV_PREFIX + ":href");
+        hrefElem.setPrefix(Property.DAV_PREFIX);
         hrefElem.appendChild(document.createTextNode(href));
         response.appendChild(hrefElem);
         if (props == null || props.length == 0) {
             Element propstat = document.createElementNS(Property.DAV_NAMESPACE,
-                    "propstat");
+            		Property.DAV_PREFIX + ":propstat");
+            propstat.setPrefix(Property.DAV_PREFIX);
             Element status = document.createElementNS(Property.DAV_NAMESPACE,
-                    "status");
+            		Property.DAV_PREFIX + ":status");
+            status.setPrefix(Property.DAV_PREFIX);
             status.appendChild(document.createTextNode("HTTP/1.1 200 OK"));
             propstat.appendChild(status);
             response.appendChild(propstat);
@@ -195,20 +193,25 @@ public class DefaultPropertiesBuilder implements PropertiesBuilder {
         while (entries.hasNext()) {
             Map.Entry entry = (Map.Entry) entries.next();
             int result = ((Integer) entry.getKey()).intValue();
+            if (result == 404) break; // TBD
             Element propstat = document.createElementNS(Property.DAV_NAMESPACE,
-                    "propstat");
+            		Property.DAV_PREFIX + ":propstat");
+            propstat.setPrefix(Property.DAV_PREFIX);
             Element status = document.createElementNS(Property.DAV_NAMESPACE,
-                    "status");
+            		Property.DAV_PREFIX + ":status");
+            status.setPrefix(Property.DAV_PREFIX);
             status.appendChild(document.createTextNode("HTTP/1.1 " + result +
                     " MultiStatus"));
             propstat.appendChild(status);
             response.appendChild(propstat);
             Element prop = document.createElementNS(Property.DAV_NAMESPACE,
-                    "prop");
+            		Property.DAV_PREFIX + ":prop");
+            prop.setPrefix(Property.DAV_PREFIX);
             propstat.appendChild(prop);
             Iterator resultProps = ((List) entry.getValue()).iterator();
             while (resultProps.hasNext()) {
                 Element element = (Element) resultProps.next();
+                element.setPrefix(Property.DAV_PREFIX);
                 prop.appendChild(element);
                 String prefix = element.getPrefix();
                 if (prefix != null && !documentElement.hasAttributeNS(

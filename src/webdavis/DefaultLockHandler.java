@@ -27,6 +27,7 @@ import javax.xml.transform.dom.DOMSource;
 
 import javax.xml.transform.stream.StreamResult;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -35,14 +36,13 @@ import org.w3c.dom.NodeList;
 
 import org.xml.sax.InputSource;
 
-import edu.sdsc.grid.io.RemoteFile;
-
 /**
  * Default implementation of a handler for requests using the WebDAV LOCK
  * method.
  *
  * @author Shunde Zhang
  * @author Eric Glass
+ * @author Jani Heikkinen <jani.heikkinen @ csc.fi> - CSC, National Research Data project (TTA), Finland
  */
 public class DefaultLockHandler extends AbstractHandler {
 
@@ -74,7 +74,7 @@ public class DefaultLockHandler extends AbstractHandler {
                             "noLockManager", null, request.getLocale()));
             return;
         }
-        RemoteFile file = getRemoteFile(request, davisSession);
+        IRODSFile file = getIRODSFile(request, davisSession);
         Log.log(Log.DEBUG, "LOCK Request for resource \"{0}\".", file);
         int result = checkLockOwnership(request, file);
         if (result != HttpServletResponse.SC_OK) {
@@ -124,7 +124,7 @@ public class DefaultLockHandler extends AbstractHandler {
         response.flushBuffer();
     }
 
-    private void doLock(RemoteFile resource, Document lockRequest,
+    private void doLock(IRODSFile resource, Document lockRequest,
             HttpServletRequest request, HttpServletResponse response)
                     throws ServletException, IOException {
         LockInfo lockInfo = new LockInfo();
@@ -160,12 +160,13 @@ public class DefaultLockHandler extends AbstractHandler {
                     getPrincipal(request), lockInfo);
             output = createDocument();
             Element prop = output.createElementNS(Property.DAV_NAMESPACE,
-                    "prop");
+            		Property.DAV_PREFIX + ":prop");
             prop.setAttributeNS(Property.XMLNS_NAMESPACE, "xmlns",
                     Property.DAV_NAMESPACE);
+            prop.setPrefix(Property.DAV_PREFIX);
             output.appendChild(prop);
             Element destination = output.createElementNS(Property.DAV_NAMESPACE,
-                    "lockdiscovery");
+            		Property.DAV_PREFIX + ":lockdiscovery");
             DavisUtilities.lockDiscovery(resource, lockManager, destination);
             prop.appendChild(destination);
             response.setStatus(HttpServletResponse.SC_OK);
@@ -176,7 +177,7 @@ public class DefaultLockHandler extends AbstractHandler {
         if (output != null) outputDocument(output, response);
     }
 
-    private void doRefresh(RemoteFile resource, HttpServletRequest request,
+    private void doRefresh(IRODSFile resource, HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
         Document output = null;
         try {
@@ -187,12 +188,13 @@ public class DefaultLockHandler extends AbstractHandler {
                                     request.getHeader("Timeout")));
             output = createDocument();
             Element prop = output.createElementNS(Property.DAV_NAMESPACE,
-                    "prop");
+            		Property.DAV_PREFIX + ":prop");
             prop.setAttributeNS(Property.XMLNS_NAMESPACE, "xmlns",
                     Property.DAV_NAMESPACE);
+            prop.setPrefix(Property.DAV_PREFIX);
             output.appendChild(prop);
             Element destination = output.createElementNS(Property.DAV_NAMESPACE,
-                    "lockdiscovery");
+            		Property.DAV_PREFIX + ":lockdiscovery");
             DavisUtilities.lockDiscovery(resource, lockManager, destination);
             prop.appendChild(destination);
             response.setStatus(HttpServletResponse.SC_OK);

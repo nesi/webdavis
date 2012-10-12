@@ -11,15 +11,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileOutputStream;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileOutputStream;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.core.pub.io.IRODSFileFactory;
+import org.irods.jargon.core.pub.io.IRODSFileOutputStream;
+
 
 /**
  * Default implementation of a handler for requests using the HTTP PUT
@@ -72,7 +67,7 @@ public class DefaultPutHandler extends AbstractHandler {
         	Log.log(Log.DEBUG, "request.getInputStream().available(): "+request.getInputStream().available());
 //        	return;
         }
-        RemoteFile file = getRemoteFile(request, davisSession);
+        IRODSFile file = getIRODSFile(request, davisSession);
         boolean existsCurrently = file.exists();
         if (existsCurrently && !file.isFile()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED,
@@ -80,7 +75,7 @@ public class DefaultPutHandler extends AbstractHandler {
                             "collectionTarget", null, request.getLocale()));
             return;
         }
-        RemoteFile parent = getRemoteParentFile(request, davisSession);
+        IRODSFile parent = getRemoteParentFile(request, davisSession);
         	//createRemoteFile(file.getParent(), rfs);
         if (parent == null) {
         	lostConnection(response, "in put handler");
@@ -112,17 +107,15 @@ public class DefaultPutHandler extends AbstractHandler {
 		if (davisSession.getCurrentResource()==null) 
 			davisSession.setCurrentResource(davisSession.getDefaultResource());
         InputStream input = request.getInputStream();
-        RemoteFileOutputStream outputStream = null;
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
+        IRODSFileOutputStream outputStream = null;
     	Log.log(Log.DEBUG, "davisSession.getCurrentResource():"+davisSession.getCurrentResource());
     	try{
-            if (file.getFileSystem() instanceof SRBFileSystem) {
-            	((SRBFile)file).setResource(davisSession.getCurrentResource());
-            	outputStream = new SRBFileOutputStream((SRBFile)file);
-            }else if (file.getFileSystem() instanceof IRODSFileSystem) {
+            
 //            	if (davisSession.getCurrentResource()!=null) ((IRODSFile)file).setResource(davisSession.getCurrentResource());
-            	Log.log(Log.DEBUG, "saving file into res:"+((IRODSFile)file).getResource());
-            	outputStream = new IRODSFileOutputStream((IRODSFile)file);
-            }
+        	Log.log(Log.DEBUG, "saving file into res:"+((IRODSFile)file).getResource());
+        	outputStream = fileFactory.instanceIRODSFileOutputStream(file);
+
         	if (length > 0) {
                 long bufferSize = length / 100;
                 //minimum buf size of 50KiloBytes

@@ -38,44 +38,6 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import edu.sdsc.grid.io.DirectoryMetaData;
-import edu.sdsc.grid.io.FileMetaData;
-import edu.sdsc.grid.io.GeneralFileSystem;
-import edu.sdsc.grid.io.GeneralMetaData;
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataField;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.MetaDataTable;
-import edu.sdsc.grid.io.Namespace;
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileOutputStream;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.ResourceMetaData;
-import edu.sdsc.grid.io.UserMetaData;
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSException;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileOutputStream;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileOutputStream;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
-import edu.sdsc.grid.io.srb.SRBMetaDataRecordList;
-import edu.sdsc.grid.io.srb.SRBMetaDataSet;
-
-//import edu.sdsc.grid.io.irods.IRODSCommandsDeleteTest;
-//import edu.sdsc.jargon.testutils.AssertionHelper;
-//import edu.sdsc.jargon.testutils.TestingPropertiesHelper;
-//import edu.sdsc.jargon.testutils.filemanip.FileGenerator;
-//import edu.sdsc.jargon.testutils.icommandinvoke.IcommandInvoker;
-//import edu.sdsc.jargon.testutils.icommandinvoke.IrodsInvocationContext;
-//import edu.sdsc.jargon.testutils.icommandinvoke.icommands.ImkdirCommand;
-//import edu.sdsc.jargon.testutils.icommandinvoke.icommands.IputCommand;
-//import static edu.sdsc.jargon.testutils.TestingPropertiesHelper.GENERATED_FILE_DIRECTORY_KEY;
-
 /**
  * Default implementation of a handler for requests using the HTTP POST method.
  * 

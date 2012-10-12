@@ -29,14 +29,13 @@ import javax.servlet.ServletConfig;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.CharacterData;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 /**
  * This class contains static utility methods for the Davis servlet
@@ -172,7 +171,7 @@ public class DavisUtilities {
      * @return A <code>String</code> containing the entity tag for the
      * resource.
      */
-    public static String getETag(RemoteFile file) {
+    public static String getETag(IRODSFile file) {
         if (file == null) return null;
         try {
             if (!file.isFile()) return null;
@@ -268,7 +267,7 @@ public class DavisUtilities {
      * @param destination The element under which the active locks will be
      * enumerated.  This would typically be a "lockdiscovery" element.
      */ 
-    public static void lockDiscovery(RemoteFile file, LockManager lockManager,
+    public static void lockDiscovery(IRODSFile file, LockManager lockManager,
             Element destination) throws IOException {
         if (file == null || lockManager == null || destination == null) return;
         Lock[] activeLocks = lockManager.getActiveLocks(file);

@@ -14,9 +14,7 @@ import java.util.TimerTask;
 
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.srb.SRBFile;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * Lock manager for webdav
@@ -63,11 +61,11 @@ public class DefaultLockManager implements LockManager {
         this.maximumTimeout = maximumTimeout;
     }
 
-    public int getLockSupport(RemoteFile resource) throws IOException {
+    public int getLockSupport(IRODSFile resource) throws IOException {
         return SHARED_LOCK_SUPPORT | EXCLUSIVE_LOCK_SUPPORT;
     }
 
-    public boolean isLocked(RemoteFile resource, String lockToken)
+    public boolean isLocked(IRODSFile resource, String lockToken)
             throws IOException {
         BasicLock lock;
         synchronized (locks) {
@@ -76,7 +74,7 @@ public class DefaultLockManager implements LockManager {
         return coveredBy(resource, lock);
     }
 
-    public Lock[] getActiveLocks(RemoteFile resource) throws IOException {
+    public Lock[] getActiveLocks(IRODSFile resource) throws IOException {
         Set activeLocks = new HashSet();
         synchronized (locks) {
             Iterator lockIterator = locks.values().iterator();
@@ -89,12 +87,12 @@ public class DefaultLockManager implements LockManager {
                 (BasicLock[]) activeLocks.toArray(new BasicLock[0]);
     }
 
-    public RemoteFile getLockedResource(RemoteFile resource, DavisSession davisSession)
+    public IRODSFile getLockedResource(IRODSFile resource, DavisSession davisSession)
             throws IOException {
         return resource;
     }
 
-    public String lock(RemoteFile resource, DavisSession davisSession, LockInfo lockInfo)
+    public String lock(IRODSFile resource, DavisSession davisSession, LockInfo lockInfo)
             throws LockException, IOException {
         Log.log(Log.DEBUG, "Locking \"{0}\" for \"{1}\" -- {2}", new Object[] {
                 resource, davisSession, lockInfo });
@@ -126,7 +124,7 @@ public class DefaultLockManager implements LockManager {
         }
     }
 
-    public void refresh(RemoteFile resource, DavisSession davisSession,
+    public void refresh(IRODSFile resource, DavisSession davisSession,
             String[] lockTokens, long timeout) throws LockException,
                     IOException {
         if (Log.getThreshold() < Log.INFORMATION) {
@@ -173,7 +171,7 @@ public class DefaultLockManager implements LockManager {
         }
     }
 
-    public void unlock(RemoteFile resource, DavisSession davisSession, String lockToken)
+    public void unlock(IRODSFile resource, DavisSession davisSession, String lockToken)
             throws LockException, IOException {
         Log.log(Log.DEBUG, "Unlocking \"{0}\" for \"{1}\" with token {2}",
                 new Object[] { resource, davisSession, lockToken });
@@ -192,30 +190,19 @@ public class DefaultLockManager implements LockManager {
         }
     }
 
-    protected BasicLock createLock(RemoteFile resource, DavisSession davisSession,
+    protected BasicLock createLock(IRODSFile resource, DavisSession davisSession,
             String lockToken, LockInfo lockInfo) throws IOException,
                     LockException {
         return new BasicLock(resource, davisSession, lockToken, lockInfo);
     }
 
-    private boolean coveredBy(RemoteFile resource, BasicLock lock)
+    private boolean coveredBy(IRODSFile resource, BasicLock lock)
             throws IOException {
         if (lock == null || resource == null) return false;
         String path=null;
-        Log.log(Log.DEBUG, (resource instanceof IRODSFile)+" "+(resource instanceof SRBFile)+" "+resource.getClass());
-        if (resource instanceof IRODSFile)
-        	path = ((IRODSFile)resource).getCanonicalPath();
-        else if (resource instanceof SRBFile)
-        	path = ((SRBFile)resource).getCanonicalPath();
-        else
-        	path=resource.getCanonicalPath();
+        path=resource.getCanonicalPath();
         String lockPath = null;
-        if (resource instanceof IRODSFile)
-        	lockPath = ((IRODSFile)(lock.getResource())).getCanonicalPath();
-        else if (resource instanceof SRBFile)
-        	lockPath = ((SRBFile)(lock.getResource())).getCanonicalPath();
-        else
-        	lockPath = lock.getResource().getCanonicalPath();
+        lockPath = lock.getResource().getCanonicalPath();
         if (path.equals(lockPath)) return true; // same resource
         if (!path.startsWith(lockPath) || !(lockPath.endsWith("/") ||
                 path.substring(lockPath.length()).startsWith("/"))) {
@@ -226,7 +213,7 @@ public class DefaultLockManager implements LockManager {
 
     protected class BasicLock extends Lock {
 
-        private final RemoteFile resource;
+        private final IRODSFile resource;
 
         private final DavisSession davisSession;
 
@@ -234,7 +221,7 @@ public class DefaultLockManager implements LockManager {
 
         private TimerTask task;
 
-        public BasicLock(RemoteFile resource, DavisSession davisSession, String token,
+        public BasicLock(IRODSFile resource, DavisSession davisSession, String token,
                 LockInfo lockInfo) throws IOException {
             this.resource = resource;
             this.davisSession = davisSession;
@@ -246,7 +233,7 @@ public class DefaultLockManager implements LockManager {
             refresh(lockInfo.getTimeout());
         }
 
-        public RemoteFile getResource() {
+        public IRODSFile getResource() {
             return resource;
         }
 

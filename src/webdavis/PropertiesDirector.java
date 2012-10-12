@@ -2,27 +2,13 @@ package webdavis;
 
 import java.io.IOException;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.CharacterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import edu.sdsc.grid.io.GeneralFileSystem;
-import edu.sdsc.grid.io.GeneralMetaData;
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.Namespace;
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * This class directs a <code>PropertiesBuilder</code> in the creation
@@ -67,7 +53,7 @@ public class PropertiesDirector {
      * @throws IOException If an IO error occurs during the construction
      * of the document.
      */
-    public Document getPropertyNames(RemoteFile file, String href, int depth)
+    public Document getPropertyNames(IRODSFile file, String href, int depth)
             throws IOException {
         if (depth == DavisUtilities.INFINITE_DEPTH) depth = INFINITY;
         Document document = getPropertiesBuilder().createDocument();
@@ -92,7 +78,7 @@ public class PropertiesDirector {
      * @throws IOException If an IO error occurs during the construction
      * of the document.
      */
-    public Document getAllProperties(RemoteFile file, String href, int depth)
+    public Document getAllProperties(IRODSFile file, String href, int depth)
             throws IOException {
     	if (depth == DavisUtilities.INFINITE_DEPTH) depth = INFINITY;
         Document document = getPropertiesBuilder().createDocument();
@@ -118,7 +104,7 @@ public class PropertiesDirector {
      * @throws IOException If an IO error occurs during the construction
      * of the document.
      */
-    public Document getProperties(RemoteFile file, String href, Element[] props,
+    public Document getProperties(IRODSFile file, String href, Element[] props,
             int depth) throws IOException {
         if (depth == DavisUtilities.INFINITE_DEPTH) depth = INFINITY;
         Document document= getPropertiesBuilder().createDocument();
@@ -137,11 +123,11 @@ public class PropertiesDirector {
     }
 
 
-    private void addPropertyNames(Document document, RemoteFile file, String href,
+    private void addPropertyNames(Document document, IRODSFile file, String href,
             int depth) throws IOException {
         getPropertiesBuilder().addPropNames(document, file, href);
         if (depth > 0 && !file.isFile()) {
-            RemoteFile[] children = getChildren(file); //null;
+        	IRODSFile[] children = getChildren(file); //null;
 //            SmbFileFilter filter = getFilter();
 //            try {
 //                children = (filter != null) ? file.listFiles(filter) :
@@ -164,11 +150,11 @@ public class PropertiesDirector {
         }
     }
 
-    private void addAllProperties(Document document, RemoteFile file, String href,
+    private void addAllProperties(Document document, IRODSFile file, String href,
             int depth) throws IOException {
     	getPropertiesBuilder().addAllProps(document, file, href);
     	if (depth > 0 && !file.isFile()) {
-        	RemoteFile[] children = getChildren(file);  // null;
+    		IRODSFile[] children = getChildren(file);  // null;
 //            SmbFileFilter filter = getFilter();
 //            try {
 //                children = (filter != null) ? file.listFiles(filter) :
@@ -191,11 +177,11 @@ public class PropertiesDirector {
         }
     }
     
-    private void addProperties(Document document, RemoteFile file, String href,
+    private void addProperties(Document document, IRODSFile file, String href,
             Element[] props, int depth) throws IOException {
         getPropertiesBuilder().addProps(document, file, href, props);
         if (depth > 0 && !file.isFile()) {
-        	RemoteFile[] children = getChildren(file);  //null;
+        	IRODSFile[] children = getChildren(file);  //null;
 //            SmbFileFilter filter = getFilter();
 //            try {
 //                children = (filter != null) ? file.listFiles(filter) :
@@ -218,29 +204,7 @@ public class PropertiesDirector {
         }
     }
 
-    private RemoteFile[] getChildren(RemoteFile file){
-    	GeneralFileSystem gfs=file.getFileSystem();
-    	if (gfs instanceof SRBFileSystem){
-    		gfs=(SRBFileSystem)gfs;
-    		// may change to do a query
-    		String[] children=((SRBFile)file).list();
-    		RemoteFile[] files=new RemoteFile[children.length];
-    		for (int i=0;i<children.length;i++){
-        		Log.log(Log.DEBUG, "children[i] {0}",children[i]);
-    			files[i]=new SRBFile((SRBFile)file,children[i]);
-    		}
-    		return files;
-    	}else if (gfs instanceof IRODSFileSystem){
-    		gfs=(IRODSFileSystem)gfs;
-    		// may change to do a query
-//    		String[] children=file.list();
-//    		RemoteFile[] files=new RemoteFile[children.length];
-//    		for (int i=0;i<children.length;i++){
-//    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
-//    		}
-    		Log.log(Log.DEBUG, "getChildren '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
-    		return FSUtilities.getIRODSCollectionDetails(file);   		
-    	}
-    	return null;
+    private IRODSFile[] getChildren(IRODSFile file){
+    	return (IRODSFile[])file.listFiles();
     }
 }

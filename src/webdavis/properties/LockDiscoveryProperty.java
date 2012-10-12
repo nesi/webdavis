@@ -4,9 +4,8 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Element;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.AbstractProperty;
 import webdavis.Davis;
@@ -21,7 +20,7 @@ import webdavis.LockManager;
  */
 public class LockDiscoveryProperty extends AbstractProperty {
 
-    public int retrieve(RemoteFile file, Element element) throws IOException {
+    public int retrieve(IRODSFile file, Element element) throws IOException {
         LockManager lockManager = (LockManager)
                 getServletConfig().getServletContext().getAttribute(
                         Davis.LOCK_MANAGER);

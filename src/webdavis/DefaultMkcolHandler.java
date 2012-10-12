@@ -7,8 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * Default implementation of a handler for requests using the WebDAV
@@ -41,7 +40,7 @@ public class DefaultMkcolHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                 throws ServletException, IOException {
-        RemoteFile file = getRemoteFile(request, davisSession);
+    	IRODSFile file = getIRODSFile(request, davisSession);
         response.setContentType("text/html; charset=\"utf-8\"");
         if (file.exists()) {
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);

@@ -32,10 +32,6 @@ import org.apache.log4j.Logger;
 
 import org.apache.commons.codec.binary.Base64;
 
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSConstants;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-
 /**
  * This servlet provides a WebDAV gateway to SRB/iRods shared resources.
  * 

@@ -10,16 +10,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFile;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFile;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
 
 /**
  * Default implementation of a handler for requests using the HTTP DELETE
@@ -48,7 +42,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession) throws ServletException, IOException {
     	   	
         response.setContentType("text/html; charset=\"utf-8\"");
-    	ArrayList<RemoteFile> fileList = new ArrayList<RemoteFile>();
+    	ArrayList<IRODSFile> fileList = new ArrayList<IRODSFile>();
     	boolean batch = true;
 //    	try {
     		batch = getFileList(request, davisSession, fileList, getJSONContent(request));
@@ -59,7 +53,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
     	Log.log(Log.DEBUG, "deleting "+(batch?"batch files":"file")+": "+fileList);
     	
 //    	boolean batch = false;  	
-//    	RemoteFile uriFile = getRemoteFile(request, davisSession);
+//    	IRODSFile uriFile = getIRODSFile(request, davisSession);
 //        if (request.getContentLength() <= 0) {
 //        	fileList.add(uriFile);
 //        } else {
@@ -78,14 +72,14 @@ public class DefaultDeleteHandler extends AbstractHandler {
 //					String name = (String)fileNamesArray.get(i);
 //					if (name.trim().length() == 0)
 //						continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
-//					fileList.add(getRemoteFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
+//					fileList.add(getIRODSFile(uriFile.getAbsolutePath()+uriFile.getPathSeparator()+name, davisSession));
 //				}
 //			} else
 //				throw new ServletException("Internal error deleting file: error parsing JSON");
 //		}
-        Iterator<RemoteFile> iterator = fileList.iterator();
+        Iterator<IRODSFile> iterator = fileList.iterator();
         while (iterator.hasNext()) {
-        	RemoteFile condemnedFile = iterator.next();
+        	IRODSFile condemnedFile = iterator.next();
 			Log.log(Log.DEBUG, "deleting: "+condemnedFile);
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
@@ -109,9 +103,9 @@ public class DefaultDeleteHandler extends AbstractHandler {
 		response.flushBuffer();
    }		 
     	
-    private int deleteFile(HttpServletRequest request, DavisSession davisSession, RemoteFile file, boolean batch) throws IOException {
+    private int deleteFile(HttpServletRequest request, DavisSession davisSession, IRODSFile file, boolean batch) throws IOException {
     	
- //   	RemoteFile file = getRemoteFile(request, davisSession);
+ //   	IRODSFile file = getIRODSFile(request, davisSession);
         if (!file.exists()) {
             /*response.sendError(*/ return HttpServletResponse.SC_NOT_FOUND/*)*/;
             //return;
@@ -129,8 +123,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
         	if (lockManager != null) 
         		file = lockManager.getLockedResource(file, davisSession);
         }
-        if (file.getFileSystem() instanceof IRODSFileSystem)
-        	inTrash=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
+        inTrash=file.getAbsolutePath().startsWith("/"+davisSession.getZone()+"/trash");
         boolean success = del(file, davisSession);
         if (batch) 
         	return success ? HttpServletResponse.SC_NO_CONTENT : HttpServletResponse.SC_NOT_MODIFIED; // If delete failed, let caller know with SC_NOT_MODIFIED
@@ -140,23 +133,8 @@ public class DefaultDeleteHandler extends AbstractHandler {
     
 //    private boolean error = false;
     
-    public boolean del(RemoteFile file, DavisSession davisSession) {
+    public boolean del(IRODSFile file, DavisSession davisSession) {
     	boolean result=true;
-		if (file.getFileSystem() instanceof SRBFileSystem){
-	    	if (file.isDirectory()){
-	    		Log.log(Log.DEBUG, "(del)entering dir "+file.getAbsolutePath());
-	    		String[] fileList=file.list();
-	    		Log.log(Log.DEBUG, "(del)entering dir has children number: "+fileList.length);
-	    		if (fileList.length>0){
-	        		for (int i=0;i<fileList.length;i++){
-	        			Log.log(Log.DEBUG, "(del)entering child "+fileList[i]);
-	        			result = result & del(new SRBFile( (SRBFile)file,fileList[i]),davisSession);
-	        		}
-	    		}
-	    	}
-			Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath());
-			result = result & ((SRBFile)file).delete(true); 
-		}else if (file.getFileSystem() instanceof IRODSFileSystem){
 			//iRODS does support recursive deletion now
 /*			if (inTrash) { // But not in trash for now
 		    	if (file.isDirectory()){
@@ -173,13 +151,15 @@ public class DefaultDeleteHandler extends AbstractHandler {
 				Log.log(Log.DEBUG, "deleting "+file.getAbsolutePath()+" forcefully");
 				result = result & ((IRODSFile)file).delete(true); 
 			} else */{
-				Log.log(Log.DEBUG, "deleting - force:"+inTrash);
-				try {
-					result = result & ((IRODSFile)file).delete(inTrash);
-				} catch (RuntimeException e) { // Catch jargon bugs
-					Log.log(Log.WARNING,"Jargon threw a RuntimeException during delete: "+e);
-					result = false;
-				}
+			Log.log(Log.DEBUG, "deleting - force:"+inTrash);
+			try {
+				if (inTrash) 
+					result = result & file.deleteWithForceOption();
+				else
+					result = result & file.delete();
+			} catch (RuntimeException e) { // Catch jargon bugs
+				Log.log(Log.WARNING,"Jargon threw a RuntimeException during delete: "+e);
+				result = false;
 			}
 		}
 		if (!result) Log.log(Log.WARNING,"Failed to delete file: "+file);

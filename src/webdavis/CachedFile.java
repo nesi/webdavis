@@ -5,17 +5,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
-public class CachedFile extends RemoteFile {
+public class CachedFile {
 	private long length;
 	private boolean isDir;
 	private long lastModified;
 	private boolean canWrite;
 	private String canonicalPath;
 	private HashMap<String, ArrayList<String>> metadata;
-	
+	private IRODSFile irodsFile;
 	
 	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
 		super(rfs, path, filename);
@@ -25,31 +24,26 @@ public class CachedFile extends RemoteFile {
 		super(rfs, filePath);
 	}
 
-	@Override
 	public String getResource() throws IOException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@Override
 	public void replicate(String arg0) throws IOException {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
 	public boolean canWrite() {
 		// TODO Auto-generated method stub
 		return this.canWrite;
 	}
 
-	@Override
 	public String getName() {
 		// TODO Auto-generated method stub
 		return super.getName();
 	}
 
-	@Override
 	public boolean isDirectory() {
 		// TODO Auto-generated method stub
 		return isDir;

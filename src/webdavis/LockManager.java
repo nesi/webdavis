@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import java.security.Principal;
 
-import edu.sdsc.grid.io.RemoteFile;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
  * This is the interface that must be implemented by lock management providers.
@@ -43,7 +43,7 @@ public interface LockManager {
      * supported lock types.
      * @throws IOException If an IO error occurs. 
      */
-    public int getLockSupport(RemoteFile resource) throws IOException;
+    public int getLockSupport(IRODSFile resource) throws IOException;
 
     /**
      * Indicates whether the specified resource is locked under the provided
@@ -55,7 +55,7 @@ public interface LockManager {
      * provided represents an active lock on the specified resource.
      * @throws IOException If an IO error occurs. 
      */
-    public boolean isLocked(RemoteFile resource, String lockToken)
+    public boolean isLocked(IRODSFile resource, String lockToken)
             throws IOException;
 
     /**
@@ -66,7 +66,7 @@ public interface LockManager {
      * active locks held on the specified resource.
      * @throws IOException If an IO error occurs. 
      */
-    public Lock[] getActiveLocks(RemoteFile resource) throws IOException;
+    public Lock[] getActiveLocks(IRODSFile resource) throws IOException;
 
     /**
      * Returns a handle for manipulating a locked SMB resource.  A manager
@@ -84,7 +84,7 @@ public interface LockManager {
      * the resource passed in by the caller.
      * @throws IOException If an IO error occurs.
      */
-    public RemoteFile getLockedResource(RemoteFile resource, DavisSession davisSession)
+    public IRODSFile getLockedResource(IRODSFile resource, DavisSession davisSession)
             throws IOException;
 
     /**
@@ -98,7 +98,7 @@ public interface LockManager {
      * @throws LockException If the lock could not be created.
      * @throws IOException If an IO error occurs.
      */
-    public String lock(RemoteFile resource, DavisSession davisSession, LockInfo lockInfo)
+    public String lock(IRODSFile resource, DavisSession davisSession, LockInfo lockInfo)
             throws LockException, IOException;
 
     /**
@@ -118,7 +118,7 @@ public interface LockManager {
      * @throws LockException If the locks could not be refreshed.
      * @throws IOException If an IO error occurs.
      */
-    public void refresh(RemoteFile resource, DavisSession davisSession,
+    public void refresh(IRODSFile resource, DavisSession davisSession,
             String[] lockTokens, long timeout) throws LockException,
                     IOException;
 
@@ -133,7 +133,7 @@ public interface LockManager {
      * @throws LockException If the lock could not be removed.
      * @throws IOException If an IO error occurs.
      */
-    public void unlock(RemoteFile resource, DavisSession davisSession, String lockToken)
+    public void unlock(IRODSFile resource, DavisSession davisSession, String lockToken)
             throws LockException, IOException;
 
 }

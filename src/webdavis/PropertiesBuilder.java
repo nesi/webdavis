@@ -6,10 +6,9 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 /**
  * This interface provides operations for constructing and retrieving a
@@ -35,7 +34,7 @@ public interface PropertiesBuilder {
      * @throws IOException If an IO error occurs while adding the
      * property names.
      */
-    public void addPropNames(Document document, RemoteFile file, String href)
+    public void addPropNames(Document document, IRODSFile file, String href)
             throws IOException;
 
     /**
@@ -48,7 +47,7 @@ public interface PropertiesBuilder {
      * @throws IOException If an IO error occurs while adding the
      * properties.
      */
-    public void addAllProps(Document document, RemoteFile file, String href)
+    public void addAllProps(Document document, IRODSFile file, String href)
             throws IOException;
 
     /**
@@ -63,7 +62,7 @@ public interface PropertiesBuilder {
      * @throws IOException If an IO error occurs while adding the
      * properties.
      */
-    public void addProps(Document document, RemoteFile file, String href,
+    public void addProps(Document document, IRODSFile file, String href,
             Element[] props) throws IOException;
 
     /**

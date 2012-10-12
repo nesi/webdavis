@@ -1,14 +1,11 @@
 package webdavis;
 
 import java.io.UnsupportedEncodingException;
-import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.apache.commons.codec.binary.Base64;
 import org.globus.myproxy.GetParams;
@@ -16,18 +13,8 @@ import org.globus.myproxy.MyProxy;
 import org.globus.myproxy.MyProxyException;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
-import org.irods.jargon.core.exception.JargonException;
-
-import au.org.arcs.jshib.IdP;
-import au.org.arcs.jshib.slcs.SLCSClient;
-import au.org.arcs.jshib.slcs.SLCSConfig;
-
-import edu.sdsc.grid.io.RemoteAccount;
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSConstants;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBAccount;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
+import org.irods.jargon.core.connection.IRODSAccount;
+import org.irods.jargon.core.connection.IRODSAccount.AuthScheme;
 
 public class AuthorizationProcessor {
 
@@ -257,8 +244,12 @@ public class AuthorizationProcessor {
                             return null;
 					}
 					// irods|srb \ user
-                    else if (idpName.equalsIgnoreCase("irods")||idpName.equalsIgnoreCase("srb")){
-						// using irods/srb users to login
+                    else if (idpName.equalsIgnoreCase("irods")){
+						// using irods users to login
+						gssCredential = null;
+					}
+                    else if (idpName.equalsIgnoreCase("pam")){
+						// using irods pam to login
 						gssCredential = null;
 					}
                     else if (isExtendedAuthScheme(idpName)){
@@ -266,70 +257,9 @@ public class AuthorizationProcessor {
 						gssCredential = this.processExtendedAuthScheme(idpName, user, password, domain, serverName, defaultResource);
                         if(gssCredential == null)
                             return null;
-					}else{ // SLCS auth
-						if (davisConfig.getInitParameter("disableSLCSAuthentication", "true").equalsIgnoreCase("true")) 
-							return null;
-						IdP idp = null;
-						SLCSClient client;
-						if (davisConfig.getProxyHost() != null && davisConfig.getProxyHost().toString().length() > 0) {
-							SLCSConfig config = SLCSConfig.getInstance();
-							config.setProxyHost(davisConfig.getProxyHost().toString());
-							if (davisConfig.getProxyPort() != null
-									&& davisConfig.getProxyPort().toString().length() > 0)
-								config.setProxyPort(Integer.parseInt(davisConfig.getProxyPort()
-										.toString()));
-							if (davisConfig.getProxyUsername() != null
-									&& davisConfig.getProxyUsername().toString().length() > 0)
-								config.setProxyUsername(davisConfig.getProxyUsername().toString());
-							if (davisConfig.getProxyPassword() != null
-									&& davisConfig.getProxyPassword().toString().length() > 0)
-								config.setProxyPassword(davisConfig.getProxyPassword().toString());
-						}
-						client = new SLCSClient();
-						List<IdP> idps = client.getAvailableIdPs();
-						for (IdP idptmp : idps) {
-							// System.out.println("idp: "+idptmp.getName()+"
-							// "+idptmp.getProviderId());
-							if (idptmp.getName().equalsIgnoreCase(idpName)) {
-								idp = idptmp;
-								break;
-							}
-						}
-						if (idp == null) {
-							for (IdP idptmp : idps) {
-								// System.out.println("idp: "+idptmp.getName()+"
-								// "+idptmp.getProviderId());
-								if (idptmp.getName().startsWith(idpName)) {
-									idp = idptmp;
-									break;
-								}
-							}
-						}
-						if (idp == null) {
-							for (IdP idptmp : idps) {
-								// System.out.println("idp: "+idptmp.getName()+"
-								// "+idptmp.getProviderId());
-								if (idptmp.getName().indexOf(idpName) > -1) {
-									idp = idptmp;
-									break;
-								}
-							}
-
-						}
-						if (idp == null) {
-							return null;
-						}
-						Log.log(Log.DEBUG,"logging in with idp: "+idp.getName());  //+" "+user+" "+password
-						gssCredential = client.slcsLogin(idp, user,	password);
-						if (gssCredential == null) {
-							return null;
-						}
-						Log.log(Log.DEBUG,"Got proxy from idp: "+gssCredential.getName().toString());
+					}else{ 
+						return null;
 					}
-				} catch (GeneralSecurityException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return null;
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -401,15 +331,17 @@ public class AuthorizationProcessor {
 //    request.setUserPrincipal(user);
 //}
 		}
-		RemoteAccount account=null;
+		IRODSAccount account=null;
 		DavisSession davisSession=null;
-		if (gssCredential!=null){
-			Log.log(Log.DEBUG,"login with gssCredential");
-			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
+		
+		String homeDir;
+		try {
+			if (gssCredential!=null){
+				Log.log(Log.DEBUG,"login with gssCredential");
 				davisSession = new DavisSession();
-				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,"",defaultResource);
-//				account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),"","","",davisConfig.getZoneName(),davisConfig.getDefaultResource());
-//				((IRODSAccount)account).setGSSCredential(gssCredential);
+				account = IRODSAccount.instance(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,"",defaultResource);
+//					account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),"","","",davisConfig.getZoneName(),davisConfig.getDefaultResource());
+//					((IRODSAccount)account).setGSSCredential(gssCredential);
 				davisSession.setZone(davisConfig.getZoneName());
 				davisSession.setServerName(davisConfig.getServerName());
 				davisSession.setServerPort(davisConfig.getServerPort());
@@ -420,26 +352,9 @@ public class AuthorizationProcessor {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}else{
-				account = new SRBAccount(davisConfig.getServerName(), davisConfig.getServerPort(),
-						gssCredential);
-				davisSession = new DavisSession();
-				davisSession.setServerName(davisConfig.getServerName());
-				davisSession.setServerPort(davisConfig.getServerPort());
-				davisSession.setDomain(((SRBAccount)account).getDomainName());
-				davisSession.setZone(davisConfig.getZoneName());
-				davisSession.setAccount(account.getUserName());
-				try {
-					davisSession.setDn(gssCredential.getName().toString());
-				} catch (GSSException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			Log.log(Log.DEBUG, "Davis session created.");
-		}else if (user!=null&&password!=null){
-			Log.log(Log.DEBUG,"login with username/password");
-			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
+				Log.log(Log.DEBUG, "Davis session created.");
+			}else if (user!=null&&password!=null){
+				Log.log(Log.DEBUG,"login with username/password");
 				account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), defaultResource);
 				davisSession = new DavisSession();
 				davisSession.setServerName(davisConfig.getServerName());
@@ -447,50 +362,25 @@ public class AuthorizationProcessor {
 				davisSession.setAccount(user);
 				davisSession.setZone(davisConfig.getZoneName());
 				davisSession.setDefaultResource(defaultResource);
-			}else{
-				account = new SRBAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user,
-						new String(password), "/" + davisConfig.getZoneName() + "/home/" + user + "."
-								+ domain, domain, defaultResource);
-				davisSession = new DavisSession();
-				davisSession.setServerName(davisConfig.getServerName());
-				davisSession.setDomain(domain);
-				davisSession.setServerPort(davisConfig.getServerPort());
-				davisSession.setAccount(user);
-				davisSession.setZone(davisConfig.getZoneName());
-				davisSession.setDefaultResource(defaultResource);
+				if (idpName.equalsIgnoreCase("pam")) account.setAuthenticationScheme(AuthScheme.PAM);
 			}
-		}
-		
-		String homeDir;
-		try {
 			String[] resList = null;
-			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
-				Log.log(Log.DEBUG, "Creating IRODSFileSystem");
-				IRODSFileSystem irodsFileSystem = FSUtilities.createIRODSFileSystem((IRODSAccount)account, DavisConfig.JARGONIRODS_SOCKET_TIMEOUT);
-				Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
-				homeDir = irodsFileSystem.getHomeDirectory();
-				if (davisSession.getAccount() == null || davisSession.getAccount().equals("")){
-					user = irodsFileSystem.getUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
-					if (user == null || user.equals(""))
-						return null;
-					Log.log(Log.DEBUG, "Found iRODS user '"+user+"' for GSI");
-					davisSession.setAccount(user);
-					homeDir = "/" + davisConfig.getZoneName() + "/home/" + davisSession.getAccount();
-				}
-				davisSession.setRemoteFileSystem(irodsFileSystem);
-
-				resList = null; //FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
-				if (homeDir == null)
-					homeDir = "/" + davisConfig.getZoneName() + "/home/" + user;
-			}else{
-				SRBFileSystem srbFileSystem = new SRBFileSystem((SRBAccount)account);
-				// if (srbFileSystem.isConnected()){
-				davisSession.setRemoteFileSystem(srbFileSystem);
-				homeDir = srbFileSystem.getHomeDirectory();
-				resList = FSUtilities.getSRBResources(srbFileSystem,davisSession.getZone());
-				if (homeDir == null)
-					homeDir = "/" + davisConfig.getZoneName() + "/home/" + user + "." + domain;
+			Log.log(Log.DEBUG, "Creating IRODSFileSystem");
+			FSUtilities.establishIRODSFileSystemConnection(account);
+			homeDir = account.getHomeDirectory();
+			if (davisSession.getAccount() == null || davisSession.getAccount().equals("")){
+				user = account.getUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
+				if (user == null || user.equals(""))
+					return null;
+				Log.log(Log.DEBUG, "Found iRODS user '"+user+"' for GSI");
+				davisSession.setAccount(user);
+				homeDir = "/" + davisConfig.getZoneName() + "/home/" + davisSession.getAccount();
 			}
+			davisSession.setIRODSAccount(account);
+
+			resList = null; //FSUtilities.getIRODSResources(irodsFileSystem,davisSession.getZone());
+			if (homeDir == null)
+				homeDir = "/" + davisConfig.getZoneName() + "/home/" + user;
 			Log.log(Log.DEBUG, "zone:"+davisSession.getZone());
 			if (resList!=null) {
 				for (String res : resList) {

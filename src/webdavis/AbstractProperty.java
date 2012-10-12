@@ -7,12 +7,12 @@ import javax.servlet.ServletException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import edu.sdsc.grid.io.RemoteFile;
 
 /**
  * This class provides a basic implementation of much of the
@@ -76,7 +76,7 @@ public abstract class AbstractProperty implements Property {
      * for all resources.
      * @throws IOException If an IO error occurs while creating the element.
      */
-    public Element createElement(Document document, RemoteFile file)
+    public Element createElement(Document document, IRODSFile file)
             throws IOException {
         String namespace = getNamespace();
         if (namespace != null) {
@@ -105,7 +105,7 @@ public abstract class AbstractProperty implements Property {
      * @throws IOException If an IO error occurs while updating the
      * property value.
      */
-    public int update(RemoteFile file, Element element)
+    public int update(IRODSFile file, Element element)
             throws IOException {
         return HttpServletResponse.SC_CONFLICT;
     }
@@ -235,7 +235,7 @@ public abstract class AbstractProperty implements Property {
                         namespace);
     }
 
-    public abstract int retrieve(RemoteFile file, Element element)
+    public abstract int retrieve(IRODSFile file, Element element)
             throws IOException;
 
 }

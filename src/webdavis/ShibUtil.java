@@ -1,229 +1,33 @@
 package webdavis;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.httpclient.ConnectTimeoutException;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpConnectionParams;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpStatus;
 import org.globus.gsi.GlobusCredential;
 import org.globus.gsi.GlobusCredentialException;
 import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
-
-import au.org.arcs.jshib.slcs.SLCSConfig;
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.irods.IRODSAccount;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
+import org.irods.jargon.core.connection.IRODSAccount;
+import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.UserAO;
+import org.irods.jargon.core.pub.domain.User;
+import org.irods.jargon.core.query.RodsGenQueryEnum;
 
 public class ShibUtil {
-	private SLCSConfig config;
-	private String slcsLoginURL;
 	
 	public ShibUtil(){
 //		config = SLCSConfig.getInstance();
 //		this.slcsLoginURL = config.getSLCSServer();
 //    	Log.log(Log.DEBUG, "slcsLoginURL:"+slcsLoginURL);
 	}
-	public GSSCredential getSLCSCertificate(HttpServletRequest request){
-		
-		try {
-		
-	    // Create a trust manager that does not validate certificate chains
-		TrustManager[] trustAllCerts = new TrustManager[] {
-				new X509TrustManager() {
-				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-				return null;
-				}
-				public void checkClientTrusted(
-				java.security.cert.X509Certificate[] certs, String authType) {
-				}
-				public void checkServerTrusted(
-				java.security.cert.X509Certificate[] certs, String authType) {
-				}
-				}
-				};
-	    
-	    // Install the all-trusting trust manager
-	    final SSLContext sslContext = SSLContext.getInstance( "SSL" );
-	    sslContext.init( null, trustAllCerts, new java.security.SecureRandom() );
-	    // Create an ssl socket factory with our all-trusting manager
-	    final SSLSocketFactory sslSocketFactorysslSocketFactory = sslContext.getSocketFactory();
-	    final SecureProtocolSocketFactory simpleSPSFactory=new SecureProtocolSocketFactory(){
-
-		    /**
-		     * @see SecureProtocolSocketFactory#createSocket(java.lang.String,int,java.net.InetAddress,int)
-		     */
-		    public Socket createSocket(
-		        String host,
-		        int port,
-		        InetAddress clientHost,
-		        int clientPort)
-		        throws IOException, UnknownHostException
-		   {
-		       return sslSocketFactorysslSocketFactory.createSocket(
-		            host,
-		            port,
-		            clientHost,
-		            clientPort
-		        );
-		    }
-
-		    /**
-		     * @see SecureProtocolSocketFactory#createSocket(java.lang.String,int)
-		     */
-		    public Socket createSocket(String host, int port)
-		        throws IOException, UnknownHostException
-		    {
-		        return sslSocketFactorysslSocketFactory.createSocket(
-		            host,
-		            port
-		        );
-		    }
-
-		    /**
-		     * @see SecureProtocolSocketFactory#createSocket(java.net.Socket,java.lang.String,int,boolean)
-		     */
-		    public Socket createSocket(
-		        Socket socket,
-		        String host,
-		        int port,
-		        boolean autoClose)
-		        throws IOException, UnknownHostException
-		    {
-		        return sslSocketFactorysslSocketFactory.createSocket(
-		            socket,
-		            host,
-		            port,
-		            autoClose
-		        );
-		    }
-
-
-		    public Socket createSocket(
-		            final String host,
-		            final int port,
-		            final InetAddress localAddress,
-		            final int localPort,
-		            final HttpConnectionParams params
-		        ) throws IOException, UnknownHostException, ConnectTimeoutException {
-		            if (params == null) {
-		                throw new IllegalArgumentException("Parameters may not be null");
-		            }
-		            int timeout = params.getConnectionTimeout();
-		            if (timeout == 0) {
-		                return sslSocketFactorysslSocketFactory.createSocket(host, port, localAddress, localPort);
-		            } else {
-		                Socket socket = sslSocketFactorysslSocketFactory.createSocket();
-		                SocketAddress localaddr = new InetSocketAddress(localAddress, localPort);
-		                SocketAddress remoteaddr = new InetSocketAddress(host, port);
-		                socket.bind(localaddr);
-		                socket.connect(remoteaddr, timeout);
-		                return socket;
-		            }
-		        }
-
-
-
-	    };
-	    
-	    Protocol.registerProtocol("https", new Protocol("https", simpleSPSFactory, 443));
-
-		   HttpClient client;
-
-			client = new HttpClient();
-			client.getState().clearCredentials();
-//			client.getParams().setParameter(CredentialsProvider.PROVIDER, CredentialHandler.getInstance().getCredentialProvider());
-			client.getParams().setCookiePolicy(org.apache.commons.httpclient.cookie.CookiePolicy.RFC_2109);
-
-		    // Create a method instance.
-		    GetMethod method = new GetMethod(this.slcsLoginURL);
-		    
-		    // Provide custom retry handler is necessary
-		    Enumeration headerNames=request.getHeaderNames();
-		    String headerName;
-		    while (headerNames.hasMoreElements()){
-		    	headerName=(String) headerNames.nextElement();
-		    	if (!headerName.startsWith("Shib-")&&!headerName.startsWith("REMOTE_USER")) method.addRequestHeader(headerName,request.getHeader(headerName));
-		    }
-
-		    try {
-		      // Execute the method.
-		      int statusCode = client.executeMethod(method);
-
-		      if (statusCode != HttpStatus.SC_OK) {
-		        System.err.println("Method failed: " + method.getStatusLine());
-		      }
-
-		      // Read the response body.
-		      byte[] responseBody = method.getResponseBody();
-
-		      // Deal with the response.
-		      // Use caution: ensure correct character encoding and is not binary data
-		      System.out.println(new String(responseBody));
-
-		    } catch (HttpException e) {
-		      System.err.println("Fatal protocol violation: " + e.getMessage());
-		      e.printStackTrace();
-		    } catch (IOException e) {
-		      System.err.println("Fatal transport error: " + e.getMessage());
-		      e.printStackTrace();
-		    } finally {
-		      // Release the connection.
-		      method.releaseConnection();
-		    }  
-		} catch ( final Exception e ) {
-		    e.printStackTrace();
-		}
-		return null;
-	}
-    public String loginSLCS(String cookies) throws HttpException, IOException{
-    	HttpClient client=new HttpClient();
-    	GetMethod get=new GetMethod(this.slcsLoginURL);
-    	client.getParams().setCookiePolicy(org.apache.commons.httpclient.cookie.CookiePolicy.RFC_2109);
-    	StringBuffer buffer=new StringBuffer();
-    	get.setRequestHeader("Cookie", cookies);
-    	for (Header h:get.getRequestHeaders()) Log.log(Log.DEBUG, h);
-    	client.executeMethod(get);
-    	Log.log(Log.DEBUG, "return code of SLCS login:"+get.getStatusCode());
-    	for (Header h:get.getResponseHeaders()) Log.log(Log.DEBUG, h);
-//    	if (client.getState()==)
-    	String in = get.getResponseBodyAsString();
-        // Process the data from the input stream.
-        get.releaseConnection();
-        return in;
-
-    }
     public Map passInShibSession(String sharedToken, String commonName){
     	String username=null;
-    	char[] password=null;
+    	String password=null;
     	Map result=new HashMap();
     	if (sharedToken==null) return null;
 		GlobusCredential adminCred;
@@ -231,34 +35,47 @@ public class ShibUtil {
 		try {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
-	        if (config.getServerType().equalsIgnoreCase("irods")){
-	        	IRODSAccount adminAccount=new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
-	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
-		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
-		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
+        	IRODSAccount adminAccount=IRODSAccount.instance(config.getServerName(),config.getServerPort(),gssCredential);
+//	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
+//		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
+	        IRODSFileSystem irodsFileSystem = IRODSFileSystem.instance();
+	        UserAO userAO=irodsFileSystem.getIRODSAccessObjectFactory().getUserAO(adminAccount);
+//		        password=getRandomPassword(12);
+	        
+//		        createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
+	        
+	        StringBuilder sb = new StringBuilder();
+			sb.append(RodsGenQueryEnum.COL_USER_INFO.getName());
+			sb.append(" LIKE '%<ST>");
+			sb.append(sharedToken);
+			sb.append("</ST>%'");
+			List<User> users = userAO.findWhere(sb.toString());
+			if (users.size()>0) {
+				username=users.get(0).getName();
+		        password=userAO.getTemporaryPasswordForASpecifiedUser(username);
+			}else{
+				return null;
+			}
 		        
-		        password=getRandomPassword(12);
-		        createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
-		        
-		        String[] selectFieldNames = {
-						IRODSMetaDataSet.USER_NAME,
-					};
-				MetaDataCondition conditions[] = {
-									MetaDataSet.newCondition(
-											IRODSMetaDataSet.USER_INFO,	MetaDataCondition.LIKE, "%<ST>"+sharedToken+"</ST>%")
-								};
-				MetaDataSelect selects[] =
-						MetaDataSet.newSelection( selectFieldNames );
-				MetaDataRecordList[] userDetails = irodsFileSystem.query(conditions,selects,1);
-//				IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
-				if (userDetails!=null) {
-					username=(String) userDetails[0].getValue(IRODSMetaDataSet.USER_NAME);
-//					password=getRandomPassword(12);
-//					admin.USER.modifyPassword(username, new String(password));
-//					changePasswordRule(irodsFileSystem, username, new String(password));
-				}else {
-					irodsFileSystem.close();
-					return null;
+//		        String[] selectFieldNames = {
+//						IRODSMetaDataSet.USER_NAME,
+//					};
+//				MetaDataCondition conditions[] = {
+//									MetaDataSet.newCondition(
+//											IRODSMetaDataSet.USER_INFO,	MetaDataCondition.LIKE, "%<ST>"+sharedToken+"</ST>%")
+//								};
+//				MetaDataSelect selects[] =
+//						MetaDataSet.newSelection( selectFieldNames );
+//				MetaDataRecordList[] userDetails = irodsFileSystem.query(conditions,selects,1);
+////				IRODSAdmin admin = new IRODSAdmin(irodsFileSystem);
+//				if (userDetails!=null) {
+//					username=(String) userDetails[0].getValue(IRODSMetaDataSet.USER_NAME);
+////					password=getRandomPassword(12);
+////					admin.USER.modifyPassword(username, new String(password));
+////					changePasswordRule(irodsFileSystem, username, new String(password));
+//				}else {
+//					irodsFileSystem.close();
+//					return null;
 //					String[] names=commonName.split(" ");
 //					String base=names[0].toLowerCase()+"."+names[names.length-1].toLowerCase();
 //					for (int i=0;i<20;i++){
@@ -279,12 +96,11 @@ public class ShibUtil {
 //							break;
 //						}
 //					}
-				}
-				result.put("username", username);
-				result.put("password", password);
-				irodsFileSystem.close();
-		       	return result;
-	        }
+//				}
+			result.put("username", username);
+			result.put("password", password);
+//				irodsFileSystem.close();
+	       	return result;
 		} catch (GlobusCredentialException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -294,40 +110,12 @@ public class ShibUtil {
 		} catch (NullPointerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
     }
-	public void changePasswordRule(IRODSFileSystem fs, String username,String password){
-		String rule="passwordRule||msiExecCmd(changePassword,\"*username *password\",null,null,null,*OUT)|nop\n*username="+username+"%*password="+password+"\n*OUT";
-//	    System.out.println(rule);
-		java.io.ByteArrayInputStream inputStream =
-	        new java.io.ByteArrayInputStream(rule.getBytes());
-	    try {
-			java.util.HashMap outputParameters = 
-			    fs.executeRule( inputStream );
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-	public void createUser(IRODSFileSystem fs, String cn,String password,String st){
-		String rule="createUserRule||msiExecCmd(createUser,*cn *st *password,null,null,null,*OUT)|nop\n*cn="+cn+"%*st="+st+"%*password="+password+"\n*OUT";
-//	    System.out.println(rule);
-		java.io.ByteArrayInputStream inputStream =
-	        new java.io.ByteArrayInputStream(rule.getBytes());
-	    try {
-			java.util.HashMap outputParameters = 
-			    fs.executeRule( inputStream );
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
     //Cookie: SESS3d4e795375e8d8d39b2952e0a7e7882d=1v7bcfkuigqdes7u2d2qbc4ch0; _saml_idp=dXJuOm1hY2U6ZmVkZXJhdGlvbi5vcmcuYXU6dGVzdGZlZDppZHAuZXJlc2VhcmNoc2EuZWR1LmF1; _shibstate_015ed05fb42d0d8b4678e4f9baca4ee92a5ccb50=http%3A%2F%2Farcs-df.eresearchsa.edu.au%2FARCS; _shibsession_015ed05fb42d0d8b4678e4f9baca4ee92a5ccb50=_0ac596db0cc1f42eea2e18a91c5c77ed; JSESSIONID=sqm29pnf9tz0
 
 

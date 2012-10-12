@@ -4,9 +4,8 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Element;
-
-import edu.sdsc.grid.io.RemoteFile;
 
 import webdavis.AbstractProperty;
 
@@ -19,7 +18,7 @@ import webdavis.AbstractProperty;
  */
 public class ResourceTypeProperty extends AbstractProperty {
 
-    public int retrieve(RemoteFile file, Element element)
+    public int retrieve(IRODSFile file, Element element)
             throws IOException {
         if (!file.isFile()) {
             String namespace = element.getNamespaceURI();

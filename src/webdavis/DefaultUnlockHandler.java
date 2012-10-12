@@ -7,7 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFile;
+import org.irods.jargon.core.pub.io.IRODSFile;
 
 
 /**
@@ -39,7 +39,7 @@ public class DefaultUnlockHandler extends AbstractHandler {
                             "noLockManager", null, request.getLocale()));
             return;
         }
-        RemoteFile file = getRemoteFile(request, davisSession);
+        IRODSFile file = getIRODSFile(request, davisSession);
         Log.log(Log.DEBUG, "UNLOCK Request for resource \"{0}\".", file);
         int result = checkLockOwnership(request, file);
         if (result != HttpServletResponse.SC_OK) {

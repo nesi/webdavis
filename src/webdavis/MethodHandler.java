@@ -8,8 +8,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import edu.sdsc.grid.io.RemoteFileSystem;
-
 /**
  * A class can implement the <code>MethodHandler</code> interface when it
  * wishes to service requests via a particular HTTP method.  The

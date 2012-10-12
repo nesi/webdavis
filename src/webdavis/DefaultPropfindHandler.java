@@ -23,20 +23,11 @@ import javax.xml.transform.dom.DOMSource;
 
 import javax.xml.transform.stream.StreamResult;
 
+import org.irods.jargon.core.pub.io.IRODSFile;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.RemoteFile;
-import edu.sdsc.grid.io.RemoteFileSystem;
-import edu.sdsc.grid.io.irods.IRODSFileSystem;
-import edu.sdsc.grid.io.srb.SRBFileSystem;
-import edu.sdsc.grid.io.srb.SRBMetaDataSet;
 
 /**
  * Default implementation of a handler for requests using the WebDAV
@@ -88,7 +79,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
     public void service(HttpServletRequest request, HttpServletResponse response, DavisSession davisSession)
                     throws ServletException, IOException {
         int depth = DavisUtilities.parseDepth(request.getHeader("Depth"));
-        RemoteFile file = getRemoteFile(request, davisSession);
+        IRODSFile file = getIRODSFile(request, davisSession);
         if (!file.exists()) {
         	Log.log(Log.WARNING, file.getAbsolutePath()+" doesn't exist!");
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -104,9 +95,7 @@ public class DefaultPropfindHandler extends AbstractHandler {
             	davisSession.setCurrentRoot(root);
             	Log.log(Log.DEBUG, "root changed to:"+root);
     			String[] resList=null;
-    			if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
-    				resList=FSUtilities.getSRBResources((SRBFileSystem)file.getFileSystem(), root.substring(1));
-    			}/*else if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
+/*else if (davisSession.getRemoteFileSystem() instanceof SRBFileSystem){
     				resList=FSUtilities.getIRODSResources((IRODSFileSystem)file.getFileSystem(), root.substring(1));
     			}*/
 				if (resList==null||resList.length==0){
