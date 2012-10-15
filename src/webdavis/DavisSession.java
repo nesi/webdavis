@@ -6,9 +6,12 @@ import java.util.Hashtable;
 
 import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.CollectionAO;
 import org.irods.jargon.core.pub.DataObjectAO;
 import org.irods.jargon.core.pub.DataTransferOperations;
 import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.ResourceAO;
+import org.irods.jargon.core.pub.RuleProcessingAO;
 import org.irods.jargon.core.pub.UserAO;
 import org.irods.jargon.core.pub.io.IRODSFileFactory;
 
@@ -213,6 +216,52 @@ public class DavisSession implements Serializable{
 		try {
 			fileSystem = IRODSFileSystem.instance();
 	        return fileSystem.getIRODSAccessObjectFactory().getDataTransferOperations(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public ResourceAO getResourceAO() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getResourceAO(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+
+	public CollectionAO getCollectionAO() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getCollectionAO(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+
+	public RuleProcessingAO getRuleProcessingAO() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getRuleProcessingAO(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public UserAO getUserAO() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getUserAO(iRODSAccount);
 		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

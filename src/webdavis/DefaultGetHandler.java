@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -46,11 +47,17 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.irods.jargon.core.connection.IRODSServerProperties;
+import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.DataObjectAO;
+import org.irods.jargon.core.pub.ResourceAO;
+import org.irods.jargon.core.pub.domain.DataObject;
+import org.irods.jargon.core.pub.domain.Resource;
 import org.irods.jargon.core.pub.io.FileIOOperations.SeekWhenceType;
 import org.irods.jargon.core.pub.io.IRODSFile;
 import org.irods.jargon.core.pub.io.IRODSFileFactory;
 import org.irods.jargon.core.pub.io.IRODSFileInputStream;
 import org.irods.jargon.core.pub.io.IRODSRandomAccessFile;
+import org.irods.jargon.core.query.RodsGenQueryEnum;
 import org.w3c.dom.Document;
 
 /**
@@ -397,7 +404,7 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			String format = request.getParameter("format");
 			if (format != null && format.equals("json")) { // List directory contents as JSON
-				IRODSFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
+				CachedFile[] fileList = FSUtilities.getIRODSCollectionDetails(file);
 				json.append("{\n" + escapeJSONArg("items") + ":[\n");
 				for (int i = 0; i < fileList.length; i++) {
 					if (i > 0)
@@ -632,68 +639,58 @@ public class DefaultGetHandler extends AbstractHandler {
 			}
 			return;
 		}
+        DataObjectAO dataObjectAO=davisSession.getDataObjectAO();
+        ResourceAO resourceAO=davisSession.getResourceAO();
         IRODSFileFactory fileFactory=davisSession.getFileFactory();
-
 		// Request for file
 		// For files with multiple replicas, a clean replica will be returned. If only a dirty copy is found, then that will be used.
 		// Find first clean replica of file for download
-		MetaDataCondition conditions[] = {
-			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
-			MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName()),
-			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
-		};
-		MetaDataSelect selects[] = MetaDataSet.newSelection(new String[]{
-				IRODSMetaDataSet.RESOURCE_STATUS,
-				IRODSMetaDataSet.RESOURCE_NAME
-			});
-		MetaDataRecordList[] fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
+		StringBuilder query = new StringBuilder();
+		query.append(RodsGenQueryEnum.COL_COLL_PARENT_NAME.getName() + " like '"+file.getParent()+"' and ");
+		query.append(RodsGenQueryEnum.COL_COLL_NAME.getName() + " like '"+file.getName()+"'");
 
-		if (fileDetails == null || fileDetails.length < 1) {
-			Log.log(Log.WARNING, "No clean replicas found for "+file.getAbsolutePath());
-		
-			// No clean replicas, try *any* replicas
-			conditions = new MetaDataCondition[] {
-					MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, file.getParent()),
-					MetaDataSet.newCondition(GeneralMetaData.FILE_NAME, MetaDataCondition.EQUAL, file.getName())
-				};
-			fileDetails = (davisSession.getRemoteFileSystem()).query(conditions, selects);
-    		
-			if (fileDetails == null || fileDetails.length < 1) {
-    			String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
-    			Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
-    			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
-    			response.flushBuffer();
-    			return;
+		List<DataObject> dataObjects;
+		try {
+			dataObjects = dataObjectAO.findWhere(query.toString());
+			if (dataObjects.size()==0) {
+				String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
+				Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
+				response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
+				response.flushBuffer();
+				return;
+			} else{
+				boolean foundCleanReplica=false;
+				boolean foundReplica=false;
+				String status;
+				for (DataObject dataObject:dataObjects) {
+					status=resourceAO.findByName(dataObject.getResourceName()).getStatus();
+					if (status == null || status.length() == 0 || status.toLowerCase().contains("up")){
+						file.setResource(dataObject.getResourceName());
+						if (dataObject.getReplicationStatus().equals("1")){
+							foundCleanReplica=true;
+						}
+						foundReplica=true;
+						break;
+					}
+				}
+				if (!foundCleanReplica){
+					if (Davis.getConfig().getLogDirtyReplicas())
+						Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
+				}
+				if (!foundReplica) {
+					String s= "No replicas are available because a resource is down: "+file.getAbsolutePath();
+					Log.log(Log.ERROR, s);
+					response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
+					response.flushBuffer();
+					return;
+				}
 			}
-			if (Davis.getConfig().getLogDirtyReplicas())
-				Log.log(Log.WARNING, "Using dirty replica for "+file.getAbsolutePath());
+		} catch (JargonException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			throw new IOException(e1.getMessage());
 		}
-		
-		boolean found = false;
-		for (int i = 0; i < fileDetails.length; i++) {
-    		MetaDataRecordList p = fileDetails[i]; 
-    		String status = (String)p.getValue(IRODSMetaDataSet.RESOURCE_STATUS);
-    		if (status == null)
-    			Log.log(Log.WARNING, "status of resource "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+" was null");
-//  System.err.println("********** resource is "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+"  status is "+p.getValue(IRODSMetaDataSet.RESOURCE_STATUS));
-    		if (status == null || status.length() == 0 || status.toLowerCase().contains("up")) { // Empty status string = up
-        		Log.log(Log.DEBUG, "setting resouce for get of "+file.getName()+" to "+p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-        		try {
-        			((IRODSFile)file).setResource((String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME));
-        		} catch (Exception e) {
-        			Log.log(Log.ERROR, "failed to set resource for get of "+file.getName()+" to "+(String)p.getValue(IRODSMetaDataSet.RESOURCE_NAME)+": "+e);
-        		}
-        		found = true;
-        		break;
-    		}
-		}
-		if (!found) {
-			String s= "No replicas are available because a resource is down: "+file.getAbsolutePath();
-			Log.log(Log.ERROR, s);
-			response.sendError(HttpServletResponse.SC_NOT_FOUND, s);
-			response.flushBuffer();
-			return;
-		}
+
 
 		String etag = DavisUtilities.getETag(file);
 		if (etag != null)
@@ -702,7 +699,7 @@ public class DefaultGetHandler extends AbstractHandler {
 		if (modified != 0) {
 			response.setHeader("Last-Modified", DavisUtilities.formatGetLastModified(modified));
 		}
-		int result = checkConditionalRequest(request, file);
+		int result = checkConditionalRequest(request, davisSession, file);
 		if (result != HttpServletResponse.SC_OK) {
 			response.sendError(result, "Request Error.");
 			response.flushBuffer();

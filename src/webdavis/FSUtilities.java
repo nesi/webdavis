@@ -17,6 +17,10 @@ import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.connection.auth.AuthResponse;
 import org.irods.jargon.core.exception.JargonException;
 import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.ResourceAO;
+import org.irods.jargon.core.pub.UserAO;
+import org.irods.jargon.core.pub.domain.Resource;
+import org.irods.jargon.core.pub.domain.User;
 import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
@@ -83,6 +87,106 @@ public class FSUtilities {
         if (dir) buffer.append("/");
         return buffer.toString();
     }
+
+	public static String[] getIRODSResources(DavisSession davisSession) throws IOException {
+		return getIRODSResources(davisSession,davisSession.getIRODSAccount().getZone());
+	}
+	public static String[] getIRODSResources(DavisSession davisSession, String currentZone) throws IOException {
+		try {
+			List<Resource> resouceList = davisSession.getResourceAO().listResourcesInZone(currentZone);
+			String[] resList=new String[resouceList.size()];
+			for (int i=0;i<resouceList.size();i++) {
+				resList[i]=resouceList.get(i).getName();
+			}
+			return resList;
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	 }	 
+
+	public static HashMap<String, FileMetadata> getIRODSCollectionMetadata(DavisSession davisSession, IRODSFile collection){
+		
+		return getIRODSCollectionMetadata(davisSession, collection, null);
+	}
+		
+	public static HashMap<String, FileMetadata> getIRODSCollectionMetadata(DavisSession davisSession, IRODSFile collection, String attrName){
+
+		HashMap<String, FileMetadata> results = new HashMap<String, FileMetadata>();
+		
+		MetaDataSelect selectsFile[] = 
+			MetaDataSet.newSelection(new String[] {
+					IRODSMetaDataSet.META_DATA_ATTR_NAME,
+					IRODSMetaDataSet.META_DATA_ATTR_VALUE,
+					IRODSMetaDataSet.FILE_NAME,
+					IRODSMetaDataSet.DIRECTORY_NAME
+			});
+		MetaDataCondition conditionsFile[];
+		MetaDataCondition conditionsDir[];
+		if (attrName == null) {
+			conditionsFile = new MetaDataCondition[] {
+				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath())
+			};
+			conditionsDir = new MetaDataCondition[] {
+				MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath())
+			};
+		} else {
+			conditionsFile = new MetaDataCondition[] {
+				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
+				MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
+			};
+			conditionsDir = new MetaDataCondition[] {
+				MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
+				MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
+			};
+		}
+		MetaDataSelect selectsDir[] =
+			MetaDataSet.newSelection(new String[] {
+				IRODSMetaDataSet.META_COLL_ATTR_NAME,
+				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
+				IRODSMetaDataSet.DIRECTORY_NAME
+			});
+		try {
+			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
+    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisConfig.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
+ 			if (fileDetails == null) 
+    			fileDetails = new MetaDataRecordList[0];
+    		if (dirDetails == null) 
+    			dirDetails = new MetaDataRecordList[0];
+    		
+    		for (MetaDataRecordList p:fileDetails) {
+    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+    			FileMetadata mdata = results.get(path);
+    			if (mdata == null) {
+	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+	    			results.put(path, mdata);
+    			}
+    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
+    		}
+    		for (MetaDataRecordList p:dirDetails) {
+    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+    			FileMetadata mdata = results.get(path);
+    			if (mdata == null) {
+	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), collection.getAbsolutePath(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
+	    			results.put(path, mdata);
+    			}
+    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
+    		}
+    		Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+((IRODSFileSystem)collection.getFileSystem()).getUserName()+"': \n"+results);
+    		return results;
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	public static CachedFile[] getIRODSCollectionDetails(IRODSFile file){
+		
+		return getIRODSCollectionDetails(file, true, true, false);
+	}
 
 	public static CachedFile[] getIRODSCollectionDetails(IRODSFile collection, boolean sort, boolean getFiles, boolean getMetadata){
 		
@@ -285,5 +389,24 @@ public class FSUtilities {
 			prefix = "";
 		for (int i = 0; i < results.length; i++)
 			System.err.println(prefix+results[i]);
+	}
+
+	public static String[] getUsernames(DavisSession davisSession) throws IOException{
+		UserAO userAO;
+		try {
+			userAO = davisSession.getUserAO();
+			List<User> users=userAO.findAll();
+			String[] usernames=new String[users.size()];
+			for (int i=0;i<users.size();i++) {
+				usernames[i]=users.get(i).getName();
+				if (!users.get(i).getZone().equals(davisSession.getIRODSAccount().getZone())) 
+					usernames[i] += "#"+users.get(i).getZone();
+			}
+			return usernames;
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
 	}
 }

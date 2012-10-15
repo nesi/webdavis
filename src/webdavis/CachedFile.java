@@ -16,12 +16,16 @@ public class CachedFile {
 	private HashMap<String, ArrayList<String>> metadata;
 	private IRODSFile irodsFile;
 	
-	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
-		super(rfs, path, filename);
-	}
-
-	public CachedFile(RemoteFileSystem rfs, String filePath) throws NullPointerException {
-		super(rfs, filePath);
+//	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
+//		super(rfs, path, filename);
+//	}
+//
+//	public CachedFile(RemoteFileSystem rfs, String filePath) throws NullPointerException {
+//		super(rfs, filePath);
+//	}
+	
+	public CachedFile(IRODSFile file){
+		this.irodsFile=file;
 	}
 
 	public String getResource() throws IOException {
@@ -41,7 +45,7 @@ public class CachedFile {
 
 	public String getName() {
 		// TODO Auto-generated method stub
-		return super.getName();
+		return irodsFile.getName();
 	}
 
 	public boolean isDirectory() {
@@ -49,25 +53,21 @@ public class CachedFile {
 		return isDir;
 	}
 
-	@Override
 	public boolean isFile() {
 		// TODO Auto-generated method stub
 		return !isDir;
 	}
 
-	@Override
 	public boolean isHidden() {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
-	@Override
 	public long lastModified() {
 		// TODO Auto-generated method stub
 		return this.lastModified;
 	}
 
-	@Override
 	public long length() {
 		// TODO Auto-generated method stub
 		return length;
@@ -76,7 +76,6 @@ public class CachedFile {
 		this.length=length;
 	}
 
-	@Override
 	public boolean setLastModified(long arg0) {
 		// TODO Auto-generated method stub
 		this.lastModified=arg0;
@@ -91,7 +90,7 @@ public class CachedFile {
 	}
 
 	public String getCanonicalPath() {
-		return getPath()+File.separator+getName();
+		return irodsFile.getPath()+File.separator+getName();
 	}
 
 	public void setCanonicalPath(String canonicalPath) {
@@ -115,5 +114,9 @@ public class CachedFile {
 	
 	public HashMap<String, ArrayList<String>> getMetadata() {
 		return metadata;
+	}
+	
+	public IRODSFile getIRODSFile(){
+		return this.irodsFile;
 	}
 }

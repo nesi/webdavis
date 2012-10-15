@@ -25,6 +25,7 @@ import org.irods.jargon.core.exception.JargonException;
 import org.irods.jargon.core.pub.IRODSFileSystem;
 import org.irods.jargon.core.pub.io.IRODSFile;
 import org.irods.jargon.core.pub.io.IRODSFileFactory;
+import org.irods.jargon.core.pub.io.IRODSFileImpl;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -439,7 +440,7 @@ public abstract class AbstractHandler implements MethodHandler {
      * </ul>
      * @throws SmbException If an error occurs while examining the resource.
      */
-    protected int checkConditionalRequest(HttpServletRequest request,
+    protected int checkConditionalRequest(HttpServletRequest request, DavisSession davisSession,
             IRODSFile file) throws IOException {
         Enumeration values = request.getHeaders("If-None-Match");
         if (values.hasMoreElements()) {
@@ -521,7 +522,7 @@ public abstract class AbstractHandler implements MethodHandler {
         }
         if (getLockManager() == null) 
         	return HttpServletResponse.SC_OK;
-        return checkLockCondition(request, file);
+        return checkLockCondition(request, davisSession, file);
     }
 
     /**
@@ -582,7 +583,7 @@ public abstract class AbstractHandler implements MethodHandler {
         return SC_LOCKED;
     }
 
-    private int checkLockCondition(HttpServletRequest request, IRODSFile file)
+    private int checkLockCondition(HttpServletRequest request, DavisSession davisSession, IRODSFile file)
             throws IOException {
         Enumeration values = request.getHeaders("If");
         if (!values.hasMoreElements()) return HttpServletResponse.SC_OK;
@@ -600,7 +601,7 @@ public abstract class AbstractHandler implements MethodHandler {
                 } else {
                     String taggedList = header.substring(index,
                             header.lastIndexOf(')') + 1);
-                    result = processTaggedList(taggedList, request, file);
+                    result = processTaggedList(taggedList, request, davisSession, file);
                 }
                 if (result == HttpServletResponse.SC_OK) {
                     Log.log(Log.DEBUG, "If condition met - proceed.");
@@ -764,7 +765,7 @@ public abstract class AbstractHandler implements MethodHandler {
         return HttpServletResponse.SC_PRECONDITION_FAILED;
     }
 
-    private int processTaggedList(String taggedList, HttpServletRequest request,
+    private int processTaggedList(String taggedList, HttpServletRequest request, DavisSession davisSession,
     		IRODSFile file) throws IOException {
         Log.log(Log.DEBUG, "Processing Tagged-list against \"{0}\": {1}",
                 new Object[] { file, taggedList });
@@ -797,7 +798,7 @@ public abstract class AbstractHandler implements MethodHandler {
                     list = new StringBuffer();
                 } else {
                     int result = processNoTagList(list.toString().trim(),
-                            request, getRelativeFile(request, file,
+                            request, getRelativeFile(request, davisSession, file,
                                     resource.toString().trim()));
                     list.setLength(0);
                     resource.setLength(0);
@@ -830,21 +831,26 @@ public abstract class AbstractHandler implements MethodHandler {
         }
         if (inList || inResource || inQuote) throw new IllegalStateException();
         return processNoTagList(list.toString().trim(), request,
-                getRelativeFile(request, file, resource.toString().trim()));
+                getRelativeFile(request, davisSession, file, resource.toString().trim()));
     }
 
-    private IRODSFile getRelativeFile(HttpServletRequest request, IRODSFile base,
+    private IRODSFile getRelativeFile(HttpServletRequest request, DavisSession davisSession, IRODSFile base,
             String httpUrl) throws IOException {
     	IRODSFile file = null;
         IOException exception = null;
         boolean exists = false;
         String charset = getRequestURICharset();
+        IRODSFileFactory fileFactory=davisSession.getFileFactory();
         try {
-            file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, charset));
+            file = fileFactory.instanceIRODSFile((IRODSFileImpl)base, getRemoteURL(request, httpUrl, charset));
             exists = file.exists();
         } catch (IOException ex) {
             exception = ex;
-        }
+        } catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
         if (exists) return file;
         if (charset.equals("UTF-8")) {
             if (exception != null) {
@@ -856,10 +862,14 @@ public abstract class AbstractHandler implements MethodHandler {
         IRODSFile utf8 = null;
         IOException utf8Exception = null;
         try {
-            file = new IRODSFile((IRODSFile)base, getRemoteURL(request, httpUrl, "UTF-8"));
+            file = fileFactory.instanceIRODSFile((IRODSFileImpl)base, getRemoteURL(request, httpUrl, "UTF-8"));
             exists = utf8.exists();
         } catch (IOException ex) {
             utf8Exception = ex;
+        } catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
         }
         if (exists) return utf8;
         if (file != null) {
@@ -991,7 +1001,7 @@ public abstract class AbstractHandler implements MethodHandler {
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {
-    			IRODSFile file = files[indicesList.get(i).intValue()];
+    			IRODSFile file = files[indicesList.get(i).intValue()].getIRODSFile();
     			fileList.add(getIRODSFile(file.getAbsolutePath(), davisSession));
     		}
     	}

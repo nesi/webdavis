@@ -99,10 +99,10 @@ public class DefaultMoveHandler extends AbstractHandler {
             result = checkLockOwnership(request, destinationFile);
         	if (result != HttpServletResponse.SC_OK) 
         		return result;
-        	result = checkConditionalRequest(request, file);
+        	result = checkConditionalRequest(request, davisSession, file);
         	if (result != HttpServletResponse.SC_OK) 
         		return result;
-        	result = checkConditionalRequest(request, destinationFile);
+        	result = checkConditionalRequest(request, davisSession, destinationFile);
         	if (result != HttpServletResponse.SC_OK) 
         		return result;
         	LockManager lockManager = getLockManager();

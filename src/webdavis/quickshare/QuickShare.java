@@ -1,11 +1,5 @@
 package webdavis.quickshare;
 
-import edu.sdsc.grid.io.MetaDataCondition;
-import edu.sdsc.grid.io.MetaDataRecordList;
-import edu.sdsc.grid.io.MetaDataSelect;
-import edu.sdsc.grid.io.MetaDataSet;
-import edu.sdsc.grid.io.irods.*;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -13,12 +7,27 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.connection.IRODSAccount;
+import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.DataObjectAO;
+import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.domain.DataObject;
+import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.core.pub.io.IRODSFileFactory;
+import org.irods.jargon.core.pub.io.IRODSRandomAccessFile;
+import org.irods.jargon.core.query.AVUQueryElement;
+import org.irods.jargon.core.query.AVUQueryOperatorEnum;
+import org.irods.jargon.core.query.JargonQueryException;
+import org.irods.jargon.core.query.RodsGenQueryEnum;
+
 import webdavis.DavisConfig;
 import webdavis.Log;
 import webdavis.DavisUtilities;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -63,9 +72,37 @@ public class QuickShare extends HttpServlet {
       //  }
     }
 
-    public IRODSFileSystem getFilesystem() throws IOException {
-    	
-        return new IRODSFileSystem(account);
+    public IRODSFileFactory getFileFactory() throws IOException {
+    	IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSFileFactory(account);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+    }
+    public DataObjectAO getDataObjectAO() throws IOException {
+    	IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        return fileSystem.getIRODSAccessObjectFactory().getDataObjectAO(account);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+    }
+    private void closeFileSystem(){
+    	IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+	        fileSystem.close(account);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
 
@@ -88,11 +125,15 @@ public class QuickShare extends HttpServlet {
         ServletOutputStream output = response.getOutputStream();
         IRODSRandomAccessFile input = null;
         try {
-        	input = new IRODSRandomAccessFile(file, "r");
+        	input = getFileFactory().instanceIRODSRandomAccessFile(file);
         } catch (SecurityException e) {
         	response.sendError(HttpServletResponse.SC_FORBIDDEN, "The file is not readable by the "+username+" user.");
         	return;
-        }
+        } catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
 
         while ((count = input.read(buf)) > 0) 
             output.write(buf, 0, count);
@@ -104,46 +145,34 @@ public class QuickShare extends HttpServlet {
     protected IRODSFile findFile(IRODSFileSystem sys, String path) throws IOException {
     	
     	Log.log(Log.DEBUG, "QuickShare: locating file: "+path);
-        MetaDataSelect selectFile[] = MetaDataSet.newSelection(new String[] {
-            IRODSMetaDataSet.FILE_NAME,
-            IRODSMetaDataSet.DIRECTORY_NAME,
-            IRODSMetaDataSet.PATH_NAME,
-            IRODSMetaDataSet.PARENT_DIRECTORY_NAME   
-        });
-
-//        MetaDataCondition[] condList = new MetaDataCondition[1];
-        MetaDataCondition[] condList = new MetaDataCondition[1];
-
         String pattern = "http%/"+path;
-        condList[0] = MetaDataSet.newCondition(key, MetaDataCondition.LIKE, pattern);
-//System.err.println("matching with '"+pattern+"'");
+    	
+		List<AVUQueryElement> queryElements = new ArrayList<AVUQueryElement>();
 
-        MetaDataRecordList[] recordList = sys.query(condList, selectFile);
-        Log.log(Log.DEBUG, "query key="+key+" pattern="+pattern+ " recordList="+recordList);
-        if (recordList != null)
-        	Log.log(Log.DEBUG, "query result list length = "+recordList.length);
-//System.err.println("recordList="+recordList);
-//if((recordList != null) && (recordList.length  > 0)) {
-//System.err.println("list size="+recordList.length);
-//for (int i = 0; i < recordList.length; i++) {
-//MetaDataRecordList p = recordList[i]; 
-//System.err.println("value="+(String)p.getValue(IRODSMetaDataSet.FILE_NAME));
-//}
-//}
-//        if((recordList != null) && (recordList.length == 1))
-        if((recordList != null) && (recordList.length > 0)) {
-            MetaDataRecordList record = recordList[0];
-//            String parent = (String)(record.getValue(record.getFieldIndex(IRODSMetaDataSet.PARENT_DIRECTORY_NAME)));
-            String filename = (String)(record.getValue(record.getFieldIndex(IRODSMetaDataSet.FILE_NAME)));
-            String dirname = (String)(record.getValue(record.getFieldIndex(IRODSMetaDataSet.DIRECTORY_NAME)));
 
-//System.err.println("parent: " + parent);
-//System.err.println("filename: " + filename);
-//System.err.println("dirname: " + dirname);
 
-            IRODSFile file = new IRODSFile(sys, dirname + "/" + filename);
-            return file;
-        }
+		List<DataObject> dataObjects;
+		try {
+			queryElements.add(AVUQueryElement.instanceForValueQuery(
+					AVUQueryElement.AVUQueryPart.ATTRIBUTE,
+					AVUQueryOperatorEnum.LIKE, key));
+			queryElements.add(AVUQueryElement.instanceForValueQuery(
+					AVUQueryElement.AVUQueryPart.VALUE,
+					AVUQueryOperatorEnum.LIKE, pattern));
+			dataObjects = getDataObjectAO().findDomainByMetadataQuery(queryElements);
+	        if((dataObjects != null) && (dataObjects.size() > 0)) {
+
+	            return getFileFactory().instanceIRODSFile(dataObjects.get(0).getAbsolutePath());
+	        }
+		} catch (JargonQueryException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	
 
         // Can't find anything that matches the request path
        	Log.log(Log.ERROR, "QuickShare: cannot find file "+path);
@@ -165,7 +194,6 @@ public class QuickShare extends HttpServlet {
     	Log.log(Log.DEBUG, "QuickShare: received get request: "+req);
 		IRODSFileSystem sys = null;
 		try {
-			sys = getFilesystem();
 			
 			String uri = req.getRequestURI();
 			int i = uri.lastIndexOf('/');
@@ -195,8 +223,7 @@ public class QuickShare extends HttpServlet {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND,  "QuickShare can't locate the file. It may not currently be shared.");
 		}
 		finally {
-			if(sys != null)
-				sys.close();
+			closeFileSystem();
 		}
     }
 }

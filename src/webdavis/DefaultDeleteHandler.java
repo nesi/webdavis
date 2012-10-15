@@ -115,7 +115,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
         	if (result != HttpServletResponse.SC_OK) 
             /*response.sendError(*/ return result/*)*/;
             //return;
-        	result = checkConditionalRequest(request, file);
+        	result = checkConditionalRequest(request, davisSession, file);
         	if (result != HttpServletResponse.SC_OK) 
             /*response.sendError(*/ return result/*)*/;
             //return;

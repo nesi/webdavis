@@ -94,7 +94,7 @@ public class DefaultPutHandler extends AbstractHandler {
             response.sendError(result);
             return;
         }
-        result = checkConditionalRequest(request, file);
+        result = checkConditionalRequest(request, davisSession, file);
         if (result != HttpServletResponse.SC_OK) {
             response.setStatus(result);
             response.flushBuffer();

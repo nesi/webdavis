@@ -103,7 +103,7 @@ public class DefaultCopyHandler extends AbstractHandler {
             int result = checkLockOwnership(request, destinationFile);
         	if (result != HttpServletResponse.SC_OK) 
         		return result;
-        	result = checkConditionalRequest(request, destinationFile);
+        	result = checkConditionalRequest(request, davisSession, destinationFile);
         	if (result != HttpServletResponse.SC_OK) 
         		return result;
         	LockManager lockManager = getLockManager();

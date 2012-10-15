@@ -55,7 +55,7 @@ public class DefaultHeadHandler extends AbstractHandler {
             response.setHeader("Last-Modified",
                     DavisUtilities.formatGetLastModified(modified));
         }
-        int result = checkConditionalRequest(request, file);
+        int result = checkConditionalRequest(request, davisSession, file);
         if (result != HttpServletResponse.SC_OK) {
             response.setStatus(result);
             response.flushBuffer();
