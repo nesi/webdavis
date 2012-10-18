@@ -1,6 +1,7 @@
 package webdavis;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 //import java.net.URLDecoder;
@@ -1001,7 +1002,7 @@ public abstract class AbstractHandler implements MethodHandler {
     		ArrayList<Integer> indicesList = new ArrayList<Integer>();
     	    getIndicesList(indicesList, jsonArray);
     		for (int i = 0; i < indicesList.size(); i++) {
-    			IRODSFile file = files[indicesList.get(i).intValue()].getIRODSFile();
+    			File file = files[indicesList.get(i).intValue()].getFile();
     			fileList.add(getIRODSFile(file.getAbsolutePath(), davisSession));
     		}
     	}

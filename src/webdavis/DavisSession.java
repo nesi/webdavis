@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.Hashtable;
 
 import org.irods.jargon.core.connection.IRODSAccount;
+import org.irods.jargon.core.connection.IRODSCommands;
 import org.irods.jargon.core.exception.JargonException;
 import org.irods.jargon.core.pub.CollectionAO;
 import org.irods.jargon.core.pub.DataObjectAO;
@@ -262,6 +263,17 @@ public class DavisSession implements Serializable{
 		try {
 			fileSystem = IRODSFileSystem.instance();
 	        return fileSystem.getIRODSAccessObjectFactory().getUserAO(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public IRODSCommands currentConnection() throws IOException{
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			return fileSystem.getIrodsSession().currentConnection(iRODSAccount);
 		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

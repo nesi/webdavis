@@ -14,7 +14,7 @@ public class CachedFile {
 	private boolean canWrite;
 	private String canonicalPath;
 	private HashMap<String, ArrayList<String>> metadata;
-	private IRODSFile irodsFile;
+	private File irodsFile;
 	
 //	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
 //		super(rfs, path, filename);
@@ -24,7 +24,7 @@ public class CachedFile {
 //		super(rfs, filePath);
 //	}
 	
-	public CachedFile(IRODSFile file){
+	public CachedFile(File file){
 		this.irodsFile=file;
 	}
 
@@ -40,7 +40,7 @@ public class CachedFile {
 
 	public boolean canWrite() {
 		// TODO Auto-generated method stub
-		return this.canWrite;
+		return irodsFile.canWrite();
 	}
 
 	public String getName() {
@@ -50,53 +50,33 @@ public class CachedFile {
 
 	public boolean isDirectory() {
 		// TODO Auto-generated method stub
-		return isDir;
+		return irodsFile.isDirectory();
 	}
 
 	public boolean isFile() {
 		// TODO Auto-generated method stub
-		return !isDir;
+		return irodsFile.isFile();
 	}
 
 	public boolean isHidden() {
 		// TODO Auto-generated method stub
-		return false;
+		return irodsFile.isHidden();
 	}
 
 	public long lastModified() {
 		// TODO Auto-generated method stub
-		return this.lastModified;
+		return irodsFile.lastModified();
 	}
 
 	public long length() {
 		// TODO Auto-generated method stub
-		return length;
-	}
-	public void setLength(long length){
-		this.length=length;
+		return irodsFile.length();
 	}
 
-	public boolean setLastModified(long arg0) {
-		// TODO Auto-generated method stub
-		this.lastModified=arg0;
-		return true;
-	}
-	
-	public void setDirFlag(boolean isDir) {
-		this.isDir=isDir;
-	}
-	public void setCanWriteFlag(boolean canWrite){
-		this.canWrite=canWrite;
+	public String getCanonicalPath() throws IOException {
+		return irodsFile.getCanonicalPath();
 	}
 
-	public String getCanonicalPath() {
-		return irodsFile.getPath()+File.separator+getName();
-	}
-
-	public void setCanonicalPath(String canonicalPath) {
-		this.canonicalPath = canonicalPath;
-	}
-	
 	public String getSharingValue() {
 		String sharingValue = "";
 		String sharingKey = Davis.getConfig().getSharingKey();
@@ -116,7 +96,12 @@ public class CachedFile {
 		return metadata;
 	}
 	
-	public IRODSFile getIRODSFile(){
+	public File getFile(){
 		return this.irodsFile;
+	}
+
+	public String getParent() {
+		// TODO Auto-generated method stub
+		return irodsFile.getParent();
 	}
 }

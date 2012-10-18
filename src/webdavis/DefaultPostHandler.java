@@ -36,6 +36,7 @@ import org.apache.commons.fileupload.FileItemIterator;
 import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.irods.jargon.core.exception.DataNotFoundException;
 import org.irods.jargon.core.exception.JargonException;
 import org.irods.jargon.core.pub.CollectionAO;
 import org.irods.jargon.core.pub.DataObjectAO;
@@ -46,8 +47,12 @@ import org.irods.jargon.core.pub.domain.UserFilePermission;
 import org.irods.jargon.core.pub.io.IRODSFile;
 import org.irods.jargon.core.pub.io.IRODSFileFactory;
 import org.irods.jargon.core.pub.io.IRODSFileOutputStream;
+import org.irods.jargon.core.query.AVUQueryElement;
+import org.irods.jargon.core.query.AVUQueryOperatorEnum;
+import org.irods.jargon.core.query.JargonQueryException;
 import org.irods.jargon.core.query.MetaDataAndDomainData;
 import org.irods.jargon.core.query.RodsGenQueryEnum;
+import org.irods.jargon.core.query.AVUQueryElement.AVUQueryPart;
 import org.irods.jargon.core.rule.IRODSRuleExecResult;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -134,6 +139,7 @@ public class DefaultPostHandler extends AbstractHandler {
         response.setContentType("text/json; charset=\"utf-8\"");
         IRODSFileFactory fileFactory=davisSession.getFileFactory();
         DataObjectAO dataObjectAO=davisSession.getDataObjectAO();
+        CollectionAO collectionAO=davisSession.getCollectionAO();
 		
 		if (method.equalsIgnoreCase("permission")) {
 			String username = request.getParameter("username");
@@ -168,7 +174,29 @@ public class DefaultPostHandler extends AbstractHandler {
 									iRODSSetPermission((IRODSFile)selectedFile, permission, username);
 								else*/
 							if (permission.equalsIgnoreCase("r")) {
-								
+								if (file.isDirectory()) {
+									collectionAO.setAccessPermissionRead(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username, recursive);
+								}else{
+									dataObjectAO.setAccessPermissionRead(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username);
+								}									
+							} else if (permission.equalsIgnoreCase("w")) {
+								if (file.isDirectory()) {
+									collectionAO.setAccessPermissionWrite(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username, recursive);
+								}else{
+									dataObjectAO.setAccessPermissionWrite(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username);
+								}									
+							} else if (permission.equalsIgnoreCase("all")) {
+								if (file.isDirectory()) {
+									collectionAO.setAccessPermissionOwn(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username, recursive);
+								}else{
+									dataObjectAO.setAccessPermissionOwn(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username);
+								}									
+							} else if (permission.equalsIgnoreCase("n")) {
+								if (file.isDirectory()) {
+									collectionAO.removeAccessPermissionForUser(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username, recursive);
+								}else{
+									dataObjectAO.removeAccessPermissionsForUser(davisSession.getIRODSAccount().getZone(), file.getAbsolutePath(), username);
+								}									
 							}
 //							((IRODSFile)selectedFile).changePermissions(permission, username, selectedFile.isDirectory() && recursive);
 						}
@@ -179,31 +207,61 @@ public class DefaultPostHandler extends AbstractHandler {
 								flag = Boolean.parseBoolean(sticky);
 							} catch (Exception _e) {
 							}
-							this.setSticky(selectedFile, flag, recursive);
+							if (flag){
+								//set inherit
+								collectionAO.setAccessPermissionInherit(davisSession.getIRODSAccount().getZone(), selectedFile.getAbsolutePath(), recursive);
+							} else {
+								// unset inherit
+								collectionAO.setAccessPermissionToNotInherit(davisSession.getIRODSAccount().getZone(), selectedFile.getAbsolutePath(), recursive);
+							}
 						}
-					} catch (IOException e){
-			        	Log.log(Log.DEBUG, "Set permissions failed: "+e);
-			        	String s = e.getMessage();
-			        	if (s.endsWith("-818000") || s.endsWith("-816000")) 
-			        		s = "you don't have permission"; // irods error -818000 or -816000
-			        	if (s.endsWith("-827000")) 
-			        		s = "unkown user"; 
-	        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-	        			return;
+//					} catch (IOException e){
+//			        	Log.log(Log.DEBUG, "Set permissions failed: "+e);
+//			        	String s = e.getMessage();
+//			        	if (s.endsWith("-818000") || s.endsWith("-816000")) 
+//			        		s = "you don't have permission"; // irods error -818000 or -816000
+//			        	if (s.endsWith("-827000")) 
+//			        		s = "unkown user"; 
+//	        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+//	        			return;
+					} catch (JargonException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						throw new IOException(e.getMessage());
 					}
 				}
 			}
 
 			// Fetch permissions for item
-			List<UserFilePermission> permissions=dataObjectAO.listPermissionsForDataObject(file.getAbsolutePath());
-			DataObject dataObject=dataObjectAO.findByAbsolutePath(file.getAbsolutePath());
+			List<UserFilePermission> permissions;
+			String owner = "unknown";
+			DataObject dataObject = null;
+			Collection collection = null;
+			try {
+				if (file.isDirectory()) {
+					permissions = collectionAO.listPermissionsForCollection(file.getAbsolutePath());
+					collection = collectionAO.findByAbsolutePath(file.getAbsolutePath());
+					owner = collection.getCollectionOwnerName();
+				}else{
+					permissions = dataObjectAO.listPermissionsForDataObject(file.getAbsolutePath());
+					dataObject=dataObjectAO.findByAbsolutePath(file.getAbsolutePath());
+					owner = dataObject.getDataOwnerName();
+				}
+			} catch (JargonException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new IOException(e.getMessage());
+			}
 			json.append("{\n");
-			String owner = dataObject.getDataOwnerName();
 			if (file.isDirectory()){
-				CollectionAO collectionAO=davisSession.getCollectionAO();
-				Collection collection=collectionAO.findByAbsolutePath(file.getAbsolutePath());
-				boolean stickyBit = collectionAO.isCollectionSetForPermissionInheritance(file.getAbsolutePath());
-				json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+stickyBit)+",\n");
+				try {
+					boolean stickyBit = collectionAO.isCollectionSetForPermissionInheritance(file.getAbsolutePath());
+					json.append(escapeJSONArg("sticky")+":"+escapeJSONArg(""+stickyBit)+",\n");
+				} catch (JargonException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					throw new IOException(e.getMessage());
+				}
 			}
 			json.append(escapeJSONArg("owner")+":"+escapeJSONArg(owner)+",\n");
 //				Log.log(Log.DEBUG, "irods permissions: "+permissions);
@@ -215,6 +273,7 @@ public class DefaultPostHandler extends AbstractHandler {
 					else
 						json.append("\n");
 					// "user domain"
+					Log.log(Log.DEBUG, "permission:"+permissions.get(i).getFilePermissionEnum().toString());
                     if (file.isDirectory()) {	// "user name"
 						json.append("{"+escapeJSONArg("username")+":");
 						String s = ""+permissions.get(i).getUserName();
@@ -249,9 +308,9 @@ public class DefaultPostHandler extends AbstractHandler {
 						if (j == fileList.size()-1)		// Use the last file in the list for returning metadata below
 							file = selectedFile;
 
-						List<MetaDataAndDomainData> metadatas=dataObjectAO.findMetadataValuesForDataObject(selectedFile);
 						
 						try {
+							List<MetaDataAndDomainData> metadatas=dataObjectAO.findMetadataValuesForDataObject(selectedFile);
 							//delete all metadata, uses wildcards
 							for (MetaDataAndDomainData metadata:metadatas){
 								dataObjectAO.deleteAVUMetadata(file.getAbsolutePath(), new AvuData(metadata.getAvuAttribute(),metadata.getAvuValue(),metadata.getAvuUnit()));
@@ -260,20 +319,31 @@ public class DefaultPostHandler extends AbstractHandler {
 	    					for (int i = 0; i < metadataArray.size(); i++) {
 	    						dataObjectAO.addAVUMetadata(file.getAbsolutePath(), new AvuData( (String) ((JSONObject) metadataArray.get(i)).get("name"), (String) ((JSONObject) metadataArray.get(i)).get("value"), (String) ((JSONObject) metadataArray.get(i)).get("unit")));
 	    					}
-						} catch (IOException e){
-				        	Log.log(Log.DEBUG, "Set metadata failed: "+e);
-				        	String s = e.getMessage();
-				        	if (s.endsWith("-818000")) 
-				        		s = "you don't have permission"; // irods error -818000 
-		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-		        			return;
+//						} catch (IOException e){
+//				        	Log.log(Log.DEBUG, "Set metadata failed: "+e);
+//				        	String s = e.getMessage();
+//				        	if (s.endsWith("-818000")) 
+//				        		s = "you don't have permission"; // irods error -818000 
+//		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+//		        			return;
+						} catch (JargonException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							throw new IOException(e.getMessage());
 						}
 					}
 				}
 			}
 
 			// Get and return metadata 
-			List<MetaDataAndDomainData> metadatas=dataObjectAO.findMetadataValuesForDataObject(file);
+			List<MetaDataAndDomainData> metadatas = null;
+			try {
+				metadatas = dataObjectAO.findMetadataValuesForDataObject(file);
+			} catch (JargonException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				throw new IOException(e.getMessage());
+			}
 			json.append("{\n"+escapeJSONArg("items")+":[");
 			boolean b = false;
 			if (metadatas != null) { // Nothing in the database matched the query
@@ -338,7 +408,13 @@ public class DefaultPostHandler extends AbstractHandler {
 			                			davisSession.setCurrentResource(davisSession.getDefaultResource());
 			                        IRODSFileOutputStream stream = null;
 			                    	Log.log(Log.DEBUG, "saving file "+file.getAbsolutePath()+" into res:"+davisSession.getCurrentResource());
-			                        stream = fileFactory.instanceIRODSFileOutputStream(file);
+			                        try {
+										stream = fileFactory.instanceIRODSFileOutputStream(file);
+									} catch (JargonException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+										throw new IOException(e1.getMessage());
+									}
 			                        BufferedOutputStream outputStream = new BufferedOutputStream(stream, 1024*256);  //Buffersize of 256k seems to give max speed
 			                        try {
 			                        	copy(tracker, inputStream, outputStream);
@@ -540,7 +616,7 @@ public class DefaultPostHandler extends AbstractHandler {
 	        	if (!file.isDirectory()) {	// Can't get replica info for a directory
 	        		if (deleteResource != null) {
 	        			Log.log(Log.DEBUG, "Deleting replica at "+deleteResource);
-                    	((IRODSFile)file).deleteReplica(deleteResource);	//Currently ALWAYS returns false!
+//                    	((IRODSFile)file).deleteReplica(deleteResource);	//Currently ALWAYS returns false!
 	        			Log.log(Log.DEBUG, "Not currently working in Jargon");
 	        		}
 	        		if (replicateResource != null) {
@@ -564,10 +640,17 @@ public class DefaultPostHandler extends AbstractHandler {
 	        		
 	        		// Now get replica info
 	        		StringBuilder query = new StringBuilder();
-	        		query.append(RodsGenQueryEnum.COL_COLL_PARENT_NAME.getName() + " like '"+file.getParent()+"' and ");
-	        		query.append(RodsGenQueryEnum.COL_COLL_NAME.getName() + " like '"+file.getName()+"'");
+	        		query.append(RodsGenQueryEnum.COL_COLL_NAME.getName() + " like '"+file.getParent()+"' and ");
+	        		query.append(RodsGenQueryEnum.COL_DATA_NAME.getName() + " like '"+file.getName()+"'");
 
-	        		List<DataObject> dataObjects = dataObjectAO.findWhere(query.toString());
+	        		List<DataObject> dataObjects = null;
+					try {
+						dataObjects = dataObjectAO.findWhere(query.toString());
+					} catch (JargonException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						throw new IOException(e.getMessage());
+					}
 		    		if (dataObjects != null)
 			    		for (int i = 0; i < dataObjects.size(); i++) {
 							if (i > 0) json.append(",\n");
@@ -578,25 +661,25 @@ public class DefaultPostHandler extends AbstractHandler {
 	        }
 			json.append("\n]}");
 			
-		} else if (method.equalsIgnoreCase("shares")) {
-			json.append("{\n"+escapeJSONArg("items")+":[\n");
-			MetaDataRecordList[] fileDetails = getShares(davisSession);
-			if (fileDetails == null) 
-    			fileDetails = new MetaDataRecordList[0];	
- 			int i = 0;
-    		for (MetaDataRecordList p:fileDetails) {
-    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
-    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
-    			String sharingURL = (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE);
-				if (i++ > 0) json.append(",\n");
-				json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
-				json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
-				json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
-        	}
-//				}
-    		json.append("\n]}");
-			
-			
+//		} else if (method.equalsIgnoreCase("shares")) {
+//			json.append("{\n"+escapeJSONArg("items")+":[\n");
+//			MetaDataRecordList[] fileDetails = getShares(davisSession);
+//			if (fileDetails == null) 
+//    			fileDetails = new MetaDataRecordList[0];	
+// 			int i = 0;
+//    		for (MetaDataRecordList p:fileDetails) {
+//    			String dirName = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
+//    			String fileName = (String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+//    			String sharingURL = (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE);
+//				if (i++ > 0) json.append(",\n");
+//				json.append("{"+escapeJSONArg("file")+":\""+FSUtilities.escape(fileName)+"\",");
+//				json.append(escapeJSONArg("dir")+":\""+FSUtilities.escape(dirName)+"\",");
+//				json.append(escapeJSONArg("url")+":"+escapeJSONArg(sharingURL)+"}");
+//        	}
+////				}
+//    		json.append("\n]}");
+//			
+//			
 		} else if (method.equalsIgnoreCase("alltags")) {
 			json.append("{\n"+escapeJSONArg("items")+":[\n");
 			String[] tags = getTags(null, davisSession, DavisConfig.TAGMETAKEY);
@@ -626,22 +709,33 @@ public class DefaultPostHandler extends AbstractHandler {
 						if (tagsArray == null)
 							break;
 						Log.log(Log.DEBUG, "Changing tag metadata for: "+selectedFile+" to: "+tagsArray);
+						
 						try {
+							List<MetaDataAndDomainData> metadatas=dataObjectAO.findMetadataValuesForDataObject(selectedFile);
 							//delete all tag metadata, uses wildcards
-							((IRODSFile)selectedFile).deleteMetaData(new String[]{DavisConfig.TAGMETAKEY,"%","%"});
-							
-							String[] metadata = new String[] {DavisConfig.TAGMETAKEY, "", ""};
-							for (int i = 0; i < tagsArray.size(); i++) {
-								metadata[1] = (String)tagsArray.get(i);
-								((IRODSFile)selectedFile).modifyMetaData(metadata);
+							for (MetaDataAndDomainData metadata:metadatas){
+								if (metadata.getAvuAttribute().equalsIgnoreCase(DavisConfig.TAGMETAKEY))
+									dataObjectAO.deleteAVUMetadata(file.getAbsolutePath(), new AvuData(metadata.getAvuAttribute(),metadata.getAvuValue(),metadata.getAvuUnit()));
 							}
-						} catch (IOException e){
-				        	Log.log(Log.DEBUG, "Set tag metadata failed: "+e);
-				        	String s = e.getMessage();
-				        	if (s.endsWith("-818000")) 
-				        		s = "you don't have permission"; // irods error -818000 
-		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-		        			return;
+	
+							for (int i = 0; i < tagsArray.size(); i++) {
+	    						dataObjectAO.addAVUMetadata(file.getAbsolutePath(), new AvuData(DavisConfig.TAGMETAKEY, (String)tagsArray.get(i), ""));
+							}
+//						} catch (IOException e){
+//				        	Log.log(Log.DEBUG, "Set tag metadata failed: "+e);
+//				        	String s = e.getMessage();
+//				        	if (s.endsWith("-818000")) 
+//				        		s = "you don't have permission"; // irods error -818000 
+//		        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+//		        			return;
+						} catch (DataNotFoundException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							throw new IOException(e.getMessage());
+						} catch (JargonException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							throw new IOException(e.getMessage());
 						}
 					}
 				}
@@ -658,29 +752,29 @@ public class DefaultPostHandler extends AbstractHandler {
 			}
 			json.append("\n]}");			
 			
-		} else if (method.equalsIgnoreCase("unshareall")) {
-			JSONObject jsonObject = null;
-			JSONArray jsonArray = getJSONContent(request);
-			if (jsonArray != null) {	
-				jsonObject = (JSONObject)jsonArray.get(0);
-				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
-				String sharingKey = Davis.getConfig().getSharingKey();
-				if (fileNamesArray != null && sharingKey != null)
-					for (int i = 0; i < fileNamesArray.size(); i++) {
-						String name = (String)fileNamesArray.get(i);
-						name = name.replaceAll("\\+", "%2B");
-						name = URLDecoder.decode(name, "UTF-8");
-						if (name.trim().length() == 0)
-							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
-						file = getIRODSFile(name, davisSession);
-						String s = share(davisSession, file, false);
-						if (s != null) {
-							response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-							return;
-						}
-					}			
-			} else
-				throw new ServletException("Internal error reading file list: error parsing JSON");			
+//		} else if (method.equalsIgnoreCase("unshareall")) {
+//			JSONObject jsonObject = null;
+//			JSONArray jsonArray = getJSONContent(request);
+//			if (jsonArray != null) {	
+//				jsonObject = (JSONObject)jsonArray.get(0);
+//				JSONArray fileNamesArray = (JSONArray)jsonObject.get("files");
+//				String sharingKey = Davis.getConfig().getSharingKey();
+//				if (fileNamesArray != null && sharingKey != null)
+//					for (int i = 0; i < fileNamesArray.size(); i++) {
+//						String name = (String)fileNamesArray.get(i);
+//						name = name.replaceAll("\\+", "%2B");
+//						name = URLDecoder.decode(name, "UTF-8");
+//						if (name.trim().length() == 0)
+//							continue;	// If for any reason name is "", we MUST skip it because that's equivalent to home!   	 
+//						file = getIRODSFile(name, davisSession);
+//						String s = share(davisSession, file, false);
+//						if (s != null) {
+//							response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+//							return;
+//						}
+//					}			
+//			} else
+//				throw new ServletException("Internal error reading file list: error parsing JSON");			
 			
 //		} else if (method.equalsIgnoreCase("share")) { // share or unshare
 //			String action = request.getParameter("action");
@@ -1103,155 +1197,122 @@ public class DefaultPostHandler extends AbstractHandler {
 	private String[] getTags(IRODSFile file, DavisSession davisSession, String key) throws IOException{
 		
 		HashSet<String> tags = new HashSet<String>();
-
-		MetaDataSelect[] selects = MetaDataSet.newSelection(new String[] {IRODSMetaDataSet.DIRECTORY_NAME, IRODSMetaDataSet.META_DATA_ATTR_VALUE});
-		MetaDataCondition[] conditions = new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, key)};
-			
-		MetaDataRecordList[] results = null;
-		if (file == null)
-			results = ((IRODSFileSystem)davisSession.getIRODSFileSystem()).query(conditions, selects, DavisConfig.JARGON_MAX_QUERY_NUM);
-		else
-			results = file.query(conditions, selects);
-
-		if (results != null)
-			for (MetaDataRecordList result:results) {
-//	System.err.println("$$$$$$$$$$$$result:"+result);
-				tags.add((String)result.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
-			}
+        DataObjectAO dataObjectAO=davisSession.getDataObjectAO();
+        CollectionAO collectionAO=davisSession.getCollectionAO();
 		
-		selects = MetaDataSet.newSelection(new String[] {IRODSMetaDataSet.DIRECTORY_NAME, IRODSMetaDataSet.META_COLL_ATTR_VALUE});
-		conditions = new MetaDataCondition[] {MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, key)};
-		if (file == null)
-			results = ((IRODSFileSystem)davisSession.getIRODSFileSystem()).query(conditions, selects, DavisConfig.JARGON_MAX_QUERY_NUM);
-		else
-			results = file.query(conditions, selects);
-
-		if (results != null)
-			for (MetaDataRecordList result:results) {
-//	System.err.println("$$$$$$$$$$$$result:"+result);
-				String tag = (String)result.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE);
-		//		if (!tags.contains(tag)) // Keep list unique
-					tags.add(tag);
-			}
-		
-		return tags.toArray(new String[0]);
-	}
-	
-	private String share(DavisSession davisSession, IRODSFile file, boolean share) {
-		
-    	if (!file.isDirectory()) {	// Can't share a directory
-			String sharingKey = Davis.getConfig().getSharingKey();
-    		String username = Davis.getConfig().getSharingUser();
-			if (username != null) {
-				GeneralFileSystem fileSystem = file.getFileSystem();				
-				String permission = "r";
-				if (!share)
-					permission = "n";
-				
-				try {
-					// Add/remove read permission for share user
-					Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" for sharing");
-					((IRODSFile)file).changePermissions(permission, username, false);
-				} catch (IOException e){
-					String s = e.toString();
-					if (e.getCause() != null)
-						s += " : "+e.getCause().getMessage();
-		        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+s);
-		        	if (e.getMessage().endsWith("-818000")) 
-		        		s = "you don't have permission"; // irods error -818000 
-		        	if (e.getMessage().endsWith("IRODS error occured msg")) {
-		        		s = "can't unshare "+file.getName();  
-		        		Log.log(Log.ERROR, s+" due to iRODS error");
-		        	}
-		        	if (e.getMessage().endsWith("-827000")) {
-		        		s = "Internal error: sharing user account doesn't exist";
-		        		Log.log(Log.ERROR, s);
-		        	}
-        			return s;
+		List<MetaDataAndDomainData> metadatas;
+		try {
+			if (file==null) {
+				ArrayList<AVUQueryElement> avus = new ArrayList<AVUQueryElement>();
+				avus.add(AVUQueryElement.instanceForValueQuery(AVUQueryPart.ATTRIBUTE,
+						AVUQueryOperatorEnum.EQUAL, key));
+				metadatas = dataObjectAO.findMetadataValuesByMetadataQuery(avus);
+				for (MetaDataAndDomainData metadata:metadatas){
+					tags.add(metadata.getAvuValue());
 				}
-				
-				try {
-					// Add/remove share metadata
-					if (fileSystem instanceof SRBFileSystem) {
-						Log.log(Log.ERROR,"Sharing not implemented for SRB");
-					}else 
-					if (fileSystem instanceof IRODSFileSystem) {
-						if (share) {
-							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName(), null);
-							if (!(fileDetails == null || fileDetails.length == 0)) {
-								Log.log(Log.DEBUG, file.getPath()+" is already shared - ignoring");
-								return null;
-							}
-						}
-						Log.log(Log.DEBUG, "removing metadata field '"+sharingKey+"' for "+username+" to end sharing");
-						((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
-						if (share) {
-							String randomString = Long.toHexString(random.nextLong());
-							String shareURL = Davis.getConfig().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
-							String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
-							Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
-							((IRODSFile)file).modifyMetaData(metadata);
-						}
+				metadatas = collectionAO.findMetadataValuesByMetadataQuery(avus);
+				for (MetaDataAndDomainData metadata:metadatas){
+					tags.add(metadata.getAvuValue());
+				}
+			}else{
+				if (file.isDirectory()){
+					metadatas = collectionAO.findMetadataValuesForCollection(file.getAbsolutePath());
+					for (MetaDataAndDomainData metadata:metadatas){
+						if (metadata.getAvuAttribute().equalsIgnoreCase(key)) tags.add(metadata.getAvuValue());
 					}
-				} catch (IOException e){
-		        	Log.log(Log.DEBUG, "Set metadata failed for sharing: "+e);
-		        	String s = e.getMessage();
-		        	if (s.endsWith("-818000")) 
-		        		s = "you don't have permission"; // irods error -818000 
-        			return s;
+				}else{
+					metadatas = dataObjectAO.findMetadataValuesForDataObject(file);
+					for (MetaDataAndDomainData metadata:metadatas){
+						if (metadata.getAvuAttribute().equalsIgnoreCase(key)) tags.add(metadata.getAvuValue());
+					}
 				}
 			}
-    	}
-    	return null;
+
+
+			return tags.toArray(new String[0]);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		} catch (JargonQueryException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+		
 	}
 	
-	private boolean isPermInherited(IRODSFile file) throws IOException {
-
-            String[] selectFieldNames = {
-                    SRBMetaDataSet.DIRECTORY_LINK_NUMBER,
-            };
-
-            MetaDataSelect inheritanceQuery[] = MetaDataSet.newSelection( selectFieldNames );
-            MetaDataRecordList[] list = file.query(inheritanceQuery);
-
-            if(list != null)
-            {
-                MetaDataRecordList r = list[0];
-                String result  = r.getValue(r.getFieldIndex(SRBMetaDataSet.DIRECTORY_LINK_NUMBER)).toString();
-                return result.equals("1");
-            }
-
-            return false;
-    }
-	private void setSticky(IRODSFile file, boolean flag, boolean recursive) throws IOException{
-		file.changePermissions(flag?"inherit":"noinherit", "", recursive);
-	}
+//	private String share(DavisSession davisSession, IRODSFile file, boolean share) {
+//		
+//    	if (!file.isDirectory()) {	// Can't share a directory
+//			String sharingKey = Davis.getConfig().getSharingKey();
+//    		String username = Davis.getConfig().getSharingUser();
+//			if (username != null) {
+//				GeneralFileSystem fileSystem = file.getFileSystem();				
+//				String permission = "r";
+//				if (!share)
+//					permission = "n";
+//				
+//				try {
+//					// Add/remove read permission for share user
+//					Log.log(Log.DEBUG, "change permission for "+username+" to "+permission+" for sharing");
+//					((IRODSFile)file).changePermissions(permission, username, false);
+//				} catch (IOException e){
+//					String s = e.toString();
+//					if (e.getCause() != null)
+//						s += " : "+e.getCause().getMessage();
+//		        	Log.log(Log.DEBUG, "Set permissions failed for sharing: "+s);
+//		        	if (e.getMessage().endsWith("-818000")) 
+//		        		s = "you don't have permission"; // irods error -818000 
+//		        	if (e.getMessage().endsWith("IRODS error occured msg")) {
+//		        		s = "can't unshare "+file.getName();  
+//		        		Log.log(Log.ERROR, s+" due to iRODS error");
+//		        	}
+//		        	if (e.getMessage().endsWith("-827000")) {
+//		        		s = "Internal error: sharing user account doesn't exist";
+//		        		Log.log(Log.ERROR, s);
+//		        	}
+//        			return s;
+//				}
+//				
+//				try {
+//					// Add/remove share metadata
+//					if (fileSystem instanceof SRBFileSystem) {
+//						Log.log(Log.ERROR,"Sharing not implemented for SRB");
+//					}else 
+//					if (fileSystem instanceof IRODSFileSystem) {
+//						if (share) {
+//							MetaDataRecordList[] fileDetails = getShares(davisSession, file.getParent(), file.getName(), null);
+//							if (!(fileDetails == null || fileDetails.length == 0)) {
+//								Log.log(Log.DEBUG, file.getPath()+" is already shared - ignoring");
+//								return null;
+//							}
+//						}
+//						Log.log(Log.DEBUG, "removing metadata field '"+sharingKey+"' for "+username+" to end sharing");
+//						((IRODSFile)file).deleteMetaData(new String[]{sharingKey,"%","%"});
+//						if (share) {
+//							String randomString = Long.toHexString(random.nextLong());
+//							String shareURL = Davis.getConfig().getSharingURLPrefix()+'/'+randomString+'/'+DavisUtilities.encodeFileName(file.getName());
+//							String[] metadata = new String[] {sharingKey, shareURL, ""};		    	
+//							Log.log(Log.DEBUG, "adding share URL '"+shareURL+"' to metadata field '"+sharingKey+"' for "+username+" to enable sharing");
+//							((IRODSFile)file).modifyMetaData(metadata);
+//						}
+//					}
+//				} catch (IOException e){
+//		        	Log.log(Log.DEBUG, "Set metadata failed for sharing: "+e);
+//		        	String s = e.getMessage();
+//		        	if (s.endsWith("-818000")) 
+//		        		s = "you don't have permission"; // irods error -818000 
+//        			return s;
+//				}
+//			}
+//    	}
+//    	return null;
+//	}
+	
 
     private boolean error = false;
 
-    private boolean iRODSSetPermission(IRODSFile file, String permission, String username) {
- 
-    	if (file.isDirectory()) {
-    		Log.log(Log.DEBUG, "(perm)entering dir "+file.getAbsolutePath());
-    		String[] fileList=file.list();
-    		Log.log(Log.DEBUG, "(perm)entering dir has children number: "+fileList.length);
-    		if (fileList.length > 0) 
-        		for (int i=0; i<fileList.length; i++){
-        			Log.log(Log.DEBUG, "(perm)entering child "+fileList[i]);
-    				error = error || !iRODSSetPermission(new IRODSFile(file,fileList[i]), permission, username);
-        		}
-    	}
-		Log.log(Log.DEBUG, "changing permission of "+file.getAbsolutePath());
-		try {
-			file.changePermissions(permission, username, false);
-		} catch (IOException e) {
-			if (!error)
-				Log.log(Log.DEBUG, "recursive iRODSSetPermission caught: "+e); // Only log first error
-			error = true;
-		}
-    	
-    	return !error;
-    }
 	
     private static final Map trackers = new HashMap();	// Set of trackers currently transferring
     

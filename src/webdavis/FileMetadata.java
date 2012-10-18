@@ -4,11 +4,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class FileMetadata  {
+import org.irods.jargon.core.pub.domain.DataObject;
+
+public class FileMetadata {
 
 	private HashMap<String, ArrayList<String>> metadata = new HashMap<String, ArrayList<String>>();
+	private DataObject dataObject;
 	
-	
+	public FileMetadata(DataObject dataObject) {
+		this.dataObject=dataObject;
+	}
 	
 	public void addItem(String name, String value) {
 		
@@ -35,5 +40,10 @@ public class FileMetadata  {
 	public String toString() {
 		
 		return "file="+super.toString()+" metadata="+metadata;
+	}
+
+	public String getName() {
+		// TODO Auto-generated method stub
+		return dataObject.getDataName();
 	}
 }

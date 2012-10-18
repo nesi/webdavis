@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ProtocolException;
@@ -16,12 +17,14 @@ import java.util.Vector;
 import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.connection.auth.AuthResponse;
 import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.DataObjectAO;
 import org.irods.jargon.core.pub.IRODSFileSystem;
 import org.irods.jargon.core.pub.ResourceAO;
 import org.irods.jargon.core.pub.UserAO;
 import org.irods.jargon.core.pub.domain.Resource;
 import org.irods.jargon.core.pub.domain.User;
 import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.core.query.MetaDataAndDomainData;
 
 /**
  * Utilities for SRB/iRODS
@@ -114,134 +117,69 @@ public class FSUtilities {
 	public static HashMap<String, FileMetadata> getIRODSCollectionMetadata(DavisSession davisSession, IRODSFile collection, String attrName){
 
 		HashMap<String, FileMetadata> results = new HashMap<String, FileMetadata>();
-		
-		MetaDataSelect selectsFile[] = 
-			MetaDataSet.newSelection(new String[] {
-					IRODSMetaDataSet.META_DATA_ATTR_NAME,
-					IRODSMetaDataSet.META_DATA_ATTR_VALUE,
-					IRODSMetaDataSet.FILE_NAME,
-					IRODSMetaDataSet.DIRECTORY_NAME
-			});
-		MetaDataCondition conditionsFile[];
-		MetaDataCondition conditionsDir[];
-		if (attrName == null) {
-			conditionsFile = new MetaDataCondition[] {
-				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath())
-			};
-			conditionsDir = new MetaDataCondition[] {
-				MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath())
-			};
-		} else {
-			conditionsFile = new MetaDataCondition[] {
-				MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-				MetaDataSet.newCondition(IRODSMetaDataSet.META_DATA_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
-			};
-			conditionsDir = new MetaDataCondition[] {
-				MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-				MetaDataSet.newCondition(IRODSMetaDataSet.META_COLL_ATTR_NAME, MetaDataCondition.EQUAL, attrName),
-			};
-		}
-		MetaDataSelect selectsDir[] =
-			MetaDataSet.newSelection(new String[] {
-				IRODSMetaDataSet.META_COLL_ATTR_NAME,
-				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
-				IRODSMetaDataSet.DIRECTORY_NAME
-			});
+		List<MetaDataAndDomainData> metadatas;
+		String path;
 		try {
-			MetaDataRecordList[] fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisConfig.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
- 			if (fileDetails == null) 
-    			fileDetails = new MetaDataRecordList[0];
-    		if (dirDetails == null) 
-    			dirDetails = new MetaDataRecordList[0];
-    		
-    		for (MetaDataRecordList p:fileDetails) {
-    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME)+"/"+(String)p.getValue(IRODSMetaDataSet.FILE_NAME);
+	        DataObjectAO dataObjectAO=davisSession.getDataObjectAO();
+			metadatas = dataObjectAO.findMetadataValuesForDataObject(collection);
+			for (MetaDataAndDomainData metadata:metadatas){
+				if (attrName!=null&&!metadata.getAvuAttribute().equalsIgnoreCase(attrName)) continue;
+				path=collection.getAbsolutePath();
     			FileMetadata mdata = results.get(path);
     			if (mdata == null) {
-	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME), (String)p.getValue(IRODSMetaDataSet.FILE_NAME));
+	    			mdata = new FileMetadata(dataObjectAO.findByAbsolutePath(path));
 	    			results.put(path, mdata);
     			}
-    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_DATA_ATTR_VALUE));
-    		}
-    		for (MetaDataRecordList p:dirDetails) {
-    			String path = (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME);
-    			FileMetadata mdata = results.get(path);
-    			if (mdata == null) {
-	    			mdata = new FileMetadata((RemoteFileSystem)collection.getFileSystem(), collection.getAbsolutePath(), (String)p.getValue(IRODSMetaDataSet.DIRECTORY_NAME));
-	    			results.put(path, mdata);
-    			}
-    			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
-    		}
-    		Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+((IRODSFileSystem)collection.getFileSystem()).getUserName()+"': \n"+results);
+    			mdata.addItem(metadata.getAvuAttribute(), metadata.getAvuValue());
+			}
+    		Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+davisSession.getIRODSAccount().getUserName()+"': \n"+results);
     		return results;
-		} catch (NullPointerException e) {
+		}catch (JargonException e){
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
+		
 	}
 	
-	public static CachedFile[] getIRODSCollectionDetails(IRODSFile file){
+	public static CachedFile[] getIRODSCollectionDetails(DavisSession davisSession, IRODSFile file){
 		
-		return getIRODSCollectionDetails(file, true, true, false);
+		return getIRODSCollectionDetails(davisSession, file, true, true, false);
 	}
 
-	public static CachedFile[] getIRODSCollectionDetails(IRODSFile collection, boolean sort, boolean getFiles, boolean getMetadata){
+	public static CachedFile[] getIRODSCollectionDetails(DavisSession davisSession, IRODSFile collection, boolean sort, boolean getFiles, boolean getMetadata){
 		
 		// For files with multiple replicas, a clean replica will be returned in the result. If only a dirty copy is found, then that will be used.
 		HashMap<String, FileMetadata> metadata = null;
 		if (getMetadata)
-			metadata = getIRODSCollectionMetadata(collection);
-		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
-		MetaDataCondition conditionsFile[] = {
-			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-//			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
-//			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_NUM,	MetaDataCondition.EQUAL, 0),
-//			MetaDataSet.newCondition(IRODSMetaDataSet.USER_NAME, MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName()),
-		};
-		MetaDataSelect selectsFile[] = MetaDataSet.newSelection(new String[]{
-				IRODSMetaDataSet.FILE_NAME,
-				IRODSMetaDataSet.DIRECTORY_NAME,
-				IRODSMetaDataSet.CREATION_DATE,
-				IRODSMetaDataSet.MODIFICATION_DATE,
-				IRODSMetaDataSet.SIZE,
-				IRODSMetaDataSet.RESOURCE_NAME,
-				IRODSMetaDataSet.FILE_REPLICA_STATUS,
-//				IRODSMetaDataSet.META_DATA_ATTR_NAME,
-//				IRODSMetaDataSet.META_DATA_ATTR_VALUE,
-//				IRODSMetaDataSet.FILE_ACCESS_TYPE 
-			});
-		MetaDataCondition conditionsDir[] = {
-			MetaDataSet.newCondition(IRODSMetaDataSet.PARENT_DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
-//##			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),
-//			MetaDataSet.newCondition(IRODSMetaDataSet.DIRECTORY_USER_NAME, MetaDataCondition.EQUAL, ((IRODSFileSystem)file.getFileSystem()).getUserName()),
-		};
-		MetaDataSelect selectsDir[] = MetaDataSet.newSelection(new String[]{
-				IRODSMetaDataSet.DIRECTORY_NAME,
-				IRODSMetaDataSet.DIRECTORY_TYPE,
-				IRODSMetaDataSet.DIRECTORY_CREATE_DATE,
-				IRODSMetaDataSet.DIRECTORY_MODIFY_DATE,
-				IRODSMetaDataSet.PARENT_DIRECTORY_NAME,
-//##				IRODSMetaDataSet.RESOURCE_NAME,
-//				IRODSMetaDataSet.META_COLL_ATTR_NAME,
-//				IRODSMetaDataSet.META_COLL_ATTR_VALUE,
-//				IRODSMetaDataSet.DIRECTORY_ACCESS_TYPE
-			});
-		try {
-			MetaDataRecordList[] fileDetails = null;
-			if (getFiles)
-				fileDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsFile, selectsFile, DavisConfig.JARGON_MAX_QUERY_NUM);
-    		MetaDataRecordList[] dirDetails = ((IRODSFileSystem)collection.getFileSystem()).query(conditionsDir, selectsDir, DavisConfig.JARGON_MAX_QUERY_NUM, Namespace.DIRECTORY);
-    		return buildCache(fileDetails, dirDetails, (RemoteFileSystem)collection.getFileSystem(), metadata, sort, getFiles, getMetadata);
-		} catch (NullPointerException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+			metadata = getIRODSCollectionMetadata(davisSession, collection);
+		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+davisSession.getIRODSAccount().getUserName());
+		File[] files=collection.listFiles();
+		CachedFile[] cacheFiles=new CachedFile[files.length];
+		Comparator<Object> comparator = null;
+		if (sort)
+			comparator= new Comparator<Object>() {
+			public int compare(Object file1, Object file2) {
+				return (((File)file1).getName().toLowerCase().compareTo(((File)file2).getName().toLowerCase()));
+				}     			
+			};
+		File file;
+		if (sort)
+			Arrays.sort((Object[])files, comparator);
+		for (int i=0;i<files.length;i++) {
+			file=files[i];
+			cacheFiles[i]=new CachedFile(file);
+			if (getMetadata && metadata != null) {
+				if (metadata.containsKey(file.getAbsolutePath())) 
+					cacheFiles[i].setMetadata(metadata.get(file.getAbsolutePath()).getMetadata());
+			}
+			
 		}
-		return null;
+		return cacheFiles;
 	}
+
 
 	/**
 	 * Test an iRODS session connection
@@ -251,12 +189,10 @@ public class FSUtilities {
 	 */
 	public static String testConnection(final DavisSession davisSession) {
 		
-		if (!(davisSession.getRemoteFileSystem() instanceof IRODSFileSystem))
-			return null;
 		
 				String message = null;
 				try {
-					((IRODSFileSystem)davisSession.getRemoteFileSystem()).miscServerInfo();
+					davisSession.currentConnection().getIRODSServerProperties();
 				} catch (ProtocolException e) {
 					message = e.getMessage();
 					if (message == null)
@@ -381,15 +317,6 @@ public class FSUtilities {
 
 	}
 
-	public static void dumpQueryResult(MetaDataRecordList[] results, String prefix) {
-
-		if (results == null)
-			return;
-		if (prefix == null)
-			prefix = "";
-		for (int i = 0; i < results.length; i++)
-			System.err.println(prefix+results[i]);
-	}
 
 	public static String[] getUsernames(DavisSession davisSession) throws IOException{
 		UserAO userAO;

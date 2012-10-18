@@ -27,19 +27,19 @@ public class ListingComparator implements Comparator<Object> {
 
 	public int compare(Object file1, Object file2) {
 		if (sortField.equals("name")) { // File name column
-			if (((IRODSFile) file1).isDirectory()	&& !((IRODSFile) file2).isDirectory()) // Keep directories separate from files
+			if (((CachedFile) file1).isDirectory()	&& !((CachedFile) file2).isDirectory()) // Keep directories separate from files
 				return -1 * (sortAscending ? 1 : -1);
-			if (!((IRODSFile) file1).isDirectory() && ((IRODSFile) file2).isDirectory())
+			if (!((CachedFile) file1).isDirectory() && ((CachedFile) file2).isDirectory())
 				return (sortAscending ? 1 : -1);
-			return (((IRODSFile) file1).getName().toLowerCase().compareTo(((IRODSFile) file2).getName().toLowerCase()))	* (sortAscending ? 1 : -1);
+			return (((CachedFile) file1).getName().toLowerCase().compareTo(((CachedFile) file2).getName().toLowerCase()))	* (sortAscending ? 1 : -1);
 		} else if (sortField.equals("size")) {
-			if (((IRODSFile) file1).isDirectory()	&& !((IRODSFile) file2).isDirectory()) // Keep directories separate from files
+			if (((CachedFile) file1).isDirectory()	&& !((CachedFile) file2).isDirectory()) // Keep directories separate from files
 				return -1 * (sortAscending ? 1 : -1);
-			if (!((IRODSFile) file1).isDirectory() && ((IRODSFile) file2).isDirectory())
+			if (!((CachedFile) file1).isDirectory() && ((CachedFile) file2).isDirectory())
 				return (sortAscending ? 1 : -1);
-			return (new Long(((IRODSFile) file1).length()).compareTo(new Long(((IRODSFile) file2).length()))) * (sortAscending ? 1 : -1);
+			return (new Long(((CachedFile) file1).length()).compareTo(new Long(((CachedFile) file2).length()))) * (sortAscending ? 1 : -1);
 		} else if (sortField.equals("date")) {
-			return (new Long(((IRODSFile) file1).lastModified()).compareTo(new Long(((IRODSFile) file2).lastModified()))) * (sortAscending ? 1 : -1);
+			return (new Long(((CachedFile) file1).lastModified()).compareTo(new Long(((CachedFile) file2).lastModified()))) * (sortAscending ? 1 : -1);
 		} else if (sortField.equals("sharing")) {
 			return ((CachedFile)file1).getSharingValue().compareTo(((CachedFile)file2).getSharingValue())* (sortAscending ? 1 : -1);
 		}

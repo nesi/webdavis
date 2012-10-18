@@ -543,10 +543,10 @@ public class DavisUtilities {
     
     final static Hashtable <String, String> permMap = new Hashtable<String, String>();
     static {
-	    permMap.put("own", "read and write");
-	    permMap.put("modify object", "write only");
-	    permMap.put("read object", "read only");
-	    permMap.put("null", "no access");
+	    permMap.put("OWN", "read and write");
+	    permMap.put("WRITE", "write only");
+	    permMap.put("READ", "read only");
+	    permMap.put("NULL", "no access");
     }
 
     public static String iPermissionToPermission(String p) {
