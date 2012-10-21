@@ -25,6 +25,7 @@ import org.irods.jargon.core.pub.domain.Resource;
 import org.irods.jargon.core.pub.domain.User;
 import org.irods.jargon.core.pub.io.IRODSFile;
 import org.irods.jargon.core.query.MetaDataAndDomainData;
+import org.irods.jargon.ticket.TicketAdminService;
 
 /**
  * Utilities for SRB/iRODS
@@ -168,12 +169,31 @@ public class FSUtilities {
 		File file;
 		if (sort)
 			Arrays.sort((Object[])files, comparator);
+		TicketAdminService ticketAdminService = null;
+		try {
+			ticketAdminService=davisSession.getTicketAdminService();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		for (int i=0;i<files.length;i++) {
 			file=files[i];
 			cacheFiles[i]=new CachedFile(file);
 			if (getMetadata && metadata != null) {
 				if (metadata.containsKey(file.getAbsolutePath())) 
 					cacheFiles[i].setMetadata(metadata.get(file.getAbsolutePath()).getMetadata());
+				try {
+					if (file.isDirectory())
+						cacheFiles[i].setTickets(ticketAdminService.listAllTicketsForGivenCollection(file.getAbsolutePath(), 0));
+					else
+						cacheFiles[i].setTickets(ticketAdminService.listAllTicketsForGivenDataObject(file.getAbsolutePath(), 0));
+				} catch (org.irods.jargon.core.exception.FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (JargonException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			
 		}

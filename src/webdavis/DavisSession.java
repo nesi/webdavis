@@ -15,6 +15,10 @@ import org.irods.jargon.core.pub.ResourceAO;
 import org.irods.jargon.core.pub.RuleProcessingAO;
 import org.irods.jargon.core.pub.UserAO;
 import org.irods.jargon.core.pub.io.IRODSFileFactory;
+import org.irods.jargon.ticket.TicketAdminService;
+import org.irods.jargon.ticket.TicketAdminServiceImpl;
+import org.irods.jargon.ticket.TicketClientOperations;
+import org.irods.jargon.ticket.TicketServiceFactoryImpl;
 
 import webdavis.DefaultPostHandler.Tracker;
 /**
@@ -269,11 +273,37 @@ public class DavisSession implements Serializable{
 			throw new IOException(e.getMessage());
 		}
 	}
-	public IRODSCommands currentConnection() throws IOException{
+	public IRODSCommands currentConnection() throws IOException {
 		IRODSFileSystem fileSystem;
 		try {
 			fileSystem = IRODSFileSystem.instance();
 			return fileSystem.getIrodsSession().currentConnection(iRODSAccount);
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public TicketAdminService getTicketAdminService() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			TicketServiceFactoryImpl factory=new TicketServiceFactoryImpl(fileSystem.getIRODSAccessObjectFactory());
+			return factory.instanceTicketAdminService(iRODSAccount);
+
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new IOException(e.getMessage());
+		}
+	}
+	public TicketClientOperations getTicketClientOperations() throws IOException {
+		IRODSFileSystem fileSystem;
+		try {
+			fileSystem = IRODSFileSystem.instance();
+			TicketServiceFactoryImpl factory=new TicketServiceFactoryImpl(fileSystem.getIRODSAccessObjectFactory());
+			return factory.instanceTicketClientOperations(iRODSAccount);
+
 		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

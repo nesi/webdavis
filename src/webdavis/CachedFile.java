@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.irods.jargon.core.pub.io.IRODSFile;
+import org.irods.jargon.ticket.Ticket;
 
 public class CachedFile {
 	private long length;
@@ -15,6 +17,7 @@ public class CachedFile {
 	private String canonicalPath;
 	private HashMap<String, ArrayList<String>> metadata;
 	private File irodsFile;
+	private List<Ticket> tickets;
 	
 //	public CachedFile(RemoteFileSystem rfs, String path, String filename) throws NullPointerException {
 //		super(rfs, path, filename);
@@ -78,14 +81,22 @@ public class CachedFile {
 	}
 
 	public String getSharingValue() {
-		String sharingValue = "";
-		String sharingKey = Davis.getConfig().getSharingKey();
-		if (metadata != null && sharingKey != null) {
-			ArrayList<String> values = metadata.get(sharingKey);
-			if (values != null)
-				sharingValue = values.get(0);
-		}
-		return sharingValue;
+//		String sharingValue = "";
+//		String sharingKey = Davis.getConfig().getSharingKey();
+//		if (metadata != null && sharingKey != null) {
+//			ArrayList<String> values = metadata.get(sharingKey);
+//			if (values != null)
+//				sharingValue = values.get(0);
+//		}
+//		return sharingValue;
+		if (tickets!=null&&tickets.size()>0) {
+			StringBuilder sb=new StringBuilder();
+			for (Ticket ticket:tickets){
+				sb.append(ticket.getIrodsAbsolutePath()).append("?ticket=").append(ticket.getTicketString()).append(",");
+			}
+			return sb.toString().substring(0,sb.toString().length()-1);
+		}else
+			return "";
 	}
 	
 	public void setMetadata(HashMap<String, ArrayList<String>> metadata) {
@@ -104,4 +115,13 @@ public class CachedFile {
 		// TODO Auto-generated method stub
 		return irodsFile.getParent();
 	}
+
+	public List<Ticket> getTickets() {
+		return tickets;
+	}
+
+	public void setTickets(List<Ticket> tickets) {
+		this.tickets = tickets;
+	}
+	
 }

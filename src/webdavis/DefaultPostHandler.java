@@ -54,6 +54,10 @@ import org.irods.jargon.core.query.MetaDataAndDomainData;
 import org.irods.jargon.core.query.RodsGenQueryEnum;
 import org.irods.jargon.core.query.AVUQueryElement.AVUQueryPart;
 import org.irods.jargon.core.rule.IRODSRuleExecResult;
+import org.irods.jargon.ticket.Ticket;
+import org.irods.jargon.ticket.TicketAdminService;
+import org.irods.jargon.ticket.TicketAdminServiceImpl;
+import org.irods.jargon.ticket.packinstr.TicketCreateModeEnum;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -776,49 +780,47 @@ public class DefaultPostHandler extends AbstractHandler {
 //			} else
 //				throw new ServletException("Internal error reading file list: error parsing JSON");			
 			
-//		} else if (method.equalsIgnoreCase("share")) { // share or unshare
-//			String action = request.getParameter("action");
-//			String sharingKey = Davis.getConfig().getSharingKey();
-//	    	ArrayList<IRODSFile> fileList = new ArrayList<IRODSFile>();
-////	    	try {
-//	    		getFileList(request, davisSession, fileList, getJSONContent(request));
-////	    	} catch (ServletException e) {
-////	    		if (!checkClientInSync(response, e))
-////	    			return;
-////	    	}
-//
-//	        Iterator<IRODSFile> iterator = fileList.iterator();
-//	        while (sharingKey != null && iterator.hasNext()) {
-//	        	file = iterator.next();
-//				MetaDataSelect selectsFile[] = 
-//					MetaDataSet.newSelection(new String[] {
-//							IRODSMetaDataSet.OWNER,							
-//					});
-//				String s= null;
-//				if (Davis.getConfig().getQuickShareOwnerOnly()) // Do we care if this user owns the file?
-//					try {
-//						MetaDataRecordList[] details = ((IRODSFile)file).query(selectsFile);
-//			 			if (details == null) 
-//			    			details = new MetaDataRecordList[0];	
-//			    		for (MetaDataRecordList p:details) {
-//	//System.err.println("##########p="+p);
-//			    			String owner = (String)p.getValue(IRODSMetaDataSet.OWNER);
-//			    			if (!owner.equals(davisSession.getAccount())) 
-//			    				s = "you are not the owner";
-//			        	}
-//					} catch (IOException e) {
-//						s = "Internal error: can't determine the owner of the resource";
-//						Log.log(Log.ERROR, s);
-//						Log.log(Log.ERROR, e);
-//					}
-//       	
-//				if (s == null)
-//					s = share(davisSession, file, action.equals("share"));
-//	        	if (s != null) {
-//        			response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
-//        			return;
-//	        	}
-//	        }
+		} else if (method.equalsIgnoreCase("share")) { // share or unshare
+			String action = request.getParameter("action");
+			String sharingKey = Davis.getConfig().getSharingKey();
+	    	ArrayList<IRODSFile> fileList = new ArrayList<IRODSFile>();
+//	    	try {
+	    	getFileList(request, davisSession, fileList, getJSONContent(request));
+//	    	} catch (ServletException e) {
+//	    		if (!checkClientInSync(response, e))
+//	    			return;
+//	    	}
+	    	TicketAdminService ticketSvc = davisSession.getTicketAdminService();
+
+	        Iterator<IRODSFile> iterator = fileList.iterator();
+	        String s="";
+	        while (sharingKey != null && iterator.hasNext()) {
+	        	file = iterator.next();
+        		try {
+		        	if (action.equals("share")) {
+							String ticketId = ticketSvc.createTicket(TicketCreateModeEnum.READ,
+									file, null);
+	
+		        	}else{
+		        		List<Ticket> tickets=null;
+		        		if (file.isDirectory())
+		        			tickets=ticketSvc.listAllTicketsForGivenCollection(file.getAbsolutePath(),0);
+		        		else
+		        			tickets=ticketSvc.listAllTicketsForGivenDataObject(file.getAbsolutePath(),0);
+		        		for (Ticket ticket:tickets) {
+		        			ticketSvc.deleteTicket(ticket.getTicketId());
+		        		}
+		        	}
+				} catch (JargonException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					s+=e.getMessage();
+				}
+	        }
+        	if (s != null&&s.length()>0) {
+				response.sendError(HttpServletResponse.SC_FORBIDDEN, s);
+				return;
+	    	}
 //			
 //		} else if (method.equalsIgnoreCase("search")) {
 //			IRODSFileSystem searchFileSystem = null;
