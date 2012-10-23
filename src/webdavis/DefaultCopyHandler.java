@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -65,10 +66,18 @@ public class DefaultCopyHandler extends AbstractHandler {
             return;
         }
         IRODSFile destinationFile = getIRODSFile(destination, davisSession);
+    	if (!destinationFile.getParentFile().exists()) {
+            response.sendError(HttpServletResponse.SC_CONFLICT);
+            return;
+    	}
         Iterator<IRODSFile> iterator = fileList.iterator();
         int result = 0;
         while (iterator.hasNext()) {
         	IRODSFile sourceFile = iterator.next();
+        	if (!sourceFile.exists()) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+        	}
 			Log.log(Log.DEBUG, "copying: "+sourceFile+" to "+destinationFile);
             if (destinationFile.getAbsolutePath().equals(sourceFile.getAbsolutePath())) {
 //            	if (batch)
@@ -113,16 +122,19 @@ public class DefaultCopyHandler extends AbstractHandler {
         Log.log(Log.DEBUG, "file:"+file.getAbsolutePath()+" destinationFile:"+destinationFile.getAbsolutePath());
 
         boolean overwritten = false;
-        if (destinationFile.exists()) {
+        Log.log(Log.DEBUG, "destinationFile.exists()?"+destinationFile.exists());
+//        if (destinationFile.exists()) {
         	if ("T".equalsIgnoreCase(request.getHeader("Overwrite"))) {
-        		destinationFile.delete();
+//        		destinationFile.delete();
                 overwritten = true;
-            } else 
+            } else if (destinationFile.exists())
                 return HttpServletResponse.SC_PRECONDITION_FAILED;
-        }
+//        }
+        Log.log(Log.DEBUG, "overwritten?"+overwritten);
     	if (davisSession.getDefaultResource() != null && davisSession.getDefaultResource().length() > 0) {
-    		((IRODSFile)file).setResource(davisSession.getDefaultResource());
-    		((IRODSFile)destinationFile).setResource(davisSession.getDefaultResource());
+    		Log.log(Log.DEBUG, "Resource: "+davisSession.getDefaultResource());
+    		file.setResource(davisSession.getDefaultResource());
+    		destinationFile.setResource(davisSession.getDefaultResource());
     	}
         
 
@@ -136,15 +148,26 @@ public class DefaultCopyHandler extends AbstractHandler {
     			tcb.getTransferOptions().setForceOption(ForceOption.USE_FORCE);
     		else
     			tcb.getTransferOptions().setForceOption(ForceOption.NO_FORCE);
-			dataTransferOperations.copy(file, destinationFile, null, tcb);
-		} catch (OverwriteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new IOException(e.getMessage());
-		} catch (DataNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new IOException(e.getMessage());
+    		if (file.isDirectory()) {
+    			File[] children=file.listFiles();
+    			for (File child:children) {
+    				try {
+    					Log.log(Log.DEBUG, "copying "+child.getAbsolutePath()+" to "+destinationFile.getAbsolutePath());
+    					destinationFile.mkdirs();
+    					dataTransferOperations.copy(child.getAbsolutePath(), file.getResource(), destinationFile.getAbsolutePath(), null, tcb);
+    				} catch (OverwriteException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				} catch (DataNotFoundException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				} catch (JargonException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    				}
+    			}
+    		} else 
+    			dataTransferOperations.copy(file, destinationFile, null, tcb);
 		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
