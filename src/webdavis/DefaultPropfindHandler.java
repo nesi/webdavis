@@ -140,7 +140,10 @@ public class DefaultPropfindHandler extends AbstractHandler {
                 builder.setEntityResolver(BlockedEntityResolver.INSTANCE);
                 document = builder.parse(new LimitInputStream(request.getInputStream(), maximumXmlRequest));
             } catch (Exception ex) {
-                throw new IOException(DavisUtilities.getResource(DefaultPropfindHandler.class, "parseError", new Object[] { ex }, request.getLocale()));
+//                throw new IOException(DavisUtilities.getResource(DefaultPropfindHandler.class, "parseError", new Object[] { ex }, request.getLocale()));
+                ex.printStackTrace();
+            	response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
             }
             Element propfind = document.getDocumentElement();
             Node child = null;
