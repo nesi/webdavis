@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.irods.jargon.core.exception.DataNotFoundException;
 import org.irods.jargon.core.pub.io.IRODSFile;
 
 /**
@@ -43,9 +44,16 @@ public class DefaultMkcolHandler extends AbstractHandler {
     	IRODSFile file = getIRODSFile(request, davisSession);
         response.setContentType("text/html; charset=\"utf-8\"");
         if (file.exists()) {
+        	Log.log(Log.DEBUG, "file exists");
             response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
+        if (!file.getParentFile().exists()){
+        	Log.log(Log.DEBUG, "parent doesn't exists");
+        	response.sendError(HttpServletResponse.SC_CONFLICT);
+        	return;
+        }
+        	
         int result = checkLockOwnership(request, file);
         if (result != HttpServletResponse.SC_OK) {
             response.sendError(result);
@@ -56,11 +64,10 @@ public class DefaultMkcolHandler extends AbstractHandler {
             response.sendError(result);
             return;
         }
-//        try {
-            if (file.mkdir())
-                response.setStatus(HttpServletResponse.SC_CREATED);
-            else
-                response.setStatus(HttpServletResponse.SC_CONFLICT);
+        if (file.mkdir())
+            response.setStatus(HttpServletResponse.SC_CREATED);
+        else
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
 //        } catch (SmbAuthException ex) {
 //            throw ex;
 //        } catch (IOException ex) {
