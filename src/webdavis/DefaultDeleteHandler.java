@@ -80,6 +80,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
         Iterator<IRODSFile> iterator = fileList.iterator();
         while (iterator.hasNext()) {
         	IRODSFile condemnedFile = iterator.next();
+        	boolean existBeforeDelete=condemnedFile.exists();
 			Log.log(Log.DEBUG, "deleting: "+condemnedFile);
 	    	int result = deleteFile(request, davisSession, condemnedFile, batch);
 			if (result != HttpServletResponse.SC_NO_CONTENT) {
@@ -88,7 +89,7 @@ public class DefaultDeleteHandler extends AbstractHandler {
 	    			Log.log(Log.WARNING, s+" in batch mode");
 				else
 	    			Log.log(Log.WARNING, s);
-				if (!condemnedFile.exists())
+				if (existBeforeDelete&&!condemnedFile.exists())
 					Log.log(Log.DEBUG, "File was actually deleted, so ignoring failure");
 				else { 
 					if (batch) 
