@@ -1,5 +1,6 @@
 package webdavis;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -41,6 +42,20 @@ public class DefaultMkcolHandler extends AbstractHandler {
     public void service(HttpServletRequest request,
             HttpServletResponse response, DavisSession davisSession)
                 throws ServletException, IOException {
+    	BufferedReader reader = request.getReader();
+    	StringBuilder sb=new StringBuilder();
+    	char[] buf = new char[4 * 1024]; // 4 KB char buffer
+    	int len;
+    	while ((len = reader.read(buf, 0, buf.length)) != -1) {
+    		sb.append(buf, 0, len);
+    	}
+    	String body=sb.toString();
+    	Log.log(Log.DEBUG, "body:"+body);
+    	if (body.length()>0) {
+        	Log.log(Log.DEBUG, "mkcol cannot have weird body.");
+            response.sendError(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+            return;
+        }
     	IRODSFile file = getIRODSFile(request, davisSession);
         response.setContentType("text/html; charset=\"utf-8\"");
         if (file.exists()) {
