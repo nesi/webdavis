@@ -285,11 +285,20 @@
 			resetSharesStore(false);
 			resetSearchResultsStore();
 
+			
+			// get the current URL (from dojo.hash() if available or from url parameter otherwise
+			// use this to initialize both listingStore and destinationStore
+			if (dojo.hash() == undefined || dojo.hash() == '') {	
+				url = escape("<parameter url/>");
+			} else {
+				url = dojo.hash();
+			};
+
 			listingStore = new ListingStore({
 				id: "listingStore", 
 				grid: listingGrid,
 				lastSort : null,
-				directory: escape("<parameter url/>"),
+				directory: url,
 				addToHistory: false,
 				_fetchItems: function(request) {
 					if (request.sort == null) {
@@ -370,14 +379,6 @@
 				}
 			});
 						
-			url = dojo.hash();
-			
-			if (dojo.hash() == undefined || dojo.hash() == '') {	
-		    url = escape("<parameter url/>");
-		  } else {
-			  listingStore.setCurrentDirectory(url);
-		  }
-		
 			listingStore.setURL(url, false);
 			listingStore.setLastURL(listingStore.urlFields);
 			listingGrid.setStore(listingStore);
@@ -385,7 +386,7 @@
 			destinationStore = new ListingStore({
 				id: "destinationStore", 
 				grid: destinationGrid,
-				directory:escape("<parameter url/>"),
+				directory: url,
 				_fetchItems: function(request) {
 					request.sort = [{attribute:"name", descending: false}];
 					destinationStore.inherited("_fetchItems", arguments);
@@ -425,12 +426,6 @@
 				}
 			});
 					
-			if (dojo.hash() == undefined || dojo.hash() == '') {	
-			  url = escape("<parameter url/>");
-			} else {
-				destinationStore.setCurrentDirectory(url);
-			} 
-						
 			destinationStore.setURL(url, false, "&directoriesonly");
 			destinationStore.setLastURL(destinationStore.urlFields);
 			destinationGrid.setStructure(destinationLayout);
