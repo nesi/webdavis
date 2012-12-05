@@ -540,7 +540,7 @@ public class FSUtilities {
     			}
     			mdata.addItem((String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_NAME), (String)p.getValue(IRODSMetaDataSet.META_COLL_ATTR_VALUE));
     		}
-    		Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+((IRODSFileSystem)collection.getFileSystem()).getUserName()+"': \n"+results);
+    		Log.log(Log.DEBUG, "IRODSCollectionMetadata for file '"+collection.getAbsolutePath()+"' for user '"+((IRODSAccount)((IRODSFileSystem)collection.getFileSystem()).getAccount()).getEffectiveClientUserName()+"': \n"+results);
     		return results;
 		} catch (NullPointerException e) {
 			e.printStackTrace();
@@ -650,7 +650,7 @@ public class FSUtilities {
 		HashMap<String, FileMetadata> metadata = null;
 		if (getMetadata)
 			metadata = getIRODSCollectionMetadata(collection);
-		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSFileSystem)collection.getFileSystem()).getUserName());
+		Log.log(Log.DEBUG, "getIRODSCollectionDetails '"+collection.getAbsolutePath()+"' for "+((IRODSAccount)((IRODSFileSystem)collection.getFileSystem()).getAccount()).getEffectiveClientUserName());
 		MetaDataCondition conditionsFile[] = {
 			MetaDataSet.newCondition(GeneralMetaData.DIRECTORY_NAME, MetaDataCondition.EQUAL, collection.getAbsolutePath()),
 //			MetaDataSet.newCondition(IRODSMetaDataSet.FILE_REPLICA_STATUS, MetaDataCondition.EQUAL, "1"),

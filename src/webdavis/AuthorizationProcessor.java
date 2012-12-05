@@ -444,9 +444,9 @@ public class AuthorizationProcessor {
 		}else if (user!=null&& (shibUseAdminLogin || password!=null)){
 			Log.log(Log.DEBUG,"login with username/password");
 			if (davisConfig.getServerType().equalsIgnoreCase("irods")){
-				if (!shibUseAdminLogin) {
+				if (!shibUseAdminLogin || (sharedToken==null)) {
 					account = new IRODSAccount(davisConfig.getServerName(), davisConfig.getServerPort(), user, new String(password), "/" + davisConfig.getZoneName() + "/home/" + user, davisConfig.getZoneName(), defaultResource);					
-				} else {
+				} else { // only do this if shibUseAdminLogin && sharedToken !=null (i.e., shib login)
 					try {
 						String adminCredsDir = davisConfig.getInitParameter("admin-creds-dir", true);
 						if (adminCredsDir == null) {
@@ -497,7 +497,7 @@ public class AuthorizationProcessor {
 				Log.log(Log.DEBUG, "irods fs:"+irodsFileSystem);
 				homeDir = irodsFileSystem.getHomeDirectory();
 				if (davisSession.getAccount() == null || davisSession.getAccount().equals("")){
-					user = irodsFileSystem.getUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
+					user = ((IRODSAccount)irodsFileSystem.getAccount()).getEffectiveClientUserName(); //FSUtilities.getiRODSUsernameByDN(irodsFileSystem, davisSession.getDn());
 					if (user == null || user.equals(""))
 						return null;
 					Log.log(Log.DEBUG, "Found iRODS user '"+user+"' for GSI");

@@ -20,6 +20,7 @@ import edu.sdsc.grid.io.RemoteFile;
 import edu.sdsc.grid.io.RemoteFileSystem;
 import edu.sdsc.grid.io.irods.IRODSFile;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
+import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
 import edu.sdsc.grid.io.srb.SRBFile;
 import edu.sdsc.grid.io.srb.SRBFileSystem;
@@ -238,7 +239,7 @@ public class PropertiesDirector {
 //    		for (int i=0;i<children.length;i++){
 //    			files[i]=new IRODSFile((IRODSFile)file,children[i]);
 //    		}
-    		Log.log(Log.DEBUG, "getChildren '"+file.getAbsolutePath()+"' for "+((IRODSFileSystem)file.getFileSystem()).getUserName());
+    		Log.log(Log.DEBUG, "getChildren '"+file.getAbsolutePath()+"' for "+((IRODSAccount)((IRODSFileSystem)file.getFileSystem()).getAccount()).getEffectiveClientUserName());
     		return FSUtilities.getIRODSCollectionDetails(file);   		
     	}
     	return null;
