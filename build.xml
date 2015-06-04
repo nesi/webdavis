@@ -1,7 +1,7 @@
 <project name="DAVIS" default="dist" basedir=".">
 
   <property name="app.name"      value="davis"/>
-  <property name="app.version"   value="0.9.6.dev-r964"/>
+  <property name="app.version"   value="0.9.6.dev-r966"/>
 <!--  <property name="dojo.version"	 value="1.4.2"/> -->
   <property name="dojo.version"	 value="1.6.1"/>
   <property name="build.home"    value="${basedir}/build"/>
