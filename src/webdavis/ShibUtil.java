@@ -42,6 +42,7 @@ import edu.sdsc.grid.io.MetaDataSet;
 import edu.sdsc.grid.io.irods.IRODSAccount;
 import edu.sdsc.grid.io.irods.IRODSFileSystem;
 import edu.sdsc.grid.io.irods.IRODSMetaDataSet;
+import edu.sdsc.grid.io.local.LocalFile;
 
 public class ShibUtil {
 	private SLCSConfig config;
@@ -279,9 +280,30 @@ public class ShibUtil {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
 	        if (config.getServerType().equalsIgnoreCase("irods")){
-	        	IRODSAccount adminAccount=new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
-	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
-		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
+			IRODSAccount adminAccount;
+
+			// If we are using the admin login to get the user connection,
+			// we might as well use it for the initial admin connection.
+			// This serves as a workaround when our libraries (pureTLS)
+			// cannot process SHA-256 certificates (remote side).
+			if (shibUseAdminLogin) {
+				// this section is copied from AuthorizationProcessor.login()#L451
+				String adminCredsDir = config.getInitParameter("admin-creds-dir", true);
+				if (adminCredsDir == null) {
+					// TODO: or not exists
+					Log.log(Log.ERROR, "Error: shib-use-admin-login is used without specifying admin-creds-dir");
+					return null;
+				}
+				// needs a directory with a .irodsEnv file with settings and a .irodsA file with password
+				adminAccount = new IRODSAccount(new LocalFile(adminCredsDir));
+				adminAccount.setHost(config.getServerName());
+				adminAccount.setPort(config.getServerPort());
+			} else {
+				adminAccount = new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
+				adminAccount.setZone(config.getInitParameter("zone-name", null));
+				adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
+			}
+
 		        IRODSFileSystem irodsFileSystem = new IRODSFileSystem(adminAccount);
 		        
 		        if (shibUseAdminLogin) {
