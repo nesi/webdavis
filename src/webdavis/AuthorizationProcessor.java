@@ -14,7 +14,8 @@ import org.globus.myproxy.MyProxyException;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.irods.jargon.core.connection.IRODSAccount;
-import org.irods.jargon.core.connection.IRODSAccount.AuthScheme;
+import org.irods.jargon.core.connection.GSIIRODSAccount;
+import org.irods.jargon.core.connection.AuthScheme;
 
 public class AuthorizationProcessor {
 
@@ -339,7 +340,7 @@ public class AuthorizationProcessor {
 			if (gssCredential!=null){
 				Log.log(Log.DEBUG,"login with gssCredential");
 				davisSession = new DavisSession();
-				account = IRODSAccount.instance(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,"",defaultResource);
+				account = GSIIRODSAccount.instance(davisConfig.getServerName(),davisConfig.getServerPort(),gssCredential,defaultResource);
 //					account = new IRODSAccount(davisConfig.getServerName(),davisConfig.getServerPort(),"","","",davisConfig.getZoneName(),davisConfig.getDefaultResource());
 //					((IRODSAccount)account).setGSSCredential(gssCredential);
 				davisSession.setZone(davisConfig.getZoneName());

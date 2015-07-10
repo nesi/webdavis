@@ -97,12 +97,8 @@ public class FSUtilities {
 	}
 	public static String[] getIRODSResources(DavisSession davisSession, String currentZone) throws IOException {
 		try {
-			List<Resource> resouceList = davisSession.getResourceAO().listResourcesInZone(currentZone);
-			String[] resList=new String[resouceList.size()];
-			for (int i=0;i<resouceList.size();i++) {
-				resList[i]=resouceList.get(i).getName();
-			}
-			return resList;
+			List<String> resourceNameList = davisSession.getResourceAO().listResourceNames();
+			return resourceNameList.toArray(new String[resourceNameList.size()]);
 		} catch (JargonException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

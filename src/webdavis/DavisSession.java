@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Hashtable;
 
+import org.irods.jargon.core.connection.AbstractIRODSMidLevelProtocol;
 import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.connection.IRODSCommands;
 import org.irods.jargon.core.exception.JargonException;
@@ -273,7 +274,7 @@ public class DavisSession implements Serializable{
 			throw new IOException(e.getMessage());
 		}
 	}
-	public IRODSCommands currentConnection() throws IOException {
+	public AbstractIRODSMidLevelProtocol currentConnection() throws IOException {
 		IRODSFileSystem fileSystem;
 		try {
 			fileSystem = IRODSFileSystem.instance();

@@ -643,13 +643,9 @@ public class DefaultPostHandler extends AbstractHandler {
 	        		}
 	        		
 	        		// Now get replica info
-	        		StringBuilder query = new StringBuilder();
-	        		query.append(RodsGenQueryEnum.COL_COLL_NAME.getName() + " like '"+file.getParent()+"' and ");
-	        		query.append(RodsGenQueryEnum.COL_DATA_NAME.getName() + " like '"+file.getName()+"'");
-
 	        		List<DataObject> dataObjects = null;
 					try {
-						dataObjects = dataObjectAO.findWhere(query.toString());
+						dataObjects = dataObjectAO.listReplicationsForFile(file.getParent(), file.getName());
 					} catch (JargonException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

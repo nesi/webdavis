@@ -12,6 +12,7 @@ import org.globus.gsi.gssapi.GlobusGSSCredentialImpl;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.irods.jargon.core.connection.IRODSAccount;
+import org.irods.jargon.core.connection.GSIIRODSAccount;
 import org.irods.jargon.core.exception.JargonException;
 import org.irods.jargon.core.pub.IRODSFileSystem;
 import org.irods.jargon.core.pub.UserAO;
@@ -35,7 +36,7 @@ public class ShibUtil {
 		try {
 			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
 	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
-        	IRODSAccount adminAccount=IRODSAccount.instance(config.getServerName(),config.getServerPort(),gssCredential);
+        	IRODSAccount adminAccount=GSIIRODSAccount.instance(config.getServerName(),config.getServerPort(),gssCredential,config.getDefaultResource());
 //	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
 //		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
 	        IRODSFileSystem irodsFileSystem = IRODSFileSystem.instance();

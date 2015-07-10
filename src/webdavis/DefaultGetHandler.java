@@ -645,14 +645,11 @@ public class DefaultGetHandler extends AbstractHandler {
 		// Request for file
 		// For files with multiple replicas, a clean replica will be returned. If only a dirty copy is found, then that will be used.
 		// Find first clean replica of file for download
-		StringBuilder query = new StringBuilder();
-		query.append(RodsGenQueryEnum.COL_COLL_NAME.getName() + " like '"+file.getParent()+"' and ");
-		query.append(RodsGenQueryEnum.COL_DATA_NAME.getName() + " like '"+file.getName()+"'");
-
+		
 		List<DataObject> dataObjects;
 		try {
-			Log.log(Log.ERROR, "looking for replicas: "+query.toString());
-			dataObjects = dataObjectAO.findWhere(query.toString());
+			Log.log(Log.ERROR, "looking for replicas: col: "+file.getParent()+" file:" + file.getName());
+			dataObjects = dataObjectAO.listReplicationsForFile(file.getParent(), file.getName());
 			if (dataObjects.size()==0) {
 				String s= "Internal get request error - no replicas found: "+file.getAbsolutePath();
 				Log.log(Log.ERROR, s+": "+file.getAbsolutePath());
