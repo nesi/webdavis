@@ -277,9 +277,7 @@ public class ShibUtil {
 		boolean shibUseAdminLogin = config.getShibUseAdminLogin();
 		
 		try {
-			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
-	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
-	        if (config.getServerType().equalsIgnoreCase("irods")){
+		    if (config.getServerType().equalsIgnoreCase("irods")){
 			IRODSAccount adminAccount;
 
 			// If we are using the admin login to get the user connection,
@@ -299,6 +297,8 @@ public class ShibUtil {
 				adminAccount.setHost(config.getServerName());
 				adminAccount.setPort(config.getServerPort());
 			} else {
+				adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
+				GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
 				adminAccount = new IRODSAccount(config.getServerName(),config.getServerPort(),gssCredential);
 				adminAccount.setZone(config.getInitParameter("zone-name", null));
 				adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
@@ -324,7 +324,7 @@ public class ShibUtil {
 				result.put("password", password); // password may be null when using shibUseAdminLogin
 				irodsFileSystem.close();
 		       	return result;
-	        }
+	            }
 		} catch (GlobusCredentialException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
