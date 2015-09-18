@@ -110,7 +110,8 @@ public class DavisConfig {
     private String styleSheet1, styleSheet2;
     private boolean quickShareOwnerOnly;
     private boolean logDirtyReplicas;
-    
+    private String adminCredsFile;
+    private String createUserScript;
     
     // General parameter substitutions for HTML file (substitutions not related to a file or request)
 	private Hashtable<String, String> generalSubstitutions;
@@ -385,6 +386,8 @@ public class DavisConfig {
 		styleSheet2 = getInitParameter("davis-style-sheet-override", "/include/davis-override.css").trim();
 		quickShareOwnerOnly = Boolean.valueOf(getInitParameter("quickshare-owner-only", "true").trim()).booleanValue();
 		logDirtyReplicas = Boolean.valueOf(getInitParameter("log-dirty-replicas", "true").trim()).booleanValue();
+		adminCredsFile = getInitParameter("admin-creds-file", "").trim();
+		createUserScript = getInitParameter("create-user-script-name", "").trim();
 		
 		Log.log(Log.DEBUG, "Logging initialized.");
 		if (Log.getThreshold() < Log.INFORMATION) 
@@ -817,5 +820,13 @@ public class DavisConfig {
 
 	public String getStyleSheetOverridePath() {
 		return styleSheet2;
+	}
+
+	public String getAdminCredsFile() {
+		return adminCredsFile;
+	}
+
+	public String createUserScriptName() {
+		return createUserScript;
 	}
 }
