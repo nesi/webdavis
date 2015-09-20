@@ -363,7 +363,7 @@ public class AuthorizationProcessor {
 				davisSession.setAccount(user);
 				davisSession.setZone(davisConfig.getZoneName());
 				davisSession.setDefaultResource(defaultResource);
-				if (idpName.equalsIgnoreCase("pam")) account.setAuthenticationScheme(AuthScheme.PAM);
+				if (idpName != null && idpName.equalsIgnoreCase("pam")) account.setAuthenticationScheme(AuthScheme.PAM);
 			}
 			String[] resList = null;
 			Log.log(Log.DEBUG, "Creating IRODSFileSystem");

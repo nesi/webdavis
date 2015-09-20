@@ -13,11 +13,23 @@ import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.irods.jargon.core.connection.IRODSAccount;
 import org.irods.jargon.core.connection.GSIIRODSAccount;
+import org.irods.jargon.core.connection.IRODSSession;
 import org.irods.jargon.core.exception.JargonException;
+import org.irods.jargon.core.pub.IRODSAccessObjectFactory;
 import org.irods.jargon.core.pub.IRODSFileSystem;
+import org.irods.jargon.core.pub.RuleProcessingAO;
 import org.irods.jargon.core.pub.UserAO;
 import org.irods.jargon.core.pub.domain.User;
 import org.irods.jargon.core.query.RodsGenQueryEnum;
+
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class ShibUtil {
 	
@@ -27,37 +39,82 @@ public class ShibUtil {
 //    	Log.log(Log.DEBUG, "slcsLoginURL:"+slcsLoginURL);
 	}
     public Map passInShibSession(String sharedToken, String commonName){
-    	String username=null;
-    	String password=null;
-    	Map result=new HashMap();
-    	if (sharedToken==null) return null;
+		String username = null;
+		char[] password = null;
+		Map result = new HashMap();
+		IRODSAccount adminAccount = null;
+		List<User> users = null;
+		StringBuilder sb = null;
+
+		if (sharedToken == null)
+			return null;
 		GlobusCredential adminCred;
-		DavisConfig config=Davis.getConfig();
+		DavisConfig config = Davis.getConfig();
 		try {
-			adminCred = new GlobusCredential(config.getAdminCertFile(), config.getAdminKeyFile());
-	        GSSCredential gssCredential = new GlobusGSSCredentialImpl(adminCred, GSSCredential.INITIATE_AND_ACCEPT);
-        	IRODSAccount adminAccount=GSIIRODSAccount.instance(config.getServerName(),config.getServerPort(),gssCredential,config.getDefaultResource());
-//	        	adminAccount.setZone(config.getInitParameter("zone-name", null));
+			String credsfile = config.getAdminCredsFile();
+			Log.log(Log.DEBUG, "CREDSFILE:" + credsfile);
+			if (credsfile != "") {
+				Log.log(Log.DEBUG, "opening json file");
+
+				// parse the admin creds from a local file specified in config
+				JSONParser parser = new JSONParser();
+
+				Object obj;
+				try {
+					String admin_username = null;
+					String admin_password = null;
+					obj = parser.parse(new FileReader(credsfile));
+					JSONObject jsonObject = (JSONObject) obj;
+					admin_username = (String) jsonObject
+							.get("irods_admin_user_name");
+					admin_password = (String) jsonObject
+							.get("irods_admin_password");
+
+					adminAccount = new IRODSAccount(config.getServerName(),
+							config.getServerPort(), admin_username,
+							admin_password, "/" + config.getZoneName()
+							+ "/home/" + admin_username,
+							config.getZoneName(), config.getDefaultResource());
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					return null;
+				}
+
+			} else {
+				adminCred = new GlobusCredential(config.getAdminCertFile(),
+						config.getAdminKeyFile());
+				GSSCredential gssCredential = new GlobusGSSCredentialImpl(
+						adminCred, GSSCredential.INITIATE_AND_ACCEPT);
+				adminAccount = GSIIRODSAccount.instance(config.getServerName(),
+						config.getServerPort(), gssCredential,
+						config.getDefaultResource());
+
+			}
+
+			// adminAccount.setZone(config.getInitParameter("zone-name", null));
 //		        adminAccount.setUserName(config.getInitParameter("adminUsername", "rods"));
 	        IRODSFileSystem irodsFileSystem = IRODSFileSystem.instance();
 	        UserAO userAO=irodsFileSystem.getIRODSAccessObjectFactory().getUserAO(adminAccount);
 //		        password=getRandomPassword(12);
 	        
 //		        createUser(irodsFileSystem,commonName,String.valueOf(password),sharedToken);
-	        
-	        StringBuilder sb = new StringBuilder();
-			sb.append(RodsGenQueryEnum.COL_USER_INFO.getName());
-			sb.append(" LIKE '%<ST>");
-			sb.append(sharedToken);
-			sb.append("</ST>%'");
-			List<User> users = userAO.findWhere(sb.toString());
-			if (users.size()>0) {
-				username=users.get(0).getName();
-		        password=userAO.getTemporaryPasswordForASpecifiedUser(username);
-			}else{
-				return null;
+
+			username = queryForUser(userAO, sharedToken);
+
+			String createUserScriptName = config.createUserScriptName();
+
+			if (createUserScriptName != "" || username == null) {
+				password = getRandomPassword(12);
+				createUser(adminAccount, irodsFileSystem, commonName,
+						String.valueOf(password), sharedToken);
+				username = queryForUser(userAO, sharedToken);
 			}
-		        
+
 //		        String[] selectFieldNames = {
 //						IRODSMetaDataSet.USER_NAME,
 //					};
@@ -143,16 +200,67 @@ public class ShibUtil {
 //	}
 //	public char[] getPassword() {
 //		return password;
-//	}
-	private char[] getRandomPassword(int length) {
-		  byte[] buffer = new byte[length];
-		  SecureRandom random = new SecureRandom();
-//		  System.out.println(random.nextInt(74));
-//		  char[] chars = new char[] { 'a', 'b', 'c', 'd' /*you get the picture*/};
-		  for ( int i = 0; i < length; i++ ) {
-		    buffer[i]=(byte) (random.nextInt(63)+63);
-		  }
-		  return new String((Base64.encodeBase64(buffer))).toCharArray();
+	// }
+
+	private String queryForUser(UserAO userAO, String sharedToken) {
+		StringBuilder sb = new StringBuilder();
+		List<User> users = null;
+
+		sb.append(RodsGenQueryEnum.COL_USER_INFO.getName());
+		sb.append(" LIKE '%<ST>");
+		sb.append(sharedToken);
+		sb.append("</ST>%'");
+		try {
+			users = userAO.findWhere(sb.toString());
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
 		}
+		if (users.size() > 0) {
+			return users.get(0).getName();
+		} else {
+			return null;
+		}
+	}
+
+	public void createUser(IRODSAccount irodsAccount, IRODSFileSystem fs,
+			String cn, String password, String st) {
+		String rule = "createUserRule||msiExecCmd(createUser,*cn *st *password,null,null,null,*OUT)|nop\n*cn="
+				+ cn + "%*st=" + st + "%*password=" + password + "\n*OUT";
+		// System.out.println(rule);
+
+		java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(
+				rule.getBytes());
+		try {
+
+			IRODSAccessObjectFactory accessObjectFactory = fs
+					.getIRODSAccessObjectFactory();
+			RuleProcessingAO ruleProcessingAO = accessObjectFactory
+					.getRuleProcessingAO(irodsAccount);
+
+			ruleProcessingAO.executeRule(rule);
+
+			// java.util.HashMap outputParameters =
+			// fs.executeRule( inputStream );
+
+		} catch (JargonException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	private char[] getRandomPassword(int length) {
+		byte[] buffer = new byte[length];
+		SecureRandom random = new SecureRandom();
+		// System.out.println(random.nextInt(74));
+		// char[] chars = new char[] { 'a', 'b', 'c', 'd' /*you get the
+		// picture*/};
+		for (int i = 0; i < length; i++) {
+			buffer[i] = (byte) (random.nextInt(63) + 63);
+		}
+		return new String((Base64.encodeBase64(buffer))).toCharArray();
+	}
 
 }
