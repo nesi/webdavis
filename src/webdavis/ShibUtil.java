@@ -110,7 +110,7 @@ public class ShibUtil {
 
 			if (createUserScriptName != "" || username == null) {
 				password = getRandomPassword(12);
-				createUser(adminAccount, irodsFileSystem, commonName,
+				createUser(createUserScriptName, adminAccount, irodsFileSystem, commonName,
 						String.valueOf(password), sharedToken);
 				username = queryForUser(userAO, sharedToken);
 			}
@@ -224,9 +224,9 @@ public class ShibUtil {
 		}
 	}
 
-	public void createUser(IRODSAccount irodsAccount, IRODSFileSystem fs,
+	public void createUser(String createUserScriptName, IRODSAccount irodsAccount, IRODSFileSystem fs,
 			String cn, String password, String st) {
-		String rule = "createUserRule||msiExecCmd(createUser,*cn *st *password,null,null,null,*OUT)|nop\n*cn="
+		String rule = "createUserRule||msiExecCmd(" + createUserScriptName + ",*cn *st *password,null,null,null,*OUT)|nop\n*cn="
 				+ cn + "%*st=" + st + "%*password=" + password + "\n*OUT";
 		// System.out.println(rule);
 
@@ -264,3 +264,4 @@ public class ShibUtil {
 	}
 
 }
+
