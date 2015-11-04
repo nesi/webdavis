@@ -108,7 +108,7 @@ public class ShibUtil {
 
 			String createUserScriptName = config.createUserScriptName();
 
-			if (createUserScriptName != "" || username == null) {
+			if (createUserScriptName != "" && username == null) {
 				password = getRandomPassword(12);
 				createUser(createUserScriptName, adminAccount, irodsFileSystem, commonName,
 						String.valueOf(password), sharedToken);
