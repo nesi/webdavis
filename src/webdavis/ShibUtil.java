@@ -155,6 +155,9 @@ public class ShibUtil {
 //						}
 //					}
 //				}
+			if (username != null ) {
+			    password=userAO.getTemporaryPasswordForASpecifiedUser(username).toCharArray();
+			};
 			result.put("username", username);
 			result.put("password", password);
 //				irodsFileSystem.close();
